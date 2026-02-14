@@ -17,37 +17,163 @@ set -eu
 . env-clear
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+docker_arcana_dir=$(CDPATH= cd -- "$script_dir/../docker" 2>/dev/null && pwd || printf '')
+probe_timeout_tenths=${TABBY_DOCKER_CHECK_TIMEOUT_TENTHS:-20}
+op_timeout_tenths=${TABBY_DOCKER_OP_TIMEOUT_TENTHS:-300}
+
+run_with_timeout() {
+  max_ticks=$1
+  shift
+  (
+    "$@"
+  ) >/dev/null 2>&1 &
+  probe_pid=$!
+  ticks=0
+  while kill -0 "$probe_pid" 2>/dev/null; do
+    ticks=$((ticks + 1))
+    if [ "$ticks" -ge "$max_ticks" ]; then
+      kill "$probe_pid" >/dev/null 2>&1 || :
+      return 124
+    fi
+    sleep 0.1
+  done
+  wait "$probe_pid"
+}
 
 if ! has docker; then
   die "start-tabby-daemon: docker is not installed"
 fi
 
-if ! docker info >/dev/null 2>&1; then
+if ! run_with_timeout "$probe_timeout_tenths" docker info; then
+  if [ -n "$docker_arcana_dir" ] && [ -x "$docker_arcana_dir/start-docker-daemon" ]; then
+    "$docker_arcana_dir/start-docker-daemon" || :
+  fi
+fi
+if ! run_with_timeout "$probe_timeout_tenths" docker info; then
   die "start-tabby-daemon: could not connect to the docker daemon. docker daemon must be running to start the tabby daemon."
+fi
+
+config_file="$HOME/.tabby/config.toml"
+file_digest() {
+  f=$1
+  if has shasum; then
+    shasum -a 256 "$f" 2>/dev/null | awk '{print $1}'
+    return 0
+  fi
+  if has sha256sum; then
+    sha256sum "$f" 2>/dev/null | awk '{print $1}'
+    return 0
+  fi
+  cksum "$f" 2>/dev/null | awk '{print $1 "-" $2}'
+}
+
+config_before=""
+if [ -f "$config_file" ]; then
+  config_before=$(file_digest "$config_file" || printf '')
+fi
+# Refresh config on every start so stale model selections self-heal.
+"$script_dir/configure-tabby-daemon" >/dev/null 2>&1 || :
+config_after=""
+if [ -f "$config_file" ]; then
+  config_after=$(file_digest "$config_file" || printf '')
+fi
+config_changed=0
+if [ "$config_before" != "$config_after" ]; then
+  config_changed=1
 fi
 
 if ! "$script_dir/is-tabby-daemon-installed" >/dev/null 2>&1; then
   "$script_dir/install-tabby-daemon"
 fi
 
+tabby_container_is_current() {
+  cmd_json=$(docker inspect -f '{{json .Config.Cmd}}' tabby 2>/dev/null || printf '')
+  case "$cmd_json" in
+    *\"serve\"*\"--model\"*) return 1 ;;
+    *\"serve\"*\"--chat-model\"*) return 1 ;;
+    *\"serve\"*)
+      if docker inspect -f '{{range .Mounts}}{{println .Destination}}{{end}}' tabby 2>/dev/null | grep -qx '/data/config.toml'; then
+        return 0
+      fi
+      return 1
+      ;;
+    *) return 1 ;;
+  esac
+}
+
+if ! tabby_container_is_current; then
+  printf '%s\n' "Repairing tabby daemon container definition..."
+  if "$script_dir/is-tabby-daemon-installed" >/dev/null 2>&1; then
+    if ! docker rm -f tabby >/dev/null 2>&1; then
+      die "start-tabby-daemon: failed to remove invalid tabby daemon container"
+    fi
+  fi
+  "$script_dir/install-tabby-daemon"
+  if ! tabby_container_is_current; then
+    die "start-tabby-daemon: failed to repair tabby daemon container definition"
+  fi
+fi
+
 if "$script_dir/is-tabby-daemon-running" >/dev/null 2>&1; then
-  success "tabby daemon is already running"
-  exit 0
-fi
-
-printf '%s\n' "Starting tabby daemon..."
-if ! docker start tabby >/dev/null; then
-  die "start-tabby-daemon: failed to start tabby daemon container"
-fi
-
-tries=0
-while [ "$tries" -lt 40 ]; do
-  if "$script_dir/is-tabby-daemon-running" >/dev/null 2>&1; then
-    success "tabby daemon started"
+  if [ "$config_changed" -eq 1 ]; then
+    printf '%s\n' "Applying updated tabby daemon configuration..."
+    if ! run_with_timeout "$op_timeout_tenths" docker restart tabby; then
+      die "start-tabby-daemon: failed to restart tabby daemon container"
+    fi
+  else
+    success "tabby daemon is already running"
+    printf '%s\n' "Tabby is available at http://localhost:8080"
     exit 0
+  fi
+else
+  printf '%s\n' "Starting tabby daemon..."
+  if ! run_with_timeout "$op_timeout_tenths" docker start tabby; then
+    die "start-tabby-daemon: failed to start tabby daemon container"
+  fi
+fi
+
+is_tabby_http_ready() {
+  if has curl; then
+    curl -sS --max-time 1 -o /dev/null "http://127.0.0.1:8080/" >/dev/null 2>&1
+    return $?
+  fi
+  # If curl is unavailable, container running state is sufficient.
+  return 0
+}
+
+# First ensure the container enters a stable running state.
+tries=0
+while [ "$tries" -lt 80 ]; do
+  if "$script_dir/is-tabby-daemon-running" >/dev/null 2>&1; then
+    break
   fi
   tries=$((tries + 1))
   sleep 0.25
 done
 
-die "start-tabby-daemon: tabby daemon did not enter running state"
+if ! "$script_dir/is-tabby-daemon-running" >/dev/null 2>&1; then
+  printf '%s\n' "start-tabby-daemon: recent container logs:" >&2
+  docker logs --tail 60 tabby >&2 || :
+  die "start-tabby-daemon: tabby daemon did not enter running state"
+fi
+
+printf '%s\n' "Waiting for tabby daemon readiness..."
+tries=0
+while [ "$tries" -lt 80 ]; do
+  if is_tabby_http_ready; then
+    success "tabby daemon started"
+    printf '%s\n' "Tabby is available at http://localhost:8080"
+    exit 0
+  fi
+  if ! "$script_dir/is-tabby-daemon-running" >/dev/null 2>&1; then
+    printf '%s\n' "start-tabby-daemon: recent container logs:" >&2
+    docker logs --tail 60 tabby >&2 || :
+    die "start-tabby-daemon: tabby daemon did not enter running state"
+  fi
+  tries=$((tries + 1))
+  sleep 0.25
+done
+
+success "tabby daemon started"
+printf '%s\n' "Tabby daemon is initializing models. Tabby will be available at http://localhost:8080 when initialization completes."
+"$script_dir/tabby-daemon-status" || :

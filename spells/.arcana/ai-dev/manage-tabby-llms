@@ -1,0 +1,49 @@
+#!/bin/sh
+
+# Menu for managing Tabby-specific LLM model selection.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: manage-tabby-llms
+
+Opens a menu for managing Tabby's active LLM model.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+if ! require menu "The manage-tabby-llms needs the 'menu' command to present options."; then
+  exit 1
+fi
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+trap 'exit 130' INT
+trap 'exit 0' TERM
+
+while :; do
+  current_model=$("$script_dir/get-tabby-chat-model" 2>/dev/null || printf 'unconfigured')
+
+  set --
+  set -- "$@" "Install best LLM%$script_dir/install-best-tabby-llm"
+  set -- "$@" "Use installed model%$script_dir/select-tabby-llm"
+  set -- "$@" "Install another LLM%$script_dir/select-llm-to-install"
+
+  exit_label=$(exit-label)
+  set -- "$@" "${exit_label}%kill -TERM \$PPID"
+
+  menu "Manage Tabby LLMs (current: $current_model):" "$@" || menu_status=$?
+  menu_status=${menu_status:-0}
+
+  if [ "$menu_status" -eq 130 ]; then
+    printf 'ESC\n' >&2
+    exit 0
+  fi
+done
+

@@ -1,0 +1,33 @@
+#!/bin/sh
+
+# Repair the Tabby daemon installation and runtime configuration.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: repair-tabby-daemon
+
+Rebuilds the Tabby daemon container definition and starts it.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+if ! has docker; then
+  die "repair-tabby-daemon: docker is not installed"
+fi
+
+if ! docker info >/dev/null 2>&1; then
+  die "repair-tabby-daemon: could not connect to the docker daemon. docker daemon must be running to repair the tabby daemon."
+fi
+
+printf '%s\n' "Repairing tabby daemon..."
+"$script_dir/uninstall-tabby-daemon" >/dev/null 2>&1 || :
+"$script_dir/install-tabby-daemon"
+"$script_dir/start-tabby-daemon"
+

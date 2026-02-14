@@ -24,6 +24,17 @@ if ! "$script_dir/is-ai-component-installed" tabby 2>/dev/null; then
   exit 0
 fi
 
+if ! ask-yn "Uninstalling Tabby will delete all users on your local Tabby website. Continue?" "n"; then
+  say "Tabby uninstall canceled"
+  exit 0
+fi
+
+# Tabby daemon is coupled to Tabby in this menu flow. Remove daemon first.
+if "$script_dir/is-tabby-daemon-installed" >/dev/null 2>&1; then
+  printf '%s\n' "Uninstalling tabby daemon..."
+  "$script_dir/uninstall-tabby-daemon"
+fi
+
 printf '%s\n' "Uninstalling Tabby..."
 
 # Remove tabby binary from common locations

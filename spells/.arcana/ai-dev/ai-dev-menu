@@ -32,6 +32,7 @@ script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 loop_limit=${MENU_LOOP_LIMIT:-}
 SELECTION_FILE=$(temp-file ai-dev-menu-selection)
 export SELECTION_FILE
+status_check_timeout_tenths=${MENU_STATUS_CHECK_TIMEOUT_TENTHS:-20}
 
 trap 'cleanup-file "$SELECTION_FILE" 2>/dev/null || true; exit 130' INT
 trap 'cleanup-file "$SELECTION_FILE" 2>/dev/null || true; exit 0' TERM
@@ -51,6 +52,25 @@ normalize_label() {
     "[ ] "*) printf '%s\n' "${label#"[ ] "}" ;;
     *) printf '%s\n' "$label" ;;
   esac
+}
+
+# Run status probes in the background with a short timeout so one unhealthy
+# subsystem cannot block rendering the whole menu.
+fast_check() {
+  (
+    "$@"
+  ) >/dev/null 2>&1 &
+  probe_pid=$!
+  ticks=0
+  while kill -0 "$probe_pid" 2>/dev/null; do
+    ticks=$((ticks + 1))
+    if [ "$ticks" -ge "$status_check_timeout_tenths" ]; then
+      kill "$probe_pid" >/dev/null 2>&1 || :
+      return 1
+    fi
+    sleep 0.1
+  done
+  wait "$probe_pid"
 }
 
 while true; do
@@ -75,9 +95,9 @@ while true; do
   tabby_daemon_enabled=0
   tabby_daemon_running=0
 
-  "$script_dir/is-ai-component-installed" tabby 2>/dev/null && tabby_installed=1
-  "$script_dir/is-ai-component-installed" ollama 2>/dev/null && ollama_installed=1
-  "$script_dir/is-ai-component-installed" anythingllm 2>/dev/null && anythingllm_installed=1
+  fast_check "$script_dir/is-ai-component-installed" tabby && tabby_installed=1
+  fast_check "$script_dir/is-ai-component-installed" ollama && ollama_installed=1
+  fast_check "$script_dir/is-ai-component-installed" anythingllm && anythingllm_installed=1
 
   # Check ollama daemon state (only if ollama is installed)
   if [ "$ollama_installed" -eq 1 ]; then
@@ -87,8 +107,8 @@ while true; do
       [ -f "/Library/LaunchDaemons/com.ollama.service.plist" ] && ollama_daemon_installed=1
     fi
 
-    "$script_dir/is-ollama-daemon-enabled" 2>/dev/null && ollama_daemon_enabled=1
-    "$script_dir/is-ollama-daemon-running" 2>/dev/null && ollama_daemon_running=1
+    fast_check "$script_dir/is-ollama-daemon-enabled" && ollama_daemon_enabled=1
+    fast_check "$script_dir/is-ollama-daemon-running" && ollama_daemon_running=1
   fi
 
   # Build menu entries based on installation state
@@ -110,11 +130,11 @@ while true; do
 
   # Tabby daemon section (self-hosted web service via Docker).
   show_tabby_daemon_section=0
-  if [ "$tabby_installed" -eq 1 ]; then
+  fast_check "$script_dir/is-tabby-daemon-installed" && tabby_daemon_installed=1
+  fast_check "$script_dir/is-tabby-daemon-enabled" && tabby_daemon_enabled=1
+  fast_check "$script_dir/is-tabby-daemon-running" && tabby_daemon_running=1
+  if [ "$tabby_installed" -eq 1 ] || [ "$tabby_daemon_installed" -eq 1 ] || [ "$tabby_daemon_enabled" -eq 1 ] || [ "$tabby_daemon_running" -eq 1 ]; then
     show_tabby_daemon_section=1
-    "$script_dir/is-tabby-daemon-installed" 2>/dev/null && tabby_daemon_installed=1
-    "$script_dir/is-tabby-daemon-enabled" 2>/dev/null && tabby_daemon_enabled=1
-    "$script_dir/is-tabby-daemon-running" 2>/dev/null && tabby_daemon_running=1
   fi
 
   # Section 1: Manage LLMs
@@ -122,12 +142,17 @@ while true; do
     manage_llms_label="Manage LLMs"
     manage_llms_cmd="$script_dir/manage-llms"
     set -- "$@" "$manage_llms_label%$(wrap_cmd "$manage_llms_label" "$manage_llms_cmd")"
+    if [ "$tabby_installed" -eq 1 ]; then
+      set_tabby_model_label="Set Tabby model"
+      set_tabby_model_cmd="$script_dir/select-tabby-llm"
+      set -- "$@" "$set_tabby_model_label%$(wrap_cmd "$set_tabby_model_label" "$set_tabby_model_cmd")"
+    fi
     set -- "$@" "---"
   fi
 
   # Section 2: ollama daemon
   if [ "$show_ollama_daemon_section" -eq 1 ]; then
-    # Daemon install/uninstall toggle
+    # Daemon install/uninstall toggle (placed last in this section)
     if [ "$ollama_daemon_installed" -eq 1 ]; then
       daemon_install_label="[X] ollama daemon"
       daemon_install_cmd="$script_dir/uninstall-ollama-daemon"
@@ -136,7 +161,6 @@ while true; do
       daemon_install_cmd="$script_dir/install-ollama-daemon"
     fi
     daemon_install_toggle="$daemon_install_label%$(wrap_cmd "$daemon_install_label" "$daemon_install_cmd")"
-    set -- "$@" "$daemon_install_toggle"
 
     # Only show start/stop and enable/disable if daemon is installed
     if [ "$ollama_daemon_installed" -eq 1 ]; then
@@ -163,12 +187,16 @@ while true; do
       set -- "$@" "$daemon_enable_toggle"
     fi
 
+    # Daemon install/uninstall appears last in this section.
+    set -- "$@" "$daemon_install_toggle"
+
     # Separator before the final section
     set -- "$@" "---"
   fi
 
   # Section 3: Tabby daemon
   if [ "$show_tabby_daemon_section" -eq 1 ]; then
+    # Daemon install/uninstall toggle (placed last in this section)
     if [ "$tabby_daemon_installed" -eq 1 ]; then
       tabby_daemon_install_label="[X] tabby daemon"
       tabby_daemon_install_cmd="$script_dir/uninstall-tabby-daemon"
@@ -176,9 +204,16 @@ while true; do
       tabby_daemon_install_label="[ ] tabby daemon"
       tabby_daemon_install_cmd="$script_dir/install-tabby-daemon"
     fi
-    set -- "$@" "$tabby_daemon_install_label%$(wrap_cmd "$tabby_daemon_install_label" "$tabby_daemon_install_cmd")"
+    tabby_daemon_install_toggle="$tabby_daemon_install_label%$(wrap_cmd "$tabby_daemon_install_label" "$tabby_daemon_install_cmd")"
 
     if [ "$tabby_daemon_installed" -eq 1 ]; then
+      tabby_daemon_status_label="tabby daemon status"
+      tabby_daemon_status_cmd="$script_dir/tabby-daemon-status"
+      set -- "$@" "$tabby_daemon_status_label%$(wrap_cmd "$tabby_daemon_status_label" "$tabby_daemon_status_cmd")"
+      tabby_daemon_repair_label="repair tabby daemon"
+      tabby_daemon_repair_cmd="$script_dir/repair-tabby-daemon"
+      set -- "$@" "$tabby_daemon_repair_label%$(wrap_cmd "$tabby_daemon_repair_label" "$tabby_daemon_repair_cmd")"
+
       if [ "$tabby_daemon_running" -eq 1 ]; then
         tabby_daemon_running_label="[X] tabby daemon running"
         tabby_daemon_running_cmd="$script_dir/stop-tabby-daemon"
@@ -197,6 +232,9 @@ while true; do
       fi
       set -- "$@" "$tabby_daemon_enabled_label%$(wrap_cmd "$tabby_daemon_enabled_label" "$tabby_daemon_enabled_cmd")"
     fi
+
+    # Daemon install/uninstall appears last in this section.
+    set -- "$@" "$tabby_daemon_install_toggle"
 
     # Separator before the final section
     set -- "$@" "---"
@@ -245,13 +283,13 @@ while true; do
 
   # Enable/Disable all toggle
   all_installed=1
-  if ! "$script_dir/is-ai-component-installed" tabby 2>/dev/null; then
+  if ! fast_check "$script_dir/is-ai-component-installed" tabby; then
     all_installed=0
   fi
-  if ! "$script_dir/is-ai-component-installed" ollama 2>/dev/null; then
+  if ! fast_check "$script_dir/is-ai-component-installed" ollama; then
     all_installed=0
   fi
-  if ! "$script_dir/is-ai-component-installed" anythingllm 2>/dev/null; then
+  if ! fast_check "$script_dir/is-ai-component-installed" anythingllm; then
     all_installed=0
   fi
   

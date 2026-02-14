@@ -1,0 +1,122 @@
+#!/bin/sh
+
+# Report Tabby daemon runtime status for troubleshooting.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: tabby-daemon-status
+
+Prints detailed runtime status for the Tabby daemon container.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+if ! has docker; then
+  printf '%s\n' "tabby daemon status: docker is not installed"
+  exit 0
+fi
+
+if ! docker info >/dev/null 2>&1; then
+  printf '%s\n' "tabby daemon status: docker daemon is not running"
+  exit 0
+fi
+
+if ! "$script_dir/is-tabby-daemon-installed" >/dev/null 2>&1; then
+  printf '%s\n' "tabby daemon status: tabby daemon is not installed"
+  exit 0
+fi
+
+config_file="$HOME/.tabby/config.toml"
+selected_chat_model_file="$HOME/.tabby/selected-chat-model"
+configured_chat_model="unconfigured"
+configured_embedding_model="unconfigured"
+selected_chat_model="none"
+if [ -f "$selected_chat_model_file" ]; then
+  selected_chat_model=$(sed -n '1p' "$selected_chat_model_file" 2>/dev/null || printf '')
+  [ -n "$selected_chat_model" ] || selected_chat_model="none"
+fi
+if [ -f "$config_file" ]; then
+  configured_chat_model=$(awk -F'"' '
+    /^\[model\.chat\.http\]/ { in_chat=1; next }
+    /^\[/ && !/^\[model\.chat\.http\]/ { in_chat=0 }
+    in_chat && /^[[:space:]]*model_name[[:space:]]*=/ { print $2; exit }
+  ' "$config_file" 2>/dev/null || printf '')
+  configured_embedding_model=$(awk -F'"' '
+    /^\[model\.embedding\.http\]/ { in_embed=1; next }
+    /^\[/ && !/^\[model\.embedding\.http\]/ { in_embed=0 }
+    in_embed && /^[[:space:]]*model_name[[:space:]]*=/ { print $2; exit }
+  ' "$config_file" 2>/dev/null || printf '')
+  [ -n "$configured_chat_model" ] || configured_chat_model="unconfigured"
+  [ -n "$configured_embedding_model" ] || configured_embedding_model="unconfigured"
+fi
+
+state=$(docker inspect -f '{{.State.Status}}' tabby 2>/dev/null || printf 'unknown')
+restarting=$(docker inspect -f '{{.State.Restarting}}' tabby 2>/dev/null || printf 'unknown')
+health=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' tabby 2>/dev/null || printf 'unknown')
+cmd=$(docker inspect -f '{{json .Config.Cmd}}' tabby 2>/dev/null || printf 'unknown')
+
+endpoint_status="unknown"
+if has curl; then
+  if curl -sS --max-time 2 -o /dev/null "http://127.0.0.1:8080/" >/dev/null 2>&1; then
+    endpoint_status="reachable"
+  else
+    endpoint_status="unreachable"
+  fi
+fi
+
+overall="not running"
+if "$script_dir/is-tabby-daemon-running" >/dev/null 2>&1; then
+  if [ "$endpoint_status" = "reachable" ] || [ "$endpoint_status" = "unknown" ]; then
+    overall="running"
+  else
+    overall="running (initializing)"
+  fi
+elif [ "$state" = "running" ] && [ "$restarting" = "false" ]; then
+  overall="running (invalid configuration)"
+fi
+
+printf '%s\n' "tabby daemon status: $overall"
+printf '%s\n' "container status: $state"
+printf '%s\n' "restarting: $restarting"
+printf '%s\n' "health: $health"
+printf '%s\n' "command: $cmd"
+printf '%s\n' "selected chat model: $selected_chat_model"
+printf '%s\n' "configured chat model: $configured_chat_model"
+printf '%s\n' "configured embedding model: $configured_embedding_model"
+if [ "$endpoint_status" != "unknown" ]; then
+  printf '%s\n' "endpoint (http://localhost:8080): $endpoint_status"
+fi
+
+ollama_active_models=""
+if has ollama; then
+  ollama_active_models=$(ollama ps 2>/dev/null | tail -n +2 | awk '{print $1}' | sed '/^$/d' || printf '')
+fi
+if [ -n "$ollama_active_models" ]; then
+  printf '%s\n' "ollama active models:"
+  printf '%s\n' "$ollama_active_models"
+else
+  printf '%s\n' "ollama active models: none"
+fi
+
+if [ "$overall" != "running" ]; then
+  # Show model download file progress when present.
+  tmp_models=$(docker exec tabby sh -lc 'find /data/models -type f -name "*.tmp" 2>/dev/null | sed -n "1,20p"' 2>/dev/null || printf '')
+  if [ -n "$tmp_models" ]; then
+    printf '%s\n' "model downloads in progress:"
+    printf '%s\n' "$tmp_models" | while IFS= read -r f; do
+      [ -n "$f" ] || continue
+      line=$(docker exec tabby sh -lc "ls -lh \"$f\" 2>/dev/null || true" 2>/dev/null || printf '')
+      [ -n "$line" ] && printf '%s\n' "$line"
+    done
+  fi
+
+  printf '%s\n' "recent tabby daemon logs:"
+  docker logs --tail 20 tabby 2>/dev/null || printf '%s\n' "no recent logs are available"
+fi

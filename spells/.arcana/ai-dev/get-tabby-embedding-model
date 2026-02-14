@@ -1,0 +1,29 @@
+#!/bin/sh
+
+# Print current Tabby embedding model from config.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: get-tabby-embedding-model
+
+Prints the configured Tabby embedding model name.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+config_file="$HOME/.tabby/config.toml"
+if [ ! -f "$config_file" ]; then
+  exit 1
+fi
+
+awk -F'"' '
+  /^\[model\.embedding\.http\]/ { in_embed=1; next }
+  /^\[/ && !/^\[model\.embedding\.http\]/ { in_embed=0 }
+  in_embed && /^[[:space:]]*model_name[[:space:]]*=/ { print $2; exit }
+' "$config_file"
+

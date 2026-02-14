@@ -5,11 +5,42 @@
 set -eu
 . env-clear
 
+tabby_dir="$HOME/.tabby"
+installed_marker="$tabby_dir/daemon-installed"
+probe_timeout_tenths=${TABBY_DOCKER_CHECK_TIMEOUT_TENTHS:-20}
+
+run_with_timeout() {
+  (
+    "$@"
+  ) >/dev/null 2>&1 &
+  probe_pid=$!
+  ticks=0
+  while kill -0 "$probe_pid" 2>/dev/null; do
+    ticks=$((ticks + 1))
+    if [ "$ticks" -ge "$probe_timeout_tenths" ]; then
+      kill "$probe_pid" >/dev/null 2>&1 || :
+      return 124
+    fi
+    sleep 0.1
+  done
+  wait "$probe_pid"
+}
+
 if ! has docker; then
+  [ -f "$installed_marker" ] && exit 0
   exit 1
 fi
 
-if docker container inspect tabby >/dev/null 2>&1; then
+if run_with_timeout docker container inspect tabby; then
+  mkdir -p "$tabby_dir"
+  : >"$installed_marker" 2>/dev/null || :
+  exit 0
+fi
+
+# Docker probe failed or timed out. Preserve recoverable installed signal.
+if [ -f "$installed_marker" ] || [ -f "$tabby_dir/config.toml" ] || [ -d "$tabby_dir/models" ]; then
+  mkdir -p "$tabby_dir"
+  : >"$installed_marker" 2>/dev/null || :
   exit 0
 fi
 

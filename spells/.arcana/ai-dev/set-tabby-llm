@@ -1,0 +1,69 @@
+#!/bin/sh
+
+# Set Tabby completion/chat model and apply config.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: set-tabby-llm MODEL
+
+Sets the Tabby completion/chat model and applies the updated daemon config.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+model=${1-}
+if [ -z "$model" ]; then
+  die 2 "set-tabby-llm: MODEL required"
+fi
+tabby_dir="$HOME/.tabby"
+selected_chat_model_file="$tabby_dir/selected-chat-model"
+
+is_embedding_model_name() {
+  case "$1" in
+    *embed*|*embedding*|nomic-embed-text|nomic-embed-text:*)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+if is_embedding_model_name "$model"; then
+  die "set-tabby-llm: '$model' is an embedding model and cannot be used as the Tabby chat model."
+fi
+
+# Ensure requested model exists locally.
+if ! "$script_dir/list-installed-llms" 2>/dev/null | grep -qx "$model"; then
+  die "set-tabby-llm: model '$model' is not installed"
+fi
+
+mkdir -p "$tabby_dir"
+if ! printf '%s\n' "$model" > "$selected_chat_model_file"; then
+  die "set-tabby-llm: failed to persist selected tabby chat model"
+fi
+
+current_embedding=$("$script_dir/get-tabby-embedding-model" 2>/dev/null || printf '')
+if [ -n "$current_embedding" ]; then
+  TABBY_OLLAMA_EMBEDDING_MODEL="$current_embedding" TABBY_OLLAMA_MODEL="$model" \
+    "$script_dir/configure-tabby-daemon" >/dev/null
+else
+  TABBY_OLLAMA_MODEL="$model" "$script_dir/configure-tabby-daemon" >/dev/null
+fi
+
+applied_model=$("$script_dir/get-tabby-chat-model" 2>/dev/null || printf '')
+if [ "$applied_model" != "$model" ]; then
+  die "set-tabby-llm: failed to apply model '$model' to tabby configuration"
+fi
+
+if "$script_dir/is-tabby-daemon-installed" >/dev/null 2>&1; then
+  "$script_dir/start-tabby-daemon"
+fi
+
+success "Tabby chat model set: $model"

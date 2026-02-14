@@ -17,23 +17,49 @@ set -eu
 . env-clear
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+installed_marker="$HOME/.tabby/daemon-installed"
+op_timeout_tenths=${TABBY_DOCKER_OP_TIMEOUT_TENTHS:-300}
+
+run_with_timeout() {
+  max_ticks=$1
+  shift
+  (
+    "$@"
+  ) >/dev/null 2>&1 &
+  probe_pid=$!
+  ticks=0
+  while kill -0 "$probe_pid" 2>/dev/null; do
+    ticks=$((ticks + 1))
+    if [ "$ticks" -ge "$max_ticks" ]; then
+      kill "$probe_pid" >/dev/null 2>&1 || :
+      return 124
+    fi
+    sleep 0.1
+  done
+  wait "$probe_pid"
+}
 
 if ! has docker; then
+  rm -f "$installed_marker" 2>/dev/null || :
   success "tabby daemon is not installed"
   exit 0
 fi
 
 if ! "$script_dir/is-tabby-daemon-installed" >/dev/null 2>&1; then
+  rm -f "$installed_marker" 2>/dev/null || :
   success "tabby daemon is not installed"
   exit 0
 fi
 
-if "$script_dir/is-tabby-daemon-running" >/dev/null 2>&1; then
-  docker stop tabby >/dev/null 2>&1 || :
+if ! docker container inspect tabby >/dev/null 2>&1; then
+  rm -f "$installed_marker" 2>/dev/null || :
+  success "tabby daemon is not installed"
+  exit 0
 fi
 
-if ! docker rm tabby >/dev/null; then
+if ! run_with_timeout "$op_timeout_tenths" docker rm -f tabby; then
   die "uninstall-tabby-daemon: failed to remove tabby daemon container"
 fi
+rm -f "$installed_marker" 2>/dev/null || :
 
 success "tabby daemon uninstalled"

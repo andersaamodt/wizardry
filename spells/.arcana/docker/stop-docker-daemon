@@ -20,11 +20,41 @@ script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 is_macos=0
 [ "$(uname -s 2>/dev/null)" = "Darwin" ] && is_macos=1
 
-if [ "$is_macos" -eq 1 ]; then
+check_timeout_tenths=${DOCKER_STOP_CHECK_TIMEOUT_TENTHS:-20}
+op_timeout_tenths=${DOCKER_STOP_OP_TIMEOUT_TENTHS:-120}
+graceful_wait_tries=${DOCKER_STOP_GRACEFUL_TRIES:-80}
+forced_wait_tries=${DOCKER_STOP_FORCED_TRIES:-20}
+
+run_with_timeout() {
+  max_ticks=$1
+  shift
+  "$@" >/dev/null 2>&1 &
+  cmd_pid=$!
+  ticks=0
+  while kill -0 "$cmd_pid" 2>/dev/null; do
+    ticks=$((ticks + 1))
+    if [ "$ticks" -ge "$max_ticks" ]; then
+      kill "$cmd_pid" >/dev/null 2>&1 || :
+      return 124
+    fi
+    sleep 0.1
+  done
+  wait "$cmd_pid"
+}
+
+refresh_macos_state() {
   daemon_running=0
   desktop_running=0
-  "$script_dir/is-docker-daemon-running" >/dev/null 2>&1 && daemon_running=1
-  "$script_dir/is-docker-desktop-running" >/dev/null 2>&1 && desktop_running=1
+  if run_with_timeout "$check_timeout_tenths" "$script_dir/is-docker-daemon-running"; then
+    daemon_running=1
+  fi
+  if run_with_timeout "$check_timeout_tenths" "$script_dir/is-docker-desktop-running"; then
+    desktop_running=1
+  fi
+}
+
+if [ "$is_macos" -eq 1 ]; then
+  refresh_macos_state
 
   if [ "$daemon_running" -eq 0 ] && [ "$desktop_running" -eq 0 ]; then
     success "Docker daemon and Docker Desktop are not running"
@@ -36,34 +66,31 @@ if [ "$is_macos" -eq 1 ]; then
 
   docker_bin=$("$script_dir/resolve-docker-cli" 2>/dev/null || printf '')
   if [ -n "$docker_bin" ]; then
-    "$docker_bin" desktop stop >/dev/null 2>&1 || :
+    run_with_timeout "$op_timeout_tenths" "$docker_bin" desktop stop || :
   fi
 
   if has osascript; then
-    osascript -e 'tell application id "com.docker.docker" to quit' >/dev/null 2>&1 || :
-    osascript -e 'quit app "Docker"' >/dev/null 2>&1 || :
-    osascript -e 'quit app "Docker Desktop"' >/dev/null 2>&1 || :
+    run_with_timeout 30 osascript -e 'tell application id "com.docker.docker" to quit' || :
+    run_with_timeout 30 osascript -e 'quit app "Docker"' || :
+    run_with_timeout 30 osascript -e 'quit app "Docker Desktop"' || :
   fi
 
   if has pkill; then
-    pkill -f '/Docker\.app/Contents/MacOS/Docker( Desktop)?' >/dev/null 2>&1 || :
-    pkill -f 'com.docker.desktop|com.docker.supervisor' >/dev/null 2>&1 || :
-    pkill -f 'com.docker.backend' >/dev/null 2>&1 || :
-    pkill -f 'vpnkit' >/dev/null 2>&1 || :
-    pkill -f 'linuxkit' >/dev/null 2>&1 || :
+    run_with_timeout 20 pkill -f '/Docker\.app/Contents/MacOS/Docker( Desktop)?' || :
+    run_with_timeout 20 pkill -f 'com.docker.desktop|com.docker.supervisor' || :
+    run_with_timeout 20 pkill -f 'com.docker.backend' || :
+    run_with_timeout 20 pkill -f 'vpnkit' || :
+    run_with_timeout 20 pkill -f 'linuxkit' || :
   fi
 
   if has killall; then
-    killall "Docker Desktop" >/dev/null 2>&1 || :
-    killall Docker >/dev/null 2>&1 || :
+    run_with_timeout 20 killall "Docker Desktop" || :
+    run_with_timeout 20 killall Docker || :
   fi
 
   tries=0
-  while [ "$tries" -lt 24 ]; do
-    daemon_running=0
-    desktop_running=0
-    "$script_dir/is-docker-daemon-running" >/dev/null 2>&1 && daemon_running=1
-    "$script_dir/is-docker-desktop-running" >/dev/null 2>&1 && desktop_running=1
+  while [ "$tries" -lt "$graceful_wait_tries" ]; do
+    refresh_macos_state
     if [ "$daemon_running" -eq 0 ] && [ "$desktop_running" -eq 0 ]; then
       success "Docker daemon and Docker Desktop stopped"
       exit 0
@@ -73,24 +100,22 @@ if [ "$is_macos" -eq 1 ]; then
   done
 
   # Final forced termination pass.
+  printf '%s\n' "Docker Desktop stop timed out; forcing termination..."
   if has pkill; then
-    pkill -9 -f '/Docker\.app/Contents/MacOS/Docker( Desktop)?' >/dev/null 2>&1 || :
-    pkill -9 -f 'com.docker.desktop|com.docker.supervisor' >/dev/null 2>&1 || :
-    pkill -9 -f 'com.docker.backend' >/dev/null 2>&1 || :
-    pkill -9 -f 'vpnkit' >/dev/null 2>&1 || :
-    pkill -9 -f 'linuxkit' >/dev/null 2>&1 || :
+    run_with_timeout 20 pkill -9 -f '/Docker\.app/Contents/MacOS/Docker( Desktop)?' || :
+    run_with_timeout 20 pkill -9 -f 'com.docker.desktop|com.docker.supervisor' || :
+    run_with_timeout 20 pkill -9 -f 'com.docker.backend' || :
+    run_with_timeout 20 pkill -9 -f 'vpnkit' || :
+    run_with_timeout 20 pkill -9 -f 'linuxkit' || :
   fi
   if has killall; then
-    killall -9 "Docker Desktop" >/dev/null 2>&1 || :
-    killall -9 Docker >/dev/null 2>&1 || :
+    run_with_timeout 20 killall -9 "Docker Desktop" || :
+    run_with_timeout 20 killall -9 Docker || :
   fi
 
   tries=0
-  while [ "$tries" -lt 8 ]; do
-    daemon_running=0
-    desktop_running=0
-    "$script_dir/is-docker-daemon-running" >/dev/null 2>&1 && daemon_running=1
-    "$script_dir/is-docker-desktop-running" >/dev/null 2>&1 && desktop_running=1
+  while [ "$tries" -lt "$forced_wait_tries" ]; do
+    refresh_macos_state
     if [ "$daemon_running" -eq 0 ] && [ "$desktop_running" -eq 0 ]; then
       success "Docker daemon and Docker Desktop stopped"
       exit 0

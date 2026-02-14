@@ -9,15 +9,42 @@ if [ "$(uname -s 2>/dev/null)" != "Darwin" ]; then
   exit 1
 fi
 
+check_timeout_tenths=${DOCKER_DESKTOP_CHECK_TIMEOUT_TENTHS:-20}
+
+run_with_timeout_capture() {
+  out_file=${TMPDIR:-/tmp}/docker-desktop-running-$$.out
+  rm -f "$out_file" 2>/dev/null || :
+  "$@" >"$out_file" 2>/dev/null &
+  cmd_pid=$!
+  ticks=0
+  while kill -0 "$cmd_pid" 2>/dev/null; do
+    ticks=$((ticks + 1))
+    if [ "$ticks" -ge "$check_timeout_tenths" ]; then
+      kill "$cmd_pid" >/dev/null 2>&1 || :
+      rm -f "$out_file" 2>/dev/null || :
+      return 124
+    fi
+    sleep 0.1
+  done
+  wait "$cmd_pid"
+  rc=$?
+  if [ "$rc" -ne 0 ]; then
+    rm -f "$out_file" 2>/dev/null || :
+    return "$rc"
+  fi
+  cat "$out_file"
+  rm -f "$out_file" 2>/dev/null || :
+}
+
 # Native app-state checks are the most reliable on macOS.
 if has osascript; then
-  if [ "$(osascript -e 'application "Docker" is running' 2>/dev/null || printf 'false')" = "true" ]; then
+  if [ "$(run_with_timeout_capture osascript -e 'application "Docker" is running' || printf 'false')" = "true" ]; then
     exit 0
   fi
-  if [ "$(osascript -e 'application "Docker Desktop" is running' 2>/dev/null || printf 'false')" = "true" ]; then
+  if [ "$(run_with_timeout_capture osascript -e 'application "Docker Desktop" is running' || printf 'false')" = "true" ]; then
     exit 0
   fi
-  if [ "$(osascript -e 'application id "com.docker.docker" is running' 2>/dev/null || printf 'false')" = "true" ]; then
+  if [ "$(run_with_timeout_capture osascript -e 'application id "com.docker.docker" is running' || printf 'false')" = "true" ]; then
     exit 0
   fi
 fi
