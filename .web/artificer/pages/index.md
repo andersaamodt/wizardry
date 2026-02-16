@@ -6,7 +6,7 @@ title: ""
 <div class="workspace-sidebar-head">
 <h2>Workspaces</h2>
 <div class="workspace-head-actions">
-<button id="organize-btn" class="icon-btn" type="button" aria-label="Organize workspaces">&#8801;</button>
+<button id="organize-btn" class="icon-btn" type="button" aria-label="Organize workspaces"><span aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M2.5 4.2h11"/><path d="M5 8h8.5"/><path d="M7.5 11.8h6"/></svg></span></button>
 <button id="add-workspace-btn" class="icon-btn" type="button" aria-label="Add workspace">+</button>
 </div>
 </div>
@@ -40,16 +40,32 @@ title: ""
 <h2 id="chat-title" class="toolbar-title">No conversation</h2>
 </div>
 <div class="toolbar-right">
-<div class="menu-anchor">
-<button id="open-menu-btn" class="toolbar-btn" type="button" aria-haspopup="menu" aria-expanded="false" title="">Open</button>
+<button id="run-action-btn" class="toolbar-btn run-play-btn" type="button" aria-label="Run action" title="Run action">
+<span aria-hidden="true">&#9654;</span>
+</button>
+<div class="menu-anchor split-anchor">
+<div class="split-btn">
+<button id="open-main-btn" class="toolbar-btn split-main" type="button" title="">Open</button>
+<button id="open-menu-btn" class="toolbar-btn split-caret" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Open menu"><span aria-hidden="true">&#9662;</span></button>
+</div>
 <div id="open-menu" class="floating-menu hidden" role="menu" aria-label="Open in">
-<button type="button" data-open-target="finder">Finder</button>
-<button type="button" data-open-target="terminal">Terminal</button>
-<button type="button" data-open-target="textmate">TextMate</button>
+<button type="button" data-open-target="finder"><span class="menu-icon" aria-hidden="true">&#128193;</span><span>Finder</span></button>
+<button type="button" data-open-target="terminal"><span class="menu-icon" aria-hidden="true">&#9000;</span><span>Terminal</span></button>
+<button type="button" data-open-target="textmate"><span class="menu-icon" aria-hidden="true">&#9998;</span><span>TextMate</span></button>
 </div>
 </div>
-<button id="run-action-btn" class="toolbar-btn" type="button">Run</button>
-<button id="commit-btn" class="toolbar-btn" type="button">Commit</button>
+<div class="menu-anchor split-anchor">
+<div class="split-btn">
+<button id="commit-main-btn" class="toolbar-btn split-main" type="button">Commit</button>
+<button id="commit-menu-btn" class="toolbar-btn split-caret" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Commit menu"><span aria-hidden="true">&#9662;</span></button>
+</div>
+<div id="commit-menu" class="floating-menu hidden" role="menu" aria-label="Commit actions">
+<button type="button" data-commit-action="commit"><span class="menu-icon" aria-hidden="true">&#10227;</span><span>Commit</span></button>
+<button type="button" data-commit-action="push"><span class="menu-icon" aria-hidden="true">&#10548;</span><span>Push</span></button>
+<button type="button" data-commit-action="commit-push"><span class="menu-icon" aria-hidden="true">&#10549;</span><span>Commit and push</span></button>
+</div>
+</div>
+<span class="toolbar-divider" aria-hidden="true"></span>
 <button id="terminal-toggle-btn" class="toolbar-btn terminal-icon-btn" type="button" aria-label="Terminal" title="Terminal">
 <span aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="15" rx="2"></rect><path d="M8 10l2 2-2 2"></path><path d="M12.5 15h4"></path></svg></span>
 </button>
@@ -63,12 +79,25 @@ title: ""
 <textarea id="run-prompt" rows="4" placeholder="Ask Artificer to inspect code, make changes, run checks, and summarize results."></textarea>
 <div id="attachment-strip" class="attachment-strip hidden" aria-live="polite"></div>
 <div class="composer-row">
-<button id="attach-btn" class="attach-btn" type="button" aria-label="Attach files">Attach</button>
+<button id="attach-btn" class="attach-btn" type="button" aria-label="Attach files">+</button>
 <input id="attachment-picker" type="file" multiple hidden />
 <div class="menu-anchor model-anchor">
 <button id="model-picker-btn" class="model-picker-btn" type="button" aria-haspopup="menu" aria-expanded="false">Select model</button>
 <div id="model-picker-menu" class="floating-menu hidden" role="menu" aria-label="Model selector">
 <div id="model-picker-list" class="model-picker-list"></div>
+</div>
+</div>
+<button id="agent-loop-toggle" class="loop-toggle on" type="button" aria-pressed="true" title="Advanced agentive loop">
+<span class="loop-track" aria-hidden="true"><span class="loop-knob"></span></span>
+<span class="loop-label">Loop</span>
+</button>
+<div class="menu-anchor">
+<button id="reasoning-menu-btn" class="reasoning-btn" type="button" aria-haspopup="menu" aria-expanded="false">Medium</button>
+<div id="reasoning-menu" class="floating-menu hidden" role="menu" aria-label="Reasoning effort">
+<button type="button" data-reasoning="low"><span class="menu-icon" aria-hidden="true">&#9719;</span><span>Low</span><span class="check" aria-hidden="true">&check;</span></button>
+<button type="button" data-reasoning="medium"><span class="menu-icon" aria-hidden="true">&#9719;</span><span>Medium</span><span class="check" aria-hidden="true">&check;</span></button>
+<button type="button" data-reasoning="high"><span class="menu-icon" aria-hidden="true">&#9719;</span><span>High</span><span class="check" aria-hidden="true">&check;</span></button>
+<button type="button" data-reasoning="extra-high"><span class="menu-icon" aria-hidden="true">&#9719;</span><span>Extra High</span><span class="check" aria-hidden="true">&check;</span></button>
 </div>
 </div>
 <div id="queue-controls" class="queue-controls hidden">
@@ -79,23 +108,12 @@ title: ""
 </div>
 <div class="session-row">
 <div class="menu-anchor">
-<button id="branch-menu-btn" class="toolbar-btn compact-btn" type="button" aria-haspopup="menu" aria-expanded="false">No repo</button>
-<div id="branch-menu" class="floating-menu hidden" role="menu" aria-label="Branch menu">
-<div id="branch-menu-list" class="menu-list"></div>
-<div class="menu-sep"></div>
-<form id="branch-create-form" class="inline-form">
-<input id="branch-create-input" placeholder="new-branch" />
-<button type="submit">Create</button>
-</form>
-</div>
-</div>
-<div class="menu-anchor">
 <button id="permissions-menu-btn" class="toolbar-btn compact-btn" type="button" aria-haspopup="menu" aria-expanded="false">Default permissions</button>
 <div id="permissions-menu" class="floating-menu hidden" role="menu" aria-label="Permissions menu">
-<button type="button" data-permission="default">Default permissions</button>
-<button type="button" data-permission="workspace-write">Workspace write</button>
-<button type="button" data-permission="read-only">Read only</button>
-<button type="button" data-permission="full-access">Full access</button>
+<button type="button" data-permission="default"><span class="menu-icon" aria-hidden="true">&#9719;</span><span>Default permissions</span></button>
+<button type="button" data-permission="workspace-write"><span class="menu-icon" aria-hidden="true">&#9998;</span><span>Workspace write</span></button>
+<button type="button" data-permission="read-only"><span class="menu-icon" aria-hidden="true">&#128065;</span><span>Read only</span></button>
+<button type="button" data-permission="full-access"><span class="menu-icon" aria-hidden="true">&#9881;</span><span>Full access</span></button>
 <div class="menu-sep"></div>
 <div class="perm-toggle-row">
 <span>Network access</span>
@@ -106,6 +124,22 @@ title: ""
 <button id="web-toggle-btn" class="slide-toggle" type="button" aria-pressed="false" aria-label="Toggle web access"><span class="slide-knob"></span></button>
 </div>
 </div>
+</div>
+<div class="menu-anchor branch-anchor">
+<button id="branch-menu-btn" class="toolbar-btn compact-btn" type="button" aria-haspopup="menu" aria-expanded="false">No repo</button>
+<div id="branch-menu" class="floating-menu hidden" role="menu" aria-label="Branch menu">
+<div id="branch-menu-list" class="menu-list"></div>
+<div class="menu-sep"></div>
+<form id="branch-create-form" class="inline-form">
+<input id="branch-create-input" placeholder="new-branch" />
+<button id="branch-create-submit" type="submit" disabled>Create</button>
+</form>
+</div>
+</div>
+<div class="context-anchor">
+<span id="context-window-btn" class="context-window-indicator" aria-label="Context window" title="Context window unknown.">
+<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.4"></circle></svg>
+</span>
 </div>
 </div>
 </form>
@@ -225,4 +259,4 @@ title: ""
 </div>
 </div>
 
-<script src="/static/app.js?v=20260216-critical2"></script>
+<script src="/static/artificer-app.js?v=20260216-critical13"></script>

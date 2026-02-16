@@ -177,7 +177,6 @@
     branchMenuList: document.getElementById("branch-menu-list"),
     branchCreateForm: document.getElementById("branch-create-form"),
     branchCreateInput: document.getElementById("branch-create-input"),
-    branchCreateSubmit: document.getElementById("branch-create-submit"),
     runActionBtn: document.getElementById("run-action-btn"),
     permissionsMenuBtn: document.getElementById("permissions-menu-btn"),
     permissionsMenu: document.getElementById("permissions-menu"),
@@ -1812,24 +1811,15 @@
     if (!workspaceId) {
       el.branchMenuList.innerHTML = "<p class='empty-state'>Select a workspace first.</p>";
       el.branchCreateForm.classList.add("hidden");
-      if (el.branchCreateSubmit) {
-        el.branchCreateSubmit.disabled = true;
-      }
       return;
     }
 
     if (!gitState.is_repo) {
       el.branchMenuList.innerHTML = "<button type='button' data-branch-action='create-repo'>Create repo</button>";
       el.branchCreateForm.classList.add("hidden");
-      if (el.branchCreateSubmit) {
-        el.branchCreateSubmit.disabled = true;
-      }
       return;
     }
     el.branchCreateForm.classList.remove("hidden");
-    if (el.branchCreateSubmit) {
-      el.branchCreateSubmit.disabled = trim(el.branchCreateInput ? el.branchCreateInput.value : "") === "";
-    }
 
     var branches = state.branchesByWorkspace[workspaceId] || [];
     if (!branches.length) {
@@ -2014,13 +2004,13 @@
   }
 
   function renderContextWindowStatus() {
-    if (!el.contextWindowBtn) {
+    if (!el.contextWindowBody) {
       return;
     }
     var model = activeModelName();
     if (!model) {
       state.contextWindowText = "Context window: unknown (no model selected).";
-      el.contextWindowBtn.title = state.contextWindowText;
+      el.contextWindowBody.textContent = state.contextWindowText;
       return;
     }
     var guess = String(model).match(/(\d+)\s*k/i);
@@ -2029,7 +2019,7 @@
     } else {
       state.contextWindowText = "Context window: unavailable from current Ollama model metadata.";
     }
-    el.contextWindowBtn.title = state.contextWindowText;
+    el.contextWindowBody.textContent = state.contextWindowText;
   }
 
   function renderChat() {
@@ -4410,9 +4400,6 @@
           }
           appendTerminalLine(response.output || ("Created branch " + branchName));
           el.branchCreateInput.value = "";
-          if (el.branchCreateSubmit) {
-            el.branchCreateSubmit.disabled = true;
-          }
           return refreshGitStatus();
         })
         .then(function () {
@@ -4423,13 +4410,6 @@
           renderUi();
         })
         .catch(showError);
-    });
-
-    on(el.branchCreateInput, "input", function () {
-      if (!el.branchCreateSubmit) {
-        return;
-      }
-      el.branchCreateSubmit.disabled = trim(el.branchCreateInput.value) === "";
     });
 
     on(el.commitMainBtn, "click", function () {
@@ -4465,6 +4445,10 @@
 
     on(el.permissionsMenuBtn, "click", function () {
       toggleMenu("permissions-menu", el.permissionsMenuBtn);
+    });
+
+    on(el.contextWindowBtn, "click", function () {
+      toggleMenu("context-window-menu", el.contextWindowBtn);
     });
 
     on(el.permissionsMenu, "click", function (event) {

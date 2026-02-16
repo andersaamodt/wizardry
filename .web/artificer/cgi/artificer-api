@@ -111,6 +111,51 @@ looks_like_embedding_vector() {
   return 0
 }
 
+normalize_assistant_output() {
+  text=$1
+  cleaned=$(strip_terminal_noise "$text")
+  cleaned=$(printf '%s' "$cleaned" | sed 's/<|end_of_text|>//g;s/<end_of_text>//g;s/<\/s>//g;s/<|im_end|>//g')
+
+  first_line=$(printf '%s\n' "$cleaned" | sed -n '1p')
+  first_line_lower=$(printf '%s' "$first_line" | tr '[:upper:]' '[:lower:]' | sed 's/^[[:space:]]*//')
+  case "$first_line_lower" in
+    assistant:*|user:*|system:*)
+      cleaned=$(printf '%s\n' "$cleaned" | sed '1d')
+      ;;
+  esac
+
+  output=""
+  seen_non_empty=0
+  while IFS= read -r line; do
+    line_lower=$(printf '%s' "$line" | tr '[:upper:]' '[:lower:]' | sed 's/^[[:space:]]*//')
+    if [ "$seen_non_empty" -eq 1 ]; then
+      case "$line_lower" in
+        user:*|system:*)
+          break
+          ;;
+      esac
+    fi
+
+    if [ -z "$output" ]; then
+      output=$line
+    else
+      output=$(printf '%s\n%s' "$output" "$line")
+    fi
+
+    if [ -n "$(trim "$line")" ]; then
+      seen_non_empty=1
+    fi
+  done <<EOF
+$cleaned
+EOF
+
+  cleaned=$(trim "$output")
+  if [ -z "$cleaned" ]; then
+    cleaned=$(trim "$text")
+  fi
+  printf '%s' "$cleaned"
+}
+
 new_id() {
   now=$(date +%s 2>/dev/null || printf '0')
   pid=$$
@@ -1189,6 +1234,61 @@ conversation_history() {
   done <"$temp_list"
 
   rm -f "$temp_list"
+}
+
+single_line_snippet() {
+  text=$1
+  printf '%s' "$text" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g;s/^ //;s/ $//' | cut -c1-220
+}
+
+workspace_shared_context() {
+  ws_dir=$1
+  active_conv_id=$2
+  conv_root="$ws_dir/conversations"
+  [ -d "$conv_root" ] || return 0
+
+  listed=0
+  for conv_dir in "$conv_root"/*; do
+    [ -d "$conv_dir" ] || continue
+    conv_id=$(basename "$conv_dir")
+    [ "$conv_id" = "$active_conv_id" ] && continue
+
+    title=$(read_file_line "$conv_dir/title" "Conversation")
+    updated=$(read_file_line "$conv_dir/updated" "0")
+    model=$(read_file_line "$conv_dir/model" "")
+
+    msg_dir="$conv_dir/messages"
+    user_snippet=""
+    assistant_snippet=""
+    if [ -d "$msg_dir" ]; then
+      last_user_file=$(find "$msg_dir" -maxdepth 1 -type f -name '*-user.txt' 2>/dev/null | sort | tail -n 1)
+      last_assistant_file=$(find "$msg_dir" -maxdepth 1 -type f -name '*-assistant.txt' 2>/dev/null | sort | tail -n 1)
+      if [ -n "$last_user_file" ] && [ -f "$last_user_file" ]; then
+        user_snippet=$(single_line_snippet "$(cat "$last_user_file" 2>/dev/null || true)")
+      fi
+      if [ -n "$last_assistant_file" ] && [ -f "$last_assistant_file" ]; then
+        assistant_snippet=$(single_line_snippet "$(cat "$last_assistant_file" 2>/dev/null || true)")
+      fi
+    fi
+
+    printf 'Thread: %s\n' "$title"
+    printf 'Updated: %s\n' "$updated"
+    if [ -n "$model" ]; then
+      printf 'Model: %s\n' "$model"
+    fi
+    if [ -n "$user_snippet" ]; then
+      printf 'Recent user intent: %s\n' "$user_snippet"
+    fi
+    if [ -n "$assistant_snippet" ]; then
+      printf 'Recent assistant output: %s\n' "$assistant_snippet"
+    fi
+    printf '\n'
+
+    listed=$((listed + 1))
+    if [ "$listed" -ge 8 ]; then
+      break
+    fi
+  done
 }
 
 json_messages() {
@@ -3033,8 +3133,11 @@ EOF
     network_access_raw=$(trim "$(param "network_access")")
     web_access_raw=$(trim "$(param "web_access")")
     attachment_ids_raw=$(param "attachment_ids")
+    advanced_loop_raw=$(trim "$(param "advanced_loop")")
+    reasoning_effort_raw=$(trim "$(param "reasoning_effort")")
     max_iterations_raw=$(trim "$(param "max_iterations")")
     max_iterations=2
+    reasoning_effort="medium"
 
     if ! valid_id "$workspace_id"; then
       emit_error "invalid workspace_id"
@@ -3050,21 +3153,41 @@ EOF
       exit 0
     fi
 
+    case "$(printf '%s' "$reasoning_effort_raw" | tr '[:upper:]' '[:lower:]')" in
+      low|medium|high|extra-high)
+        reasoning_effort=$(printf '%s' "$reasoning_effort_raw" | tr '[:upper:]' '[:lower:]')
+        ;;
+    esac
+
     if [ -n "$max_iterations_raw" ]; then
       case "$max_iterations_raw" in
         *[!0-9]*)
-          max_iterations=2
+          case "$reasoning_effort" in
+            low) max_iterations=1 ;;
+            medium) max_iterations=2 ;;
+            high) max_iterations=3 ;;
+            extra-high) max_iterations=4 ;;
+            *) max_iterations=2 ;;
+          esac
           ;;
         *)
           max_iterations=$max_iterations_raw
           ;;
       esac
+    else
+      case "$reasoning_effort" in
+        low) max_iterations=1 ;;
+        medium) max_iterations=2 ;;
+        high) max_iterations=3 ;;
+        extra-high) max_iterations=4 ;;
+        *) max_iterations=2 ;;
+      esac
     fi
     if [ "$max_iterations" -lt 1 ]; then
       max_iterations=1
     fi
-    if [ "$max_iterations" -gt 3 ]; then
-      max_iterations=3
+    if [ "$max_iterations" -gt 6 ]; then
+      max_iterations=6
     fi
 
     ws_dir=$(workspace_dir_for "$workspace_id")
@@ -3158,7 +3281,16 @@ EOF
 
     append_message "$conv_dir" "user" "$user_message_text"
 
-    quick_mode=${ARTIFICER_QUICK_MODE:-1}
+    quick_mode=${ARTIFICER_QUICK_MODE:-0}
+    case "$(printf '%s' "$advanced_loop_raw" | tr '[:upper:]' '[:lower:]')" in
+      1|true|yes|on)
+        quick_mode=0
+        ;;
+      0|false|no|off)
+        quick_mode=1
+        ;;
+    esac
+    workspace_context_text=$(workspace_shared_context "$ws_dir" "$conversation_id" | sed -n '1,240p')
     if [ "$quick_mode" = "1" ]; then
       history_text=$(conversation_history "$conv_dir" | sed -n '1,160p')
       snapshot_text=$(workspace_snapshot "$workspace_path" | sed -n '1,160p')
@@ -3181,6 +3313,11 @@ EOF
 
       quick_prompt=$(cat <<EOF
 You are a coding assistant. Respond concisely and concretely.
+Reasoning effort preference: $reasoning_effort
+Output rules:
+- return only assistant reply text
+- do not prefix with "Assistant:" or "User:"
+- do not output control tokens like <end_of_text>
 
 User request:
 $user_message_text
@@ -3192,6 +3329,13 @@ Recent conversation:
 $history_text
 EOF
 )
+
+      if [ -n "$(trim "$workspace_context_text")" ]; then
+        quick_prompt="${quick_prompt}
+
+Other threads in this same workspace:
+$workspace_context_text"
+      fi
 
       if [ -n "$(trim "$attachment_context")" ]; then
         quick_prompt="${quick_prompt}
@@ -3212,7 +3356,7 @@ $web_context"
       model_rc=$?
       set -e
 
-      assistant_output=$(strip_terminal_noise "$assistant_raw")
+      assistant_output=$(normalize_assistant_output "$assistant_raw")
       assistant_output=$(trim "$assistant_output")
 
       if [ "$model_rc" -ne 0 ]; then
@@ -3288,6 +3432,7 @@ $web_context"
       plan_text=$(sed -n '1,220p' "$plan_file")
       history_text=$(conversation_history "$conv_dir" | sed -n '1,220p')
       snapshot_text=$(workspace_snapshot "$workspace_path" | sed -n '1,220p')
+      workspace_context_text=$(workspace_shared_context "$ws_dir" "$conversation_id" | sed -n '1,320p')
       failures_tail=$(tail -n 80 "$failures_file" 2>/dev/null || sed -n '1,80p' "$failures_file")
       session_tail=$(tail -n 80 "$session_log_file" 2>/dev/null || sed -n '1,80p' "$session_log_file")
       state_mode=$(normalize_mode "$(state_get "$state_file" "mode" "INVESTIGATE")")
@@ -3299,6 +3444,7 @@ $web_context"
 
       controller_prompt=$(cat <<EOF
 You are operating a typed-state coding agent.
+Reasoning effort preference: $reasoning_effort
 
 Current mode: $state_mode
 Typed state:
@@ -3348,6 +3494,7 @@ Rules:
 - use mediated commands only
 - no shell separators or redirects in COMMANDS
 - patch at most 3 files
+- do not output role prefixes ("Assistant:" / "User:") in FINAL
 
 Current plan:
 $plan_text
@@ -3367,12 +3514,16 @@ $snapshot_text
 Conversation context:
 $history_text
 
+Other threads in this same workspace:
+$workspace_context_text
+
 Latest user request:
 $augmented_user_prompt
 EOF
 )
 
       iteration_output=$(run_model "$model" "$controller_prompt" || true)
+      iteration_output=$(strip_terminal_noise "$iteration_output")
       if [ -z "$(trim "$iteration_output")" ]; then
         append_failure_entry "$failures_file" "iteration-$iteration:model-response" "Empty response from model" \
           "Model failed to emit control sections" "Fallback response generated for current mode"
@@ -3818,14 +3969,18 @@ Write a concise final response:
 - what was done
 - key findings
 - next best step
+- no role prefixes and no control tokens
 EOF
 )
 
       assistant_output=$(run_model "$model" "$synthesis_prompt" || true)
+      assistant_output=$(normalize_assistant_output "$assistant_output")
       if [ -z "$(trim "$assistant_output")" ]; then
         assistant_output="Run completed, but the model did not provide a final synthesis."
       fi
     fi
+
+    assistant_output=$(normalize_assistant_output "$assistant_output")
 
     append_session_entry "$session_log_file" "final response" "$assistant_output"
     append_message "$conv_dir" "assistant" "$assistant_output"
