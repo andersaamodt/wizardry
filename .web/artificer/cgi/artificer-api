@@ -874,6 +874,30 @@ EOF
   done <<EOF
 $host_candidates
 EOF
+
+  list_script="$WIZARDRY_DIR/spells/.arcana/ai-dev/list-installed-llms"
+  if [ -x "$list_script" ]; then
+    fallback_models=$("$list_script" 2>/dev/null || true)
+    if [ -n "$(trim "$fallback_models")" ]; then
+      printf '%s\n' "$fallback_models" | awk '!seen[$0]++'
+      return 0
+    fi
+  fi
+}
+
+list_models_from_workspace_data() {
+  for ws_dir in "$workspaces_dir"/*; do
+    [ -d "$ws_dir" ] || continue
+    conv_parent="$ws_dir/conversations"
+    [ -d "$conv_parent" ] || continue
+    for conv_dir in "$conv_parent"/*; do
+      [ -d "$conv_dir" ] || continue
+      model_name=$(read_file_line "$conv_dir/model" "")
+      model_name=$(trim "$model_name")
+      [ -n "$model_name" ] || continue
+      printf '%s\n' "$model_name"
+    done
+  done | awk '!seen[$0]++'
 }
 
 default_model() {
@@ -1740,6 +1764,7 @@ emit_state() {
         conv_id=$(basename "$conv_dir")
         conv_title=$(read_file_line "$conv_dir/title" "Conversation")
         conv_model=$(read_file_line "$conv_dir/model" "")
+        conv_created=$(read_file_line "$conv_dir/created" "0")
         conv_updated=$(read_file_line "$conv_dir/updated" "0")
         queue_info=$(queue_state_for_conversation "$conv_dir")
         queue_pending=$(kv_get "pending" "$queue_info")
@@ -1755,6 +1780,7 @@ emit_state() {
         conv_id_json=$(json_escape "$conv_id")
         conv_title_json=$(json_escape "$conv_title")
         conv_model_json=$(json_escape "$conv_model")
+        conv_created_json=$(json_escape "$conv_created")
         conv_updated_json=$(json_escape "$conv_updated")
         queue_pending_json=$(json_escape "$queue_pending")
         queue_running_json=$(json_escape "$queue_running")
@@ -1766,8 +1792,8 @@ emit_state() {
           printf ','
         fi
         first_conv=0
-        printf '{"id":"%s","title":"%s","model":"%s","updated":"%s","queue_pending":"%s","queue_running":"%s","queue_done":"%s","queue_last_status":"%s","queue_first_id":"%s"}' \
-          "$conv_id_json" "$conv_title_json" "$conv_model_json" "$conv_updated_json" "$queue_pending_json" "$queue_running_json" "$queue_done_json" "$queue_last_status_json" "$queue_first_id_json"
+        printf '{"id":"%s","title":"%s","model":"%s","created":"%s","updated":"%s","queue_pending":"%s","queue_running":"%s","queue_done":"%s","queue_last_status":"%s","queue_first_id":"%s"}' \
+          "$conv_id_json" "$conv_title_json" "$conv_model_json" "$conv_created_json" "$conv_updated_json" "$queue_pending_json" "$queue_running_json" "$queue_done_json" "$queue_last_status_json" "$queue_first_id_json"
       done
     fi
 
@@ -1779,6 +1805,9 @@ emit_state() {
 
 emit_models() {
   models=$(list_models_raw)
+  if [ -z "$(trim "$models")" ]; then
+    models=$(list_models_from_workspace_data)
+  fi
 
   printf '{"success":true,"models":['
   first=1
@@ -1910,6 +1939,71 @@ case "$action" in
 
     rm -rf "$ws_dir"
     emit_ok_message "workspace deleted"
+    exit 0
+    ;;
+
+  rename_workspace)
+    workspace_id=$(trim "$(param "workspace_id")")
+    workspace_name=$(trim "$(param "name")")
+
+    if ! valid_id "$workspace_id"; then
+      emit_error "invalid workspace_id"
+      exit 0
+    fi
+
+    if [ -z "$workspace_name" ]; then
+      emit_error "name is required"
+      exit 0
+    fi
+
+    ws_dir=$(workspace_dir_for "$workspace_id")
+    if [ ! -d "$ws_dir" ]; then
+      emit_error "workspace not found"
+      exit 0
+    fi
+
+    printf '%s\n' "$workspace_name" > "$ws_dir/name"
+
+    workspace_id_json=$(json_escape "$workspace_id")
+    workspace_name_json=$(json_escape "$workspace_name")
+    printf '{"success":true,"workspace":{"id":"%s","name":"%s"}}\n' \
+      "$workspace_id_json" "$workspace_name_json"
+    exit 0
+    ;;
+
+  archive_conversation)
+    workspace_id=$(trim "$(param "workspace_id")")
+    conversation_id=$(trim "$(param "conversation_id")")
+
+    if ! valid_id "$workspace_id"; then
+      emit_error "invalid workspace_id"
+      exit 0
+    fi
+    if ! valid_id "$conversation_id"; then
+      emit_error "invalid conversation_id"
+      exit 0
+    fi
+
+    ws_dir=$(workspace_dir_for "$workspace_id")
+    if [ ! -d "$ws_dir" ]; then
+      emit_error "workspace not found"
+      exit 0
+    fi
+
+    conv_dir=$(conversation_dir_for "$workspace_id" "$conversation_id")
+    if [ ! -d "$conv_dir" ]; then
+      emit_error "conversation not found"
+      exit 0
+    fi
+
+    archived_dir="$ws_dir/archived"
+    mkdir -p "$archived_dir"
+
+    archive_suffix=$(date +%s 2>/dev/null || printf '0')
+    archive_target="$archived_dir/${conversation_id}-${archive_suffix}"
+    mv "$conv_dir" "$archive_target"
+
+    emit_ok_message "conversation archived"
     exit 0
     ;;
 

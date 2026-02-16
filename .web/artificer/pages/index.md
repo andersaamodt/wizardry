@@ -10,9 +10,18 @@ title: ""
 <button id="add-workspace-btn" class="icon-btn" type="button" aria-label="Add workspace">+</button>
 </div>
 </div>
-<div id="organize-menu" class="floating-menu hidden" role="menu" aria-label="Organize menu">
-<button type="button" data-organize-sort="updated">Sort by Updated</button>
-<button type="button" data-organize-sort="name">Sort by Name</button>
+<div id="organize-menu" class="floating-menu organize-menu hidden" role="menu" aria-label="Organize menu">
+<p class="organize-title">Organize</p>
+<button type="button" data-organize-mode="project"><span>By project</span><span class="check" aria-hidden="true">&check;</span></button>
+<button type="button" data-organize-mode="chrono"><span>Chronological list</span><span class="check" aria-hidden="true">&check;</span></button>
+<div class="menu-sep"></div>
+<p class="organize-group">Sort by</p>
+<button type="button" data-organize-sort="created"><span>Created</span><span class="check" aria-hidden="true">&check;</span></button>
+<button type="button" data-organize-sort="updated"><span>Updated</span><span class="check" aria-hidden="true">&check;</span></button>
+<div class="menu-sep"></div>
+<p class="organize-group">Show</p>
+<button type="button" data-organize-show="all"><span>All threads</span><span class="check" aria-hidden="true">&check;</span></button>
+<button type="button" data-organize-show="relevant"><span>Relevant</span><span class="check" aria-hidden="true">&check;</span></button>
 </div>
 <div id="workspace-tree" class="workspace-tree"></div>
 <div class="workspace-sidebar-footer">
@@ -28,64 +37,27 @@ title: ""
 <main class="main-shell">
 <header class="toolbar">
 <div class="toolbar-left">
+<h2 id="chat-title" class="toolbar-title">No conversation</h2>
+</div>
+<div class="toolbar-right">
 <div class="menu-anchor">
-<button id="open-menu-btn" class="toolbar-btn" type="button" aria-haspopup="menu" aria-expanded="false">Open</button>
+<button id="open-menu-btn" class="toolbar-btn" type="button" aria-haspopup="menu" aria-expanded="false" title="">Open</button>
 <div id="open-menu" class="floating-menu hidden" role="menu" aria-label="Open in">
 <button type="button" data-open-target="finder">Finder</button>
 <button type="button" data-open-target="terminal">Terminal</button>
 <button type="button" data-open-target="textmate">TextMate</button>
 </div>
 </div>
-<div class="menu-anchor">
-<button id="branch-menu-btn" class="toolbar-btn" type="button" aria-haspopup="menu" aria-expanded="false">Branch</button>
-<div id="branch-menu" class="floating-menu hidden" role="menu" aria-label="Branch menu">
-<div id="branch-menu-list" class="menu-list"></div>
-<div class="menu-sep"></div>
-<form id="branch-create-form" class="inline-form">
-<input id="branch-create-input" placeholder="new-branch" />
-<button type="submit">Create</button>
-</form>
-</div>
-</div>
-<button id="create-repo-btn" class="toolbar-btn" type="button">Create Repo</button>
-<div class="menu-anchor">
-<button id="commit-menu-btn" class="toolbar-btn" type="button" aria-haspopup="menu" aria-expanded="false">Commit</button>
-<div id="commit-menu" class="floating-menu hidden" role="menu" aria-label="Commit menu">
-<button type="button" data-commit-action="commit-modal">Commit...</button>
-<button type="button" data-commit-action="push">Push</button>
-<button type="button" data-commit-action="commit-push">Commit and push...</button>
-</div>
-</div>
-<button id="run-action-btn" class="toolbar-btn" type="button">Run Action</button>
-</div>
-<div class="toolbar-right">
-<div class="menu-anchor">
-<button id="permissions-menu-btn" class="toolbar-btn" type="button" aria-haspopup="menu" aria-expanded="false">Default permissions</button>
-<div id="permissions-menu" class="floating-menu hidden" role="menu" aria-label="Permissions menu">
-<button type="button" data-permission="default">Default permissions</button>
-<button type="button" data-permission="workspace-write">Workspace write</button>
-<button type="button" data-permission="read-only">Read only</button>
-<button type="button" data-permission="full-access">Full access</button>
-<div class="menu-sep"></div>
-<div class="perm-toggle-row">
-<span>Network access</span>
-<button id="network-toggle-btn" class="slide-toggle" type="button" aria-pressed="false" aria-label="Toggle network access"><span class="slide-knob"></span></button>
-</div>
-<div class="perm-toggle-row">
-<span>Web access</span>
-<button id="web-toggle-btn" class="slide-toggle" type="button" aria-pressed="false" aria-label="Toggle web access"><span class="slide-knob"></span></button>
-</div>
-</div>
-</div>
-<button id="terminal-toggle-btn" class="toolbar-btn" type="button">Terminal</button>
+<button id="run-action-btn" class="toolbar-btn" type="button">Run</button>
+<button id="commit-btn" class="toolbar-btn" type="button">Commit</button>
+<button id="terminal-toggle-btn" class="toolbar-btn terminal-icon-btn" type="button" aria-label="Terminal" title="Terminal">
+<span aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="15" rx="2"></rect><path d="M8 10l2 2-2 2"></path><path d="M12.5 15h4"></path></svg></span>
+</button>
 <button id="changes-btn" class="toolbar-btn changes-btn" type="button"><span class="git-delta"><span class="git-add">+0</span> <span class="git-del">-0</span></span></button>
 </div>
 </header>
 
 <section class="chat-shell">
-<div class="chat-head">
-<h2 id="chat-title">Conversation</h2>
-</div>
 <div id="chat-log" class="chat-log"></div>
 <form id="run-form" class="run-form">
 <textarea id="run-prompt" rows="4" placeholder="Ask Artificer to inspect code, make changes, run checks, and summarize results."></textarea>
@@ -104,6 +76,37 @@ title: ""
 <button id="queue-cancel-btn" class="queue-btn queue-trash" type="button" aria-label="Delete queued message">&times;</button>
 </div>
 <button id="run-btn" class="run-fab" type="submit" aria-label="Run agent"><span aria-hidden="true">&uarr;</span></button>
+</div>
+<div class="session-row">
+<div class="menu-anchor">
+<button id="branch-menu-btn" class="toolbar-btn compact-btn" type="button" aria-haspopup="menu" aria-expanded="false">No repo</button>
+<div id="branch-menu" class="floating-menu hidden" role="menu" aria-label="Branch menu">
+<div id="branch-menu-list" class="menu-list"></div>
+<div class="menu-sep"></div>
+<form id="branch-create-form" class="inline-form">
+<input id="branch-create-input" placeholder="new-branch" />
+<button type="submit">Create</button>
+</form>
+</div>
+</div>
+<div class="menu-anchor">
+<button id="permissions-menu-btn" class="toolbar-btn compact-btn" type="button" aria-haspopup="menu" aria-expanded="false">Default permissions</button>
+<div id="permissions-menu" class="floating-menu hidden" role="menu" aria-label="Permissions menu">
+<button type="button" data-permission="default">Default permissions</button>
+<button type="button" data-permission="workspace-write">Workspace write</button>
+<button type="button" data-permission="read-only">Read only</button>
+<button type="button" data-permission="full-access">Full access</button>
+<div class="menu-sep"></div>
+<div class="perm-toggle-row">
+<span>Network access</span>
+<button id="network-toggle-btn" class="slide-toggle" type="button" aria-pressed="false" aria-label="Toggle network access"><span class="slide-knob"></span></button>
+</div>
+<div class="perm-toggle-row">
+<span>Web access</span>
+<button id="web-toggle-btn" class="slide-toggle" type="button" aria-pressed="false" aria-label="Toggle web access"><span class="slide-knob"></span></button>
+</div>
+</div>
+</div>
 </div>
 </form>
 </section>
@@ -128,8 +131,8 @@ title: ""
 </div>
 <pre id="terminal-output" class="terminal-output"></pre>
 <form id="terminal-form" class="terminal-form">
-<input id="terminal-input" autocomplete="off" placeholder="Type a command and press Enter" />
-<button type="submit">Run</button>
+<span class="terminal-prompt">$</span>
+<input id="terminal-input" autocomplete="off" spellcheck="false" placeholder="command" />
 </form>
 </section>
 </div>
@@ -222,4 +225,4 @@ title: ""
 </div>
 </div>
 
-<script src="/static/app.js"></script>
+<script src="/static/app.js?v=20260216-critical2"></script>

@@ -3,6 +3,27 @@
 
   var seenConversationStorageKey = "artificer.conversationSeenUpdated";
 
+  function storageGet(key, fallback) {
+    try {
+      var value = window.localStorage.getItem(key);
+      if (value === null || typeof value === "undefined") {
+        return fallback;
+      }
+      return value;
+    } catch (_err) {
+      return fallback;
+    }
+  }
+
+  function storageSet(key, value) {
+    try {
+      window.localStorage.setItem(key, value);
+      return true;
+    } catch (_err) {
+      return false;
+    }
+  }
+
   function parseSeenUpdatedValue(value) {
     var parsed = Number(value);
     if (!isFinite(parsed) || parsed < 0) {
@@ -59,10 +80,12 @@
     expandedWorkspaceIds: {},
     busy: false,
     pickingWorkspace: false,
-    sortMode: window.localStorage.getItem("artificer.workspaceSort") || "updated",
-    permissionMode: window.localStorage.getItem("artificer.permissionMode") || "default",
-    networkAccess: window.localStorage.getItem("artificer.networkAccess") === "1",
-    webAccess: window.localStorage.getItem("artificer.webAccess") === "1",
+    sortMode: storageGet("artificer.workspaceSort", "updated"),
+    organizeMode: storageGet("artificer.organizeMode", "project"),
+    organizeShow: storageGet("artificer.organizeShow", "all"),
+    permissionMode: storageGet("artificer.permissionMode", "default"),
+    networkAccess: storageGet("artificer.networkAccess", "0") === "1",
+    webAccess: storageGet("artificer.webAccess", "0") === "1",
     gitByWorkspace: {},
     branchesByWorkspace: {},
     diffOpen: false,
@@ -81,12 +104,27 @@
     seenConversationBootstrapPending: !initialSeenConversationState.hasSaved,
     openWorkspaceMenuWorkspaceId: "",
     workspaceTreeMarkupCache: "",
+    pendingArchiveKey: "",
+    pendingArchiveReadyAt: 0,
     pendingAttachments: [],
     composerDragDepth: 0,
-    awaitingDirPicker: false
+    awaitingDirPicker: false,
+    modelLoadError: "",
+    lastErrorText: "",
+    lastErrorAt: 0
   };
 
   var saveDraftTimer = null;
+
+  if (state.sortMode !== "updated" && state.sortMode !== "created") {
+    state.sortMode = "updated";
+  }
+  if (state.organizeMode !== "project" && state.organizeMode !== "chrono") {
+    state.organizeMode = "project";
+  }
+  if (state.organizeShow !== "all" && state.organizeShow !== "relevant") {
+    state.organizeShow = "all";
+  }
 
   var el = {
     shell: document.getElementById("forge-shell"),
@@ -108,9 +146,7 @@
     branchMenuList: document.getElementById("branch-menu-list"),
     branchCreateForm: document.getElementById("branch-create-form"),
     branchCreateInput: document.getElementById("branch-create-input"),
-    createRepoBtn: document.getElementById("create-repo-btn"),
-    commitMenuBtn: document.getElementById("commit-menu-btn"),
-    commitMenu: document.getElementById("commit-menu"),
+    commitBtn: document.getElementById("commit-btn"),
     runActionBtn: document.getElementById("run-action-btn"),
     permissionsMenuBtn: document.getElementById("permissions-menu-btn"),
     permissionsMenu: document.getElementById("permissions-menu"),
@@ -184,7 +220,6 @@
     "organize-menu": el.organizeMenu,
     "open-menu": el.openMenu,
     "branch-menu": el.branchMenu,
-    "commit-menu": el.commitMenu,
     "permissions-menu": el.permissionsMenu,
     "model-picker-menu": el.modelPickerMenu,
     "models-box": el.modelsBox
@@ -582,7 +617,7 @@
 
   function requestJson(url, options) {
     var controller = new AbortController();
-    var timeoutMs = 960000;
+    var timeoutMs = 30000;
     var timeoutId = setTimeout(function () {
       controller.abort();
     }, timeoutMs);
@@ -673,6 +708,14 @@
 
   function conversationUpdatedNumber(conversation) {
     var parsed = Number(conversation && conversation.updated || 0);
+    if (!isFinite(parsed) || parsed < 0) {
+      return 0;
+    }
+    return Math.floor(parsed);
+  }
+
+  function conversationCreatedNumber(conversation) {
+    var parsed = Number(conversation && conversation.created || 0);
     if (!isFinite(parsed) || parsed < 0) {
       return 0;
     }
@@ -863,18 +906,25 @@
     return max;
   }
 
+  function workspaceCreatedScore(workspace) {
+    if (!workspace || !workspace.conversations || workspace.conversations.length === 0) {
+      return 0;
+    }
+    var max = 0;
+    for (var i = 0; i < workspace.conversations.length; i += 1) {
+      var score = conversationCreatedNumber(workspace.conversations[i]);
+      if (score > max) {
+        max = score;
+      }
+    }
+    return max;
+  }
+
   function getSortedWorkspaces() {
     var list = state.workspaces.slice();
-    if (state.sortMode === "name") {
-      list.sort(function (a, b) {
-        return String(a.name || "").localeCompare(String(b.name || ""));
-      });
-      return list;
-    }
-
     list.sort(function (a, b) {
-      var au = workspaceUpdatedScore(a);
-      var bu = workspaceUpdatedScore(b);
+      var au = state.sortMode === "created" ? workspaceCreatedScore(a) : workspaceUpdatedScore(a);
+      var bu = state.sortMode === "created" ? workspaceCreatedScore(b) : workspaceUpdatedScore(b);
       if (au !== bu) {
         return bu - au;
       }
@@ -886,10 +936,10 @@
   function getSortedConversations(workspace) {
     var list = workspace && workspace.conversations ? workspace.conversations.slice() : [];
     list.sort(function (a, b) {
-      var aUpdated = Number(a.updated || 0);
-      var bUpdated = Number(b.updated || 0);
-      if (aUpdated !== bUpdated) {
-        return bUpdated - aUpdated;
+      var aScore = state.sortMode === "created" ? conversationCreatedNumber(a) : conversationUpdatedNumber(a);
+      var bScore = state.sortMode === "created" ? conversationCreatedNumber(b) : conversationUpdatedNumber(b);
+      if (aScore !== bScore) {
+        return bScore - aScore;
       }
       return String(a.title || "").localeCompare(String(b.title || ""));
     });
@@ -939,6 +989,84 @@
     return false;
   }
 
+  function isConversationRelevant(workspaceId, conversation) {
+    if (!conversation) {
+      return false;
+    }
+    if (workspaceId === state.activeWorkspaceId && conversation.id === state.activeConversationId) {
+      return true;
+    }
+    if (queueNumber(conversation.queue_pending) > 0) {
+      return true;
+    }
+    if (String(conversation.queue_running || "0") === "1") {
+      return true;
+    }
+    if (String(conversation.queue_done || "0") === "1" && isConversationUnread(workspaceId, conversation)) {
+      return true;
+    }
+    return false;
+  }
+
+  function formatAgeShort(epochSeconds) {
+    var ts = Number(epochSeconds || 0);
+    if (!isFinite(ts) || ts <= 0) {
+      return "now";
+    }
+    var now = Math.floor(Date.now() / 1000);
+    var diff = now - Math.floor(ts);
+    if (diff < 0) {
+      diff = 0;
+    }
+    if (diff < 60) {
+      return "now";
+    }
+    if (diff < 3600) {
+      return Math.floor(diff / 60) + "m";
+    }
+    if (diff < 86400) {
+      return Math.floor(diff / 3600) + "h";
+    }
+    if (diff < 86400 * 30) {
+      return Math.floor(diff / 86400) + "d";
+    }
+    if (diff < 86400 * 365) {
+      return Math.floor(diff / (86400 * 30)) + "mo";
+    }
+    return Math.floor(diff / (86400 * 365)) + "y";
+  }
+
+  function conversationMetaMarkup(workspaceId, conversation) {
+    var gitState = state.gitByWorkspace[workspaceId] || {};
+    var add = Number(gitState.added || 0);
+    var del = Number(gitState.deleted || 0);
+    var age = formatAgeShort(conversationCreatedNumber(conversation));
+    return (
+      "<span class='conversation-meta' title='Workspace diff since last commit'>" +
+        "<span class='meta-add' title='Lines added since last commit'>+" + escHtml(String(add)) + "</span> " +
+        "<span class='meta-del' title='Lines removed since last commit'>-" + escHtml(String(del)) + "</span> " +
+        "<span class='meta-age' title='Conversation age'>" + escHtml(age) + "</span>" +
+      "</span>"
+    );
+  }
+
+  function archiveControlMarkup(workspaceId, conversationId) {
+    var key = conversationReadKey(workspaceId, conversationId);
+    var isArmed = key === state.pendingArchiveKey;
+    if (!isArmed) {
+      return (
+        "<button type='button' class='thread-archive-btn' data-action='arm-archive-conversation' data-workspace-id='" + escHtml(workspaceId) + "' data-conversation-id='" + escHtml(conversationId) + "'>Archive</button>"
+      );
+    }
+
+    var ready = Date.now() >= Number(state.pendingArchiveReadyAt || 0);
+    var disabledAttr = ready ? "" : " disabled";
+    var readyClass = ready ? " ready" : "";
+    return (
+      "<button type='button' class='thread-confirm-btn" + readyClass + "' data-action='confirm-archive-conversation' data-workspace-id='" + escHtml(workspaceId) + "' data-conversation-id='" + escHtml(conversationId) + "'" + disabledAttr + ">Confirm</button>"
+    );
+  }
+
   function activeModelName() {
     if (state.activeConversation && state.activeConversation.model) {
       return state.activeConversation.model;
@@ -952,13 +1080,13 @@
       return state.models[0];
     }
 
-    return "qwen2.5-coder:7b";
+    return "";
   }
 
   function normalizePermissionToggles() {
     if (!state.networkAccess && state.webAccess) {
       state.webAccess = false;
-      window.localStorage.setItem("artificer.webAccess", "0");
+      storageSet("artificer.webAccess", "0");
     }
   }
 
@@ -1012,7 +1140,6 @@
     el.modelStatusBtn.setAttribute("aria-expanded", "false");
     el.openMenuBtn.setAttribute("aria-expanded", "false");
     el.branchMenuBtn.setAttribute("aria-expanded", "false");
-    el.commitMenuBtn.setAttribute("aria-expanded", "false");
     el.permissionsMenuBtn.setAttribute("aria-expanded", "false");
     el.modelPickerBtn.setAttribute("aria-expanded", "false");
     el.organizeBtn.setAttribute("aria-expanded", "false");
@@ -1229,82 +1356,167 @@
 
     var html = "";
     var workspaces = getSortedWorkspaces();
+    var showRelevantOnly = state.organizeShow === "relevant";
 
-    for (var i = 0; i < workspaces.length; i += 1) {
-      var workspace = workspaces[i];
-      var workspaceId = workspace.id;
-      var isActiveWorkspace = workspaceId === state.activeWorkspaceId;
-      var isExpanded = !!state.expandedWorkspaceIds[workspaceId] || isActiveWorkspace;
-      state.expandedWorkspaceIds[workspaceId] = isExpanded;
-
-      var groupClass = "workspace-group";
-      if (isActiveWorkspace) {
-        groupClass += " active";
-      }
-      if (isExpanded) {
-        groupClass += " expanded";
-      }
-
-      html += "<section class='" + groupClass + "' data-workspace-id='" + escHtml(workspaceId) + "'>";
-      html += "<div class='workspace-row' data-action='select-workspace' data-workspace-id='" + escHtml(workspaceId) + "'>";
-      html += folderIcon;
-      html += "<button type='button' class='workspace-caret' data-action='toggle-workspace' data-workspace-id='" + escHtml(workspaceId) + "' aria-label='Toggle'>&rsaquo;</button>";
-      html += "<div class='workspace-meta' title='" + escAttr(workspace.path || "") + "'>" + escHtml(workspace.name || "Workspace") + "</div>";
-      html += "<button type='button' class='workspace-new' data-action='new-conversation' data-workspace-id='" + escHtml(workspaceId) + "' aria-label='New conversation'>+</button>";
-      html += "<button type='button' class='workspace-menu-trigger' data-action='toggle-workspace-menu' data-workspace-id='" + escHtml(workspaceId) + "' aria-label='Workspace menu' aria-expanded='" + (state.openWorkspaceMenuWorkspaceId === workspaceId ? "true" : "false") + "'>&hellip;</button>";
-      var workspaceMenuClass = "workspace-actions-pop floating-menu";
-      if (state.openWorkspaceMenuWorkspaceId !== workspaceId) {
-        workspaceMenuClass += " hidden";
-      }
-      html += "<div class='" + workspaceMenuClass + "' data-workspace-menu='" + escHtml(workspaceId) + "' role='menu' aria-label='Workspace actions'>";
-      html += "<button type='button' data-action='rename-workspace' data-workspace-id='" + escHtml(workspaceId) + "'>Rename</button>";
-      html += "<button type='button' data-action='remove-workspace' data-workspace-id='" + escHtml(workspaceId) + "'>Remove</button>";
-      html += "</div>";
-      html += "</div>";
-
-      html += "<div class='conversation-shell'>";
-
-      if (hasDraftForWorkspace(workspace)) {
-        var draftActive = state.activeDraftWorkspaceId === workspaceId ? " active" : "";
-        html += "<button type='button' class='conversation-draft" + draftActive + "' data-action='select-draft' data-workspace-id='" + escHtml(workspaceId) + "'>Draft (unsent)</button>";
+    if (state.organizeMode === "chrono") {
+      var entries = [];
+      for (var ci = 0; ci < workspaces.length; ci += 1) {
+        var chronoWorkspace = workspaces[ci];
+        var chronoWorkspaceId = chronoWorkspace.id;
+        var chronoConversations = getSortedConversations(chronoWorkspace);
+        for (var cj = 0; cj < chronoConversations.length; cj += 1) {
+          var chronoConversation = chronoConversations[cj];
+          if (showRelevantOnly && !isConversationRelevant(chronoWorkspaceId, chronoConversation)) {
+            continue;
+          }
+          entries.push({
+            workspaceId: chronoWorkspaceId,
+            workspaceName: chronoWorkspace.name || "Workspace",
+            conversation: chronoConversation
+          });
+        }
       }
 
-      var conversations = getSortedConversations(workspace);
-      for (var j = 0; j < conversations.length; j += 1) {
-        var conversation = conversations[j];
-        var activeConv = conversation.id === state.activeConversationId ? " active" : "";
-        var queuePending = queueNumber(conversation.queue_pending);
-        var queueRunning = String(conversation.queue_running || "0") === "1";
-        var queueDone = String(conversation.queue_done || "0") === "1";
-        if (
-          state.busy &&
-          state.runningWorkspaceId === workspaceId &&
-          state.runningConversationId === conversation.id
-        ) {
-          queueRunning = true;
+      entries.sort(function (a, b) {
+        var as = state.sortMode === "created" ? conversationCreatedNumber(a.conversation) : conversationUpdatedNumber(a.conversation);
+        var bs = state.sortMode === "created" ? conversationCreatedNumber(b.conversation) : conversationUpdatedNumber(b.conversation);
+        if (as !== bs) {
+          return bs - as;
+        }
+        return String(a.conversation.title || "").localeCompare(String(b.conversation.title || ""));
+      });
+
+      if (!entries.length) {
+        html = "<p class='empty-state'>No threads match current organize filters.</p>";
+      } else {
+        for (var ei = 0; ei < entries.length; ei += 1) {
+          var entry = entries[ei];
+          var chronoActive = entry.conversation.id === state.activeConversationId ? " active" : "";
+          var chronoPending = queueNumber(entry.conversation.queue_pending);
+          var chronoRunning = String(entry.conversation.queue_running || "0") === "1";
+          var chronoDone = String(entry.conversation.queue_done || "0") === "1";
+          if (
+            state.busy &&
+            state.runningWorkspaceId === entry.workspaceId &&
+            state.runningConversationId === entry.conversation.id
+          ) {
+            chronoRunning = true;
+          }
+
+          var chronoIndicatorClass = "thread-indicator";
+          if (chronoRunning) {
+            chronoIndicatorClass += " running";
+          } else if (chronoDone && isConversationUnread(entry.workspaceId, entry.conversation)) {
+            chronoIndicatorClass += " done";
+          } else if (chronoPending > 0) {
+            chronoIndicatorClass += " pending";
+          }
+
+          html += "<button type='button' class='conversation-row chrono-row" + chronoActive + "' data-action='select-conversation' data-workspace-id='" + escHtml(entry.workspaceId) + "' data-conversation-id='" + escHtml(entry.conversation.id) + "'>";
+          html += "<span class='" + chronoIndicatorClass + "' aria-hidden='true'></span>";
+          html += "<span class='conversation-title' title='" + escAttr(entry.workspaceName) + "'>" + escHtml(entry.conversation.title || "Conversation") + "</span>";
+          if (chronoPending > 0) {
+            html += "<span class='queue-count'>" + chronoPending + "</span>";
+          }
+          html += conversationMetaMarkup(entry.workspaceId, entry.conversation);
+          html += archiveControlMarkup(entry.workspaceId, entry.conversation.id);
+          html += "</button>";
+        }
+      }
+    } else {
+      for (var i = 0; i < workspaces.length; i += 1) {
+        var workspace = workspaces[i];
+        var workspaceId = workspace.id;
+        var isActiveWorkspace = workspaceId === state.activeWorkspaceId;
+        var isExpanded = !!state.expandedWorkspaceIds[workspaceId] || isActiveWorkspace;
+        state.expandedWorkspaceIds[workspaceId] = isExpanded;
+
+        var filteredConversations = [];
+        var conversations = getSortedConversations(workspace);
+        for (var fc = 0; fc < conversations.length; fc += 1) {
+          if (!showRelevantOnly || isConversationRelevant(workspaceId, conversations[fc])) {
+            filteredConversations.push(conversations[fc]);
+          }
         }
 
-        var indicatorClass = "thread-indicator";
-        var unreadDone = queueDone && isConversationUnread(workspaceId, conversation);
-        if (queueRunning) {
-          indicatorClass += " running";
-        } else if (unreadDone) {
-          indicatorClass += " done";
-        } else if (queuePending > 0) {
-          indicatorClass += " pending";
+        if (showRelevantOnly && !filteredConversations.length && !hasDraftForWorkspace(workspace) && !isActiveWorkspace) {
+          continue;
         }
 
-        html += "<button type='button' class='conversation-row" + activeConv + "' data-action='select-conversation' data-workspace-id='" + escHtml(workspaceId) + "' data-conversation-id='" + escHtml(conversation.id) + "'>";
-        html += "<span class='" + indicatorClass + "' aria-hidden='true'></span>";
-        html += "<span class='conversation-title'>" + escHtml(conversation.title || "Conversation") + "</span>";
-        if (queuePending > 0) {
-          html += "<span class='queue-count'>" + queuePending + "</span>";
+        var groupClass = "workspace-group";
+        if (isActiveWorkspace) {
+          groupClass += " active";
         }
-        html += "</button>";
+        if (isExpanded) {
+          groupClass += " expanded";
+        }
+
+        html += "<section class='" + groupClass + "' data-workspace-id='" + escHtml(workspaceId) + "'>";
+        html += "<div class='workspace-row' data-action='select-workspace' data-workspace-id='" + escHtml(workspaceId) + "'>";
+        html += folderIcon;
+        html += "<button type='button' class='workspace-caret' data-action='toggle-workspace' data-workspace-id='" + escHtml(workspaceId) + "' aria-label='Toggle'>&rsaquo;</button>";
+        html += "<div class='workspace-meta' title='" + escAttr(workspace.path || "") + "'>" + escHtml(workspace.name || "Workspace") + "</div>";
+        html += "<button type='button' class='workspace-new' data-action='new-conversation' data-workspace-id='" + escHtml(workspaceId) + "' aria-label='New conversation'>+</button>";
+        html += "<button type='button' class='workspace-menu-trigger' data-action='toggle-workspace-menu' data-workspace-id='" + escHtml(workspaceId) + "' aria-label='Workspace menu' aria-expanded='" + (state.openWorkspaceMenuWorkspaceId === workspaceId ? "true" : "false") + "'>&hellip;</button>";
+        var workspaceMenuClass = "workspace-actions-pop floating-menu";
+        if (state.openWorkspaceMenuWorkspaceId !== workspaceId) {
+          workspaceMenuClass += " hidden";
+        }
+        html += "<div class='" + workspaceMenuClass + "' data-workspace-menu='" + escHtml(workspaceId) + "' role='menu' aria-label='Workspace actions'>";
+        html += "<button type='button' data-action='rename-workspace' data-workspace-id='" + escHtml(workspaceId) + "'>Rename</button>";
+        html += "<button type='button' data-action='remove-workspace' data-workspace-id='" + escHtml(workspaceId) + "'>Remove</button>";
+        html += "</div>";
+        html += "</div>";
+
+        html += "<div class='conversation-shell'>";
+
+        if (hasDraftForWorkspace(workspace)) {
+          var draftActive = state.activeDraftWorkspaceId === workspaceId ? " active" : "";
+          html += "<button type='button' class='conversation-draft" + draftActive + "' data-action='select-draft' data-workspace-id='" + escHtml(workspaceId) + "'>Draft (unsent)</button>";
+        }
+
+        for (var j = 0; j < filteredConversations.length; j += 1) {
+          var conversation = filteredConversations[j];
+          var activeConv = conversation.id === state.activeConversationId ? " active" : "";
+          var queuePending = queueNumber(conversation.queue_pending);
+          var queueRunning = String(conversation.queue_running || "0") === "1";
+          var queueDone = String(conversation.queue_done || "0") === "1";
+          if (
+            state.busy &&
+            state.runningWorkspaceId === workspaceId &&
+            state.runningConversationId === conversation.id
+          ) {
+            queueRunning = true;
+          }
+
+          var indicatorClass = "thread-indicator";
+          var unreadDone = queueDone && isConversationUnread(workspaceId, conversation);
+          if (queueRunning) {
+            indicatorClass += " running";
+          } else if (unreadDone) {
+            indicatorClass += " done";
+          } else if (queuePending > 0) {
+            indicatorClass += " pending";
+          }
+
+          html += "<button type='button' class='conversation-row" + activeConv + "' data-action='select-conversation' data-workspace-id='" + escHtml(workspaceId) + "' data-conversation-id='" + escHtml(conversation.id) + "'>";
+          html += "<span class='" + indicatorClass + "' aria-hidden='true'></span>";
+          html += "<span class='conversation-title'>" + escHtml(conversation.title || "Conversation") + "</span>";
+          if (queuePending > 0) {
+            html += "<span class='queue-count'>" + queuePending + "</span>";
+          }
+          html += conversationMetaMarkup(workspaceId, conversation);
+          html += archiveControlMarkup(workspaceId, conversation.id);
+          html += "</button>";
+        }
+
+        html += "</div>";
+        html += "</section>";
       }
+    }
 
-      html += "</div>";
-      html += "</section>";
+    if (!trim(html)) {
+      html = "<p class='empty-state'>No threads match current organize filters.</p>";
     }
 
     if (state.workspaceTreeMarkupCache === html) {
@@ -1316,6 +1528,10 @@
   }
 
   function renderModelStatus() {
+    if (state.modelLoadError) {
+      el.modelStatusBtn.textContent = "Models unavailable";
+      return;
+    }
     if (!state.models.length) {
       el.modelStatusBtn.textContent = "No models";
       return;
@@ -1350,6 +1566,10 @@
 
   function renderModelPickerButton() {
     var model = activeModelName();
+    if (!model) {
+      el.modelPickerBtn.innerHTML = "<span class='model-primary'>Select model</span>";
+      return;
+    }
     var parts = parseModelDisplay(model);
     el.modelPickerBtn.innerHTML = "<span class='model-primary'>" + escHtml(parts.primary) + "</span><span class='model-meta'>" + escHtml(parts.meta || parts.raw) + "</span>";
   }
@@ -1410,10 +1630,18 @@
     var workspaceId = state.activeWorkspaceId;
     var gitState = activeGitState();
 
-    if (!workspaceId || !gitState.is_repo) {
-      el.branchMenuList.innerHTML = "<p class='empty-state'>No git repository in this workspace.</p>";
+    if (!workspaceId) {
+      el.branchMenuList.innerHTML = "<p class='empty-state'>Select a workspace first.</p>";
+      el.branchCreateForm.classList.add("hidden");
       return;
     }
+
+    if (!gitState.is_repo) {
+      el.branchMenuList.innerHTML = "<button type='button' data-branch-action='create-repo'>Create repo</button>";
+      el.branchCreateForm.classList.add("hidden");
+      return;
+    }
+    el.branchCreateForm.classList.remove("hidden");
 
     var branches = state.branchesByWorkspace[workspaceId] || [];
     if (!branches.length) {
@@ -1497,30 +1725,27 @@
     var gitState = activeGitState();
 
     if (!state.activeWorkspaceId) {
-      el.branchMenuBtn.textContent = "Branch";
-      el.commitMenuBtn.disabled = true;
-      el.createRepoBtn.style.display = "none";
+      el.branchMenuBtn.textContent = "No repo";
+      el.commitBtn.disabled = true;
       el.changesBtn.innerHTML = gitDeltaMarkup(0, 0);
       return;
     }
 
     if (!gitState.is_repo) {
       el.branchMenuBtn.textContent = "No repo";
-      el.commitMenuBtn.disabled = true;
-      el.createRepoBtn.style.display = "";
+      el.commitBtn.disabled = true;
       el.changesBtn.innerHTML = gitDeltaMarkup(0, 0);
       return;
     }
 
     el.branchMenuBtn.textContent = gitState.branch || "Branch";
-    el.commitMenuBtn.disabled = false;
-    el.createRepoBtn.style.display = "none";
+    el.commitBtn.disabled = false;
     el.changesBtn.innerHTML = gitDeltaMarkup(gitState.added, gitState.deleted);
   }
 
   function renderChatHeader() {
     if (!state.activeWorkspaceId) {
-      el.chatTitle.textContent = "Conversation";
+      el.chatTitle.textContent = "No conversation";
       return;
     }
 
@@ -1534,7 +1759,33 @@
       return;
     }
 
-    el.chatTitle.textContent = "Conversation";
+    el.chatTitle.textContent = "No conversation";
+  }
+
+  function basename(pathText) {
+    var clean = trim(String(pathText || "")).replace(/[\\/]+$/, "");
+    if (!clean) {
+      return "";
+    }
+    var idx = Math.max(clean.lastIndexOf("/"), clean.lastIndexOf("\\"));
+    if (idx < 0) {
+      return clean;
+    }
+    return clean.slice(idx + 1);
+  }
+
+  function renderOpenButton() {
+    var ws = activeWorkspace();
+    if (!ws) {
+      el.openMenuBtn.textContent = "Open";
+      el.openMenuBtn.title = "";
+      el.openMenuBtn.disabled = true;
+      return;
+    }
+    var folder = basename(ws.path || ws.name || "") || "folder";
+    el.openMenuBtn.textContent = "Open " + folder;
+    el.openMenuBtn.title = ws.path || "";
+    el.openMenuBtn.disabled = false;
   }
 
   function renderChat() {
@@ -1639,9 +1890,11 @@
     ensureSelection();
     renderWorkspaceTree();
     renderModelStatus();
+    renderOrganizeMenu();
     renderModelPickerButton();
     renderRunButton();
     renderQueueControls();
+    renderOpenButton();
     renderModelListInto(el.modelsBoxList, activeModelName());
     renderModelListInto(el.modelPickerList, activeModelName());
     renderPermissionsButton();
@@ -1654,23 +1907,59 @@
   }
 
   function saveSortMode(mode) {
-    state.sortMode = mode;
-    window.localStorage.setItem("artificer.workspaceSort", mode);
+    var next = mode === "created" ? "created" : "updated";
+    state.sortMode = next;
+    storageSet("artificer.workspaceSort", next);
+  }
+
+  function saveOrganizeMode(mode) {
+    var next = mode === "chrono" ? "chrono" : "project";
+    state.organizeMode = next;
+    storageSet("artificer.organizeMode", next);
+  }
+
+  function saveOrganizeShow(mode) {
+    var next = mode === "relevant" ? "relevant" : "all";
+    state.organizeShow = next;
+    storageSet("artificer.organizeShow", next);
+  }
+
+  function renderOrganizeMenu() {
+    if (!el.organizeMenu) {
+      return;
+    }
+    var modeButtons = el.organizeMenu.querySelectorAll("button[data-organize-mode]");
+    for (var i = 0; i < modeButtons.length; i += 1) {
+      var modeValue = modeButtons[i].getAttribute("data-organize-mode");
+      modeButtons[i].classList.toggle("active", modeValue === state.organizeMode);
+    }
+
+    var sortButtons = el.organizeMenu.querySelectorAll("button[data-organize-sort]");
+    for (var j = 0; j < sortButtons.length; j += 1) {
+      var sortValue = sortButtons[j].getAttribute("data-organize-sort");
+      sortButtons[j].classList.toggle("active", sortValue === state.sortMode);
+    }
+
+    var showButtons = el.organizeMenu.querySelectorAll("button[data-organize-show]");
+    for (var k = 0; k < showButtons.length; k += 1) {
+      var showValue = showButtons[k].getAttribute("data-organize-show");
+      showButtons[k].classList.toggle("active", showValue === state.organizeShow);
+    }
   }
 
   function savePermissionMode(mode) {
     state.permissionMode = mode;
-    window.localStorage.setItem("artificer.permissionMode", mode);
+    storageSet("artificer.permissionMode", mode);
   }
 
   function saveNetworkAccess(enabled) {
     state.networkAccess = !!enabled;
-    window.localStorage.setItem("artificer.networkAccess", state.networkAccess ? "1" : "0");
+    storageSet("artificer.networkAccess", state.networkAccess ? "1" : "0");
   }
 
   function saveWebAccess(enabled) {
     state.webAccess = !!enabled;
-    window.localStorage.setItem("artificer.webAccess", state.webAccess ? "1" : "0");
+    storageSet("artificer.webAccess", state.webAccess ? "1" : "0");
   }
 
   function appendTerminalLine(line) {
@@ -1876,6 +2165,20 @@
         }
         for (var j = 0; j < state.workspaces[i].conversations.length; j += 1) {
           var conv = state.workspaces[i].conversations[j];
+          if (typeof conv.created === "undefined" || conv.created === null || conv.created === "") {
+            if (typeof conv.updated !== "undefined" && conv.updated !== null && conv.updated !== "") {
+              conv.created = String(conv.updated);
+            } else {
+              conv.created = "0";
+            }
+          } else {
+            conv.created = String(conv.created);
+          }
+          if (typeof conv.updated === "undefined" || conv.updated === null || conv.updated === "") {
+            conv.updated = conv.created;
+          } else {
+            conv.updated = String(conv.updated);
+          }
           if (typeof conv.queue_pending === "undefined") {
             conv.queue_pending = "0";
           }
@@ -1904,6 +2207,7 @@
       if (!response.success) {
         throw new Error(response.error || "Failed to load models");
       }
+      state.modelLoadError = "";
       state.models = response.models || [];
     });
   }
@@ -2011,6 +2315,41 @@
       });
   }
 
+  function warmGitStatusForWorkspaces(workspaceIds) {
+    var ids = Array.isArray(workspaceIds) ? workspaceIds.slice() : [];
+    var chain = Promise.resolve();
+    for (var i = 0; i < ids.length; i += 1) {
+      (function (workspaceId) {
+        if (!workspaceId || state.gitByWorkspace[workspaceId]) {
+          return;
+        }
+        chain = chain.then(function () {
+          return apiGet("git_status", { workspace_id: workspaceId })
+            .then(function (response) {
+              if (!response.success) {
+                return;
+              }
+              state.gitByWorkspace[workspaceId] = {
+                is_repo: !!response.is_repo,
+                branch: response.branch || "",
+                ahead: Number(response.ahead || 0),
+                behind: Number(response.behind || 0),
+                added: Number(response.added || 0),
+                deleted: Number(response.deleted || 0),
+                changes: Number(response.changes || 0),
+                staged_changes: Number(response.staged_changes || 0),
+                unstaged_changes: Number(response.unstaged_changes || 0)
+              };
+            })
+            .catch(function () {
+              return null;
+            });
+        });
+      })(ids[i]);
+    }
+    return chain;
+  }
+
   function refreshBranches() {
     if (!state.activeWorkspaceId) {
       return Promise.resolve();
@@ -2045,8 +2384,16 @@
   }
 
   function refreshAll() {
-    return loadModels()
-      .then(loadState)
+    var modelsPromise = loadModels().catch(function (err) {
+      state.models = [];
+      state.modelLoadError = err && err.message ? err.message : "Model check failed";
+      return null;
+    });
+
+    return loadState()
+      .then(function () {
+        renderUi();
+      })
       .then(loadConversation)
       .then(function () {
         return refreshGitStatus().catch(function () {
@@ -2065,6 +2412,9 @@
           });
         }
         return null;
+      })
+      .then(function () {
+        return modelsPromise;
       })
       .then(function () {
         renderUi();
@@ -2119,10 +2469,77 @@
         state.activeConversation = null;
         state.activeDraftWorkspaceId = "";
       }
+      if (state.openWorkspaceMenuWorkspaceId === workspaceId) {
+        state.openWorkspaceMenuWorkspaceId = "";
+      }
       delete state.expandedWorkspaceIds[workspaceId];
       delete state.gitByWorkspace[workspaceId];
       delete state.branchesByWorkspace[workspaceId];
       return refreshAll();
+    });
+  }
+
+  function archiveConversation(workspaceId, conversationId) {
+    if (!workspaceId || !conversationId) {
+      return Promise.resolve();
+    }
+
+    return apiPost("archive_conversation", {
+      workspace_id: workspaceId,
+      conversation_id: conversationId
+    }).then(function (response) {
+      if (!response.success) {
+        throw new Error(response.error || "Could not archive conversation");
+      }
+
+      if (state.activeWorkspaceId === workspaceId && state.activeConversationId === conversationId) {
+        state.activeConversationId = "";
+        state.activeConversation = null;
+      }
+
+      state.pendingArchiveKey = "";
+      state.pendingArchiveReadyAt = 0;
+      return loadState()
+        .then(function () {
+          if (state.activeWorkspaceId) {
+            return loadConversation().catch(function () {
+              state.activeConversation = null;
+              return null;
+            });
+          }
+          return null;
+        })
+        .then(function () {
+          renderUi();
+        });
+    });
+  }
+
+  function renameWorkspace(workspaceId, newName) {
+    var name = trim(newName);
+    if (!workspaceId) {
+      return Promise.reject(new Error("Workspace is required."));
+    }
+    if (!name) {
+      return Promise.reject(new Error("Workspace name is required."));
+    }
+
+    return apiPost("rename_workspace", {
+      workspace_id: workspaceId,
+      name: name
+    }).then(function (response) {
+      if (!response.success) {
+        throw new Error(response.error || "Could not rename workspace");
+      }
+
+      var workspace = getWorkspaceById(workspaceId);
+      if (workspace) {
+        workspace.name = name;
+      }
+      if (state.openWorkspaceMenuWorkspaceId === workspaceId) {
+        state.openWorkspaceMenuWorkspaceId = "";
+      }
+      renderUi();
     });
   }
 
@@ -2150,6 +2567,7 @@
     state.activeWorkspaceId = workspaceId;
     state.activeConversation = null;
     state.activeDraftWorkspaceId = "";
+    state.openWorkspaceMenuWorkspaceId = "";
     state.expandedWorkspaceIds[workspaceId] = true;
 
     var conversations = getSortedConversations(workspace);
@@ -2207,6 +2625,7 @@
     state.activeWorkspaceId = workspaceId;
     state.activeConversationId = conversationId;
     state.activeDraftWorkspaceId = "";
+    state.openWorkspaceMenuWorkspaceId = "";
     state.expandedWorkspaceIds[workspaceId] = true;
 
     return loadConversation()
@@ -2240,6 +2659,7 @@
     state.activeConversationId = "";
     state.activeConversation = null;
     state.activeDraftWorkspaceId = workspaceId;
+    state.openWorkspaceMenuWorkspaceId = "";
     state.expandedWorkspaceIds[workspaceId] = true;
 
     return loadDraft(workspaceId)
@@ -2265,6 +2685,7 @@
     state.activeConversationId = "";
     state.activeConversation = null;
     state.activeDraftWorkspaceId = workspaceId;
+    state.openWorkspaceMenuWorkspaceId = "";
     state.expandedWorkspaceIds[workspaceId] = true;
 
     return loadDraft(workspaceId)
@@ -2634,7 +3055,13 @@
 
     state.queueWorkerActive = true;
     drainQueuedRuns()
-      .catch(showError)
+      .catch(function (err) {
+        if (state.activeConversationId) {
+          showError(err);
+        } else if (window && window.console && typeof window.console.error === "function") {
+          window.console.error(err);
+        }
+      })
       .finally(function () {
         state.queueWorkerActive = false;
         renderUi();
@@ -2750,13 +3177,19 @@
 
   function showError(error) {
     var message = error && error.message ? error.message : String(error);
+    var now = Date.now();
+    if (state.lastErrorText === message && now - state.lastErrorAt < 1800) {
+      return;
+    }
+    state.lastErrorText = message;
+    state.lastErrorAt = now;
     if (state.activeConversationId) {
       pushRunEvent(state.activeConversationId, {
         status: "error",
         error: message,
         finished_at: new Date().toISOString()
       });
-    } else {
+    } else if (state.terminalOpen) {
       appendTerminalLine("Error: " + message);
     }
     renderUi();
@@ -2818,10 +3251,40 @@
       return;
     }
 
+    if (action === "toggle-workspace-menu") {
+      event.preventDefault();
+      event.stopPropagation();
+      if (state.openWorkspaceMenuWorkspaceId === workspaceId) {
+        state.openWorkspaceMenuWorkspaceId = "";
+      } else {
+        state.openWorkspaceMenuWorkspaceId = workspaceId || "";
+      }
+      renderUi();
+      return;
+    }
+
     if (action === "new-conversation") {
       if (workspaceId) {
+        state.pendingArchiveKey = "";
+        state.pendingArchiveReadyAt = 0;
         createDraftForWorkspace(workspaceId).catch(showError);
       }
+      return;
+    }
+
+    if (action === "rename-workspace") {
+      if (!workspaceId) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      var workspaceToRename = getWorkspaceById(workspaceId);
+      var currentName = workspaceToRename && workspaceToRename.name ? workspaceToRename.name : "";
+      var nextName = window.prompt("Rename workspace", currentName);
+      if (nextName === null) {
+        return;
+      }
+      renameWorkspace(workspaceId, nextName).catch(showError);
       return;
     }
 
@@ -2829,6 +3292,8 @@
       if (!workspaceId) {
         return;
       }
+      event.preventDefault();
+      event.stopPropagation();
       var workspace = getWorkspaceById(workspaceId);
       var label = workspace && workspace.name ? workspace.name : "this workspace";
       if (!window.confirm("Remove " + label + " and its Artificer conversation history?")) {
@@ -2838,8 +3303,39 @@
       return;
     }
 
+    if (action === "arm-archive-conversation") {
+      if (!workspaceId || !conversationId) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      state.pendingArchiveKey = conversationReadKey(workspaceId, conversationId);
+      state.pendingArchiveReadyAt = Date.now() + 250;
+      renderUi();
+      window.setTimeout(function () {
+        renderUi();
+      }, 270);
+      return;
+    }
+
+    if (action === "confirm-archive-conversation") {
+      if (!workspaceId || !conversationId) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      var key = conversationReadKey(workspaceId, conversationId);
+      if (key !== state.pendingArchiveKey || Date.now() < Number(state.pendingArchiveReadyAt || 0)) {
+        return;
+      }
+      archiveConversation(workspaceId, conversationId).catch(showError);
+      return;
+    }
+
     if (action === "select-workspace") {
       if (workspaceId) {
+        state.pendingArchiveKey = "";
+        state.pendingArchiveReadyAt = 0;
         selectWorkspace(workspaceId).catch(showError);
       }
       return;
@@ -2847,6 +3343,8 @@
 
     if (action === "select-conversation") {
       if (workspaceId && conversationId) {
+        state.pendingArchiveKey = "";
+        state.pendingArchiveReadyAt = 0;
         selectConversation(workspaceId, conversationId).catch(showError);
       }
       return;
@@ -2854,6 +3352,8 @@
 
     if (action === "select-draft") {
       if (workspaceId) {
+        state.pendingArchiveKey = "";
+        state.pendingArchiveReadyAt = 0;
         selectDraft(workspaceId).catch(showError);
       }
     }
@@ -3167,6 +3667,11 @@
       state.terminalCwd = ws ? ws.path : "";
     }
     renderUi();
+    setTimeout(function () {
+      if (el.terminalInput) {
+        el.terminalInput.focus();
+      }
+    }, 0);
   }
 
   function closeTerminal() {
@@ -3203,11 +3708,20 @@
     });
 
     el.organizeMenu.addEventListener("click", function (event) {
-      var button = event.target.closest("button[data-organize-sort]");
+      var button = event.target.closest("button[data-organize-mode], button[data-organize-sort], button[data-organize-show]");
       if (!button) {
         return;
       }
-      saveSortMode(button.getAttribute("data-organize-sort"));
+      var modeValue = button.getAttribute("data-organize-mode");
+      var sortValue = button.getAttribute("data-organize-sort");
+      var showValue = button.getAttribute("data-organize-show");
+      if (modeValue) {
+        saveOrganizeMode(modeValue);
+      } else if (sortValue) {
+        saveSortMode(sortValue);
+      } else if (showValue) {
+        saveOrganizeShow(showValue);
+      }
       closeAllMenus();
       renderUi();
     });
@@ -3217,7 +3731,12 @@
     });
 
     el.refreshModelsBtn.addEventListener("click", function () {
-      loadModels().then(renderUi).catch(showError);
+      loadModels().then(renderUi).catch(function (err) {
+        state.models = [];
+        state.modelLoadError = err && err.message ? err.message : "Model check failed";
+        renderUi();
+        showError(err);
+      });
     });
 
     el.modelsBoxList.addEventListener("click", function (event) {
@@ -3331,9 +3850,6 @@
     });
 
     el.branchMenuBtn.addEventListener("click", function () {
-      if (!state.activeWorkspaceId) {
-        return;
-      }
       refreshBranches().finally(function () {
         renderBranchMenu();
         toggleMenu("branch-menu", el.branchMenuBtn);
@@ -3341,6 +3857,34 @@
     });
 
     el.branchMenuList.addEventListener("click", function (event) {
+      var actionItem = event.target.closest("button[data-branch-action]");
+      if (actionItem) {
+        var branchAction = actionItem.getAttribute("data-branch-action");
+        if (branchAction === "create-repo") {
+          if (!state.activeWorkspaceId) {
+            showError(new Error("Select a workspace first."));
+            return;
+          }
+          apiPost("git_init", { workspace_id: state.activeWorkspaceId })
+            .then(function (response) {
+              if (!response.success) {
+                throw new Error(response.error || "git init failed");
+              }
+              appendTerminalLine(response.message || "Git repository created.");
+              return refreshGitStatus();
+            })
+            .then(function () {
+              return refreshBranches();
+            })
+            .then(function () {
+              closeAllMenus();
+              renderUi();
+            })
+            .catch(showError);
+        }
+        return;
+      }
+
       var item = event.target.closest("button[data-branch-select]");
       if (!item || !state.activeWorkspaceId) {
         return;
@@ -3400,77 +3944,17 @@
         .catch(showError);
     });
 
-    el.createRepoBtn.addEventListener("click", function () {
+    el.commitBtn.addEventListener("click", function () {
+      var gitState = activeGitState();
       if (!state.activeWorkspaceId) {
         showError(new Error("Select a workspace first."));
         return;
       }
-      apiPost("git_init", { workspace_id: state.activeWorkspaceId })
-        .then(function (response) {
-          if (!response.success) {
-            throw new Error(response.error || "git init failed");
-          }
-          appendTerminalLine(response.message || "Git repository created.");
-          return refreshGitStatus();
-        })
-        .then(function () {
-          return refreshBranches();
-        })
-        .then(function () {
-          if (state.diffOpen) {
-            return refreshDiff();
-          }
-          return null;
-        })
-        .then(function () {
-          renderUi();
-        })
-        .catch(showError);
-    });
-
-    el.commitMenuBtn.addEventListener("click", function () {
-      toggleMenu("commit-menu", el.commitMenuBtn);
-    });
-
-    el.commitMenu.addEventListener("click", function (event) {
-      var item = event.target.closest("button[data-commit-action]");
-      if (!item) {
+      if (!gitState.is_repo) {
+        showError(new Error("Initialize a git repository first."));
         return;
       }
-      var action = item.getAttribute("data-commit-action");
-      closeAllMenus();
-
-      if (action === "commit-modal") {
-        openCommitModal("commit");
-        return;
-      }
-      if (action === "commit-push") {
-        openCommitModal("commit-push");
-        return;
-      }
-      if (action === "push") {
-        if (!state.activeWorkspaceId) {
-          showError(new Error("Select a workspace first."));
-          return;
-        }
-        apiPost("git_push", { workspace_id: state.activeWorkspaceId })
-          .then(function (response) {
-            if (!response.success) {
-              throw new Error(response.error || "Push failed");
-            }
-            appendTerminalLine(response.output || "Push complete.");
-            return refreshGitStatus();
-          })
-          .then(function () {
-            return refreshBranches().catch(function () {
-              return null;
-            });
-          })
-          .then(function () {
-            renderUi();
-          })
-          .catch(showError);
-      }
+      openCommitModal("commit");
     });
 
     el.commitModalClose.addEventListener("click", function () {
@@ -3600,6 +4084,14 @@
       renderTerminal();
     });
 
+    if (el.terminalPanel) {
+      el.terminalPanel.addEventListener("click", function () {
+        if (el.terminalInput) {
+          el.terminalInput.focus();
+        }
+      });
+    }
+
     el.terminalForm.addEventListener("submit", function (event) {
       event.preventDefault();
       var commandText = el.terminalInput.value;
@@ -3691,7 +4183,12 @@
     });
 
     document.addEventListener("click", function (event) {
-      if (event.target.closest(".menu-anchor") || event.target.closest(".models-box") || event.target.closest("#organize-menu")) {
+      if (
+        event.target.closest(".menu-anchor") ||
+        event.target.closest(".models-box") ||
+        event.target.closest("#organize-menu") ||
+        event.target.closest("#organize-btn")
+      ) {
         return;
       }
       closeAllMenus();
@@ -3732,6 +4229,7 @@
   });
 
   bindEvents();
+  renderUi();
   refreshAll().then(function () {
     kickQueueWorker();
   }).catch(showError);

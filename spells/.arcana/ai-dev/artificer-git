@@ -302,10 +302,10 @@ run_command() {
   require_workspace "$ws"
   [ -n "$cmd" ] || die "command is required"
 
-  (
-    cd "$ws" &&
-      /bin/sh -lc "$cmd"
-  )
+  WORKSPACE_PATH=$ws COMMAND_TEXT=$cmd /bin/sh -lc '
+    command cd "$WORKSPACE_PATH" || exit 1
+    eval "$COMMAND_TEXT"
+  '
 }
 
 cmd=${1:-}
