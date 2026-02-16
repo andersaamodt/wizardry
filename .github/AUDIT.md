@@ -530,7 +530,7 @@ Files are categorized by type for appropriate audit criteria:
 
 **Templates**
 - Apply: Checklist sections 1, 15, 17
-- Location: `.templates/*/`
+- Location: `.web/*/`
 - Expected: Security, appropriate theming
 
 **Configuration**

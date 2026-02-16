@@ -116,7 +116,7 @@ while true; do
 
   # Check if we should show Manage LLMs menu
   show_manage_llms=0
-  if [ "$ollama_installed" -eq 1 ] && [ "$anythingllm_installed" -eq 1 ]; then
+  if [ "$ollama_installed" -eq 1 ]; then
     show_manage_llms=1
   fi
 
@@ -147,6 +147,9 @@ while true; do
       set_tabby_model_cmd="$script_dir/select-tabby-llm"
       set -- "$@" "$set_tabby_model_label%$(wrap_cmd "$set_tabby_model_label" "$set_tabby_model_cmd")"
     fi
+    deploy_artificer_label="Deploy Artificer (daimon)"
+    deploy_artificer_cmd="$script_dir/deploy-artificer daimon"
+    set -- "$@" "$deploy_artificer_label%$(wrap_cmd "$deploy_artificer_label" "$deploy_artificer_cmd")"
     set -- "$@" "---"
   fi
 

@@ -209,6 +209,11 @@ http {
         server_name $domain *.onion;
         
         root $SITE_DIR/build;
+
+        # Agent runs can take minutes; keep FastCGI timeouts high globally.
+        fastcgi_connect_timeout 30s;
+        fastcgi_send_timeout 900s;
+        fastcgi_read_timeout 900s;
         
         # Disable directory listing
         autoindex off;
@@ -294,6 +299,11 @@ http {
             if (!-f \$cgi_path) {
                 return 404;
             }
+
+            # Allow long-running coding agent requests.
+            fastcgi_connect_timeout 30s;
+            fastcgi_send_timeout 900s;
+            fastcgi_read_timeout 900s;
             
             # FastCGI configuration
             fastcgi_pass unix:$SITE_DIR/nginx/fcgiwrap.sock;

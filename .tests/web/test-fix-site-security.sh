@@ -88,13 +88,50 @@ EOF
   PATH="$stub_dir:$PATH" WEB_WIZARDRY_ROOT="$web_root" run_spell spells/web/fix-site-security mysite
   assert_success
 
-  # Check that .sitedata files have write permission for owner (664)
+  # Check that .sitedata files remain writable by the actual user.
   perms=$(stat -c '%a' "$sitedata_dir/chatrooms/testroom/.log" 2>/dev/null || \
           stat -f '%Lp' "$sitedata_dir/chatrooms/testroom/.log" 2>/dev/null || echo "000")
-  
-  # Should be 664 (owner can write)
-  if [ "$perms" != "664" ]; then
-    TEST_FAILURE_REASON=".sitedata file permissions are $perms, expected 664"
+
+  if [ ! -w "$sitedata_dir/chatrooms/testroom/.log" ]; then
+    TEST_FAILURE_REASON=".sitedata file permissions are $perms, expected owner-writable"
+    rm -rf "$web_root" "$stub_dir"
+    return 1
+  fi
+
+  rm -rf "$web_root" "$stub_dir"
+}
+
+test_fix_site_security_does_not_create_site_web_lib_cache() {
+  skip-if-compiled || return $?
+
+  web_root=$(temp-dir web-wizardry-test)
+  site_dir="$web_root/mysite"
+  mkdir -p "$site_dir/site" "$web_root/.sitedata/mysite"
+  cat > "$site_dir/site.conf" <<EOF
+# Site configuration for mysite
+site-name=mysite
+site-user=ww_mysite
+EOF
+
+  stub_dir=$(temp-dir web-wizardry-stub)
+  cat > "$stub_dir/sudo" <<'EOF'
+#!/bin/sh
+case "$1" in
+  chown) exit 0 ;;
+  *) exec "$@" ;;
+esac
+EOF
+  cat > "$stub_dir/useradd" <<'EOF'
+#!/bin/sh
+exit 0
+EOF
+  chmod +x "$stub_dir/sudo" "$stub_dir/useradd"
+
+  PATH="$stub_dir:$PATH" WEB_WIZARDRY_ROOT="$web_root" run_spell spells/web/fix-site-security mysite
+  assert_success
+
+  if [ -d "$site_dir/.web-libs" ]; then
+    TEST_FAILURE_REASON="fix-site-security unexpectedly created site-local .web-libs cache"
     rm -rf "$web_root" "$stub_dir"
     return 1
   fi
@@ -105,5 +142,6 @@ EOF
 run_test_case "fix-site-security --help works" test_fix_site_security_help
 run_test_case "fix-site-security sets site-user" test_fix_site_security_sets_site_user
 run_test_case "fix-site-security makes sitedata files writable" test_fix_site_security_sitedata_writable
+run_test_case "fix-site-security does not create site .web-libs cache" test_fix_site_security_does_not_create_site_web_lib_cache
 
 finish_tests

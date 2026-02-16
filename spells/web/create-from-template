@@ -11,7 +11,9 @@ Creates a new site by copying a template.
 
 Templates:
   demo    - Interactive demo site with 15+ CGI examples
+  unix-settings - Local system authority dashboard (read-only)
   blog    - Personal blog with content-addressable posts
+  artificer - Local coding assistant UI + agent backend
 
 Example: create-from-template mysite demo
 USAGE
@@ -43,7 +45,7 @@ if [ -d "$SITE_DIR" ]; then
 fi
 
 # Get WIZARDRY_DIR to find templates
-template_dir="$WIZARDRY_DIR/.templates/$template"
+template_dir="$WIZARDRY_DIR/.web/$template"
 
 if [ ! -d "$template_dir" ]; then
   die "create-from-template: template '$template' not found"

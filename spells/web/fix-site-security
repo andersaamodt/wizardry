@@ -234,16 +234,6 @@ fi
 run_priv mkdir -p "$SITES_DIR/.sitedata" "$SITE_DATA_DIR"
 run_priv mkdir -p "$SITE_DIR/build" "$SITE_DIR/nginx"
 
-# Create .web-libs directory if it doesn't exist and make it writable by site user
-if [ ! -d "$SITE_DIR/.web-libs" ]; then
-  mkdir -p "$SITE_DIR/.web-libs" 2>/dev/null || run_priv mkdir -p "$SITE_DIR/.web-libs"
-fi
-# Set ownership on .web-libs if it exists
-if [ -d "$SITE_DIR/.web-libs" ]; then
-  run_priv chown -R "$site_user":"$site_group" "$SITE_DIR/.web-libs"
-  run_priv chmod -R 755 "$SITE_DIR/.web-libs"
-fi
-
 # Set ownership based on who needs to write vs who needs to read
 # - build/: actual user builds, site user (nginx) reads → actual user owns
 # - nginx/: actual user (configure-nginx) writes, site user reads → actual user owns

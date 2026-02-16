@@ -1,0 +1,3738 @@
+(function () {
+  "use strict";
+
+  var seenConversationStorageKey = "artificer.conversationSeenUpdated";
+
+  function parseSeenUpdatedValue(value) {
+    var parsed = Number(value);
+    if (!isFinite(parsed) || parsed < 0) {
+      return 0;
+    }
+    return Math.floor(parsed);
+  }
+
+  function loadSeenConversationState() {
+    var raw = "";
+    try {
+      raw = window.localStorage.getItem(seenConversationStorageKey) || "";
+    } catch (_err) {
+      return { map: {}, hasSaved: false };
+    }
+
+    if (!raw) {
+      return { map: {}, hasSaved: false };
+    }
+
+    var parsed = null;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (_err2) {
+      return { map: {}, hasSaved: true };
+    }
+
+    if (!parsed || typeof parsed !== "object") {
+      return { map: {}, hasSaved: true };
+    }
+
+    var clean = {};
+    var keys = Object.keys(parsed);
+    for (var i = 0; i < keys.length; i += 1) {
+      var key = keys[i];
+      clean[key] = parseSeenUpdatedValue(parsed[key]);
+    }
+
+    return { map: clean, hasSaved: true };
+  }
+
+  var initialSeenConversationState = loadSeenConversationState();
+
+  var state = {
+    models: [],
+    workspaces: [],
+    activeWorkspaceId: "",
+    activeConversationId: "",
+    activeConversation: null,
+    activeDraftWorkspaceId: "",
+    draftTextByWorkspace: {},
+    draftModelByWorkspace: {},
+    runEventsByConversation: {},
+    expandedWorkspaceIds: {},
+    busy: false,
+    pickingWorkspace: false,
+    sortMode: window.localStorage.getItem("artificer.workspaceSort") || "updated",
+    permissionMode: window.localStorage.getItem("artificer.permissionMode") || "default",
+    networkAccess: window.localStorage.getItem("artificer.networkAccess") === "1",
+    webAccess: window.localStorage.getItem("artificer.webAccess") === "1",
+    gitByWorkspace: {},
+    branchesByWorkspace: {},
+    diffOpen: false,
+    diffText: "",
+    terminalOpen: false,
+    terminalBusy: false,
+    terminalLines: [],
+    terminalCwd: "",
+    openMenus: {},
+    commitModalDefault: "commit",
+    queueWorkerActive: false,
+    runningWorkspaceId: "",
+    runningConversationId: "",
+    lastQueuedItemIdByConversation: {},
+    seenConversationUpdatedByKey: initialSeenConversationState.map,
+    seenConversationBootstrapPending: !initialSeenConversationState.hasSaved,
+    openWorkspaceMenuWorkspaceId: "",
+    workspaceTreeMarkupCache: "",
+    pendingAttachments: [],
+    composerDragDepth: 0,
+    awaitingDirPicker: false
+  };
+
+  var saveDraftTimer = null;
+
+  var el = {
+    shell: document.getElementById("forge-shell"),
+    workspacePanel: document.getElementById("workspace-dropzone"),
+    workspaceTree: document.getElementById("workspace-tree"),
+    addWorkspaceBtn: document.getElementById("add-workspace-btn"),
+    organizeBtn: document.getElementById("organize-btn"),
+    organizeMenu: document.getElementById("organize-menu"),
+    modelStatusBtn: document.getElementById("model-status-btn"),
+    settingsBtn: document.getElementById("settings-btn"),
+    modelsBox: document.getElementById("models-box"),
+    modelsBoxList: document.getElementById("models-box-list"),
+    refreshModelsBtn: document.getElementById("refresh-models-btn"),
+
+    openMenuBtn: document.getElementById("open-menu-btn"),
+    openMenu: document.getElementById("open-menu"),
+    branchMenuBtn: document.getElementById("branch-menu-btn"),
+    branchMenu: document.getElementById("branch-menu"),
+    branchMenuList: document.getElementById("branch-menu-list"),
+    branchCreateForm: document.getElementById("branch-create-form"),
+    branchCreateInput: document.getElementById("branch-create-input"),
+    createRepoBtn: document.getElementById("create-repo-btn"),
+    commitMenuBtn: document.getElementById("commit-menu-btn"),
+    commitMenu: document.getElementById("commit-menu"),
+    runActionBtn: document.getElementById("run-action-btn"),
+    permissionsMenuBtn: document.getElementById("permissions-menu-btn"),
+    permissionsMenu: document.getElementById("permissions-menu"),
+    networkToggleBtn: document.getElementById("network-toggle-btn"),
+    webToggleBtn: document.getElementById("web-toggle-btn"),
+    terminalToggleBtn: document.getElementById("terminal-toggle-btn"),
+    changesBtn: document.getElementById("changes-btn"),
+
+    chatTitle: document.getElementById("chat-title"),
+    chatLog: document.getElementById("chat-log"),
+    runForm: document.getElementById("run-form"),
+    runPrompt: document.getElementById("run-prompt"),
+    attachBtn: document.getElementById("attach-btn"),
+    attachmentPicker: document.getElementById("attachment-picker"),
+    attachmentStrip: document.getElementById("attachment-strip"),
+    modelPickerBtn: document.getElementById("model-picker-btn"),
+    modelPickerMenu: document.getElementById("model-picker-menu"),
+    modelPickerList: document.getElementById("model-picker-list"),
+    queueControls: document.getElementById("queue-controls"),
+    queueSteerBtn: document.getElementById("queue-steer-btn"),
+    queueCancelBtn: document.getElementById("queue-cancel-btn"),
+    runBtn: document.getElementById("run-btn"),
+
+    diffPanel: document.getElementById("diff-panel"),
+    diffSummary: document.getElementById("diff-summary"),
+    diffView: document.getElementById("diff-view"),
+    diffCloseBtn: document.getElementById("diff-close-btn"),
+
+    terminalPanel: document.getElementById("terminal-panel"),
+    terminalCwd: document.getElementById("terminal-cwd"),
+    terminalOutput: document.getElementById("terminal-output"),
+    terminalForm: document.getElementById("terminal-form"),
+    terminalInput: document.getElementById("terminal-input"),
+    terminalClearBtn: document.getElementById("terminal-clear-btn"),
+    terminalCloseBtn: document.getElementById("terminal-close-btn"),
+
+    workspaceModal: document.getElementById("workspace-modal"),
+    workspaceModalClose: document.getElementById("workspace-modal-close"),
+    workspaceCancelBtn: document.getElementById("workspace-cancel-btn"),
+    workspaceForm: document.getElementById("workspace-form"),
+    workspacePath: document.getElementById("workspace-path"),
+    workspaceName: document.getElementById("workspace-name"),
+    workspaceBrowseBtn: document.getElementById("workspace-browse-btn"),
+    workspaceDirPicker: document.getElementById("workspace-dir-picker"),
+
+    commitModal: document.getElementById("commit-modal"),
+    commitModalClose: document.getElementById("commit-modal-close"),
+    commitBranchLabel: document.getElementById("commit-branch-label"),
+    commitChangesLabel: document.getElementById("commit-changes-label"),
+    commitIncludeUnstaged: document.getElementById("commit-include-unstaged"),
+    commitMessage: document.getElementById("commit-message"),
+    commitNextStep: document.getElementById("commit-next-step"),
+    commitContinueBtn: document.getElementById("commit-continue-btn"),
+
+    runActionModal: document.getElementById("run-action-modal"),
+    runActionClose: document.getElementById("run-action-close"),
+    runActionForm: document.getElementById("run-action-form"),
+    runActionCommand: document.getElementById("run-action-command"),
+
+    settingsModal: document.getElementById("settings-modal"),
+    settingsCloseBtn: document.getElementById("settings-close-btn"),
+    ghAuthStatus: document.getElementById("gh-auth-status"),
+    sshKeyStatus: document.getElementById("ssh-key-status"),
+    sshEmail: document.getElementById("ssh-email"),
+    refreshAuthBtn: document.getElementById("refresh-auth-btn"),
+    generateSshBtn: document.getElementById("generate-ssh-btn"),
+    sshPubOutput: document.getElementById("ssh-pub-output")
+  };
+
+  var menuById = {
+    "organize-menu": el.organizeMenu,
+    "open-menu": el.openMenu,
+    "branch-menu": el.branchMenu,
+    "commit-menu": el.commitMenu,
+    "permissions-menu": el.permissionsMenu,
+    "model-picker-menu": el.modelPickerMenu,
+    "models-box": el.modelsBox
+  };
+
+  function escHtml(text) {
+    return String(text || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
+  function escAttr(text) {
+    return escHtml(text)
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function trim(text) {
+    return String(text || "").replace(/^\s+|\s+$/g, "");
+  }
+
+  function dirname(pathText) {
+    var clean = trim(pathText).replace(/[\\/]+$/, "");
+    if (!clean) {
+      return "";
+    }
+    var slash = Math.max(clean.lastIndexOf("/"), clean.lastIndexOf("\\"));
+    if (slash <= 0) {
+      return clean;
+    }
+    return clean.slice(0, slash);
+  }
+
+  function stripTrailingSlashes(pathText) {
+    return String(pathText || "").replace(/[\\/]+$/, "");
+  }
+
+  function normalizeSlashes(pathText) {
+    return String(pathText || "").replace(/\\/g, "/");
+  }
+
+  function denormalizeSlashes(pathText, preferBackslashes) {
+    if (preferBackslashes) {
+      return String(pathText || "").replace(/\//g, "\\");
+    }
+    return pathText;
+  }
+
+  function deriveDropRootFromFile(file) {
+    if (!file || !file.path) {
+      return "";
+    }
+
+    var filePath = String(file.path);
+    var relative = String(file.webkitRelativePath || "");
+    if (!relative) {
+      return dirname(filePath);
+    }
+
+    var normalizedFile = normalizeSlashes(filePath);
+    var normalizedRelative = normalizeSlashes(relative).replace(/^\/+/, "");
+    if (!normalizedRelative) {
+      return dirname(filePath);
+    }
+
+    if (normalizedFile.slice(-normalizedRelative.length) !== normalizedRelative) {
+      return dirname(filePath);
+    }
+
+    var base = normalizedFile.slice(0, normalizedFile.length - normalizedRelative.length);
+    var topFolder = normalizedRelative.split("/")[0] || "";
+    var root = stripTrailingSlashes(base + topFolder);
+    if (!root) {
+      return dirname(filePath);
+    }
+
+    return denormalizeSlashes(root, filePath.indexOf("\\") >= 0);
+  }
+
+  function parseDownloadUrlPath(downloadUrlText) {
+    var text = trim(downloadUrlText);
+    if (!text) {
+      return "";
+    }
+    var parts = text.split(":");
+    if (parts.length < 3) {
+      return "";
+    }
+    var candidate = parts.slice(2).join(":");
+    return decodeFileUri(candidate);
+  }
+
+  function decodeFileUri(uri) {
+    var text = trim(uri);
+    if (!/^file:\/\//i.test(text)) {
+      return "";
+    }
+    try {
+      var parsed = new URL(text);
+      var path = decodeURIComponent(parsed.pathname || "");
+      if (/^\/[A-Za-z]:/.test(path)) {
+        path = path.slice(1);
+      }
+      return path;
+    } catch (_err) {
+      return "";
+    }
+  }
+
+  function looksLikeAbsolutePath(text) {
+    return /^\/.+/.test(text) || /^[A-Za-z]:[\\/].+/.test(text);
+  }
+
+  function extractPathFromText(text) {
+    var lines = String(text || "").split(/\r?\n/);
+    for (var i = 0; i < lines.length; i += 1) {
+      var line = trim(lines[i]);
+      if (!line) {
+        continue;
+      }
+      var fromUri = decodeFileUri(line);
+      if (fromUri) {
+        return fromUri;
+      }
+      if (looksLikeAbsolutePath(line)) {
+        return line;
+      }
+    }
+    return "";
+  }
+
+  function extractPathFromDataTransfer(dataTransfer) {
+    if (!dataTransfer) {
+      return "";
+    }
+
+    var uriList = dataTransfer.getData("text/uri-list");
+    if (uriList) {
+      var uriPath = extractPathFromText(uriList);
+      if (uriPath) {
+        return uriPath;
+      }
+    }
+
+    var plain = dataTransfer.getData("text/plain");
+    if (plain) {
+      var plainPath = extractPathFromText(plain);
+      if (plainPath) {
+        return plainPath;
+      }
+    }
+
+    var mozUrl = dataTransfer.getData("text/x-moz-url");
+    if (mozUrl) {
+      var mozPath = extractPathFromText(mozUrl);
+      if (mozPath) {
+        return mozPath;
+      }
+    }
+
+    var downloadUrl = dataTransfer.getData("DownloadURL");
+    if (downloadUrl) {
+      var downloadPath = parseDownloadUrlPath(downloadUrl);
+      if (downloadPath) {
+        return downloadPath;
+      }
+    }
+
+    if (dataTransfer.files && dataTransfer.files.length > 0) {
+      for (var i = 0; i < dataTransfer.files.length; i += 1) {
+        var file = dataTransfer.files[i];
+        if (!file) {
+          continue;
+        }
+        var dropRoot = deriveDropRootFromFile(file);
+        if (dropRoot) {
+          return dropRoot;
+        }
+        if (file.path) {
+          return file.path;
+        }
+      }
+    }
+
+    if (dataTransfer.items && dataTransfer.items.length > 0) {
+      for (var j = 0; j < dataTransfer.items.length; j += 1) {
+        var item = dataTransfer.items[j];
+        if (!item) {
+          continue;
+        }
+        if (item.webkitGetAsEntry) {
+          var entry = item.webkitGetAsEntry();
+          if (entry && entry.fullPath && looksLikeAbsolutePath(entry.fullPath)) {
+            return entry.fullPath;
+          }
+        }
+        var maybeFile = item.getAsFile && item.getAsFile();
+        if (maybeFile) {
+          var maybeRoot = deriveDropRootFromFile(maybeFile);
+          if (maybeRoot) {
+            return maybeRoot;
+          }
+        }
+        if (maybeFile && maybeFile.path) {
+          return maybeFile.path;
+        }
+      }
+    }
+
+    return "";
+  }
+
+  function humanizeModelToken(token) {
+    var clean = String(token || "").replace(/[-_]+/g, " ").trim();
+    if (!clean) {
+      return "Model";
+    }
+
+    return clean
+      .split(/\s+/)
+      .map(function (word) {
+        if (!word) {
+          return "";
+        }
+        return word.charAt(0).toUpperCase() + word.slice(1);
+      })
+      .join(" ");
+  }
+
+  function parseModelDisplay(modelName) {
+    var raw = trim(modelName);
+    if (!raw) {
+      return { primary: "Model", meta: "", raw: "" };
+    }
+
+    var primaryPart = raw;
+    var secondary = "";
+    var colon = raw.indexOf(":");
+    if (colon >= 0) {
+      primaryPart = raw.slice(0, colon);
+      secondary = trim(raw.slice(colon + 1));
+    }
+
+    var versionPart = "";
+    var versionMatch = primaryPart.match(/^(.*?)(\d+(?:\.\d+)*)$/);
+    var baseName = primaryPart;
+    if (versionMatch && versionMatch[1]) {
+      baseName = versionMatch[1];
+      versionPart = "v" + versionMatch[2];
+    }
+
+    var primary = humanizeModelToken(baseName || primaryPart);
+    var metaParts = [];
+    if (versionPart) {
+      metaParts.push(versionPart);
+    }
+    if (secondary) {
+      metaParts.push(secondary);
+    }
+
+    return {
+      primary: primary,
+      meta: metaParts.join(" / "),
+      raw: raw
+    };
+  }
+
+  var textAttachmentExtensions = {
+    txt: 1,
+    md: 1,
+    markdown: 1,
+    rst: 1,
+    log: 1,
+    csv: 1,
+    tsv: 1,
+    json: 1,
+    xml: 1,
+    yaml: 1,
+    yml: 1,
+    toml: 1,
+    ini: 1,
+    conf: 1,
+    cfg: 1,
+    env: 1,
+    sh: 1,
+    bash: 1,
+    zsh: 1,
+    fish: 1,
+    py: 1,
+    js: 1,
+    jsx: 1,
+    ts: 1,
+    tsx: 1,
+    c: 1,
+    h: 1,
+    cpp: 1,
+    cc: 1,
+    cxx: 1,
+    hpp: 1,
+    java: 1,
+    go: 1,
+    rs: 1,
+    php: 1,
+    rb: 1,
+    swift: 1,
+    kt: 1,
+    scala: 1,
+    sql: 1,
+    html: 1,
+    htm: 1,
+    css: 1,
+    scss: 1,
+    less: 1,
+    vue: 1,
+    svelte: 1,
+    gradle: 1,
+    dockerfile: 1,
+    makefile: 1
+  };
+
+  var attachmentAcceptValue = [
+    "image/*",
+    "text/*",
+    "application/pdf",
+    ".md,.markdown,.txt,.rst,.log,.csv,.tsv",
+    ".json,.yaml,.yml,.toml,.ini,.conf,.cfg,.env",
+    ".sh,.bash,.zsh,.fish",
+    ".js,.jsx,.ts,.tsx,.py,.go,.rs,.java,.kt,.swift,.rb,.php,.c,.h,.cpp,.hpp,.cc,.cxx",
+    ".html,.htm,.css,.scss,.less,.sql,.xml,.vue,.svelte,.dockerfile,.makefile,.gradle"
+  ].join(",");
+
+  function fileExtension(fileName) {
+    var name = String(fileName || "");
+    var dot = name.lastIndexOf(".");
+    if (dot < 0 || dot >= name.length - 1) {
+      return "";
+    }
+    return name.slice(dot + 1).toLowerCase();
+  }
+
+  function attachmentKindForFile(file) {
+    var mime = String((file && file.type) || "").toLowerCase();
+    var ext = fileExtension(file && file.name);
+
+    if (/^image\/(png|jpeg|jpg|gif|webp|bmp|tiff|x-icon|svg\+xml)$/.test(mime)) {
+      return "image";
+    }
+
+    if (/^text\//.test(mime)) {
+      return "text";
+    }
+
+    if (/^application\/(json|xml|yaml|x-yaml|toml|javascript|x-javascript|typescript|x-typescript|x-sh|x-shellscript)$/.test(mime)) {
+      return "text";
+    }
+
+    if (mime === "application/pdf") {
+      return "document";
+    }
+
+    if (textAttachmentExtensions[ext]) {
+      return "text";
+    }
+
+    if (ext === "pdf") {
+      return "document";
+    }
+
+    return "";
+  }
+
+  function formatBytes(bytes) {
+    var value = Number(bytes || 0);
+    if (!isFinite(value) || value <= 0) {
+      return "0 B";
+    }
+    if (value < 1024) {
+      return String(Math.round(value)) + " B";
+    }
+    var kb = value / 1024;
+    if (kb < 1024) {
+      return String(Math.round(kb)) + " KB";
+    }
+    var mb = kb / 1024;
+    if (mb < 1024) {
+      return mb.toFixed(1) + " MB";
+    }
+    return (mb / 1024).toFixed(1) + " GB";
+  }
+
+  function newClientAttachmentId() {
+    return "att-" + Date.now() + "-" + String(Math.floor(Math.random() * 999999));
+  }
+
+  function requestJson(url, options) {
+    var controller = new AbortController();
+    var timeoutMs = 960000;
+    var timeoutId = setTimeout(function () {
+      controller.abort();
+    }, timeoutMs);
+
+    return fetch(url, {
+      method: options.method,
+      headers: options.headers,
+      body: options.body,
+      signal: controller.signal
+    })
+      .then(function (response) {
+        return response.text().then(function (raw) {
+          if (!response.ok) {
+            throw new Error("Request failed (" + response.status + "): " + raw.slice(0, 220));
+          }
+          try {
+            return JSON.parse(raw);
+          } catch (_err) {
+            throw new Error("Server returned non-JSON response: " + raw.slice(0, 220));
+          }
+        });
+      })
+      .catch(function (err) {
+        if (err && err.name === "AbortError") {
+          throw new Error("Request timed out after " + Math.round(timeoutMs / 1000) + "s.");
+        }
+        throw err;
+      })
+      .finally(function () {
+        clearTimeout(timeoutId);
+      });
+  }
+
+  function apiGet(action, params) {
+    var search = new URLSearchParams(params || {});
+    search.set("action", action);
+    return requestJson("/cgi/artificer-api?" + search.toString(), {
+      method: "GET",
+      headers: { Accept: "application/json" }
+    });
+  }
+
+  function apiPost(action, data) {
+    var body = new URLSearchParams(data || {});
+    body.set("action", action);
+    return requestJson("/cgi/artificer-api", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+        Accept: "application/json"
+      },
+      body: body.toString()
+    });
+  }
+
+  function getWorkspaceById(workspaceId) {
+    for (var i = 0; i < state.workspaces.length; i += 1) {
+      if (state.workspaces[i].id === workspaceId) {
+        return state.workspaces[i];
+      }
+    }
+    return null;
+  }
+
+  function getConversationById(workspace, conversationId) {
+    if (!workspace || !workspace.conversations) {
+      return null;
+    }
+    for (var i = 0; i < workspace.conversations.length; i += 1) {
+      if (workspace.conversations[i].id === conversationId) {
+        return workspace.conversations[i];
+      }
+    }
+    return null;
+  }
+
+  function queueNumber(value) {
+    var parsed = Number(value || 0);
+    if (!isFinite(parsed) || parsed < 0) {
+      return 0;
+    }
+    return Math.floor(parsed);
+  }
+
+  function conversationReadKey(workspaceId, conversationId) {
+    return String(workspaceId || "") + "::" + String(conversationId || "");
+  }
+
+  function conversationUpdatedNumber(conversation) {
+    var parsed = Number(conversation && conversation.updated || 0);
+    if (!isFinite(parsed) || parsed < 0) {
+      return 0;
+    }
+    return Math.floor(parsed);
+  }
+
+  function persistSeenConversationState() {
+    try {
+      window.localStorage.setItem(
+        seenConversationStorageKey,
+        JSON.stringify(state.seenConversationUpdatedByKey || {})
+      );
+    } catch (_err) {
+      return;
+    }
+  }
+
+  function seenUpdatedForConversation(workspaceId, conversationId) {
+    var key = conversationReadKey(workspaceId, conversationId);
+    return parseSeenUpdatedValue(state.seenConversationUpdatedByKey[key]);
+  }
+
+  function markConversationSeen(workspaceId, conversationId, conversation) {
+    if (!workspaceId || !conversationId) {
+      return;
+    }
+
+    var updated = conversationUpdatedNumber(conversation);
+    if (updated <= 0) {
+      var workspace = getWorkspaceById(workspaceId);
+      var fallbackConversation = getConversationById(workspace, conversationId);
+      updated = conversationUpdatedNumber(fallbackConversation);
+    }
+    if (updated <= 0) {
+      updated = Math.floor(Date.now() / 1000);
+    }
+
+    var key = conversationReadKey(workspaceId, conversationId);
+    var previous = parseSeenUpdatedValue(state.seenConversationUpdatedByKey[key]);
+    if (previous >= updated) {
+      return;
+    }
+
+    state.seenConversationUpdatedByKey[key] = updated;
+    persistSeenConversationState();
+  }
+
+  function bootstrapSeenConversationsIfNeeded() {
+    if (!state.seenConversationBootstrapPending) {
+      return;
+    }
+
+    for (var i = 0; i < state.workspaces.length; i += 1) {
+      var workspace = state.workspaces[i];
+      var workspaceId = workspace && workspace.id ? workspace.id : "";
+      if (!workspaceId || !workspace || !Array.isArray(workspace.conversations)) {
+        continue;
+      }
+      for (var j = 0; j < workspace.conversations.length; j += 1) {
+        var conversation = workspace.conversations[j] || {};
+        if (!conversation.id) {
+          continue;
+        }
+        var updated = conversationUpdatedNumber(conversation);
+        if (updated <= 0) {
+          continue;
+        }
+        state.seenConversationUpdatedByKey[conversationReadKey(workspaceId, conversation.id)] = updated;
+      }
+    }
+
+    state.seenConversationBootstrapPending = false;
+    persistSeenConversationState();
+  }
+
+  function pruneSeenConversationState() {
+    var valid = {};
+    for (var i = 0; i < state.workspaces.length; i += 1) {
+      var workspace = state.workspaces[i];
+      if (!workspace || !workspace.id || !Array.isArray(workspace.conversations)) {
+        continue;
+      }
+      for (var j = 0; j < workspace.conversations.length; j += 1) {
+        var conversation = workspace.conversations[j] || {};
+        if (!conversation.id) {
+          continue;
+        }
+        valid[conversationReadKey(workspace.id, conversation.id)] = true;
+      }
+    }
+
+    var changed = false;
+    var existingKeys = Object.keys(state.seenConversationUpdatedByKey || {});
+    for (var k = 0; k < existingKeys.length; k += 1) {
+      var key = existingKeys[k];
+      if (!valid[key]) {
+        delete state.seenConversationUpdatedByKey[key];
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      persistSeenConversationState();
+    }
+  }
+
+  function isConversationUnread(workspaceId, conversation) {
+    if (!workspaceId || !conversation || !conversation.id) {
+      return false;
+    }
+    var updated = conversationUpdatedNumber(conversation);
+    if (updated <= 0) {
+      return false;
+    }
+    return updated > seenUpdatedForConversation(workspaceId, conversation.id);
+  }
+
+  function queueStatsForConversation(workspaceId, conversationId) {
+    var workspace = getWorkspaceById(workspaceId);
+    var conversation = getConversationById(workspace, conversationId);
+    if (!conversation) {
+      return {
+        pending: 0,
+        running: false,
+        done: false,
+        lastStatus: "",
+        firstId: ""
+      };
+    }
+
+    return {
+      pending: queueNumber(conversation.queue_pending),
+      running: String(conversation.queue_running || "0") === "1",
+      done: String(conversation.queue_done || "0") === "1",
+      lastStatus: String(conversation.queue_last_status || ""),
+      firstId: String(conversation.queue_first_id || "")
+    };
+  }
+
+  function setConversationQueueFields(workspaceId, conversationId, patch) {
+    var workspace = getWorkspaceById(workspaceId);
+    var conversation = getConversationById(workspace, conversationId);
+    if (!conversation || !patch) {
+      return;
+    }
+
+    if (typeof patch.pending !== "undefined") {
+      conversation.queue_pending = String(queueNumber(patch.pending));
+    }
+    if (typeof patch.running !== "undefined") {
+      conversation.queue_running = patch.running ? "1" : "0";
+    }
+    if (typeof patch.done !== "undefined") {
+      conversation.queue_done = patch.done ? "1" : "0";
+    }
+    if (typeof patch.lastStatus !== "undefined") {
+      conversation.queue_last_status = String(patch.lastStatus || "");
+    }
+    if (typeof patch.firstId !== "undefined") {
+      conversation.queue_first_id = String(patch.firstId || "");
+    }
+  }
+
+  function activeConversationQueueStats() {
+    if (!state.activeWorkspaceId || !state.activeConversationId) {
+      return {
+        pending: 0,
+        running: false,
+        done: false,
+        lastStatus: "",
+        firstId: ""
+      };
+    }
+    return queueStatsForConversation(state.activeWorkspaceId, state.activeConversationId);
+  }
+
+  function workspaceUpdatedScore(workspace) {
+    if (!workspace || !workspace.conversations || workspace.conversations.length === 0) {
+      return 0;
+    }
+    var max = 0;
+    for (var i = 0; i < workspace.conversations.length; i += 1) {
+      var score = Number(workspace.conversations[i].updated || 0);
+      if (score > max) {
+        max = score;
+      }
+    }
+    return max;
+  }
+
+  function getSortedWorkspaces() {
+    var list = state.workspaces.slice();
+    if (state.sortMode === "name") {
+      list.sort(function (a, b) {
+        return String(a.name || "").localeCompare(String(b.name || ""));
+      });
+      return list;
+    }
+
+    list.sort(function (a, b) {
+      var au = workspaceUpdatedScore(a);
+      var bu = workspaceUpdatedScore(b);
+      if (au !== bu) {
+        return bu - au;
+      }
+      return String(a.name || "").localeCompare(String(b.name || ""));
+    });
+    return list;
+  }
+
+  function getSortedConversations(workspace) {
+    var list = workspace && workspace.conversations ? workspace.conversations.slice() : [];
+    list.sort(function (a, b) {
+      var aUpdated = Number(a.updated || 0);
+      var bUpdated = Number(b.updated || 0);
+      if (aUpdated !== bUpdated) {
+        return bUpdated - aUpdated;
+      }
+      return String(a.title || "").localeCompare(String(b.title || ""));
+    });
+    return list;
+  }
+
+  function findNextQueuedConversation() {
+    if (state.activeWorkspaceId && state.activeConversationId) {
+      var activeStats = queueStatsForConversation(state.activeWorkspaceId, state.activeConversationId);
+      if (activeStats.pending > 0) {
+        return {
+          workspaceId: state.activeWorkspaceId,
+          conversationId: state.activeConversationId
+        };
+      }
+    }
+
+    var workspaces = getSortedWorkspaces();
+    for (var i = 0; i < workspaces.length; i += 1) {
+      var conversations = getSortedConversations(workspaces[i]);
+      for (var j = 0; j < conversations.length; j += 1) {
+        if (queueNumber(conversations[j].queue_pending) > 0) {
+          return {
+            workspaceId: workspaces[i].id,
+            conversationId: conversations[j].id
+          };
+        }
+      }
+    }
+
+    return null;
+  }
+
+  function hasDraftForWorkspace(workspace) {
+    if (!workspace) {
+      return false;
+    }
+    if (state.activeDraftWorkspaceId === workspace.id) {
+      return true;
+    }
+    if (workspace.draft_exists === "1") {
+      return true;
+    }
+    if (trim(state.draftTextByWorkspace[workspace.id])) {
+      return true;
+    }
+    return false;
+  }
+
+  function activeModelName() {
+    if (state.activeConversation && state.activeConversation.model) {
+      return state.activeConversation.model;
+    }
+
+    if (state.activeDraftWorkspaceId && state.draftModelByWorkspace[state.activeDraftWorkspaceId]) {
+      return state.draftModelByWorkspace[state.activeDraftWorkspaceId];
+    }
+
+    if (state.models.length > 0) {
+      return state.models[0];
+    }
+
+    return "qwen2.5-coder:7b";
+  }
+
+  function normalizePermissionToggles() {
+    if (!state.networkAccess && state.webAccess) {
+      state.webAccess = false;
+      window.localStorage.setItem("artificer.webAccess", "0");
+    }
+  }
+
+  function permissionModeLabel(mode) {
+    switch (mode) {
+      case "workspace-write":
+        return "Workspace write";
+      case "read-only":
+        return "Read only";
+      case "full-access":
+        return "Full access";
+      default:
+        return "Default permissions";
+    }
+  }
+
+  function gitDeltaMarkup(added, deleted) {
+    var addCount = Number(added || 0);
+    var delCount = Number(deleted || 0);
+    return "<span class='git-delta'><span class='git-add'>+" + addCount + "</span> <span class='git-del'>-" + delCount + "</span></span>";
+  }
+
+  function activeGitState() {
+    return (
+      state.gitByWorkspace[state.activeWorkspaceId] || {
+        is_repo: false,
+        branch: "",
+        ahead: 0,
+        behind: 0,
+        added: 0,
+        deleted: 0,
+        changes: 0,
+        staged_changes: 0,
+        unstaged_changes: 0
+      }
+    );
+  }
+
+  function closeAllMenus(exceptId) {
+    var ids = Object.keys(menuById);
+    for (var i = 0; i < ids.length; i += 1) {
+      var id = ids[i];
+      if (exceptId && id === exceptId) {
+        continue;
+      }
+      if (menuById[id]) {
+        menuById[id].classList.add("hidden");
+      }
+    }
+
+    el.modelStatusBtn.setAttribute("aria-expanded", "false");
+    el.openMenuBtn.setAttribute("aria-expanded", "false");
+    el.branchMenuBtn.setAttribute("aria-expanded", "false");
+    el.commitMenuBtn.setAttribute("aria-expanded", "false");
+    el.permissionsMenuBtn.setAttribute("aria-expanded", "false");
+    el.modelPickerBtn.setAttribute("aria-expanded", "false");
+    el.organizeBtn.setAttribute("aria-expanded", "false");
+
+    if (!exceptId && state.openWorkspaceMenuWorkspaceId) {
+      state.openWorkspaceMenuWorkspaceId = "";
+      renderWorkspaceTree();
+    }
+  }
+
+  function toggleMenu(menuId, buttonEl) {
+    var menu = menuById[menuId];
+    if (!menu) {
+      return;
+    }
+
+    var isOpen = !menu.classList.contains("hidden");
+    closeAllMenus();
+
+    if (isOpen) {
+      return;
+    }
+
+    menu.classList.remove("hidden");
+    if (buttonEl) {
+      buttonEl.setAttribute("aria-expanded", "true");
+    }
+  }
+
+  function openModal(modalEl) {
+    if (!modalEl) {
+      return;
+    }
+    modalEl.classList.remove("hidden");
+  }
+
+  function closeModal(modalEl) {
+    if (!modalEl) {
+      return;
+    }
+    modalEl.classList.add("hidden");
+  }
+
+  function closeAllModals() {
+    closeModal(el.workspaceModal);
+    closeModal(el.commitModal);
+    closeModal(el.runActionModal);
+    closeModal(el.settingsModal);
+  }
+
+  function setWorkspaceDropActive(active) {
+    if (active) {
+      el.workspacePanel.classList.add("drop-active");
+    } else {
+      el.workspacePanel.classList.remove("drop-active");
+    }
+  }
+
+  function setComposerDragActive(active) {
+    if (!el.runForm) {
+      return;
+    }
+    el.runForm.classList.toggle("drag-active", !!active);
+  }
+
+  function setBusy(value, workspaceId, conversationId) {
+    state.busy = !!value;
+    if (state.busy) {
+      state.runningWorkspaceId = workspaceId || state.runningWorkspaceId || state.activeWorkspaceId || "";
+      state.runningConversationId = conversationId || state.runningConversationId || state.activeConversationId || "";
+    } else {
+      state.runningWorkspaceId = "";
+      state.runningConversationId = "";
+    }
+  }
+
+  function ensureSelection() {
+    if (!state.workspaces.length) {
+      state.activeWorkspaceId = "";
+      state.activeConversationId = "";
+      state.activeConversation = null;
+      state.activeDraftWorkspaceId = "";
+      return;
+    }
+
+    if (!getWorkspaceById(state.activeWorkspaceId)) {
+      state.activeWorkspaceId = getSortedWorkspaces()[0].id;
+      state.activeConversationId = "";
+      state.activeConversation = null;
+      state.activeDraftWorkspaceId = "";
+    }
+
+    if (state.activeWorkspaceId && typeof state.expandedWorkspaceIds[state.activeWorkspaceId] === "undefined") {
+      state.expandedWorkspaceIds[state.activeWorkspaceId] = true;
+    }
+
+    if (state.activeConversationId) {
+      var workspace = getWorkspaceById(state.activeWorkspaceId);
+      if (!getConversationById(workspace, state.activeConversationId)) {
+        state.activeConversationId = "";
+        state.activeConversation = null;
+      }
+    }
+
+    if (state.activeDraftWorkspaceId && !getWorkspaceById(state.activeDraftWorkspaceId)) {
+      state.activeDraftWorkspaceId = "";
+    }
+  }
+
+  function runEventsForConversation(conversationId) {
+    if (!conversationId) {
+      return [];
+    }
+    return state.runEventsByConversation[conversationId] || [];
+  }
+
+  function pushRunEvent(conversationId, eventData) {
+    if (!conversationId) {
+      return null;
+    }
+
+    if (!state.runEventsByConversation[conversationId]) {
+      state.runEventsByConversation[conversationId] = [];
+    }
+
+    var event = eventData || {};
+    if (!event.id) {
+      event.id = String(Date.now()) + "-" + String(Math.floor(Math.random() * 999999));
+    }
+
+    state.runEventsByConversation[conversationId].push(event);
+    if (state.runEventsByConversation[conversationId].length > 22) {
+      state.runEventsByConversation[conversationId].shift();
+    }
+
+    return event;
+  }
+
+  function formatRunCommands(commands) {
+    if (!commands || commands.length === 0) {
+      return "<p class='empty-state'>No commands were proposed or executed.</p>";
+    }
+
+    var html = "";
+    for (var i = 0; i < commands.length; i += 1) {
+      var item = commands[i] || {};
+      var status = item.status || "unknown";
+      html += "<div class='run-command'>";
+      html += "<div class='run-command-head'><code>" + escHtml(item.command || "") + "</code><span class='badge " + escHtml(status) + "'>" + escHtml(status) + "</span></div>";
+      html += "<pre>" + escHtml(item.output || "") + "</pre>";
+      html += "</div>";
+    }
+    return html;
+  }
+
+  function renderRunEvent(event) {
+    if (!event) {
+      return "";
+    }
+
+    var status = event.status || "done";
+    var html = "<article class='msg run " + escHtml(status) + "'>";
+    html += "<span class='role'>run</span>";
+
+    if (status === "running") {
+      html += "<p class='run-line'>Running agent...</p></article>";
+      return html;
+    }
+
+    if (status === "error") {
+      html += "<p class='run-line error'>" + escHtml(event.error || "Run failed") + "</p></article>";
+      return html;
+    }
+
+    var runModelText = "";
+    if (event.model) {
+      var runModelParts = parseModelDisplay(event.model);
+      runModelText = runModelParts.primary;
+      if (runModelParts.meta) {
+        runModelText += " (" + runModelParts.meta + ")";
+      }
+    }
+    html += "<p class='run-line success'>Run complete" + (runModelText ? " with " + escHtml(runModelText) : "") + "</p>";
+    html += "<details class='run-details'><summary>Plan</summary><pre>" + escHtml(event.plan || "No plan returned.") + "</pre></details>";
+    html += "<details class='run-details'><summary>Command Runs</summary>" + formatRunCommands(event.commands || []) + "</details>";
+    html += "<details class='run-details'><summary>Git Status</summary><pre>" + escHtml(event.git_status || "") + "</pre></details>";
+    html += "<details class='run-details'><summary>Git Diff</summary><div class='diff-view run-diff-view'>" + formatDiff(event.git_diff || "") + "</div></details>";
+    if (trim(event.state)) {
+      html += "<details class='run-details'><summary>Mode State</summary><pre>" + escHtml(event.state) + "</pre></details>";
+    }
+    if (trim(event.failures)) {
+      html += "<details class='run-details'><summary>Failure Ledger</summary><pre>" + escHtml(event.failures) + "</pre></details>";
+    }
+    if (trim(event.session_log)) {
+      html += "<details class='run-details'><summary>Session Log</summary><pre>" + escHtml(event.session_log) + "</pre></details>";
+    }
+    html += "</article>";
+    return html;
+  }
+
+  function renderWorkspaceTree() {
+    if (!state.workspaces.length) {
+      var emptyMarkup = "<p class='empty-state'>Drop a folder here or click + to add a workspace.</p>";
+      if (state.workspaceTreeMarkupCache === emptyMarkup) {
+        return;
+      }
+      el.workspaceTree.innerHTML = emptyMarkup;
+      state.workspaceTreeMarkupCache = emptyMarkup;
+      return;
+    }
+
+    var folderIcon =
+      "<span class='workspace-icon' aria-hidden='true'><svg viewBox='0 0 16 16' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M1.8 4.2h4.1l1.4 1.7h6.9v7.2H1.8z'/><path d='M11.4 8.7h2.8'/><path d='M12.8 7.3v2.8'/></svg></span>";
+
+    var html = "";
+    var workspaces = getSortedWorkspaces();
+
+    for (var i = 0; i < workspaces.length; i += 1) {
+      var workspace = workspaces[i];
+      var workspaceId = workspace.id;
+      var isActiveWorkspace = workspaceId === state.activeWorkspaceId;
+      var isExpanded = !!state.expandedWorkspaceIds[workspaceId] || isActiveWorkspace;
+      state.expandedWorkspaceIds[workspaceId] = isExpanded;
+
+      var groupClass = "workspace-group";
+      if (isActiveWorkspace) {
+        groupClass += " active";
+      }
+      if (isExpanded) {
+        groupClass += " expanded";
+      }
+
+      html += "<section class='" + groupClass + "' data-workspace-id='" + escHtml(workspaceId) + "'>";
+      html += "<div class='workspace-row' data-action='select-workspace' data-workspace-id='" + escHtml(workspaceId) + "'>";
+      html += folderIcon;
+      html += "<button type='button' class='workspace-caret' data-action='toggle-workspace' data-workspace-id='" + escHtml(workspaceId) + "' aria-label='Toggle'>&rsaquo;</button>";
+      html += "<div class='workspace-meta' title='" + escAttr(workspace.path || "") + "'>" + escHtml(workspace.name || "Workspace") + "</div>";
+      html += "<button type='button' class='workspace-new' data-action='new-conversation' data-workspace-id='" + escHtml(workspaceId) + "' aria-label='New conversation'>+</button>";
+      html += "<button type='button' class='workspace-menu-trigger' data-action='toggle-workspace-menu' data-workspace-id='" + escHtml(workspaceId) + "' aria-label='Workspace menu' aria-expanded='" + (state.openWorkspaceMenuWorkspaceId === workspaceId ? "true" : "false") + "'>&hellip;</button>";
+      var workspaceMenuClass = "workspace-actions-pop floating-menu";
+      if (state.openWorkspaceMenuWorkspaceId !== workspaceId) {
+        workspaceMenuClass += " hidden";
+      }
+      html += "<div class='" + workspaceMenuClass + "' data-workspace-menu='" + escHtml(workspaceId) + "' role='menu' aria-label='Workspace actions'>";
+      html += "<button type='button' data-action='rename-workspace' data-workspace-id='" + escHtml(workspaceId) + "'>Rename</button>";
+      html += "<button type='button' data-action='remove-workspace' data-workspace-id='" + escHtml(workspaceId) + "'>Remove</button>";
+      html += "</div>";
+      html += "</div>";
+
+      html += "<div class='conversation-shell'>";
+
+      if (hasDraftForWorkspace(workspace)) {
+        var draftActive = state.activeDraftWorkspaceId === workspaceId ? " active" : "";
+        html += "<button type='button' class='conversation-draft" + draftActive + "' data-action='select-draft' data-workspace-id='" + escHtml(workspaceId) + "'>Draft (unsent)</button>";
+      }
+
+      var conversations = getSortedConversations(workspace);
+      for (var j = 0; j < conversations.length; j += 1) {
+        var conversation = conversations[j];
+        var activeConv = conversation.id === state.activeConversationId ? " active" : "";
+        var queuePending = queueNumber(conversation.queue_pending);
+        var queueRunning = String(conversation.queue_running || "0") === "1";
+        var queueDone = String(conversation.queue_done || "0") === "1";
+        if (
+          state.busy &&
+          state.runningWorkspaceId === workspaceId &&
+          state.runningConversationId === conversation.id
+        ) {
+          queueRunning = true;
+        }
+
+        var indicatorClass = "thread-indicator";
+        var unreadDone = queueDone && isConversationUnread(workspaceId, conversation);
+        if (queueRunning) {
+          indicatorClass += " running";
+        } else if (unreadDone) {
+          indicatorClass += " done";
+        } else if (queuePending > 0) {
+          indicatorClass += " pending";
+        }
+
+        html += "<button type='button' class='conversation-row" + activeConv + "' data-action='select-conversation' data-workspace-id='" + escHtml(workspaceId) + "' data-conversation-id='" + escHtml(conversation.id) + "'>";
+        html += "<span class='" + indicatorClass + "' aria-hidden='true'></span>";
+        html += "<span class='conversation-title'>" + escHtml(conversation.title || "Conversation") + "</span>";
+        if (queuePending > 0) {
+          html += "<span class='queue-count'>" + queuePending + "</span>";
+        }
+        html += "</button>";
+      }
+
+      html += "</div>";
+      html += "</section>";
+    }
+
+    if (state.workspaceTreeMarkupCache === html) {
+      return;
+    }
+
+    el.workspaceTree.innerHTML = html;
+    state.workspaceTreeMarkupCache = html;
+  }
+
+  function renderModelStatus() {
+    if (!state.models.length) {
+      el.modelStatusBtn.textContent = "No models";
+      return;
+    }
+    var noun = state.models.length === 1 ? "model" : "models";
+    el.modelStatusBtn.textContent = state.models.length + " " + noun;
+  }
+
+  function renderModelListInto(containerEl, activeModel) {
+    if (!containerEl) {
+      return;
+    }
+
+    if (!state.models.length) {
+      containerEl.innerHTML = "<p class='empty-state'>No models detected.</p>";
+      return;
+    }
+
+    var html = "";
+    for (var i = 0; i < state.models.length; i += 1) {
+      var model = state.models[i];
+      var parts = parseModelDisplay(model);
+      var activeClass = model === activeModel ? " active" : "";
+      html += "<button type='button' class='model-item" + activeClass + "' data-model-name='" + escHtml(model) + "'>";
+      html += "<span class='model-primary'>" + escHtml(parts.primary) + "</span>";
+      html += "<span class='model-meta'>" + escHtml(parts.meta || parts.raw) + "</span>";
+      html += "</button>";
+    }
+
+    containerEl.innerHTML = html;
+  }
+
+  function renderModelPickerButton() {
+    var model = activeModelName();
+    var parts = parseModelDisplay(model);
+    el.modelPickerBtn.innerHTML = "<span class='model-primary'>" + escHtml(parts.primary) + "</span><span class='model-meta'>" + escHtml(parts.meta || parts.raw) + "</span>";
+  }
+
+  function renderRunButton() {
+    var canRun = !!(state.activeWorkspaceId || state.activeDraftWorkspaceId);
+    var runningHere =
+      state.busy &&
+      state.activeWorkspaceId &&
+      state.activeConversationId &&
+      state.runningWorkspaceId === state.activeWorkspaceId &&
+      state.runningConversationId === state.activeConversationId;
+
+    el.runBtn.disabled = !canRun;
+    if (runningHere) {
+      el.runBtn.classList.add("running");
+      el.runBtn.innerHTML = "<span aria-hidden='true'>...</span>";
+    } else {
+      el.runBtn.classList.remove("running");
+      el.runBtn.innerHTML = "<span aria-hidden='true'>&uarr;</span>";
+    }
+  }
+
+  function renderQueueControls() {
+    if (!el.queueControls || !el.queueSteerBtn || !el.queueCancelBtn) {
+      return;
+    }
+
+    if (!state.activeWorkspaceId || !state.activeConversationId) {
+      el.queueControls.classList.add("hidden");
+      return;
+    }
+
+    var stats = activeConversationQueueStats();
+    if (stats.pending < 1 || !stats.firstId) {
+      el.queueControls.classList.add("hidden");
+      return;
+    }
+
+    var queueItemId = stats.firstId;
+    var preferredId = state.lastQueuedItemIdByConversation[state.activeConversationId] || "";
+    if (preferredId) {
+      queueItemId = preferredId;
+    }
+
+    el.queueSteerBtn.textContent = "Steer";
+    if (stats.pending > 1) {
+      el.queueSteerBtn.textContent = "Steer (" + stats.pending + ")";
+    }
+    el.queueSteerBtn.dataset.queueItemId = queueItemId;
+    el.queueCancelBtn.dataset.queueItemId = queueItemId;
+    el.queueSteerBtn.disabled = !queueItemId;
+    el.queueCancelBtn.disabled = !queueItemId;
+    el.queueControls.classList.remove("hidden");
+  }
+
+  function renderBranchMenu() {
+    var workspaceId = state.activeWorkspaceId;
+    var gitState = activeGitState();
+
+    if (!workspaceId || !gitState.is_repo) {
+      el.branchMenuList.innerHTML = "<p class='empty-state'>No git repository in this workspace.</p>";
+      return;
+    }
+
+    var branches = state.branchesByWorkspace[workspaceId] || [];
+    if (!branches.length) {
+      if (gitState.branch) {
+        el.branchMenuList.innerHTML = "<button type='button' data-branch-select='" + escHtml(gitState.branch) + "'>" + escHtml(gitState.branch + " *") + "</button>";
+      } else {
+        el.branchMenuList.innerHTML = "<p class='empty-state'>No branches found.</p>";
+      }
+      return;
+    }
+
+    var html = "";
+    for (var i = 0; i < branches.length; i += 1) {
+      var branch = branches[i];
+      var currentMark = branch.current ? " *" : "";
+      html += "<button type='button' data-branch-select='" + escHtml(branch.name) + "'>" + escHtml(branch.name + currentMark) + "</button>";
+    }
+
+    el.branchMenuList.innerHTML = html;
+  }
+
+  function renderPermissionsButton() {
+    el.permissionsMenuBtn.textContent = permissionModeLabel(state.permissionMode);
+    renderPermissionToggles();
+  }
+
+  function renderPermissionToggles() {
+    normalizePermissionToggles();
+
+    if (el.networkToggleBtn) {
+      el.networkToggleBtn.classList.toggle("on", !!state.networkAccess);
+      el.networkToggleBtn.setAttribute("aria-pressed", state.networkAccess ? "true" : "false");
+    }
+    if (el.webToggleBtn) {
+      el.webToggleBtn.classList.toggle("on", !!state.webAccess);
+      el.webToggleBtn.setAttribute("aria-pressed", state.webAccess ? "true" : "false");
+      el.webToggleBtn.classList.toggle("disabled", !state.networkAccess);
+      el.webToggleBtn.disabled = !state.networkAccess;
+    }
+  }
+
+  function renderAttachmentStrip() {
+    if (!el.attachmentStrip) {
+      return;
+    }
+
+    if (!state.pendingAttachments.length) {
+      el.attachmentStrip.classList.add("hidden");
+      el.attachmentStrip.innerHTML = "";
+      return;
+    }
+
+    var html = "";
+    for (var i = 0; i < state.pendingAttachments.length; i += 1) {
+      var attachment = state.pendingAttachments[i];
+      var preview = attachment.previewUrl || "";
+      var kind = attachment.kind || "file";
+      html += "<div class='attachment-chip' data-action='preview-attachment' data-attachment-id='" + escAttr(attachment.id) + "' role='button' tabindex='0'>";
+      html += "<button type='button' class='attachment-remove' data-action='remove-attachment' data-attachment-id='" + escAttr(attachment.id) + "' aria-label='Remove attachment'>&times;</button>";
+      html += "<div class='attachment-thumb'>";
+      if (kind === "image" && preview) {
+        html += "<img src='" + escAttr(preview) + "' alt='" + escAttr(attachment.name || "image attachment") + "' />";
+      } else if (kind === "text") {
+        html += "<span>Text</span>";
+      } else if (kind === "document") {
+        html += "<span>PDF</span>";
+      } else {
+        html += "<span>File</span>";
+      }
+      html += "</div>";
+      html += "<div class='attachment-name'>" + escHtml(attachment.name || "attachment") + "</div>";
+      html += "<div class='attachment-meta'>" + escHtml(formatBytes(attachment.size || 0)) + "</div>";
+      html += "</div>";
+    }
+
+    el.attachmentStrip.innerHTML = html;
+    el.attachmentStrip.classList.remove("hidden");
+  }
+
+  function renderToolbarGit() {
+    var gitState = activeGitState();
+
+    if (!state.activeWorkspaceId) {
+      el.branchMenuBtn.textContent = "Branch";
+      el.commitMenuBtn.disabled = true;
+      el.createRepoBtn.style.display = "none";
+      el.changesBtn.innerHTML = gitDeltaMarkup(0, 0);
+      return;
+    }
+
+    if (!gitState.is_repo) {
+      el.branchMenuBtn.textContent = "No repo";
+      el.commitMenuBtn.disabled = true;
+      el.createRepoBtn.style.display = "";
+      el.changesBtn.innerHTML = gitDeltaMarkup(0, 0);
+      return;
+    }
+
+    el.branchMenuBtn.textContent = gitState.branch || "Branch";
+    el.commitMenuBtn.disabled = false;
+    el.createRepoBtn.style.display = "none";
+    el.changesBtn.innerHTML = gitDeltaMarkup(gitState.added, gitState.deleted);
+  }
+
+  function renderChatHeader() {
+    if (!state.activeWorkspaceId) {
+      el.chatTitle.textContent = "Conversation";
+      return;
+    }
+
+    if (state.activeDraftWorkspaceId) {
+      el.chatTitle.textContent = "Draft conversation";
+      return;
+    }
+
+    if (state.activeConversation && state.activeConversation.title) {
+      el.chatTitle.textContent = state.activeConversation.title;
+      return;
+    }
+
+    el.chatTitle.textContent = "Conversation";
+  }
+
+  function renderChat() {
+    if (!state.activeWorkspaceId) {
+      el.chatLog.innerHTML = "<p class='empty-state'>Select or add a workspace to begin.</p>";
+      return;
+    }
+
+    if (state.activeDraftWorkspaceId) {
+      var draftText = trim(state.draftTextByWorkspace[state.activeDraftWorkspaceId] || "");
+      if (draftText) {
+        el.chatLog.innerHTML = "<p class='empty-state'>Draft loaded. Send your first message to create the conversation.</p>";
+      } else {
+        el.chatLog.innerHTML = "<p class='empty-state'>This is a draft. Start typing below; it autosaves to disk.</p>";
+      }
+      return;
+    }
+
+    if (!state.activeConversationId || !state.activeConversation) {
+      el.chatLog.innerHTML = "<p class='empty-state'>Select a conversation or click + beside a workspace to start a draft.</p>";
+      return;
+    }
+
+    var messages = Array.isArray(state.activeConversation.messages) ? state.activeConversation.messages : [];
+    var events = runEventsForConversation(state.activeConversationId);
+
+    if (!messages.length && !events.length) {
+      el.chatLog.innerHTML = "<p class='empty-state'>No messages yet in this conversation.</p>";
+      return;
+    }
+
+    var html = "";
+    for (var i = 0; i < messages.length; i += 1) {
+      var msg = messages[i] || {};
+      var role = msg.role === "user" ? "user" : "assistant";
+      html += "<article class='msg " + role + "'><span class='role'>" + escHtml(role) + "</span><div class='msg-body'>" + escHtml(msg.content || "") + "</div></article>";
+    }
+
+    for (var j = 0; j < events.length; j += 1) {
+      html += renderRunEvent(events[j]);
+    }
+
+    el.chatLog.innerHTML = html;
+    el.chatLog.scrollTop = el.chatLog.scrollHeight;
+  }
+
+  function renderDiffView() {
+    var raw = state.diffText || "";
+    if (!trim(raw)) {
+      el.diffView.innerHTML = "<p class='empty-state'>No diff available.</p>";
+      return;
+    }
+
+    var lines = raw.split(/\r?\n/);
+    var html = "";
+    for (var i = 0; i < lines.length; i += 1) {
+      var line = lines[i];
+      var cls = "";
+
+      if (/^diff --git /.test(line) || /^\+\+\+ /.test(line) || /^--- /.test(line) || /^### /.test(line)) {
+        cls = " file";
+      } else if (/^@@ /.test(line)) {
+        cls = " hunk";
+      } else if (/^\+/.test(line) && !/^\+\+\+ /.test(line)) {
+        cls = " add";
+      } else if (/^-/.test(line) && !/^--- /.test(line)) {
+        cls = " del";
+      }
+
+      html += "<span class='diff-line" + cls + "'>" + escHtml(line || " ") + "</span>";
+    }
+
+    el.diffView.innerHTML = html;
+  }
+
+  function renderTerminal() {
+    el.terminalCwd.textContent = state.terminalCwd || "Terminal";
+    el.terminalOutput.textContent = state.terminalLines.join("\n");
+    el.terminalOutput.scrollTop = el.terminalOutput.scrollHeight;
+  }
+
+  function renderPanels() {
+    if (state.diffOpen) {
+      el.diffPanel.classList.remove("hidden");
+    } else {
+      el.diffPanel.classList.add("hidden");
+    }
+
+    if (state.terminalOpen) {
+      el.terminalPanel.classList.remove("hidden");
+      el.shell.classList.add("terminal-open");
+    } else {
+      el.terminalPanel.classList.add("hidden");
+      el.shell.classList.remove("terminal-open");
+    }
+
+    renderDiffView();
+    renderTerminal();
+  }
+
+  function renderUi() {
+    ensureSelection();
+    renderWorkspaceTree();
+    renderModelStatus();
+    renderModelPickerButton();
+    renderRunButton();
+    renderQueueControls();
+    renderModelListInto(el.modelsBoxList, activeModelName());
+    renderModelListInto(el.modelPickerList, activeModelName());
+    renderPermissionsButton();
+    renderToolbarGit();
+    renderBranchMenu();
+    renderChatHeader();
+    renderChat();
+    renderAttachmentStrip();
+    renderPanels();
+  }
+
+  function saveSortMode(mode) {
+    state.sortMode = mode;
+    window.localStorage.setItem("artificer.workspaceSort", mode);
+  }
+
+  function savePermissionMode(mode) {
+    state.permissionMode = mode;
+    window.localStorage.setItem("artificer.permissionMode", mode);
+  }
+
+  function saveNetworkAccess(enabled) {
+    state.networkAccess = !!enabled;
+    window.localStorage.setItem("artificer.networkAccess", state.networkAccess ? "1" : "0");
+  }
+
+  function saveWebAccess(enabled) {
+    state.webAccess = !!enabled;
+    window.localStorage.setItem("artificer.webAccess", state.webAccess ? "1" : "0");
+  }
+
+  function appendTerminalLine(line) {
+    state.terminalLines.push(String(line || ""));
+    if (state.terminalLines.length > 600) {
+      state.terminalLines = state.terminalLines.slice(state.terminalLines.length - 600);
+    }
+    renderTerminal();
+  }
+
+  function titleFromPrompt(promptText) {
+    var first = trim(String(promptText || "").split(/\r?\n/)[0] || "");
+    if (!first) {
+      return "New Conversation";
+    }
+    if (first.length > 52) {
+      return first.slice(0, 49) + "...";
+    }
+    return first;
+  }
+
+  function clearDraftAutosaveTimer() {
+    if (saveDraftTimer) {
+      clearTimeout(saveDraftTimer);
+      saveDraftTimer = null;
+    }
+  }
+
+  function revokeAttachmentPreview(attachment) {
+    if (attachment && attachment.previewUrl) {
+      URL.revokeObjectURL(attachment.previewUrl);
+    }
+  }
+
+  function clearPendingAttachments() {
+    for (var i = 0; i < state.pendingAttachments.length; i += 1) {
+      revokeAttachmentPreview(state.pendingAttachments[i]);
+    }
+    state.pendingAttachments = [];
+  }
+
+  function resetComposerAttachments() {
+    clearPendingAttachments();
+    state.composerDragDepth = 0;
+    setComposerDragActive(false);
+    renderAttachmentStrip();
+  }
+
+  function removePendingAttachmentById(attachmentId) {
+    var kept = [];
+    for (var i = 0; i < state.pendingAttachments.length; i += 1) {
+      var attachment = state.pendingAttachments[i];
+      if (attachment.id === attachmentId) {
+        revokeAttachmentPreview(attachment);
+      } else {
+        kept.push(attachment);
+      }
+    }
+    state.pendingAttachments = kept;
+    renderAttachmentStrip();
+  }
+
+  function attachmentAlreadyQueued(file) {
+    var name = String(file && file.name || "");
+    var size = Number(file && file.size || 0);
+    var lastModified = Number(file && file.lastModified || 0);
+    for (var i = 0; i < state.pendingAttachments.length; i += 1) {
+      var attachment = state.pendingAttachments[i];
+      if (attachment.name === name && Number(attachment.size || 0) === size && Number(attachment.lastModified || 0) === lastModified) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function addComposerAttachment(file) {
+    if (!file) {
+      return;
+    }
+
+    if (attachmentAlreadyQueued(file)) {
+      return;
+    }
+
+    var kind = attachmentKindForFile(file);
+    if (!kind) {
+      throw new Error("Unsupported file type for attachment: " + String(file.name || "file"));
+    }
+
+    var maxBytes = 15 * 1024 * 1024;
+    if (Number(file.size || 0) > maxBytes) {
+      throw new Error("Attachment too large: " + String(file.name || "file") + " (" + formatBytes(file.size) + "). Max 15 MB.");
+    }
+
+    var previewUrl = URL.createObjectURL(file);
+
+    state.pendingAttachments.push({
+      id: newClientAttachmentId(),
+      file: file,
+      name: String(file.name || "attachment"),
+      mime: String(file.type || ""),
+      size: Number(file.size || 0),
+      lastModified: Number(file.lastModified || 0),
+      kind: kind,
+      previewUrl: previewUrl
+    });
+  }
+
+  function addComposerFiles(fileList) {
+    if (!fileList || !fileList.length) {
+      return;
+    }
+
+    for (var i = 0; i < fileList.length; i += 1) {
+      addComposerAttachment(fileList[i]);
+    }
+    renderAttachmentStrip();
+  }
+
+  function attachmentById(attachmentId) {
+    for (var i = 0; i < state.pendingAttachments.length; i += 1) {
+      if (state.pendingAttachments[i].id === attachmentId) {
+        return state.pendingAttachments[i];
+      }
+    }
+    return null;
+  }
+
+  function openAttachmentPreview(attachmentId) {
+    var attachment = attachmentById(attachmentId);
+    if (!attachment || !attachment.previewUrl) {
+      return;
+    }
+    window.open(attachment.previewUrl, "_blank", "noopener");
+  }
+
+  function fileToBase64(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () {
+        var dataUrl = String(reader.result || "");
+        var comma = dataUrl.indexOf(",");
+        if (comma < 0) {
+          reject(new Error("Could not read attachment data."));
+          return;
+        }
+        resolve(dataUrl.slice(comma + 1));
+      };
+      reader.onerror = function () {
+        reject(new Error("Could not read attachment: " + String(file && file.name || "file")));
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function uploadAttachment(workspaceId, conversationId, attachment) {
+    return fileToBase64(attachment.file).then(function (encoded) {
+      return apiPost("upload_attachment", {
+        workspace_id: workspaceId,
+        conversation_id: conversationId,
+        name: attachment.name,
+        mime: attachment.mime,
+        data: encoded
+      }).then(function (response) {
+        if (!response.success || !response.attachment || !response.attachment.id) {
+          throw new Error(response.error || "Failed to upload attachment");
+        }
+        return response.attachment;
+      });
+    });
+  }
+
+  function uploadPendingAttachments(workspaceId, conversationId) {
+    if (!state.pendingAttachments.length) {
+      return Promise.resolve([]);
+    }
+
+    var uploaded = [];
+    var chain = Promise.resolve();
+    for (var i = 0; i < state.pendingAttachments.length; i += 1) {
+      (function (attachment) {
+        chain = chain.then(function () {
+          return uploadAttachment(workspaceId, conversationId, attachment).then(function (item) {
+            uploaded.push(item);
+          });
+        });
+      })(state.pendingAttachments[i]);
+    }
+    return chain.then(function () {
+      return uploaded;
+    });
+  }
+
+  function loadState() {
+    return apiGet("state").then(function (response) {
+      if (!response.success) {
+        throw new Error(response.error || "Failed to load state");
+      }
+      state.workspaces = response.workspaces || [];
+      for (var i = 0; i < state.workspaces.length; i += 1) {
+        if (!Array.isArray(state.workspaces[i].conversations)) {
+          state.workspaces[i].conversations = [];
+        }
+        for (var j = 0; j < state.workspaces[i].conversations.length; j += 1) {
+          var conv = state.workspaces[i].conversations[j];
+          if (typeof conv.queue_pending === "undefined") {
+            conv.queue_pending = "0";
+          }
+          if (typeof conv.queue_running === "undefined") {
+            conv.queue_running = "0";
+          }
+          if (typeof conv.queue_done === "undefined") {
+            conv.queue_done = "0";
+          }
+          if (typeof conv.queue_last_status === "undefined") {
+            conv.queue_last_status = "";
+          }
+          if (typeof conv.queue_first_id === "undefined") {
+            conv.queue_first_id = "";
+          }
+        }
+      }
+      bootstrapSeenConversationsIfNeeded();
+      pruneSeenConversationState();
+      ensureSelection();
+    });
+  }
+
+  function loadModels() {
+    return apiGet("models").then(function (response) {
+      if (!response.success) {
+        throw new Error(response.error || "Failed to load models");
+      }
+      state.models = response.models || [];
+    });
+  }
+
+  function loadConversation() {
+    if (!state.activeWorkspaceId || !state.activeConversationId) {
+      state.activeConversation = null;
+      return Promise.resolve();
+    }
+
+    return apiGet("get_conversation", {
+      workspace_id: state.activeWorkspaceId,
+      conversation_id: state.activeConversationId
+    }).then(function (response) {
+      if (!response.success) {
+        throw new Error(response.error || "Failed to load conversation");
+      }
+      state.activeConversation = response.conversation;
+      markConversationSeen(state.activeWorkspaceId, state.activeConversationId, response.conversation);
+    });
+  }
+
+  function loadDraft(workspaceId) {
+    if (!workspaceId) {
+      return Promise.resolve("");
+    }
+
+    return apiGet("get_draft", { workspace_id: workspaceId }).then(function (response) {
+      if (!response.success) {
+        throw new Error(response.error || "Failed to load draft");
+      }
+      state.draftTextByWorkspace[workspaceId] = response.draft || "";
+      return response.draft || "";
+    });
+  }
+
+  function saveDraft(workspaceId, text) {
+    if (!workspaceId) {
+      return Promise.resolve();
+    }
+
+    return apiPost("save_draft", {
+      workspace_id: workspaceId,
+      draft: text
+    }).then(function (response) {
+      if (!response.success) {
+        throw new Error(response.error || "Failed to save draft");
+      }
+      state.draftTextByWorkspace[workspaceId] = text;
+      var ws = getWorkspaceById(workspaceId);
+      if (ws) {
+        ws.draft_exists = trim(text) ? "1" : "0";
+      }
+    });
+  }
+
+  function saveDraftDebounced() {
+    if (!state.activeDraftWorkspaceId) {
+      return;
+    }
+
+    clearDraftAutosaveTimer();
+    saveDraftTimer = setTimeout(function () {
+      var workspaceId = state.activeDraftWorkspaceId;
+      var draftText = el.runPrompt.value;
+      saveDraft(workspaceId, draftText).catch(showError);
+    }, 550);
+  }
+
+  function refreshGitStatus() {
+    if (!state.activeWorkspaceId) {
+      return Promise.resolve();
+    }
+
+    return apiGet("git_status", { workspace_id: state.activeWorkspaceId })
+      .then(function (response) {
+        if (!response.success) {
+          throw new Error(response.error || "Failed to load git status");
+        }
+        state.gitByWorkspace[state.activeWorkspaceId] = {
+          is_repo: !!response.is_repo,
+          branch: response.branch || "",
+          ahead: Number(response.ahead || 0),
+          behind: Number(response.behind || 0),
+          added: Number(response.added || 0),
+          deleted: Number(response.deleted || 0),
+          changes: Number(response.changes || 0),
+          staged_changes: Number(response.staged_changes || 0),
+          unstaged_changes: Number(response.unstaged_changes || 0)
+        };
+      })
+      .catch(function (err) {
+        state.gitByWorkspace[state.activeWorkspaceId] = {
+          is_repo: false,
+          branch: "",
+          ahead: 0,
+          behind: 0,
+          added: 0,
+          deleted: 0,
+          changes: 0,
+          staged_changes: 0,
+          unstaged_changes: 0
+        };
+        throw err;
+      });
+  }
+
+  function refreshBranches() {
+    if (!state.activeWorkspaceId) {
+      return Promise.resolve();
+    }
+
+    return apiGet("git_branches", { workspace_id: state.activeWorkspaceId }).then(function (response) {
+      if (!response.success) {
+        throw new Error(response.error || "Failed to load branches");
+      }
+      state.branchesByWorkspace[state.activeWorkspaceId] = response.branches || [];
+    });
+  }
+
+  function refreshDiff() {
+    if (!state.activeWorkspaceId) {
+      state.diffText = "";
+      return Promise.resolve();
+    }
+
+    return apiGet("git_diff", { workspace_id: state.activeWorkspaceId }).then(function (response) {
+      if (!response.success) {
+        throw new Error(response.error || "Failed to load git diff");
+      }
+      state.diffText = response.diff || "";
+      var gitState = activeGitState();
+      if (!gitState.is_repo) {
+        el.diffSummary.textContent = "Not a git repository.";
+      } else {
+        el.diffSummary.innerHTML = gitDeltaMarkup(response.added, response.deleted);
+      }
+    });
+  }
+
+  function refreshAll() {
+    return loadModels()
+      .then(loadState)
+      .then(loadConversation)
+      .then(function () {
+        return refreshGitStatus().catch(function () {
+          return null;
+        });
+      })
+      .then(function () {
+        return refreshBranches().catch(function () {
+          return null;
+        });
+      })
+      .then(function () {
+        if (state.diffOpen) {
+          return refreshDiff().catch(function () {
+            return null;
+          });
+        }
+        return null;
+      })
+      .then(function () {
+        renderUi();
+      });
+  }
+
+  function addWorkspaceByPath(pathText, nameText) {
+    var path = trim(pathText);
+    var name = trim(nameText);
+    if (!path) {
+      return Promise.resolve();
+    }
+
+    return apiPost("add_workspace", {
+      path: path,
+      name: name
+    }).then(function (response) {
+      if (!response.success) {
+        throw new Error(response.error || "Could not add workspace");
+      }
+
+      return loadState().then(function () {
+        if (response.workspace && response.workspace.id) {
+          state.activeWorkspaceId = response.workspace.id;
+          state.activeConversationId = "";
+          state.activeConversation = null;
+          state.activeDraftWorkspaceId = "";
+          state.expandedWorkspaceIds[response.workspace.id] = true;
+        }
+        return refreshGitStatus().catch(function () {
+          return null;
+        });
+      });
+    });
+  }
+
+  function removeWorkspace(workspaceId) {
+    var workspace = getWorkspaceById(workspaceId);
+    if (!workspace) {
+      return Promise.resolve();
+    }
+
+    return apiPost("delete_workspace", {
+      workspace_id: workspaceId
+    }).then(function (response) {
+      if (!response.success) {
+        throw new Error(response.error || "Could not remove workspace");
+      }
+      if (state.activeWorkspaceId === workspaceId) {
+        state.activeWorkspaceId = "";
+        state.activeConversationId = "";
+        state.activeConversation = null;
+        state.activeDraftWorkspaceId = "";
+      }
+      delete state.expandedWorkspaceIds[workspaceId];
+      delete state.gitByWorkspace[workspaceId];
+      delete state.branchesByWorkspace[workspaceId];
+      return refreshAll();
+    });
+  }
+
+  function addWorkspaceFromDropCandidate(pathText) {
+    var candidate = trim(pathText);
+    if (!candidate) {
+      return Promise.reject(new Error("Dropped folder path unavailable here. Click + and use Browse."));
+    }
+
+    return addWorkspaceByPath(candidate, "").catch(function (firstErr) {
+      var parent = dirname(candidate);
+      if (parent && parent !== candidate) {
+        return addWorkspaceByPath(parent, "");
+      }
+      throw firstErr;
+    });
+  }
+
+  function selectWorkspace(workspaceId) {
+    var workspace = getWorkspaceById(workspaceId);
+    if (!workspace) {
+      return Promise.resolve();
+    }
+
+    state.activeWorkspaceId = workspaceId;
+    state.activeConversation = null;
+    state.activeDraftWorkspaceId = "";
+    state.expandedWorkspaceIds[workspaceId] = true;
+
+    var conversations = getSortedConversations(workspace);
+    if (conversations.length > 0) {
+      state.activeConversationId = conversations[0].id;
+      return loadConversation()
+        .then(function () {
+          el.runPrompt.value = "";
+          resetComposerAttachments();
+          return refreshGitStatus().catch(function () {
+            return null;
+          });
+        })
+        .then(function () {
+          return refreshBranches().catch(function () {
+            return null;
+          });
+        })
+        .then(function () {
+          if (state.diffOpen) {
+            return refreshDiff().catch(function () {
+              return null;
+            });
+          }
+          return null;
+        })
+        .then(function () {
+          renderUi();
+        });
+    }
+
+  state.activeConversationId = "";
+  if (workspace.draft_exists === "1") {
+    return selectDraft(workspaceId);
+  }
+
+  el.runPrompt.value = "";
+  resetComposerAttachments();
+
+  return refreshGitStatus()
+      .catch(function () {
+        return null;
+      })
+      .then(function () {
+        return refreshBranches().catch(function () {
+          return null;
+        });
+      })
+      .then(function () {
+        renderUi();
+      });
+  }
+
+  function selectConversation(workspaceId, conversationId) {
+    state.activeWorkspaceId = workspaceId;
+    state.activeConversationId = conversationId;
+    state.activeDraftWorkspaceId = "";
+    state.expandedWorkspaceIds[workspaceId] = true;
+
+    return loadConversation()
+      .then(function () {
+        el.runPrompt.value = "";
+        resetComposerAttachments();
+        return refreshGitStatus().catch(function () {
+          return null;
+        });
+      })
+      .then(function () {
+        return refreshBranches().catch(function () {
+          return null;
+        });
+      })
+      .then(function () {
+        if (state.diffOpen) {
+          return refreshDiff().catch(function () {
+            return null;
+          });
+        }
+        return null;
+      })
+      .then(function () {
+        renderUi();
+      });
+  }
+
+  function selectDraft(workspaceId) {
+    state.activeWorkspaceId = workspaceId;
+    state.activeConversationId = "";
+    state.activeConversation = null;
+    state.activeDraftWorkspaceId = workspaceId;
+    state.expandedWorkspaceIds[workspaceId] = true;
+
+    return loadDraft(workspaceId)
+      .then(function (draft) {
+        el.runPrompt.value = draft;
+        resetComposerAttachments();
+        return refreshGitStatus().catch(function () {
+          return null;
+        });
+      })
+      .then(function () {
+        return refreshBranches().catch(function () {
+          return null;
+        });
+      })
+      .then(function () {
+        renderUi();
+      });
+  }
+
+  function createDraftForWorkspace(workspaceId) {
+    state.activeWorkspaceId = workspaceId;
+    state.activeConversationId = "";
+    state.activeConversation = null;
+    state.activeDraftWorkspaceId = workspaceId;
+    state.expandedWorkspaceIds[workspaceId] = true;
+
+    return loadDraft(workspaceId)
+      .then(function (draft) {
+        el.runPrompt.value = draft;
+        resetComposerAttachments();
+        renderUi();
+      })
+      .then(function () {
+        setTimeout(function () {
+          el.runPrompt.focus();
+        }, 0);
+      });
+  }
+
+  function ensureConversationFromDraft(prompt) {
+    if (!state.activeDraftWorkspaceId) {
+      return Promise.resolve(state.activeConversationId);
+    }
+
+    var workspaceId = state.activeDraftWorkspaceId;
+    var model = activeModelName();
+    var title = titleFromPrompt(prompt);
+
+    return apiPost("new_conversation", {
+      workspace_id: workspaceId,
+      title: title,
+      model: model
+    }).then(function (response) {
+      if (!response.success || !response.conversation || !response.conversation.id) {
+        throw new Error(response.error || "Failed to create conversation from draft");
+      }
+
+      return saveDraft(workspaceId, "").catch(function () {
+        return null;
+      }).then(function () {
+        state.activeDraftWorkspaceId = "";
+        state.activeConversationId = response.conversation.id;
+        state.activeConversation = null;
+
+        return loadState().then(function () {
+          state.activeWorkspaceId = workspaceId;
+          state.activeConversationId = response.conversation.id;
+          return loadConversation().then(function () {
+            return response.conversation.id;
+          });
+        });
+      });
+    });
+  }
+
+  function applyModelSelection(modelName) {
+    var model = trim(modelName);
+    if (!model) {
+      return Promise.resolve();
+    }
+
+    if (state.activeConversationId && state.activeWorkspaceId) {
+      return apiPost("set_model", {
+        workspace_id: state.activeWorkspaceId,
+        conversation_id: state.activeConversationId,
+        model: model
+      }).then(function (response) {
+        if (!response.success) {
+          throw new Error(response.error || "Could not update model");
+        }
+
+        if (state.activeConversation) {
+          state.activeConversation.model = model;
+        }
+
+        var ws = getWorkspaceById(state.activeWorkspaceId);
+        var conv = getConversationById(ws, state.activeConversationId);
+        if (conv) {
+          conv.model = model;
+        }
+      });
+    }
+
+    if (state.activeDraftWorkspaceId) {
+      state.draftModelByWorkspace[state.activeDraftWorkspaceId] = model;
+    }
+
+    return Promise.resolve();
+  }
+
+  function runAgent(workspaceId, conversationId, promptText, options) {
+    var runOptions = options || {};
+    var preserveSelection = runOptions.preserveSelection !== false;
+    var attachmentList = Array.isArray(runOptions.attachments) ? runOptions.attachments : [];
+    var attachmentIds = [];
+    var attachmentNames = [];
+
+    if (!workspaceId || !conversationId) {
+      return Promise.reject(new Error("Choose a workspace conversation first."));
+    }
+
+    for (var i = 0; i < attachmentList.length; i += 1) {
+      var item = attachmentList[i] || {};
+      if (item.id) {
+        attachmentIds.push(String(item.id));
+      }
+      if (item.name) {
+        attachmentNames.push(String(item.name));
+      }
+    }
+
+    var pendingEvent = pushRunEvent(conversationId, {
+      status: "running",
+      started_at: new Date().toISOString()
+    });
+
+    if (
+      state.activeWorkspaceId === workspaceId &&
+      state.activeConversation &&
+      state.activeConversation.id === conversationId
+    ) {
+      if (!Array.isArray(state.activeConversation.messages)) {
+        state.activeConversation.messages = [];
+      }
+      var userContent = promptText;
+      if (attachmentNames.length) {
+        userContent += "\n\nAttached files:\n- " + attachmentNames.join("\n- ");
+      }
+      state.activeConversation.messages.push({ role: "user", content: userContent });
+    }
+
+    renderUi();
+
+    return apiPost("run", {
+      workspace_id: workspaceId,
+      conversation_id: conversationId,
+      prompt: promptText,
+      permission_mode: state.permissionMode,
+      network_access: state.networkAccess ? "1" : "0",
+      web_access: state.webAccess ? "1" : "0",
+      attachment_ids: attachmentIds.join(",")
+    })
+      .then(function (response) {
+        if (!response.success) {
+          throw new Error(response.error || "Run failed");
+        }
+
+        if (pendingEvent) {
+          pendingEvent.status = "done";
+          pendingEvent.model = response.model || "";
+          pendingEvent.plan = response.plan || "";
+          pendingEvent.commands = response.commands || [];
+          pendingEvent.git_status = response.git_status || "";
+          pendingEvent.git_diff = response.git_diff || "";
+          pendingEvent.state = response.state || "";
+          pendingEvent.failures = response.failures || "";
+          pendingEvent.session_log = response.session_log || "";
+          pendingEvent.finished_at = new Date().toISOString();
+        }
+
+        return loadState()
+          .then(function () {
+            if (!preserveSelection) {
+              state.activeWorkspaceId = workspaceId;
+              state.activeConversationId = conversationId;
+              state.activeDraftWorkspaceId = "";
+            }
+
+            if (state.activeWorkspaceId && state.activeConversationId) {
+              return loadConversation().catch(function () {
+                state.activeConversation = null;
+                return null;
+              });
+            }
+
+            state.activeConversation = null;
+            return null;
+          })
+          .then(function () {
+            return refreshGitStatus().catch(function () {
+              return null;
+            });
+          })
+          .then(function () {
+            return refreshBranches().catch(function () {
+              return null;
+            });
+          })
+          .then(function () {
+            if (state.diffOpen) {
+              return refreshDiff().catch(function () {
+                return null;
+              });
+            }
+            return null;
+          })
+          .then(function () {
+            renderUi();
+          });
+      })
+      .catch(function (err) {
+        if (pendingEvent) {
+          pendingEvent.status = "error";
+          pendingEvent.error = err && err.message ? err.message : String(err);
+        }
+        renderUi();
+        throw err;
+      });
+  }
+
+  function applyQueueStateFromResponse(workspaceId, conversationId, response) {
+    if (!response) {
+      return;
+    }
+
+    var pendingCount = queueNumber(response.queue_pending);
+
+    setConversationQueueFields(workspaceId, conversationId, {
+      pending: pendingCount,
+      running: Number(response.queue_running || 0) > 0,
+      done: Number(response.queue_done || 0) > 0,
+      lastStatus: response.queue_last_status || "",
+      firstId: response.queue_first_id || ""
+    });
+
+    if (pendingCount === 0 && conversationId) {
+      delete state.lastQueuedItemIdByConversation[conversationId];
+    }
+  }
+
+  function enqueuePrompt(workspaceId, conversationId, promptText, position, attachmentIds) {
+    var attachmentList = Array.isArray(attachmentIds) ? attachmentIds : [];
+    return apiPost("queue_enqueue", {
+      workspace_id: workspaceId,
+      conversation_id: conversationId,
+      prompt: promptText,
+      position: position || "tail",
+      attachments: attachmentList.join(",")
+    }).then(function (response) {
+      if (!response.success) {
+        throw new Error(response.error || "Could not queue message");
+      }
+      applyQueueStateFromResponse(workspaceId, conversationId, response);
+      if (response.item_id) {
+        state.lastQueuedItemIdByConversation[conversationId] = String(response.item_id);
+      }
+      return response;
+    });
+  }
+
+  function queueFinish(workspaceId, conversationId, itemId, status, errorText) {
+    return apiPost("queue_finish", {
+      workspace_id: workspaceId,
+      conversation_id: conversationId,
+      item_id: itemId || "",
+      status: status || "done",
+      error: errorText || ""
+    }).then(function (response) {
+      if (!response.success) {
+        throw new Error(response.error || "Could not finalize queue item");
+      }
+      applyQueueStateFromResponse(workspaceId, conversationId, response);
+      return response;
+    });
+  }
+
+  function executeQueuedItem(workspaceId, conversationId, queueItem) {
+    var item = queueItem || {};
+    var itemId = item.id || "";
+    var runError = null;
+
+    if (itemId && state.lastQueuedItemIdByConversation[conversationId] === itemId) {
+      delete state.lastQueuedItemIdByConversation[conversationId];
+    }
+
+    setBusy(true, workspaceId, conversationId);
+    setConversationQueueFields(workspaceId, conversationId, {
+      running: true,
+      done: false,
+      lastStatus: "running"
+    });
+    renderUi();
+
+    return runAgent(workspaceId, conversationId, item.prompt || "", {
+      preserveSelection: true,
+      attachments: Array.isArray(item.attachments) ? item.attachments : []
+    })
+      .catch(function (err) {
+        runError = err;
+        return null;
+      })
+      .then(function () {
+        var status = runError ? "error" : "done";
+        var errorText = runError && runError.message ? runError.message : "";
+        return queueFinish(workspaceId, conversationId, itemId, status, errorText).catch(function (queueErr) {
+          showError(queueErr);
+          return null;
+        });
+      })
+      .then(function () {
+        return loadState().catch(function () {
+          return null;
+        });
+      })
+      .then(function () {
+        if (state.activeWorkspaceId && state.activeConversationId) {
+          return loadConversation().catch(function () {
+            state.activeConversation = null;
+            return null;
+          });
+        }
+        return null;
+      })
+      .finally(function () {
+        setBusy(false);
+        renderUi();
+      });
+  }
+
+  function drainQueuedRuns() {
+    if (state.busy) {
+      return Promise.resolve();
+    }
+
+    var target = findNextQueuedConversation();
+    if (!target) {
+      return Promise.resolve();
+    }
+
+    return apiPost("queue_take", {
+      workspace_id: target.workspaceId,
+      conversation_id: target.conversationId
+    }).then(function (response) {
+      if (!response.success) {
+        throw new Error(response.error || "Could not fetch queued message");
+      }
+
+      if (response.busy) {
+        applyQueueStateFromResponse(target.workspaceId, target.conversationId, response);
+        return null;
+      }
+
+      if (!response.has_item || !response.item) {
+        applyQueueStateFromResponse(target.workspaceId, target.conversationId, response);
+        return loadState().then(function () {
+          return drainQueuedRuns();
+        });
+      }
+
+      setConversationQueueFields(target.workspaceId, target.conversationId, {
+        pending: queueNumber(response.queue_pending),
+        running: true,
+        done: false,
+        firstId: response.queue_first_id || ""
+      });
+
+      return executeQueuedItem(target.workspaceId, target.conversationId, response.item).then(function () {
+        return drainQueuedRuns();
+      });
+    });
+  }
+
+  function kickQueueWorker() {
+    if (state.queueWorkerActive) {
+      return;
+    }
+
+    if (!findNextQueuedConversation()) {
+      return;
+    }
+
+    state.queueWorkerActive = true;
+    drainQueuedRuns()
+      .catch(showError)
+      .finally(function () {
+        state.queueWorkerActive = false;
+        renderUi();
+        if (!state.busy && findNextQueuedConversation()) {
+          window.setTimeout(function () {
+            kickQueueWorker();
+          }, 120);
+        }
+      });
+  }
+
+  function steerQueuedMessage() {
+    if (!state.activeWorkspaceId || !state.activeConversationId) {
+      return Promise.resolve();
+    }
+    var queueItemId = trim((el.queueSteerBtn && el.queueSteerBtn.dataset.queueItemId) || "");
+    if (!queueItemId) {
+      return Promise.resolve();
+    }
+
+    return apiPost("queue_steer", {
+      workspace_id: state.activeWorkspaceId,
+      conversation_id: state.activeConversationId,
+      item_id: queueItemId
+    }).then(function (response) {
+      if (!response.success) {
+        throw new Error(response.error || "Could not steer queued message");
+      }
+      applyQueueStateFromResponse(state.activeWorkspaceId, state.activeConversationId, response);
+      renderUi();
+      kickQueueWorker();
+    });
+  }
+
+  function cancelQueuedMessage() {
+    if (!state.activeWorkspaceId || !state.activeConversationId) {
+      return Promise.resolve();
+    }
+    var queueItemId = trim((el.queueCancelBtn && el.queueCancelBtn.dataset.queueItemId) || "");
+    if (!queueItemId) {
+      return Promise.resolve();
+    }
+
+    return apiPost("queue_cancel", {
+      workspace_id: state.activeWorkspaceId,
+      conversation_id: state.activeConversationId,
+      item_id: queueItemId
+    }).then(function (response) {
+      if (!response.success) {
+        throw new Error(response.error || "Could not cancel queued message");
+      }
+      if (response.item_id && state.lastQueuedItemIdByConversation[state.activeConversationId] === response.item_id) {
+        delete state.lastQueuedItemIdByConversation[state.activeConversationId];
+      }
+      applyQueueStateFromResponse(state.activeWorkspaceId, state.activeConversationId, response);
+      renderUi();
+      kickQueueWorker();
+    });
+  }
+
+  function runCommandViaApi(commandText, actionName) {
+    if (!state.activeWorkspaceId) {
+      return Promise.reject(new Error("Select a workspace first."));
+    }
+
+    var trimmedCommand = trim(commandText);
+    if (!trimmedCommand) {
+      return Promise.reject(new Error("Command is required."));
+    }
+
+    state.terminalBusy = true;
+    appendTerminalLine("$ " + trimmedCommand);
+
+    return apiPost(actionName || "terminal_exec", {
+      workspace_id: state.activeWorkspaceId,
+      command: commandText,
+      permission_mode: state.permissionMode
+    }).then(function (response) {
+      if (!response.success) {
+        throw new Error(response.error || "Command failed");
+      }
+
+      var output = String(response.output || "");
+      if (trim(output)) {
+        appendTerminalLine(output);
+      }
+      appendTerminalLine("[exit " + Number(response.exit_code || 0) + "]");
+
+      return refreshGitStatus()
+        .catch(function () {
+          return null;
+        })
+        .then(function () {
+          return refreshBranches().catch(function () {
+            return null;
+          });
+        })
+        .then(function () {
+          if (state.diffOpen) {
+            return refreshDiff().catch(function () {
+              return null;
+            });
+          }
+          return null;
+        })
+        .then(function () {
+          renderUi();
+        });
+    }).finally(function () {
+      state.terminalBusy = false;
+    });
+  }
+
+  function showError(error) {
+    var message = error && error.message ? error.message : String(error);
+    if (state.activeConversationId) {
+      pushRunEvent(state.activeConversationId, {
+        status: "error",
+        error: message,
+        finished_at: new Date().toISOString()
+      });
+    } else {
+      appendTerminalLine("Error: " + message);
+    }
+    renderUi();
+  }
+
+  function openCommitModal(defaultAction) {
+    var gitState = activeGitState();
+    state.commitModalDefault = defaultAction || "commit";
+    el.commitBranchLabel.textContent = gitState.branch || "-";
+    el.commitChangesLabel.innerHTML = gitDeltaMarkup(gitState.added, gitState.deleted);
+    el.commitIncludeUnstaged.checked = true;
+    el.commitMessage.value = "";
+    el.commitNextStep.value = state.commitModalDefault === "commit-push" ? "commit-push" : "commit";
+    openModal(el.commitModal);
+  }
+
+  function loadAuthStatus() {
+    return apiGet("git_auth_status").then(function (response) {
+      if (!response.success) {
+        throw new Error(response.error || "Failed to load auth status");
+      }
+
+      if (response.has_gh) {
+        el.ghAuthStatus.textContent = response.gh_authenticated ? "Authenticated" : "Not authenticated";
+      } else {
+        el.ghAuthStatus.textContent = "GitHub CLI not installed";
+      }
+
+      if (response.ssh_pub_exists) {
+        el.sshKeyStatus.textContent = "SSH key found";
+        el.sshPubOutput.value = response.ssh_pub_key || "";
+      } else {
+        el.sshKeyStatus.textContent = "No SSH key";
+        el.sshPubOutput.value = "";
+      }
+    });
+  }
+
+  function openSettingsModal() {
+    openModal(el.settingsModal);
+    loadAuthStatus().catch(showError);
+  }
+
+  function handleWorkspaceTreeClick(event) {
+    var target = event.target.closest("[data-action]");
+    if (!target) {
+      return;
+    }
+
+    var action = target.getAttribute("data-action");
+    var workspaceId = target.getAttribute("data-workspace-id");
+    var conversationId = target.getAttribute("data-conversation-id");
+
+    if (action === "toggle-workspace") {
+      if (workspaceId) {
+        state.expandedWorkspaceIds[workspaceId] = !state.expandedWorkspaceIds[workspaceId];
+        renderUi();
+      }
+      return;
+    }
+
+    if (action === "new-conversation") {
+      if (workspaceId) {
+        createDraftForWorkspace(workspaceId).catch(showError);
+      }
+      return;
+    }
+
+    if (action === "remove-workspace") {
+      if (!workspaceId) {
+        return;
+      }
+      var workspace = getWorkspaceById(workspaceId);
+      var label = workspace && workspace.name ? workspace.name : "this workspace";
+      if (!window.confirm("Remove " + label + " and its Artificer conversation history?")) {
+        return;
+      }
+      removeWorkspace(workspaceId).catch(showError);
+      return;
+    }
+
+    if (action === "select-workspace") {
+      if (workspaceId) {
+        selectWorkspace(workspaceId).catch(showError);
+      }
+      return;
+    }
+
+    if (action === "select-conversation") {
+      if (workspaceId && conversationId) {
+        selectConversation(workspaceId, conversationId).catch(showError);
+      }
+      return;
+    }
+
+    if (action === "select-draft") {
+      if (workspaceId) {
+        selectDraft(workspaceId).catch(showError);
+      }
+    }
+  }
+
+  function handleAttachmentStripClick(event) {
+    var target = event.target.closest("[data-action]");
+    if (!target) {
+      return;
+    }
+
+    var action = target.getAttribute("data-action");
+    var attachmentId = target.getAttribute("data-attachment-id");
+    if (!attachmentId) {
+      return;
+    }
+
+    if (action === "remove-attachment") {
+      event.preventDefault();
+      event.stopPropagation();
+      removePendingAttachmentById(attachmentId);
+      return;
+    }
+
+    if (action === "preview-attachment") {
+      openAttachmentPreview(attachmentId);
+    }
+  }
+
+  function handleAttachmentStripKeydown(event) {
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+    var target = event.target.closest("[data-action='preview-attachment']");
+    if (!target) {
+      return;
+    }
+    var attachmentId = target.getAttribute("data-attachment-id");
+    if (!attachmentId) {
+      return;
+    }
+    event.preventDefault();
+    openAttachmentPreview(attachmentId);
+  }
+
+  function onWorkspaceBrowseClick() {
+    if (state.pickingWorkspace) {
+      return Promise.resolve();
+    }
+    state.pickingWorkspace = true;
+    state.awaitingDirPicker = false;
+    return apiGet("pick_workspace")
+      .then(function (picked) {
+        if (picked.success && picked.cancelled) {
+          return;
+        }
+
+        if (picked.success && picked.path) {
+          el.workspacePath.value = picked.path;
+          return;
+        }
+
+        if (el.workspaceDirPicker) {
+          state.awaitingDirPicker = true;
+          el.workspaceDirPicker.value = "";
+          el.workspaceDirPicker.click();
+          return;
+        }
+
+        throw new Error(picked.error || "Could not open folder picker.");
+      })
+      .finally(function () {
+        if (!state.awaitingDirPicker) {
+          state.pickingWorkspace = false;
+        }
+      });
+  }
+
+  function onWorkspaceDirPicked(event) {
+    var input = event.target;
+    if (!input || !input.files || input.files.length === 0) {
+      state.awaitingDirPicker = false;
+      state.pickingWorkspace = false;
+      return Promise.resolve();
+    }
+
+    var firstFile = input.files[0];
+    var pickedPath = "";
+
+    if (firstFile.path) {
+      pickedPath = dirname(firstFile.path);
+    }
+
+    if (!pickedPath) {
+      state.awaitingDirPicker = false;
+      state.pickingWorkspace = false;
+      return Promise.reject(new Error("Folder path unavailable in this browser. Use Browse."));
+    }
+
+    el.workspacePath.value = pickedPath;
+    state.awaitingDirPicker = false;
+    state.pickingWorkspace = false;
+    return Promise.resolve();
+  }
+
+  function onWorkspaceModalSubmit(event) {
+    event.preventDefault();
+    var path = trim(el.workspacePath.value);
+    var name = trim(el.workspaceName.value);
+    if (!path) {
+      return Promise.reject(new Error("Workspace path is required."));
+    }
+
+    return addWorkspaceByPath(path, name).then(function () {
+      el.workspacePath.value = "";
+      el.workspaceName.value = "";
+      closeModal(el.workspaceModal);
+      return refreshAll();
+    });
+  }
+
+  function onWorkspaceDropped(event) {
+    event.preventDefault();
+    setWorkspaceDropActive(false);
+    var droppedPath = extractPathFromDataTransfer(event.dataTransfer);
+    if (trim(droppedPath)) {
+      return addWorkspaceFromDropCandidate(droppedPath).then(function () {
+        return refreshAll();
+      });
+    }
+
+    el.workspacePath.value = "";
+    el.workspaceName.value = "";
+    openModal(el.workspaceModal);
+    return onWorkspaceBrowseClick().then(function () {
+      var pickedPath = trim(el.workspacePath.value);
+      if (!pickedPath) {
+        closeModal(el.workspaceModal);
+        return null;
+      }
+      return addWorkspaceByPath(pickedPath, trim(el.workspaceName.value)).then(function () {
+        el.workspacePath.value = "";
+        el.workspaceName.value = "";
+        closeModal(el.workspaceModal);
+        return refreshAll();
+      });
+    });
+  }
+
+  function onComposerDragEnter(event) {
+    event.preventDefault();
+    state.composerDragDepth += 1;
+    setComposerDragActive(true);
+  }
+
+  function onComposerDragOver(event) {
+    event.preventDefault();
+    setComposerDragActive(true);
+  }
+
+  function onComposerDragLeave(event) {
+    event.preventDefault();
+    state.composerDragDepth = Math.max(0, state.composerDragDepth - 1);
+    if (state.composerDragDepth === 0) {
+      setComposerDragActive(false);
+    }
+  }
+
+  function onComposerDropped(event) {
+    event.preventDefault();
+    state.composerDragDepth = 0;
+    setComposerDragActive(false);
+    var files = event.dataTransfer && event.dataTransfer.files ? event.dataTransfer.files : [];
+    addComposerFiles(files);
+  }
+
+  function onAttachmentPickerChange(event) {
+    var input = event.target;
+    var files = input && input.files ? input.files : [];
+    addComposerFiles(files);
+    if (input) {
+      input.value = "";
+    }
+  }
+
+  function onPromptPaste(event) {
+    var clipboard = event.clipboardData;
+    if (!clipboard || !clipboard.files || clipboard.files.length < 1) {
+      return;
+    }
+    event.preventDefault();
+    addComposerFiles(clipboard.files);
+  }
+
+  function onRunSubmit(event) {
+    event.preventDefault();
+
+    var prompt = trim(el.runPrompt.value);
+    if (!prompt) {
+      return;
+    }
+
+    if (!state.activeConversationId && !state.activeDraftWorkspaceId && state.activeWorkspaceId) {
+      state.activeDraftWorkspaceId = state.activeWorkspaceId;
+    }
+
+    clearDraftAutosaveTimer();
+
+    ensureConversationFromDraft(prompt)
+      .then(function (conversationId) {
+        var workspaceId = state.activeWorkspaceId;
+        if (!workspaceId || !conversationId) {
+          throw new Error("Choose a workspace conversation first.");
+        }
+        return uploadPendingAttachments(workspaceId, conversationId).then(function (uploadedAttachments) {
+          var attachmentIds = [];
+          for (var i = 0; i < uploadedAttachments.length; i += 1) {
+            if (uploadedAttachments[i] && uploadedAttachments[i].id) {
+              attachmentIds.push(String(uploadedAttachments[i].id));
+            }
+          }
+          return enqueuePrompt(workspaceId, conversationId, prompt, "tail", attachmentIds).then(function () {
+            el.runPrompt.value = "";
+            resetComposerAttachments();
+          });
+        }).then(function () {
+          state.activeWorkspaceId = workspaceId;
+          state.activeConversationId = conversationId;
+          state.activeDraftWorkspaceId = "";
+          return loadConversation().catch(function () {
+            state.activeConversation = null;
+            return null;
+          });
+        });
+      })
+      .then(function () {
+        renderUi();
+        kickQueueWorker();
+      })
+      .catch(showError)
+      .finally(function () {
+        renderUi();
+      });
+  }
+
+  function onCommitContinue() {
+    if (!state.activeWorkspaceId) {
+      showError(new Error("Select a workspace first."));
+      return;
+    }
+
+    var includeUnstaged = el.commitIncludeUnstaged.checked ? "1" : "0";
+    var message = el.commitMessage.value;
+    var nextStep = el.commitNextStep.value === "commit-push" ? "1" : "0";
+
+    apiPost("git_commit", {
+      workspace_id: state.activeWorkspaceId,
+      include_unstaged: includeUnstaged,
+      message: message,
+      push: nextStep
+    })
+      .then(function (response) {
+        if (!response.success) {
+          throw new Error(response.error || "Commit failed");
+        }
+        appendTerminalLine(response.output || "Commit complete.");
+        closeModal(el.commitModal);
+        return refreshGitStatus();
+      })
+      .then(function () {
+        return refreshBranches().catch(function () {
+          return null;
+        });
+      })
+      .then(function () {
+        if (state.diffOpen) {
+          return refreshDiff().catch(function () {
+            return null;
+          });
+        }
+        return null;
+      })
+      .then(function () {
+        renderUi();
+      })
+      .catch(showError);
+  }
+
+  function openDiffPanel() {
+    state.diffOpen = true;
+    refreshDiff().then(renderUi).catch(showError);
+  }
+
+  function closeDiffPanel() {
+    state.diffOpen = false;
+    renderUi();
+  }
+
+  function toggleDiffPanel() {
+    if (state.diffOpen) {
+      closeDiffPanel();
+    } else {
+      openDiffPanel();
+    }
+  }
+
+  function openTerminal() {
+    state.terminalOpen = true;
+    if (state.activeWorkspaceId) {
+      var ws = getWorkspaceById(state.activeWorkspaceId);
+      state.terminalCwd = ws ? ws.path : "";
+    }
+    renderUi();
+  }
+
+  function closeTerminal() {
+    state.terminalOpen = false;
+    renderUi();
+  }
+
+  function toggleTerminal() {
+    if (state.terminalOpen) {
+      closeTerminal();
+    } else {
+      openTerminal();
+    }
+  }
+
+  function bindEvents() {
+    if (el.attachmentPicker) {
+      el.attachmentPicker.setAttribute("accept", attachmentAcceptValue);
+    }
+
+    el.workspaceTree.addEventListener("click", function (event) {
+      handleWorkspaceTreeClick(event);
+    });
+
+    el.addWorkspaceBtn.addEventListener("click", function () {
+      openModal(el.workspaceModal);
+      setTimeout(function () {
+        el.workspaceBrowseBtn.focus();
+      }, 0);
+    });
+
+    el.organizeBtn.addEventListener("click", function () {
+      toggleMenu("organize-menu", el.organizeBtn);
+    });
+
+    el.organizeMenu.addEventListener("click", function (event) {
+      var button = event.target.closest("button[data-organize-sort]");
+      if (!button) {
+        return;
+      }
+      saveSortMode(button.getAttribute("data-organize-sort"));
+      closeAllMenus();
+      renderUi();
+    });
+
+    el.modelStatusBtn.addEventListener("click", function () {
+      toggleMenu("models-box", el.modelStatusBtn);
+    });
+
+    el.refreshModelsBtn.addEventListener("click", function () {
+      loadModels().then(renderUi).catch(showError);
+    });
+
+    el.modelsBoxList.addEventListener("click", function (event) {
+      var button = event.target.closest("button[data-model-name]");
+      if (!button) {
+        return;
+      }
+      var modelName = button.getAttribute("data-model-name");
+      applyModelSelection(modelName).then(function () {
+        closeAllMenus();
+        renderUi();
+      }).catch(showError);
+    });
+
+    el.modelPickerBtn.addEventListener("click", function () {
+      toggleMenu("model-picker-menu", el.modelPickerBtn);
+    });
+
+    el.modelPickerList.addEventListener("click", function (event) {
+      var button = event.target.closest("button[data-model-name]");
+      if (!button) {
+        return;
+      }
+      var modelName = button.getAttribute("data-model-name");
+      applyModelSelection(modelName)
+        .then(function () {
+          closeAllMenus();
+          renderUi();
+        })
+        .catch(showError);
+    });
+
+    el.workspaceModalClose.addEventListener("click", function () {
+      closeModal(el.workspaceModal);
+    });
+
+    el.workspaceCancelBtn.addEventListener("click", function () {
+      closeModal(el.workspaceModal);
+    });
+
+    el.workspaceModal.addEventListener("click", function (event) {
+      if (event.target === el.workspaceModal && !state.pickingWorkspace) {
+        closeModal(el.workspaceModal);
+      }
+    });
+
+    el.workspaceForm.addEventListener("submit", function (event) {
+      onWorkspaceModalSubmit(event).catch(showError);
+    });
+
+    el.workspaceBrowseBtn.addEventListener("click", function () {
+      onWorkspaceBrowseClick().catch(showError);
+    });
+
+    el.workspaceDirPicker.addEventListener("change", function (event) {
+      onWorkspaceDirPicked(event).catch(showError);
+    });
+
+    window.addEventListener("focus", function () {
+      if (!state.awaitingDirPicker) {
+        return;
+      }
+      window.setTimeout(function () {
+        if (!state.awaitingDirPicker) {
+          return;
+        }
+        state.awaitingDirPicker = false;
+        state.pickingWorkspace = false;
+      }, 0);
+    });
+
+    el.workspacePanel.addEventListener("dragenter", function (event) {
+      event.preventDefault();
+      setWorkspaceDropActive(true);
+    });
+
+    el.workspacePanel.addEventListener("dragover", function (event) {
+      event.preventDefault();
+      setWorkspaceDropActive(true);
+    });
+
+    el.workspacePanel.addEventListener("dragleave", function (event) {
+      if (!el.workspacePanel.contains(event.relatedTarget)) {
+        setWorkspaceDropActive(false);
+      }
+    });
+
+    el.workspacePanel.addEventListener("drop", function (event) {
+      onWorkspaceDropped(event).catch(showError);
+    });
+
+    el.openMenuBtn.addEventListener("click", function () {
+      toggleMenu("open-menu", el.openMenuBtn);
+    });
+
+    el.openMenu.addEventListener("click", function (event) {
+      var item = event.target.closest("button[data-open-target]");
+      if (!item || !state.activeWorkspaceId) {
+        return;
+      }
+      var target = item.getAttribute("data-open-target");
+      apiPost("open_in", {
+        workspace_id: state.activeWorkspaceId,
+        target: target
+      }).then(function (response) {
+        if (!response.success) {
+          throw new Error(response.error || "Open failed");
+        }
+        closeAllMenus();
+      }).catch(showError);
+    });
+
+    el.branchMenuBtn.addEventListener("click", function () {
+      if (!state.activeWorkspaceId) {
+        return;
+      }
+      refreshBranches().finally(function () {
+        renderBranchMenu();
+        toggleMenu("branch-menu", el.branchMenuBtn);
+      });
+    });
+
+    el.branchMenuList.addEventListener("click", function (event) {
+      var item = event.target.closest("button[data-branch-select]");
+      if (!item || !state.activeWorkspaceId) {
+        return;
+      }
+      var branch = item.getAttribute("data-branch-select");
+      apiPost("git_checkout_branch", {
+        workspace_id: state.activeWorkspaceId,
+        branch: branch,
+        create: "0"
+      })
+        .then(function (response) {
+          if (!response.success) {
+            throw new Error(response.error || "Branch checkout failed");
+          }
+          appendTerminalLine(response.output || ("Checked out " + branch));
+          return refreshGitStatus();
+        })
+        .then(function () {
+          return refreshBranches();
+        })
+        .then(function () {
+          closeAllMenus();
+          renderUi();
+        })
+        .catch(showError);
+    });
+
+    el.branchCreateForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+      if (!state.activeWorkspaceId) {
+        return;
+      }
+      var branchName = trim(el.branchCreateInput.value);
+      if (!branchName) {
+        return;
+      }
+      apiPost("git_checkout_branch", {
+        workspace_id: state.activeWorkspaceId,
+        branch: branchName,
+        create: "1"
+      })
+        .then(function (response) {
+          if (!response.success) {
+            throw new Error(response.error || "Branch create failed");
+          }
+          appendTerminalLine(response.output || ("Created branch " + branchName));
+          el.branchCreateInput.value = "";
+          return refreshGitStatus();
+        })
+        .then(function () {
+          return refreshBranches();
+        })
+        .then(function () {
+          closeAllMenus();
+          renderUi();
+        })
+        .catch(showError);
+    });
+
+    el.createRepoBtn.addEventListener("click", function () {
+      if (!state.activeWorkspaceId) {
+        showError(new Error("Select a workspace first."));
+        return;
+      }
+      apiPost("git_init", { workspace_id: state.activeWorkspaceId })
+        .then(function (response) {
+          if (!response.success) {
+            throw new Error(response.error || "git init failed");
+          }
+          appendTerminalLine(response.message || "Git repository created.");
+          return refreshGitStatus();
+        })
+        .then(function () {
+          return refreshBranches();
+        })
+        .then(function () {
+          if (state.diffOpen) {
+            return refreshDiff();
+          }
+          return null;
+        })
+        .then(function () {
+          renderUi();
+        })
+        .catch(showError);
+    });
+
+    el.commitMenuBtn.addEventListener("click", function () {
+      toggleMenu("commit-menu", el.commitMenuBtn);
+    });
+
+    el.commitMenu.addEventListener("click", function (event) {
+      var item = event.target.closest("button[data-commit-action]");
+      if (!item) {
+        return;
+      }
+      var action = item.getAttribute("data-commit-action");
+      closeAllMenus();
+
+      if (action === "commit-modal") {
+        openCommitModal("commit");
+        return;
+      }
+      if (action === "commit-push") {
+        openCommitModal("commit-push");
+        return;
+      }
+      if (action === "push") {
+        if (!state.activeWorkspaceId) {
+          showError(new Error("Select a workspace first."));
+          return;
+        }
+        apiPost("git_push", { workspace_id: state.activeWorkspaceId })
+          .then(function (response) {
+            if (!response.success) {
+              throw new Error(response.error || "Push failed");
+            }
+            appendTerminalLine(response.output || "Push complete.");
+            return refreshGitStatus();
+          })
+          .then(function () {
+            return refreshBranches().catch(function () {
+              return null;
+            });
+          })
+          .then(function () {
+            renderUi();
+          })
+          .catch(showError);
+      }
+    });
+
+    el.commitModalClose.addEventListener("click", function () {
+      closeModal(el.commitModal);
+    });
+
+    el.commitModal.addEventListener("click", function (event) {
+      if (event.target === el.commitModal) {
+        closeModal(el.commitModal);
+      }
+    });
+
+    el.commitContinueBtn.addEventListener("click", function () {
+      onCommitContinue();
+    });
+
+    el.permissionsMenuBtn.addEventListener("click", function () {
+      toggleMenu("permissions-menu", el.permissionsMenuBtn);
+    });
+
+    el.permissionsMenu.addEventListener("click", function (event) {
+      var item = event.target.closest("button[data-permission]");
+      if (!item) {
+        return;
+      }
+      var permission = item.getAttribute("data-permission");
+      savePermissionMode(permission);
+      closeAllMenus();
+      renderUi();
+    });
+
+    if (el.networkToggleBtn) {
+      el.networkToggleBtn.addEventListener("click", function (event) {
+        event.preventDefault();
+        var enabled = !state.networkAccess;
+        saveNetworkAccess(enabled);
+        if (!enabled) {
+          saveWebAccess(false);
+        }
+        renderUi();
+      });
+    }
+
+    if (el.webToggleBtn) {
+      el.webToggleBtn.addEventListener("click", function (event) {
+        event.preventDefault();
+        if (!state.networkAccess) {
+          saveNetworkAccess(true);
+        }
+        saveWebAccess(!state.webAccess);
+        renderUi();
+      });
+    }
+
+    el.runActionBtn.addEventListener("click", function () {
+      openModal(el.runActionModal);
+      setTimeout(function () {
+        el.runActionCommand.focus();
+      }, 0);
+    });
+
+    el.runActionClose.addEventListener("click", function () {
+      closeModal(el.runActionModal);
+    });
+
+    el.runActionModal.addEventListener("click", function (event) {
+      if (event.target === el.runActionModal) {
+        closeModal(el.runActionModal);
+      }
+    });
+
+    el.runActionForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+      var commandText = el.runActionCommand.value;
+      if (!trim(commandText)) {
+        return;
+      }
+      openTerminal();
+      runCommandViaApi(commandText, "run_action")
+        .then(function () {
+          closeModal(el.runActionModal);
+          el.runActionCommand.value = "";
+        })
+        .catch(showError);
+    });
+
+    el.settingsBtn.addEventListener("click", function () {
+      openSettingsModal();
+    });
+
+    el.settingsCloseBtn.addEventListener("click", function () {
+      closeModal(el.settingsModal);
+    });
+
+    el.settingsModal.addEventListener("click", function (event) {
+      if (event.target === el.settingsModal) {
+        closeModal(el.settingsModal);
+      }
+    });
+
+    el.refreshAuthBtn.addEventListener("click", function () {
+      loadAuthStatus().catch(showError);
+    });
+
+    el.generateSshBtn.addEventListener("click", function () {
+      apiPost("git_generate_ssh", { email: trim(el.sshEmail.value) })
+        .then(function (response) {
+          if (!response.success) {
+            throw new Error(response.error || "Could not generate SSH key");
+          }
+          el.sshPubOutput.value = response.ssh_pub_key || "";
+          el.sshKeyStatus.textContent = "SSH key ready";
+        })
+        .catch(showError);
+    });
+
+    el.terminalToggleBtn.addEventListener("click", function () {
+      toggleTerminal();
+    });
+
+    el.terminalCloseBtn.addEventListener("click", function () {
+      closeTerminal();
+    });
+
+    el.terminalClearBtn.addEventListener("click", function () {
+      state.terminalLines = [];
+      renderTerminal();
+    });
+
+    el.terminalForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+      var commandText = el.terminalInput.value;
+      if (!trim(commandText)) {
+        return;
+      }
+      el.terminalInput.value = "";
+      runCommandViaApi(commandText, "terminal_exec").catch(showError);
+    });
+
+    el.changesBtn.addEventListener("click", function () {
+      toggleDiffPanel();
+    });
+
+    el.diffCloseBtn.addEventListener("click", function () {
+      closeDiffPanel();
+    });
+
+    el.runForm.addEventListener("submit", function (event) {
+      onRunSubmit(event);
+    });
+
+    if (el.attachBtn && el.attachmentPicker) {
+      el.attachBtn.addEventListener("click", function () {
+        el.attachmentPicker.click();
+      });
+      el.attachmentPicker.addEventListener("change", function (event) {
+        try {
+          onAttachmentPickerChange(event);
+        } catch (error) {
+          showError(error);
+        }
+      });
+    }
+
+    if (el.attachmentStrip) {
+      el.attachmentStrip.addEventListener("click", function (event) {
+        handleAttachmentStripClick(event);
+      });
+      el.attachmentStrip.addEventListener("keydown", function (event) {
+        handleAttachmentStripKeydown(event);
+      });
+    }
+
+    if (el.runForm) {
+      el.runForm.addEventListener("dragenter", function (event) {
+        onComposerDragEnter(event);
+      });
+      el.runForm.addEventListener("dragover", function (event) {
+        onComposerDragOver(event);
+      });
+      el.runForm.addEventListener("dragleave", function (event) {
+        onComposerDragLeave(event);
+      });
+      el.runForm.addEventListener("drop", function (event) {
+        try {
+          onComposerDropped(event);
+        } catch (error) {
+          showError(error);
+        }
+      });
+    }
+
+    if (el.queueSteerBtn) {
+      el.queueSteerBtn.addEventListener("click", function () {
+        steerQueuedMessage().catch(showError);
+      });
+    }
+
+    if (el.queueCancelBtn) {
+      el.queueCancelBtn.addEventListener("click", function () {
+        cancelQueuedMessage().catch(showError);
+      });
+    }
+
+    el.runPrompt.addEventListener("input", function () {
+      if (state.activeDraftWorkspaceId) {
+        state.draftTextByWorkspace[state.activeDraftWorkspaceId] = el.runPrompt.value;
+        saveDraftDebounced();
+      }
+    });
+
+    el.runPrompt.addEventListener("paste", function (event) {
+      try {
+        onPromptPaste(event);
+      } catch (error) {
+        showError(error);
+      }
+    });
+
+    document.addEventListener("click", function (event) {
+      if (event.target.closest(".menu-anchor") || event.target.closest(".models-box") || event.target.closest("#organize-menu")) {
+        return;
+      }
+      closeAllMenus();
+    });
+
+    document.addEventListener("keydown", function (event) {
+      if (event.key !== "Escape") {
+        return;
+      }
+
+      if (state.pickingWorkspace) {
+        return;
+      }
+
+      if (!el.runActionModal.classList.contains("hidden")) {
+        closeModal(el.runActionModal);
+        return;
+      }
+      if (!el.commitModal.classList.contains("hidden")) {
+        closeModal(el.commitModal);
+        return;
+      }
+      if (!el.settingsModal.classList.contains("hidden")) {
+        closeModal(el.settingsModal);
+        return;
+      }
+      if (!el.workspaceModal.classList.contains("hidden")) {
+        closeModal(el.workspaceModal);
+        return;
+      }
+
+      closeAllMenus();
+    });
+  }
+
+  window.addEventListener("beforeunload", function () {
+    clearPendingAttachments();
+  });
+
+  bindEvents();
+  refreshAll().then(function () {
+    kickQueueWorker();
+  }).catch(showError);
+})();

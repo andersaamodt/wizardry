@@ -1,0 +1,281 @@
+#!/bin/sh
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: test-artificer [SITENAME] [--model MODEL] [--timeout SEC]
+
+Run an end-to-end Artificer smoke test against a live site.
+Default site: daimon
+
+Checks:
+1. /cgi/artificer-api?action=models
+2. /cgi/artificer-api?action=state
+3. add_workspace
+4. new_conversation
+5. queue_enqueue / queue_take / queue_finish
+6. run
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+site_name="daimon"
+model_override=""
+run_timeout_sec="${RUN_TIMEOUT_SEC:-180}"
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --model)
+      shift
+      [ "$#" -gt 0 ] || die "test-artificer: --model requires a value"
+      model_override=$1
+      ;;
+    --timeout)
+      shift
+      [ "$#" -gt 0 ] || die "test-artificer: --timeout requires a value"
+      run_timeout_sec=$1
+      ;;
+    --*)
+      die "test-artificer: unknown option '$1'"
+      ;;
+    *)
+      site_name=$1
+      ;;
+  esac
+  shift
+done
+
+if ! printf '%s' "$run_timeout_sec" | grep -Eq '^[0-9]+$'; then
+  die "test-artificer: timeout must be an integer"
+fi
+
+site_dir="$HOME/sites/$site_name"
+if [ ! -d "$site_dir" ]; then
+  die "test-artificer: site '$site_name' not found"
+fi
+
+if ! command -v curl >/dev/null 2>&1; then
+  die "test-artificer: curl is required"
+fi
+
+if ! command -v perl >/dev/null 2>&1; then
+  die "test-artificer: perl is required for JSON parsing"
+fi
+
+site_port=$(config-get "$site_dir/site.conf" port 2>/dev/null || echo "8080")
+base_url="http://localhost:$site_port"
+api_url="$base_url/cgi/artificer-api"
+cgi_script="$site_dir/cgi/artificer-api"
+if [ ! -x "$cgi_script" ]; then
+  cgi_script="$HOME/.wizardry/.templates/artificer/cgi/artificer-api"
+fi
+[ -x "$cgi_script" ] || die "test-artificer: artificer-api script not found"
+
+step "Artificer smoke test for $site_name"
+
+transport_mode="http"
+if ! curl -fsS --connect-timeout 2 --max-time 4 "$api_url?action=models" >/dev/null 2>&1; then
+  transport_mode="cgi"
+  warn "HTTP endpoint unavailable; falling back to direct CGI transport"
+fi
+
+api_get() {
+  query=$1
+  if [ "$transport_mode" = "http" ]; then
+    curl -fsS --max-time 15 "$api_url?$query"
+  else
+    REQUEST_METHOD=GET QUERY_STRING="$query" \
+      WIZARDRY_SITE_NAME="$site_name" WIZARDRY_SITES_DIR="$HOME/sites" \
+      "$cgi_script" | tail -n 1
+  fi
+}
+
+api_post() {
+  payload=$1
+  if [ "$transport_mode" = "http" ]; then
+    curl -fsS --max-time "$((run_timeout_sec + 30))" -X POST "$api_url" --data "$payload"
+  else
+    printf '%s' "$payload" | REQUEST_METHOD=POST QUERY_STRING="" \
+      WIZARDRY_SITE_NAME="$site_name" WIZARDRY_SITES_DIR="$HOME/sites" \
+      "$cgi_script" | tail -n 1
+  fi
+}
+
+urlenc() {
+  perl -MURI::Escape -e 'print uri_escape($ARGV[0]);' "$1"
+}
+
+models_json=$(api_get "action=models")
+state_json=$(api_get "action=state")
+
+if ! printf '%s' "$models_json" | grep -q '"success":true'; then
+  die "test-artificer: models endpoint did not return success"
+fi
+if ! printf '%s' "$state_json" | grep -q '"success":true'; then
+  die "test-artificer: state endpoint did not return success"
+fi
+
+model_name=$model_override
+if [ -z "$model_name" ]; then
+  model_name=$(printf '%s' "$models_json" | perl -MJSON::PP -e '
+    use strict;
+    use warnings;
+    local $/;
+    my $j = decode_json(<>);
+    my $models = $j->{models};
+    if (ref($models) eq "ARRAY" && @{$models}) {
+      print $models->[0];
+    }
+  ')
+fi
+
+if [ -z "$model_name" ]; then
+  die "test-artificer: no models available"
+fi
+
+workspace_id=""
+tmp_workspace=$(mktemp -d "/tmp/artificer-smoke.XXXXXX")
+cleanup() {
+  if [ -n "$workspace_id" ]; then
+    api_post "action=delete_workspace&workspace_id=$workspace_id" >/dev/null 2>&1 || true
+  fi
+  rm -rf "$tmp_workspace" 2>/dev/null || true
+}
+trap cleanup EXIT INT TERM
+
+printf '%s\n' '#!/bin/sh' 'echo "smoke"' > "$tmp_workspace/smoke.sh"
+chmod +x "$tmp_workspace/smoke.sh"
+
+add_workspace_json=$(api_post "action=add_workspace&path=$tmp_workspace&name=ArtificerSmoke")
+
+workspace_id=$(printf '%s' "$add_workspace_json" | perl -MJSON::PP -e '
+  use strict;
+  use warnings;
+  local $/;
+  my $j = decode_json(<>);
+  if ($j->{success} && ref($j->{workspace}) eq "HASH") {
+    print $j->{workspace}{id} // "";
+  }
+')
+[ -n "$workspace_id" ] || die "test-artificer: add_workspace failed"
+
+new_conversation_json=$(api_post "action=new_conversation&workspace_id=$workspace_id&title=SmokeTest&model=$model_name")
+
+conversation_id=$(printf '%s' "$new_conversation_json" | perl -MJSON::PP -e '
+  use strict;
+  use warnings;
+  local $/;
+  my $j = decode_json(<>);
+  if ($j->{success} && ref($j->{conversation}) eq "HASH") {
+    print $j->{conversation}{id} // "";
+  }
+')
+[ -n "$conversation_id" ] || die "test-artificer: new_conversation failed"
+
+attachment_b64=$(base64 < "$tmp_workspace/smoke.sh" | tr -d '\n')
+upload_attachment_json=$(api_post "action=upload_attachment&workspace_id=$workspace_id&conversation_id=$conversation_id&name=$(urlenc "smoke.sh")&mime=$(urlenc "text/plain")&data=$(urlenc "$attachment_b64")")
+attachment_id=$(printf '%s' "$upload_attachment_json" | perl -MJSON::PP -e '
+  use strict;
+  use warnings;
+  local $/;
+  my $j = decode_json(<>);
+  if ($j->{success} && ref($j->{attachment}) eq "HASH") {
+    print $j->{attachment}{id} // "";
+  }
+')
+[ -n "$attachment_id" ] || die "test-artificer: upload_attachment failed"
+
+queue_enqueue_json=$(api_post "action=queue_enqueue&workspace_id=$workspace_id&conversation_id=$conversation_id&prompt=Queue+smoke+message&attachments=$attachment_id")
+queue_pending=$(printf '%s' "$queue_enqueue_json" | perl -MJSON::PP -e '
+  use strict;
+  use warnings;
+  local $/;
+  my $j = decode_json(<>);
+  print($j->{queue_pending} // 0);
+')
+if ! printf '%s' "$queue_pending" | grep -Eq '^[0-9]+$'; then
+  die "test-artificer: queue_enqueue returned invalid queue_pending"
+fi
+[ "$queue_pending" -ge 1 ] || die "test-artificer: queue_enqueue did not queue a message"
+
+queue_take_json=$(api_post "action=queue_take&workspace_id=$workspace_id&conversation_id=$conversation_id")
+queue_take_has_item=$(printf '%s' "$queue_take_json" | perl -MJSON::PP -e '
+  use strict;
+  use warnings;
+  local $/;
+  my $j = decode_json(<>);
+  print($j->{has_item} ? "1" : "0");
+')
+queue_item_id=$(printf '%s' "$queue_take_json" | perl -MJSON::PP -e '
+  use strict;
+  use warnings;
+  local $/;
+  my $j = decode_json(<>);
+  if ($j->{has_item} && ref($j->{item}) eq "HASH") {
+    print $j->{item}{id} // "";
+  }
+')
+[ "$queue_take_has_item" = "1" ] || die "test-artificer: queue_take did not return an item"
+[ -n "$queue_item_id" ] || die "test-artificer: queue_take returned empty item id"
+queue_take_attachment_id=$(printf '%s' "$queue_take_json" | perl -MJSON::PP -e '
+  use strict;
+  use warnings;
+  local $/;
+  my $j = decode_json(<>);
+  my $arr = $j->{item}{attachments};
+  if (ref($arr) eq "ARRAY" && @{$arr}) {
+    print $arr->[0]{id} // "";
+  }
+')
+[ "$queue_take_attachment_id" = "$attachment_id" ] || die "test-artificer: queue_take attachment id mismatch"
+
+queue_finish_json=$(api_post "action=queue_finish&workspace_id=$workspace_id&conversation_id=$conversation_id&item_id=$queue_item_id&status=done")
+queue_done=$(printf '%s' "$queue_finish_json" | perl -MJSON::PP -e '
+  use strict;
+  use warnings;
+  local $/;
+  my $j = decode_json(<>);
+  print($j->{queue_done} // 0);
+')
+[ "$queue_done" = "1" ] || die "test-artificer: queue_finish did not set queue_done=1"
+
+run_json=$(api_post "action=run&workspace_id=$workspace_id&conversation_id=$conversation_id&prompt=Reply+in+one+short+sentence+hello+from+Artificer+smoke+test.&max_iterations=1")
+
+run_success=$(printf '%s' "$run_json" | perl -MJSON::PP -e '
+  use strict;
+  use warnings;
+  local $/;
+  my $j = decode_json(<>);
+  print($j->{success} ? "1" : "0");
+')
+assistant_text=$(printf '%s' "$run_json" | perl -MJSON::PP -e '
+  use strict;
+  use warnings;
+  local $/;
+  my $j = decode_json(<>);
+  print($j->{assistant} // "");
+')
+
+[ "$run_success" = "1" ] || die "test-artificer: run endpoint returned success=false"
+[ -n "$assistant_text" ] || die "test-artificer: assistant response is empty"
+
+if printf '%s' "$assistant_text" | grep -qi 'Model request failed'; then
+  die "test-artificer: model request failed during smoke run"
+fi
+
+if printf '%s' "$assistant_text" | grep -qi 'timed out after'; then
+  die "test-artificer: model timed out during smoke run"
+fi
+
+if printf '%s' "$assistant_text" | grep -Eq '^\s*\[[0-9eE+., -]+\]\s*$'; then
+  die "test-artificer: model returned embedding-like vector output"
+fi
+
+success "Artificer smoke test passed"
+info "transport: $transport_mode"
+info "model: $model_name"
+info "assistant: $(printf '%s' "$assistant_text" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g; s/^[[:space:]]*//; s/[[:space:]]*$//')"

@@ -53,7 +53,7 @@ fi
 
 # Note: We don't re-exec as site user here - template updates modify source files
 # which should be owned by the actual user, not the site user.
-# Only build/, nginx/, and .web-libs/ directories are owned by the site user.
+# build/ and nginx/ are also maintained as actual-user writable.
 
 # Get template name from site.conf if it exists, otherwise try to detect it
 template=""
@@ -85,7 +85,7 @@ if [ -z "$template" ]; then
   
   # Get WIZARDRY_DIR to find templates
   WIZARDRY_DIR=${WIZARDRY_DIR:-$HOME/.wizardry}
-  template_list_dir="$WIZARDRY_DIR/.templates"
+  template_list_dir="$WIZARDRY_DIR/.web"
   
   # Check if templates exist
   if [ ! -d "$template_list_dir" ] || [ -z "$(ls -A "$template_list_dir" 2>/dev/null)" ]; then
@@ -152,7 +152,7 @@ fi
 
 # Get WIZARDRY_DIR to find templates
 WIZARDRY_DIR=${WIZARDRY_DIR:-$HOME/.wizardry}
-template_dir="$WIZARDRY_DIR/.templates/$template"
+template_dir="$WIZARDRY_DIR/.web/$template"
 
 if [ ! -d "$template_dir" ]; then
   die "update-from-template: template '$template' not found at $template_dir"

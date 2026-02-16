@@ -69,9 +69,20 @@ build_site() {
   mkdir -p "$SITE_DIR/build/static"
   mkdir -p "$SITE_DIR/build/static/js"
   
-  # Ensure web libraries are installed
-  js_lib_dir="${WIZARDRY_WEB_JS_DIR:-$SITE_DIR/.web-libs/js}"
-  mkdir -p "$js_lib_dir"
+  # Ensure web libraries are installed.
+  # Default cache lives in per-site data (outside project source tree).
+  default_js_lib_dir="$SITE_DATA_DIR/.web-libs/js"
+  js_lib_dir="${WIZARDRY_WEB_JS_DIR:-$default_js_lib_dir}"
+  if ! mkdir -p "$js_lib_dir" 2>/dev/null; then
+    warn "build: cannot write web lib cache at $js_lib_dir"
+    if [ "$js_lib_dir" != "$default_js_lib_dir" ] && \
+      mkdir -p "$default_js_lib_dir" 2>/dev/null; then
+      info "build: using fallback cache: $default_js_lib_dir"
+      js_lib_dir="$default_js_lib_dir"
+    else
+      die "build: failed to create web lib cache at $default_js_lib_dir"
+    fi
+  fi
   if [ ! -f "$js_lib_dir/htmx.min.js" ] || [ ! -f "$js_lib_dir/idiomorph-ext.min.js" ]; then
     info "Web libraries not found, installing..."
     WIZARDRY_WEB_JS_DIR="$js_lib_dir"

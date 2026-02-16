@@ -111,10 +111,10 @@ if [ -z "$test_path" ]; then
   exit 2
 fi
 
-# Normalize test path - accept with or without .tests/ prefix
+# Normalize test path - accept with or without .tests/ or tests/ prefix.
 case "$test_path" in
-  .tests/*)
-    # Already has .tests/ prefix
+  .tests/*|tests/*)
+    # Already has an explicit test-root prefix
     full_test_path="$ROOT_DIR/$test_path"
     ;;
   *)
