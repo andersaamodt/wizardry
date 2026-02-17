@@ -130,6 +130,14 @@
     awaitingDirPicker: false,
     conversationLoadSeq: 0,
     modelLoadError: "",
+    appIcons: {
+      finder: "",
+      textmate: ""
+    },
+    modelCatalog: [],
+    modelInstalls: [],
+    modelInstallJob: null,
+    modelInstallLog: "",
     contextWindowText: "Context window information will display here.",
     lastErrorText: "",
     lastErrorAt: 0,
@@ -137,6 +145,7 @@
     selectionVersion: 0,
     chatAutoScroll: true,
     chatLastKey: "",
+    chatMarkupCache: "",
     threadsPaneWidth: parseStoredPaneWidth("artificer.threadsPaneWidth", 308),
     diffPaneWidth: parseStoredPaneWidth("artificer.diffPaneWidth", 620)
   };
@@ -144,10 +153,14 @@
   var saveDraftTimer = null;
   var liveRunTickTimer = null;
   var runStreamPollTimers = {};
+  var modelInstallPollTimer = null;
   var paneDragState = null;
   var pathWidgetClickTimer = null;
   var tooltipEl = null;
   var tooltipTarget = null;
+  var tooltipShowTimer = null;
+  var tooltipPendingTarget = null;
+  var TOOLTIP_DELAY_MS = 520;
 
   if (state.sortMode !== "updated" && state.sortMode !== "created") {
     state.sortMode = "updated";
@@ -369,7 +382,41 @@
     if (!node || typeof node.getAttribute !== "function") {
       return "";
     }
+    if (node.classList && node.classList.contains("workspace-menu-trigger")) {
+      return "";
+    }
+    var workspaceRow = node.closest && node.closest(".workspace-row[data-workspace-id]");
+    if (workspaceRow) {
+      var workspaceId = String(workspaceRow.getAttribute("data-workspace-id") || "");
+      if (workspaceId && workspaceId === String(state.openWorkspaceMenuWorkspaceId || "")) {
+        return "";
+      }
+    }
+    var anchor = node.closest && node.closest(".menu-anchor");
+    if (anchor) {
+      var openMenu = anchor.querySelector(".floating-menu:not(.hidden), .models-box:not(.hidden)");
+      if (openMenu) {
+        return "";
+      }
+    }
     return trim(node.getAttribute("data-tooltip") || "");
+  }
+
+  function tooltipPreferredPlacement(target) {
+    if (!target || !target.getBoundingClientRect) {
+      return "bottom";
+    }
+    if (target.closest && target.closest(".toolbar")) {
+      return "top";
+    }
+    if (target.closest && target.closest(".composer-row, .session-row, .workspace-sidebar-footer")) {
+      return "bottom";
+    }
+    var rect = target.getBoundingClientRect();
+    var viewportHeight = window.innerHeight || document.documentElement.clientHeight || 768;
+    var spaceAbove = rect.top;
+    var spaceBelow = viewportHeight - rect.bottom;
+    return spaceBelow >= spaceAbove ? "bottom" : "top";
   }
 
   function positionTooltip(target) {
@@ -381,7 +428,8 @@
     var viewportWidth = window.innerWidth || document.documentElement.clientWidth || 1024;
     var viewportHeight = window.innerHeight || document.documentElement.clientHeight || 768;
     var left = rect.left + (rect.width - tipRect.width) / 2;
-    var top = rect.top - tipRect.height - 8;
+    var placement = tooltipPreferredPlacement(target);
+    var top = placement === "top" ? rect.top - tipRect.height - 8 : rect.bottom + 8;
 
     if (left < 8) {
       left = 8;
@@ -389,8 +437,15 @@
     if (left + tipRect.width > viewportWidth - 8) {
       left = Math.max(8, viewportWidth - tipRect.width - 8);
     }
-    if (top < 8) {
-      top = rect.bottom + 8;
+    if (top < 8 || top + tipRect.height > viewportHeight - 8) {
+      if (placement === "top") {
+        top = rect.bottom + 8;
+      } else {
+        top = rect.top - tipRect.height - 8;
+      }
+      if (top < 8) {
+        top = 8;
+      }
       if (top + tipRect.height > viewportHeight - 8) {
         top = Math.max(8, viewportHeight - tipRect.height - 8);
       }
@@ -407,13 +462,44 @@
     }
     var tip = ensureTooltipEl();
     tooltipTarget = target;
+    tip.classList.remove("show");
     tip.textContent = text;
     tip.setAttribute("aria-hidden", "false");
-    tip.classList.add("show");
+    tip.style.left = "-9999px";
+    tip.style.top = "-9999px";
     positionTooltip(target);
+    tip.classList.add("show");
+  }
+
+  function clearTooltipShowTimer() {
+    if (tooltipShowTimer) {
+      clearTimeout(tooltipShowTimer);
+      tooltipShowTimer = null;
+    }
+    tooltipPendingTarget = null;
+  }
+
+  function scheduleTooltipFor(target) {
+    var text = tooltipTextFor(target);
+    if (!text) {
+      clearTooltipShowTimer();
+      hideTooltip();
+      return;
+    }
+    clearTooltipShowTimer();
+    tooltipPendingTarget = target;
+    tooltipShowTimer = setTimeout(function () {
+      if (!tooltipPendingTarget || tooltipPendingTarget !== target) {
+        return;
+      }
+      showTooltipFor(target);
+      tooltipShowTimer = null;
+      tooltipPendingTarget = null;
+    }, TOOLTIP_DELAY_MS);
   }
 
   function hideTooltip() {
+    clearTooltipShowTimer();
     tooltipTarget = null;
     if (!tooltipEl) {
       return;
@@ -1520,6 +1606,11 @@
     if (state.busy) {
       state.runningWorkspaceId = workspaceId || state.runningWorkspaceId || state.activeWorkspaceId || "";
       state.runningConversationId = conversationId || state.runningConversationId || state.activeConversationId || "";
+      if (!liveRunTickTimer) {
+        liveRunTickTimer = setInterval(function () {
+          refreshRunningElapsedBadges();
+        }, 1000);
+      }
     } else {
       state.runningWorkspaceId = "";
       state.runningConversationId = "";
@@ -1677,10 +1768,8 @@
       if (isFinite(startedAt) && startedAt > 0) {
         elapsed = Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
       }
-      html += "<p class='run-line running'><span class='run-spinner' aria-hidden='true'></span> Running agent";
-      if (elapsed > 0) {
-        html += " <span class='run-elapsed'>" + elapsed + "s</span>";
-      }
+      html += "<p class='run-line running' data-started-at='" + escAttr(event.started_at || "") + "'><span class='run-spinner' aria-hidden='true'></span> Running agent";
+      html += " <span class='run-elapsed'>" + (elapsed > 0 ? elapsed + "s" : "") + "</span>";
       html += "</p>";
       if (trim(event.stream_text || "")) {
         html += "<pre class='run-stream-preview'>" + escHtml(event.stream_text) + "</pre>";
@@ -1720,6 +1809,30 @@
     }
     html += "</article>";
     return html;
+  }
+
+  function refreshRunningElapsedBadges() {
+    if (!el.chatLog) {
+      return;
+    }
+    var lines = el.chatLog.querySelectorAll(".run-line.running[data-started-at]");
+    if (!lines || !lines.length) {
+      return;
+    }
+    var nowMs = Date.now();
+    for (var i = 0; i < lines.length; i += 1) {
+      var line = lines[i];
+      var startedRaw = line.getAttribute("data-started-at") || "";
+      var startedMs = Date.parse(startedRaw);
+      if (!isFinite(startedMs) || startedMs <= 0) {
+        continue;
+      }
+      var elapsed = Math.max(0, Math.floor((nowMs - startedMs) / 1000));
+      var badge = line.querySelector(".run-elapsed");
+      if (badge) {
+        badge.textContent = elapsed > 0 ? String(elapsed) + "s" : "";
+      }
+    }
   }
 
   function renderWorkspaceTree() {
@@ -1924,6 +2037,108 @@
     var noun = state.models.length === 1 ? "model" : "models";
     el.modelStatusBtn.textContent = state.models.length + " " + noun;
     el.modelStatusBtn.title = state.models.length + " Ollama " + noun + " installed";
+  }
+
+  function isModelInstalled(modelName) {
+    var target = String(modelName || "");
+    if (!target) {
+      return false;
+    }
+    for (var i = 0; i < state.models.length; i += 1) {
+      if (String(state.models[i]) === target) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function currentModelInstallFor(modelName) {
+    var target = String(modelName || "");
+    if (!target || !Array.isArray(state.modelInstalls)) {
+      return null;
+    }
+    for (var i = 0; i < state.modelInstalls.length; i += 1) {
+      var job = state.modelInstalls[i] || {};
+      if (String(job.model || "") !== target) {
+        continue;
+      }
+      if (String(job.status || "") === "running") {
+        return job;
+      }
+      if (!state.modelInstallJob || String(job.id || "") === String(state.modelInstallJob.id || "")) {
+        return job;
+      }
+    }
+    return null;
+  }
+
+  function renderModelsDialog() {
+    if (!el.modelsBoxList) {
+      return;
+    }
+
+    var activeModel = activeModelName();
+    var html = "";
+    if (state.modelLoadError) {
+      html += "<p class='empty-state'>Could not load models right now.</p>";
+    }
+
+    html += "<div class='models-section'><p class='models-section-title'>Installed</p>";
+    if (!state.models.length) {
+      html += "<p class='empty-state'>No installed models yet.</p>";
+    } else {
+      for (var i = 0; i < state.models.length; i += 1) {
+        var model = state.models[i];
+        var parts = parseModelDisplay(model);
+        var activeClass = model === activeModel ? " active" : "";
+        html += "<button type='button' class='model-item" + activeClass + "' data-model-name='" + escHtml(model) + "'>";
+        html += "<span class='model-primary'>" + escHtml(parts.primary) + "</span>";
+        html += "<span class='model-meta'>" + escHtml(parts.meta || parts.raw) + "</span>";
+        html += "</button>";
+      }
+    }
+    html += "</div>";
+
+    html += "<div class='models-section'><p class='models-section-title'>Install curated models</p>";
+    if (!Array.isArray(state.modelCatalog) || !state.modelCatalog.length) {
+      html += "<p class='empty-state'>No curated models list found.</p>";
+    } else {
+      for (var j = 0; j < state.modelCatalog.length; j += 1) {
+        var entry = state.modelCatalog[j] || {};
+        var modelName = String(entry.name || "");
+        if (!modelName) {
+          continue;
+        }
+        var modelParts = parseModelDisplay(modelName);
+        var description = trim(entry.description || "");
+        var isInstalled = isModelInstalled(modelName);
+        var installJob = currentModelInstallFor(modelName);
+        var isInstalling = !!(installJob && String(installJob.status || "") === "running");
+        var installLabel = isInstalled ? "Installed" : (isInstalling ? "Installing…" : "Install");
+        var installDisabled = isInstalled || isInstalling;
+        html += "<div class='catalog-item'>";
+        html += "<div class='catalog-copy'><span class='model-primary'>" + escHtml(modelParts.primary) + "</span>";
+        html += "<span class='model-meta'>" + escHtml(modelParts.meta || modelParts.raw) + "</span>";
+        if (description) {
+          html += "<span class='catalog-description'>" + escHtml(description) + "</span>";
+        }
+        html += "</div>";
+        html += "<button type='button' class='catalog-install-btn" + (installDisabled ? " disabled" : "") + "' data-action='install-model' data-model-name='" + escHtml(modelName) + "'" + (installDisabled ? " disabled" : "") + ">" + escHtml(installLabel) + "</button>";
+        html += "</div>";
+      }
+    }
+    html += "</div>";
+
+    if (state.modelInstallJob && trim(state.modelInstallLog || "")) {
+      var jobModel = String(state.modelInstallJob.model || "");
+      var jobStatus = String(state.modelInstallJob.status || "running");
+      html += "<div class='models-section install-log-section'>";
+      html += "<p class='models-section-title'>Install log: " + escHtml(jobModel) + " (" + escHtml(jobStatus) + ")</p>";
+      html += "<pre class='install-log'>" + escHtml(state.modelInstallLog) + "</pre>";
+      html += "</div>";
+    }
+
+    el.modelsBoxList.innerHTML = html;
   }
 
   function themeLabel(name) {
@@ -2359,14 +2574,63 @@
     return "Finder";
   }
 
+  function firstOpenTargetFromMenu() {
+    if (!el.openMenu) {
+      return "finder";
+    }
+    var first = el.openMenu.querySelector("button[data-open-target]");
+    if (!first) {
+      return "finder";
+    }
+    return String(first.getAttribute("data-open-target") || "finder");
+  }
+
+  function normalizedOpenTarget(target) {
+    var value = String(target || "");
+    if (value === "finder" || value === "terminal" || value === "textmate") {
+      return value;
+    }
+    return firstOpenTargetFromMenu();
+  }
+
   function openTargetIconMarkup(target) {
+    var finderIcon = state.appIcons && state.appIcons.finder ? String(state.appIcons.finder) : "";
+    var textmateIcon = state.appIcons && state.appIcons.textmate ? String(state.appIcons.textmate) : "";
     if (target === "terminal") {
       return "<span class='btn-icon app-icon terminal-app-icon' aria-hidden='true'><svg viewBox='0 0 16 16' fill='none'><rect x='1.2' y='2' width='13.6' height='12' rx='2.2' fill='#181B2A' stroke='#454A66' stroke-width='1'></rect><path d='M4 6.1l2 1.9L4 9.9' stroke='#D8DEFF' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'></path><path d='M7.8 10h4.2' stroke='#D8DEFF' stroke-width='1.2' stroke-linecap='round'></path></svg></span>";
     }
     if (target === "textmate") {
+      if (textmateIcon) {
+        return "<span class='btn-icon app-icon textmate-icon real-app-icon' aria-hidden='true'><img class='app-icon-img' src='" + escAttr(textmateIcon) + "' alt=''></span>";
+      }
       return "<span class='btn-icon app-icon textmate-icon' aria-hidden='true'><svg viewBox='0 0 16 16' fill='none'><circle cx='8' cy='8' r='6.3' fill='#F5ECFF' stroke='#A669D8' stroke-width='1'></circle><path d='M8 3.2l1.2 2.2 2.3-.8-.9 2.2 2.2 1.2-2.2 1.2.9 2.2-2.3-.8L8 12.8l-1.2-2.2-2.3.8.9-2.2L3.2 8l2.2-1.2-.9-2.2 2.3.8L8 3.2z' fill='#B84FE8'></path></svg></span>";
     }
+    if (finderIcon) {
+      return "<span class='btn-icon app-icon finder-icon real-app-icon' aria-hidden='true'><img class='app-icon-img' src='" + escAttr(finderIcon) + "' alt=''></span>";
+    }
     return "<span class='btn-icon app-icon finder-icon' aria-hidden='true'><svg viewBox='0 0 16 16' fill='none'><rect x='1.2' y='1.2' width='13.6' height='13.6' rx='3.2' fill='#80B6FF' stroke='#4C7CC8' stroke-width='1'></rect><path d='M8 2v12' stroke='#EAF3FF' stroke-width='1'></path><circle cx='5.3' cy='6.2' r='0.8' fill='#0F2A50'></circle><circle cx='10.7' cy='6.2' r='0.8' fill='#0F2A50'></circle><path d='M4.5 10.2c1 .9 2.2 1.4 3.5 1.4s2.5-.5 3.5-1.4' stroke='#0F2A50' stroke-width='1' stroke-linecap='round'></path></svg></span>";
+  }
+
+  function renderOpenMenuIcons() {
+    function setMenuIcon(target, dataUri) {
+      var button = el.openMenu ? el.openMenu.querySelector("button[data-open-target='" + target + "']") : null;
+      if (!button) {
+        return;
+      }
+      var host = button.querySelector(".app-icon");
+      if (!host) {
+        return;
+      }
+      if (!dataUri) {
+        host.classList.remove("real-app-icon");
+        return;
+      }
+      host.classList.add("real-app-icon");
+      host.innerHTML = "<img class='app-icon-img' src='" + escAttr(dataUri) + "' alt=''>";
+    }
+
+    setMenuIcon("finder", state.appIcons.finder || "");
+    setMenuIcon("textmate", state.appIcons.textmate || "");
   }
 
   function commitActionIconMarkup(action) {
@@ -2384,10 +2648,11 @@
       return;
     }
     var ws = activeWorkspace();
-    var target = state.lastOpenTarget || "finder";
+    var target = normalizedOpenTarget(state.lastOpenTarget);
+    state.lastOpenTarget = target;
     var label = openTargetLabel(target);
     if (!ws) {
-      el.openMainBtn.innerHTML = openTargetIconMarkup(target) + "<span class='btn-label'>Open</span>";
+      el.openMainBtn.innerHTML = openTargetIconMarkup(target) + "<span class='btn-label'>" + escHtml(label) + "</span>";
       el.openMainBtn.title = "";
       el.openMainBtn.disabled = true;
       el.openMenuBtn.disabled = true;
@@ -2405,9 +2670,6 @@
         openButtons[i].classList.toggle("active", openTarget === target);
       }
     }
-    if (el.workspacePathWidget) {
-      el.workspacePathWidget.title = "Open " + folder + " " + (ws.path || "");
-    }
   }
 
   function commitActionLabel(action) {
@@ -2424,15 +2686,30 @@
     if (!el.commitMainBtn) {
       return;
     }
+    var ws = activeWorkspace();
+    var gitState = activeGitState();
+    var commitEnabled = !!(ws && gitState && gitState.is_repo);
     var action = state.lastCommitAction || "commit";
     el.commitMainBtn.innerHTML =
       commitActionIconMarkup(action) +
       "<span class='btn-label'>" + escHtml(commitActionLabel(action)) + "</span>";
+    el.commitMainBtn.disabled = !commitEnabled;
+    if (el.commitMenuBtn) {
+      el.commitMenuBtn.disabled = !commitEnabled;
+    }
+    if (!commitEnabled && el.commitMenu && !el.commitMenu.classList.contains("hidden")) {
+      el.commitMenu.classList.add("hidden");
+    }
+    el.commitMainBtn.title = commitEnabled ? "Primary commit action" : "Commit disabled: create a repo first";
+    if (el.commitMenuBtn) {
+      el.commitMenuBtn.title = commitEnabled ? "Choose commit action" : "Commit menu disabled: create a repo first";
+    }
     if (el.commitMenu) {
       var commitButtons = el.commitMenu.querySelectorAll("button[data-commit-action]");
       for (var i = 0; i < commitButtons.length; i += 1) {
         var commitAction = commitButtons[i].getAttribute("data-commit-action");
         commitButtons[i].classList.toggle("active", commitAction === action);
+        commitButtons[i].disabled = !commitEnabled;
       }
     }
   }
@@ -2446,6 +2723,8 @@
       el.workspacePathWidget.classList.add("hidden");
       el.workspacePathWidget.innerHTML = "";
       el.workspacePathWidget.title = "";
+      el.workspacePathWidget.setAttribute("data-tooltip", "No workspace selected");
+      el.workspacePathWidget.setAttribute("aria-label", "No workspace selected");
       el.workspacePathWidget.disabled = true;
       return;
     }
@@ -2454,6 +2733,8 @@
       "<span class='path-widget-icon' aria-hidden='true'><svg viewBox='0 0 16 16' fill='none' stroke='currentColor' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'><path d='M1.8 4.4h4.1l1.2 1.3h7.1v6.1c0 .9-.7 1.6-1.6 1.6H3.4c-.9 0-1.6-.7-1.6-1.6z'></path></svg></span>" +
       "<span class='path-widget-label'>" + escHtml(ws.path) + "</span>";
     el.workspacePathWidget.title = "Click to copy path. Double-click to open folder.";
+    el.workspacePathWidget.setAttribute("data-tooltip", "Click to copy path. Double-click to open folder.");
+    el.workspacePathWidget.setAttribute("aria-label", "Workspace path: " + ws.path);
     el.workspacePathWidget.disabled = false;
   }
 
@@ -2489,7 +2770,11 @@
     var shouldAutoScroll = keyChanged || state.chatAutoScroll;
 
     if (!state.activeWorkspaceId) {
-      el.chatLog.innerHTML = "<p class='empty-state'>Select or add a workspace to begin.</p>";
+      var emptyWorkspaceMarkup = "<p class='empty-state'>Select or add a workspace to begin.</p>";
+      if (state.chatMarkupCache !== emptyWorkspaceMarkup) {
+        el.chatLog.innerHTML = emptyWorkspaceMarkup;
+        state.chatMarkupCache = emptyWorkspaceMarkup;
+      }
       state.chatAutoScroll = true;
       state.chatLastKey = conversationKey;
       updateChatJumpButton();
@@ -2499,9 +2784,17 @@
     if (state.activeDraftWorkspaceId) {
       var draftText = trim(state.draftTextByWorkspace[state.activeDraftWorkspaceId] || "");
       if (draftText) {
-        el.chatLog.innerHTML = "<p class='empty-state'>Draft loaded. Send your first message to create the conversation.</p>";
+        var draftReadyMarkup = "<p class='empty-state'>Draft loaded. Send your first message to create the conversation.</p>";
+        if (state.chatMarkupCache !== draftReadyMarkup) {
+          el.chatLog.innerHTML = draftReadyMarkup;
+          state.chatMarkupCache = draftReadyMarkup;
+        }
       } else {
-        el.chatLog.innerHTML = "<p class='empty-state'>This is a draft. Start typing below; it autosaves to disk.</p>";
+        var draftEmptyMarkup = "<p class='empty-state'>This is a draft. Start typing below; it autosaves to disk.</p>";
+        if (state.chatMarkupCache !== draftEmptyMarkup) {
+          el.chatLog.innerHTML = draftEmptyMarkup;
+          state.chatMarkupCache = draftEmptyMarkup;
+        }
       }
       state.chatAutoScroll = true;
       state.chatLastKey = conversationKey;
@@ -2510,7 +2803,11 @@
     }
 
     if (!state.activeConversationId || !state.activeConversation) {
-      el.chatLog.innerHTML = "<p class='empty-state'>Select a conversation or click + beside a workspace to start a draft.</p>";
+      var noConversationMarkup = "<p class='empty-state'>Select a conversation or click + beside a workspace to start a draft.</p>";
+      if (state.chatMarkupCache !== noConversationMarkup) {
+        el.chatLog.innerHTML = noConversationMarkup;
+        state.chatMarkupCache = noConversationMarkup;
+      }
       state.chatAutoScroll = true;
       state.chatLastKey = conversationKey;
       updateChatJumpButton();
@@ -2521,7 +2818,11 @@
     var events = runEventsForConversation(state.activeConversationId);
 
     if (!messages.length && !events.length) {
-      el.chatLog.innerHTML = "<p class='empty-state'>No messages yet in this conversation.</p>";
+      var noMessagesMarkup = "<p class='empty-state'>No messages yet in this conversation.</p>";
+      if (state.chatMarkupCache !== noMessagesMarkup) {
+        el.chatLog.innerHTML = noMessagesMarkup;
+        state.chatMarkupCache = noMessagesMarkup;
+      }
       state.chatAutoScroll = true;
       state.chatLastKey = conversationKey;
       updateChatJumpButton();
@@ -2551,7 +2852,10 @@
       html += renderRunEvent(events[j]);
     }
 
-    el.chatLog.innerHTML = html;
+    if (state.chatMarkupCache !== html) {
+      el.chatLog.innerHTML = html;
+      state.chatMarkupCache = html;
+    }
     if (shouldAutoScroll) {
       el.chatLog.scrollTop = el.chatLog.scrollHeight;
       state.chatAutoScroll = true;
@@ -2562,6 +2866,7 @@
     }
     state.chatLastKey = conversationKey;
     updateChatJumpButton();
+    refreshRunningElapsedBadges();
   }
 
   function hasActiveChatSelection() {
@@ -2756,11 +3061,10 @@
     safeStep("renderRunButton", renderRunButton);
     safeStep("renderQueueControls", renderQueueControls);
     safeStep("renderOpenButton", renderOpenButton);
+    safeStep("renderOpenMenuIcons", renderOpenMenuIcons);
     safeStep("renderCommitButton", renderCommitButton);
     safeStep("renderWorkspacePathWidget", renderWorkspacePathWidget);
-    safeStep("renderModelList.modelsBox", function () {
-      renderModelListInto(el.modelsBoxList, activeModelName());
-    });
+    safeStep("renderModelsDialog", renderModelsDialog);
     safeStep("renderModelList.modelPicker", function () {
       renderModelListInto(el.modelPickerList, activeModelName());
     });
@@ -3111,6 +3415,124 @@
     });
   }
 
+  function loadModelCatalog() {
+    return apiGet("model_catalog").then(function (response) {
+      if (!response.success) {
+        throw new Error(response.error || "Failed to load model catalog");
+      }
+      state.modelCatalog = response.available || [];
+      state.modelInstalls = response.installs || [];
+    });
+  }
+
+  function loadAppIcons() {
+    return apiGet("app_icons").then(function (response) {
+      if (!response.success) {
+        throw new Error(response.error || "Failed to load app icons");
+      }
+      state.appIcons = {
+        finder: String(response.finder || ""),
+        textmate: String(response.textmate || "")
+      };
+    });
+  }
+
+  function stopModelInstallPolling() {
+    if (modelInstallPollTimer) {
+      clearInterval(modelInstallPollTimer);
+      modelInstallPollTimer = null;
+    }
+  }
+
+  function pollModelInstallStatus(jobId) {
+    if (!jobId) {
+      return Promise.resolve();
+    }
+    return apiGet("model_install_status", { job_id: jobId }).then(function (response) {
+      if (!response.success) {
+        throw new Error(response.error || "Failed to load install status");
+      }
+      state.modelInstallJob = response.job || null;
+      state.modelInstallLog = response.job && response.job.log ? String(response.job.log) : "";
+      if (response.job) {
+        var replaced = false;
+        for (var i = 0; i < state.modelInstalls.length; i += 1) {
+          if (String(state.modelInstalls[i].id || "") === String(response.job.id || "")) {
+            state.modelInstalls[i] = response.job;
+            replaced = true;
+            break;
+          }
+        }
+        if (!replaced) {
+          state.modelInstalls.unshift(response.job);
+        }
+      }
+
+      var status = String((response.job && response.job.status) || "");
+      if (status === "done" || status === "failed") {
+        stopModelInstallPolling();
+        return loadModels()
+          .catch(function () { return null; })
+          .then(function () {
+            return loadModelCatalog().catch(function () { return null; });
+          })
+          .then(function () {
+            renderUi();
+          });
+      }
+      renderUi();
+      return null;
+    });
+  }
+
+  function ensureModelInstallPolling(jobId) {
+    if (!jobId) {
+      return;
+    }
+    stopModelInstallPolling();
+    modelInstallPollTimer = setInterval(function () {
+      pollModelInstallStatus(jobId).catch(function () {
+        return null;
+      });
+    }, 1200);
+  }
+
+  function syncModelInstallPollingFromCatalog() {
+    var runningJobId = "";
+    for (var i = 0; i < state.modelInstalls.length; i += 1) {
+      var job = state.modelInstalls[i] || {};
+      if (String(job.status || "") === "running" && String(job.id || "")) {
+        runningJobId = String(job.id);
+        state.modelInstallJob = job;
+        break;
+      }
+    }
+    if (runningJobId) {
+      ensureModelInstallPolling(runningJobId);
+    } else {
+      stopModelInstallPolling();
+    }
+  }
+
+  function startModelInstall(modelName) {
+    var target = trim(modelName);
+    if (!target) {
+      return Promise.resolve();
+    }
+    return apiPost("model_install_start", { model: target }, { timeoutMs: 12000 }).then(function (response) {
+      if (!response.success || !response.job) {
+        throw new Error(response.error || "Model install failed to start");
+      }
+      state.modelInstallJob = response.job;
+      state.modelInstallLog = "";
+      ensureModelInstallPolling(String(response.job.id || ""));
+      renderUi();
+      return pollModelInstallStatus(String(response.job.id || "")).catch(function () {
+        return null;
+      });
+    });
+  }
+
   function loadThemes() {
     return apiGet("themes").then(function (response) {
       if (!response.success) {
@@ -3314,6 +3736,15 @@
       state.modelLoadError = err && err.message ? err.message : "Model check failed";
       return null;
     });
+    var modelCatalogPromise = runWithRetry(loadModelCatalog, 2, 180).catch(function () {
+      state.modelCatalog = [];
+      state.modelInstalls = [];
+      return null;
+    });
+    var appIconsPromise = runWithRetry(loadAppIcons, 2, 180).catch(function () {
+      state.appIcons = { finder: "", textmate: "" };
+      return null;
+    });
     var themesPromise = runWithRetry(loadThemes, 2, 120).catch(function () {
       state.themes = normalizeThemes(themeNameListFallback());
       ensureActiveThemeInList();
@@ -3348,9 +3779,16 @@
         return modelsPromise;
       })
       .then(function () {
+        return modelCatalogPromise;
+      })
+      .then(function () {
+        return appIconsPromise;
+      })
+      .then(function () {
         return themesPromise;
       })
       .then(function () {
+        syncModelInstallPollingFromCatalog();
         state.initialLoadComplete = true;
         renderUi();
       });
@@ -4941,6 +5379,17 @@
 
     on(el.modelStatusBtn, "click", function () {
       toggleMenu("models-box", el.modelStatusBtn);
+      if (!el.modelsBox || el.modelsBox.classList.contains("hidden")) {
+        return;
+      }
+      loadModelCatalog()
+        .then(function () {
+          syncModelInstallPollingFromCatalog();
+          renderUi();
+        })
+        .catch(function () {
+          renderUi();
+        });
     });
 
     on(el.themePickerBtn, "click", function () {
@@ -4971,15 +5420,32 @@
     });
 
     on(el.refreshModelsBtn, "click", function () {
-      loadModels().then(renderUi).catch(function (err) {
-        state.models = [];
-        state.modelLoadError = err && err.message ? err.message : "Model check failed";
-        renderUi();
-        showError(err);
-      });
+      Promise.all([
+        loadModels().catch(function (err) {
+          state.models = [];
+          state.modelLoadError = err && err.message ? err.message : "Model check failed";
+          return null;
+        }),
+        loadModelCatalog().catch(function () {
+          state.modelCatalog = [];
+          state.modelInstalls = [];
+          return null;
+        })
+      ])
+        .then(function () {
+          syncModelInstallPollingFromCatalog();
+          renderUi();
+        })
+        .catch(showError);
     });
 
     on(el.modelsBoxList, "click", function (event) {
+      var installBtn = event.target.closest("button[data-action='install-model'][data-model-name]");
+      if (installBtn) {
+        var installModel = installBtn.getAttribute("data-model-name");
+        startModelInstall(installModel).catch(showError);
+        return;
+      }
       var button = event.target.closest("button[data-model-name]");
       if (!button) {
         return;
@@ -5089,7 +5555,7 @@
         hideTooltip();
         return;
       }
-      showTooltipFor(target);
+      scheduleTooltipFor(target);
     });
 
     document.addEventListener("focusin", function (event) {
@@ -5098,7 +5564,7 @@
         hideTooltip();
         return;
       }
-      showTooltipFor(target);
+      scheduleTooltipFor(target);
     });
 
     document.addEventListener("mousemove", function (event) {
@@ -5689,6 +6155,7 @@
       clearInterval(liveRunTickTimer);
       liveRunTickTimer = null;
     }
+    stopModelInstallPolling();
     clearPendingAttachments();
   });
 

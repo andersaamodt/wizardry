@@ -129,6 +129,13 @@ pagetitle: "Artificer"
 <button type="button" data-permission="read-only"><span class="menu-icon mono-icon" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M1.8 8s2.3-3.6 6.2-3.6S14.2 8 14.2 8s-2.3 3.6-6.2 3.6S1.8 8 1.8 8z"/><circle cx="8" cy="8" r="1.7"/></svg></span><span>Read only</span></button>
 <button type="button" data-permission="full-access"><span class="menu-icon mono-icon" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="1.6"/><path d="M8 2.3v1.3"/><path d="M8 12.4v1.3"/><path d="M2.3 8h1.3"/><path d="M12.4 8h1.3"/><path d="M3.9 3.9l.9.9"/><path d="M11.2 11.2l.9.9"/><path d="M12.1 3.9l-.9.9"/><path d="M4.8 11.2l-.9.9"/></svg></span><span>Full access</span></button>
 <div class="menu-sep"></div>
+<p class="menu-title">Command execution</p>
+<div class="command-exec-control" role="group" aria-label="Command execution mode">
+<button type="button" data-command-exec="none">None</button>
+<button type="button" data-command-exec="ask">Ask me</button>
+<button type="button" data-command-exec="all">All</button>
+</div>
+<div class="menu-sep"></div>
 <div class="perm-toggle-row">
 <button id="network-toggle-btn" class="perm-access-toggle" type="button" aria-pressed="false" aria-label="Toggle network access" title="Toggle network access">
 <span class="perm-toggle-text">Network access</span>
@@ -140,6 +147,34 @@ pagetitle: "Artificer"
 <span class="perm-toggle-text">Web access</span>
 <span class="loop-track" aria-hidden="true"><span class="loop-knob"></span></span>
 </button>
+</div>
+</div>
+
+<div id="command-approval-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="command-approval-title">
+<div class="modal-card">
+<div class="modal-head">
+<h3 id="command-approval-title">Command approval required</h3>
+<button id="command-approval-close" class="icon-btn ghost" type="button" aria-label="Close command approval">&times;</button>
+</div>
+<div class="stack">
+<p id="command-approval-text" class="settings-hint">The agent requested a command.</p>
+<pre id="command-approval-command" class="terminal-output"></pre>
+<label for="command-approval-match-mode">Remember rule type</label>
+<select id="command-approval-match-mode">
+<option value="exact">Exact command</option>
+<option value="regex">Regex pattern</option>
+</select>
+<label for="command-approval-pattern">Remember pattern</label>
+<input id="command-approval-pattern" placeholder="^git([[:space:]].*)?$" />
+</div>
+<div class="modal-actions two-col">
+<button id="command-approval-allow-once" type="button">Allow once</button>
+<button id="command-approval-deny-once" class="ghost" type="button">Deny once</button>
+</div>
+<div class="modal-actions two-col">
+<button id="command-approval-allow-remember" type="button">Allow + remember</button>
+<button id="command-approval-deny-remember" class="ghost" type="button">Deny + remember</button>
+</div>
 </div>
 </div>
 </div>
@@ -284,4 +319,4 @@ pagetitle: "Artificer"
 </div>
 </div>
 
-<script src="/static/artificer-app.js?v=20260217-streamfix01"></script>
+<script src="/static/artificer-app.js?v=20260217-opencommitfix01"></script>

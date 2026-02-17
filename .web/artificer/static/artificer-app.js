@@ -96,6 +96,7 @@
     organizeMode: storageGet("artificer.organizeMode", "project"),
     organizeShow: storageGet("artificer.organizeShow", "all"),
     permissionMode: storageGet("artificer.permissionMode", "default"),
+    commandExecMode: storageGet("artificer.commandExecMode", "ask"),
     githubUsername: storageGet("artificer.githubUsername", ""),
     networkAccess: storageGet("artificer.networkAccess", "0") === "1",
     webAccess: storageGet("artificer.webAccess", "0") === "1",
@@ -130,6 +131,14 @@
     awaitingDirPicker: false,
     conversationLoadSeq: 0,
     modelLoadError: "",
+    appIcons: {
+      finder: "",
+      textmate: ""
+    },
+    modelCatalog: [],
+    modelInstalls: [],
+    modelInstallJob: null,
+    modelInstallLog: "",
     contextWindowText: "Context window information will display here.",
     lastErrorText: "",
     lastErrorAt: 0,
@@ -137,6 +146,7 @@
     selectionVersion: 0,
     chatAutoScroll: true,
     chatLastKey: "",
+    chatMarkupCache: "",
     threadsPaneWidth: parseStoredPaneWidth("artificer.threadsPaneWidth", 308),
     diffPaneWidth: parseStoredPaneWidth("artificer.diffPaneWidth", 620)
   };
@@ -144,10 +154,14 @@
   var saveDraftTimer = null;
   var liveRunTickTimer = null;
   var runStreamPollTimers = {};
+  var modelInstallPollTimer = null;
   var paneDragState = null;
   var pathWidgetClickTimer = null;
   var tooltipEl = null;
   var tooltipTarget = null;
+  var tooltipShowTimer = null;
+  var tooltipPendingTarget = null;
+  var TOOLTIP_DELAY_MS = 520;
 
   if (state.sortMode !== "updated" && state.sortMode !== "created") {
     state.sortMode = "updated";
@@ -174,6 +188,9 @@
   }
   if (!/^[a-z0-9_-]+$/.test(String(state.activeTheme || ""))) {
     state.activeTheme = "psionic";
+  }
+  if (state.commandExecMode !== "none" && state.commandExecMode !== "ask" && state.commandExecMode !== "all") {
+    state.commandExecMode = "ask";
   }
 
   var el = {
@@ -268,6 +285,16 @@
     commitMessage: document.getElementById("commit-message"),
     commitNextStep: document.getElementById("commit-next-step"),
     commitContinueBtn: document.getElementById("commit-continue-btn"),
+    commandApprovalModal: document.getElementById("command-approval-modal"),
+    commandApprovalClose: document.getElementById("command-approval-close"),
+    commandApprovalText: document.getElementById("command-approval-text"),
+    commandApprovalCommand: document.getElementById("command-approval-command"),
+    commandApprovalMatchMode: document.getElementById("command-approval-match-mode"),
+    commandApprovalPattern: document.getElementById("command-approval-pattern"),
+    commandApprovalAllowOnce: document.getElementById("command-approval-allow-once"),
+    commandApprovalDenyOnce: document.getElementById("command-approval-deny-once"),
+    commandApprovalAllowRemember: document.getElementById("command-approval-allow-remember"),
+    commandApprovalDenyRemember: document.getElementById("command-approval-deny-remember"),
 
     runActionModal: document.getElementById("run-action-modal"),
     runActionClose: document.getElementById("run-action-close"),
@@ -369,7 +396,41 @@
     if (!node || typeof node.getAttribute !== "function") {
       return "";
     }
+    if (node.classList && node.classList.contains("workspace-menu-trigger")) {
+      return "";
+    }
+    var workspaceRow = node.closest && node.closest(".workspace-row[data-workspace-id]");
+    if (workspaceRow) {
+      var workspaceId = String(workspaceRow.getAttribute("data-workspace-id") || "");
+      if (workspaceId && workspaceId === String(state.openWorkspaceMenuWorkspaceId || "")) {
+        return "";
+      }
+    }
+    var anchor = node.closest && node.closest(".menu-anchor");
+    if (anchor) {
+      var openMenu = anchor.querySelector(".floating-menu:not(.hidden), .models-box:not(.hidden)");
+      if (openMenu) {
+        return "";
+      }
+    }
     return trim(node.getAttribute("data-tooltip") || "");
+  }
+
+  function tooltipPreferredPlacement(target) {
+    if (!target || !target.getBoundingClientRect) {
+      return "bottom";
+    }
+    if (target.closest && target.closest(".toolbar")) {
+      return "top";
+    }
+    if (target.closest && target.closest(".composer-row, .session-row, .workspace-sidebar-footer")) {
+      return "bottom";
+    }
+    var rect = target.getBoundingClientRect();
+    var viewportHeight = window.innerHeight || document.documentElement.clientHeight || 768;
+    var spaceAbove = rect.top;
+    var spaceBelow = viewportHeight - rect.bottom;
+    return spaceBelow >= spaceAbove ? "bottom" : "top";
   }
 
   function positionTooltip(target) {
@@ -381,7 +442,8 @@
     var viewportWidth = window.innerWidth || document.documentElement.clientWidth || 1024;
     var viewportHeight = window.innerHeight || document.documentElement.clientHeight || 768;
     var left = rect.left + (rect.width - tipRect.width) / 2;
-    var top = rect.top - tipRect.height - 8;
+    var placement = tooltipPreferredPlacement(target);
+    var top = placement === "top" ? rect.top - tipRect.height - 8 : rect.bottom + 8;
 
     if (left < 8) {
       left = 8;
@@ -389,8 +451,15 @@
     if (left + tipRect.width > viewportWidth - 8) {
       left = Math.max(8, viewportWidth - tipRect.width - 8);
     }
-    if (top < 8) {
-      top = rect.bottom + 8;
+    if (top < 8 || top + tipRect.height > viewportHeight - 8) {
+      if (placement === "top") {
+        top = rect.bottom + 8;
+      } else {
+        top = rect.top - tipRect.height - 8;
+      }
+      if (top < 8) {
+        top = 8;
+      }
       if (top + tipRect.height > viewportHeight - 8) {
         top = Math.max(8, viewportHeight - tipRect.height - 8);
       }
@@ -407,13 +476,44 @@
     }
     var tip = ensureTooltipEl();
     tooltipTarget = target;
+    tip.classList.remove("show");
     tip.textContent = text;
     tip.setAttribute("aria-hidden", "false");
-    tip.classList.add("show");
+    tip.style.left = "-9999px";
+    tip.style.top = "-9999px";
     positionTooltip(target);
+    tip.classList.add("show");
+  }
+
+  function clearTooltipShowTimer() {
+    if (tooltipShowTimer) {
+      clearTimeout(tooltipShowTimer);
+      tooltipShowTimer = null;
+    }
+    tooltipPendingTarget = null;
+  }
+
+  function scheduleTooltipFor(target) {
+    var text = tooltipTextFor(target);
+    if (!text) {
+      clearTooltipShowTimer();
+      hideTooltip();
+      return;
+    }
+    clearTooltipShowTimer();
+    tooltipPendingTarget = target;
+    tooltipShowTimer = setTimeout(function () {
+      if (!tooltipPendingTarget || tooltipPendingTarget !== target) {
+        return;
+      }
+      showTooltipFor(target);
+      tooltipShowTimer = null;
+      tooltipPendingTarget = null;
+    }, TOOLTIP_DELAY_MS);
   }
 
   function hideTooltip() {
+    clearTooltipShowTimer();
     tooltipTarget = null;
     if (!tooltipEl) {
       return;
@@ -882,6 +982,7 @@
       method: options.method,
       headers: options.headers,
       body: options.body,
+      cache: options.cacheMode || "default",
       signal: controller.signal
     })
       .then(function (response) {
@@ -910,6 +1011,7 @@
   function apiGet(action, params, options) {
     var search = new URLSearchParams(params || {});
     search.set("action", action);
+    search.set("_ts", String(Date.now()) + "-" + String(Math.floor(Math.random() * 1000000)));
     var timeoutMs = 30000;
     if (options && Number(options.timeoutMs) > 0) {
       timeoutMs = Number(options.timeoutMs);
@@ -917,6 +1019,7 @@
     return requestJson("/cgi/artificer-api?" + search.toString(), {
       method: "GET",
       headers: { Accept: "application/json" },
+      cacheMode: "no-store",
       timeoutMs: timeoutMs
     });
   }
@@ -948,6 +1051,13 @@
       }
     }
     return null;
+  }
+
+  function activeWorkspace() {
+    if (!state.activeWorkspaceId) {
+      return null;
+    }
+    return getWorkspaceById(state.activeWorkspaceId);
   }
 
   function getConversationById(workspace, conversationId) {
@@ -1389,6 +1499,16 @@
     return "<svg viewBox='0 0 16 16' fill='none' stroke='currentColor' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'><path d='M8 1.6l4.6 1.8v3.7c0 3-1.7 5.4-4.6 7.2-2.9-1.8-4.6-4.2-4.6-7.2V3.4L8 1.6z'></path></svg>";
   }
 
+  function commandExecModeLabel(mode) {
+    if (mode === "none") {
+      return "None";
+    }
+    if (mode === "all") {
+      return "All";
+    }
+    return "Ask me";
+  }
+
   function gitDeltaMarkup(added, deleted) {
     var addCount = Number(added || 0);
     var delCount = Number(deleted || 0);
@@ -1498,6 +1618,7 @@
     closeModal(el.commitModal);
     closeModal(el.runActionModal);
     closeModal(el.settingsModal);
+    closeModal(el.commandApprovalModal);
   }
 
   function setWorkspaceDropActive(active) {
@@ -1520,6 +1641,11 @@
     if (state.busy) {
       state.runningWorkspaceId = workspaceId || state.runningWorkspaceId || state.activeWorkspaceId || "";
       state.runningConversationId = conversationId || state.runningConversationId || state.activeConversationId || "";
+      if (!liveRunTickTimer) {
+        liveRunTickTimer = setInterval(function () {
+          refreshRunningElapsedBadges();
+        }, 1000);
+      }
     } else {
       state.runningWorkspaceId = "";
       state.runningConversationId = "";
@@ -1677,10 +1803,8 @@
       if (isFinite(startedAt) && startedAt > 0) {
         elapsed = Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
       }
-      html += "<p class='run-line running'><span class='run-spinner' aria-hidden='true'></span> Running agent";
-      if (elapsed > 0) {
-        html += " <span class='run-elapsed'>" + elapsed + "s</span>";
-      }
+      html += "<p class='run-line running' data-started-at='" + escAttr(event.started_at || "") + "'><span class='run-spinner' aria-hidden='true'></span> Running agent";
+      html += " <span class='run-elapsed'>" + (elapsed > 0 ? elapsed + "s" : "") + "</span>";
       html += "</p>";
       if (trim(event.stream_text || "")) {
         html += "<pre class='run-stream-preview'>" + escHtml(event.stream_text) + "</pre>";
@@ -1720,6 +1844,30 @@
     }
     html += "</article>";
     return html;
+  }
+
+  function refreshRunningElapsedBadges() {
+    if (!el.chatLog) {
+      return;
+    }
+    var lines = el.chatLog.querySelectorAll(".run-line.running[data-started-at]");
+    if (!lines || !lines.length) {
+      return;
+    }
+    var nowMs = Date.now();
+    for (var i = 0; i < lines.length; i += 1) {
+      var line = lines[i];
+      var startedRaw = line.getAttribute("data-started-at") || "";
+      var startedMs = Date.parse(startedRaw);
+      if (!isFinite(startedMs) || startedMs <= 0) {
+        continue;
+      }
+      var elapsed = Math.max(0, Math.floor((nowMs - startedMs) / 1000));
+      var badge = line.querySelector(".run-elapsed");
+      if (badge) {
+        badge.textContent = elapsed > 0 ? String(elapsed) + "s" : "";
+      }
+    }
   }
 
   function renderWorkspaceTree() {
@@ -1926,6 +2074,108 @@
     el.modelStatusBtn.title = state.models.length + " Ollama " + noun + " installed";
   }
 
+  function isModelInstalled(modelName) {
+    var target = String(modelName || "");
+    if (!target) {
+      return false;
+    }
+    for (var i = 0; i < state.models.length; i += 1) {
+      if (String(state.models[i]) === target) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function currentModelInstallFor(modelName) {
+    var target = String(modelName || "");
+    if (!target || !Array.isArray(state.modelInstalls)) {
+      return null;
+    }
+    for (var i = 0; i < state.modelInstalls.length; i += 1) {
+      var job = state.modelInstalls[i] || {};
+      if (String(job.model || "") !== target) {
+        continue;
+      }
+      if (String(job.status || "") === "running") {
+        return job;
+      }
+      if (!state.modelInstallJob || String(job.id || "") === String(state.modelInstallJob.id || "")) {
+        return job;
+      }
+    }
+    return null;
+  }
+
+  function renderModelsDialog() {
+    if (!el.modelsBoxList) {
+      return;
+    }
+
+    var activeModel = activeModelName();
+    var html = "";
+    if (state.modelLoadError) {
+      html += "<p class='empty-state'>Could not load models right now.</p>";
+    }
+
+    html += "<div class='models-section'><p class='models-section-title'>Installed</p>";
+    if (!state.models.length) {
+      html += "<p class='empty-state'>No installed models yet.</p>";
+    } else {
+      for (var i = 0; i < state.models.length; i += 1) {
+        var model = state.models[i];
+        var parts = parseModelDisplay(model);
+        var activeClass = model === activeModel ? " active" : "";
+        html += "<button type='button' class='model-item" + activeClass + "' data-model-name='" + escHtml(model) + "'>";
+        html += "<span class='model-primary'>" + escHtml(parts.primary) + "</span>";
+        html += "<span class='model-meta'>" + escHtml(parts.meta || parts.raw) + "</span>";
+        html += "</button>";
+      }
+    }
+    html += "</div>";
+
+    html += "<div class='models-section'><p class='models-section-title'>Install curated models</p>";
+    if (!Array.isArray(state.modelCatalog) || !state.modelCatalog.length) {
+      html += "<p class='empty-state'>No curated models list found.</p>";
+    } else {
+      for (var j = 0; j < state.modelCatalog.length; j += 1) {
+        var entry = state.modelCatalog[j] || {};
+        var modelName = String(entry.name || "");
+        if (!modelName) {
+          continue;
+        }
+        var modelParts = parseModelDisplay(modelName);
+        var description = trim(entry.description || "");
+        var isInstalled = isModelInstalled(modelName);
+        var installJob = currentModelInstallFor(modelName);
+        var isInstalling = !!(installJob && String(installJob.status || "") === "running");
+        var installLabel = isInstalled ? "Installed" : (isInstalling ? "Installing…" : "Install");
+        var installDisabled = isInstalled || isInstalling;
+        html += "<div class='catalog-item'>";
+        html += "<div class='catalog-copy'><span class='model-primary'>" + escHtml(modelParts.primary) + "</span>";
+        html += "<span class='model-meta'>" + escHtml(modelParts.meta || modelParts.raw) + "</span>";
+        if (description) {
+          html += "<span class='catalog-description'>" + escHtml(description) + "</span>";
+        }
+        html += "</div>";
+        html += "<button type='button' class='catalog-install-btn" + (installDisabled ? " disabled" : "") + "' data-action='install-model' data-model-name='" + escHtml(modelName) + "'" + (installDisabled ? " disabled" : "") + ">" + escHtml(installLabel) + "</button>";
+        html += "</div>";
+      }
+    }
+    html += "</div>";
+
+    if (state.modelInstallJob && trim(state.modelInstallLog || "")) {
+      var jobModel = String(state.modelInstallJob.model || "");
+      var jobStatus = String(state.modelInstallJob.status || "running");
+      html += "<div class='models-section install-log-section'>";
+      html += "<p class='models-section-title'>Install log: " + escHtml(jobModel) + " (" + escHtml(jobStatus) + ")</p>";
+      html += "<pre class='install-log'>" + escHtml(state.modelInstallLog) + "</pre>";
+      html += "</div>";
+    }
+
+    el.modelsBoxList.innerHTML = html;
+  }
+
   function themeLabel(name) {
     var raw = String(name || "");
     if (!raw) {
@@ -2014,8 +2264,11 @@
     }
     state.activeTheme = normalized;
     storageSet("artificer.activeTheme", normalized);
+    if (document && document.documentElement) {
+      document.documentElement.setAttribute("data-theme", normalized);
+    }
     if (el.themeStylesheet) {
-      el.themeStylesheet.href = "/static/themes/" + normalized + ".css";
+      el.themeStylesheet.href = "/static/themes/" + normalized + ".css?v=20260217-themefix01";
     }
   }
 
@@ -2228,7 +2481,19 @@
     el.permissionsMenuBtn.innerHTML =
       "<span class='menu-icon mono-icon' aria-hidden='true'>" + permissionModeIconMarkup(state.permissionMode) + "</span><span>" + escHtml(label) + "</span>";
     el.permissionsMenuBtn.title = label;
+    renderCommandExecMenu();
     renderPermissionToggles();
+  }
+
+  function renderCommandExecMenu() {
+    if (!el.permissionsMenu) {
+      return;
+    }
+    var items = el.permissionsMenu.querySelectorAll("button[data-command-exec]");
+    for (var i = 0; i < items.length; i += 1) {
+      var mode = items[i].getAttribute("data-command-exec");
+      items[i].classList.toggle("active", mode === state.commandExecMode);
+    }
   }
 
   function renderPermissionToggles() {
@@ -2359,14 +2624,63 @@
     return "Finder";
   }
 
+  function firstOpenTargetFromMenu() {
+    if (!el.openMenu) {
+      return "finder";
+    }
+    var first = el.openMenu.querySelector("button[data-open-target]");
+    if (!first) {
+      return "finder";
+    }
+    return String(first.getAttribute("data-open-target") || "finder");
+  }
+
+  function normalizedOpenTarget(target) {
+    var value = String(target || "");
+    if (value === "finder" || value === "terminal" || value === "textmate") {
+      return value;
+    }
+    return firstOpenTargetFromMenu();
+  }
+
   function openTargetIconMarkup(target) {
+    var finderIcon = state.appIcons && state.appIcons.finder ? String(state.appIcons.finder) : "";
+    var textmateIcon = state.appIcons && state.appIcons.textmate ? String(state.appIcons.textmate) : "";
     if (target === "terminal") {
       return "<span class='btn-icon app-icon terminal-app-icon' aria-hidden='true'><svg viewBox='0 0 16 16' fill='none'><rect x='1.2' y='2' width='13.6' height='12' rx='2.2' fill='#181B2A' stroke='#454A66' stroke-width='1'></rect><path d='M4 6.1l2 1.9L4 9.9' stroke='#D8DEFF' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'></path><path d='M7.8 10h4.2' stroke='#D8DEFF' stroke-width='1.2' stroke-linecap='round'></path></svg></span>";
     }
     if (target === "textmate") {
+      if (textmateIcon) {
+        return "<span class='btn-icon app-icon textmate-icon real-app-icon' aria-hidden='true'><img class='app-icon-img' src='" + escAttr(textmateIcon) + "' alt=''></span>";
+      }
       return "<span class='btn-icon app-icon textmate-icon' aria-hidden='true'><svg viewBox='0 0 16 16' fill='none'><circle cx='8' cy='8' r='6.3' fill='#F5ECFF' stroke='#A669D8' stroke-width='1'></circle><path d='M8 3.2l1.2 2.2 2.3-.8-.9 2.2 2.2 1.2-2.2 1.2.9 2.2-2.3-.8L8 12.8l-1.2-2.2-2.3.8.9-2.2L3.2 8l2.2-1.2-.9-2.2 2.3.8L8 3.2z' fill='#B84FE8'></path></svg></span>";
     }
+    if (finderIcon) {
+      return "<span class='btn-icon app-icon finder-icon real-app-icon' aria-hidden='true'><img class='app-icon-img' src='" + escAttr(finderIcon) + "' alt=''></span>";
+    }
     return "<span class='btn-icon app-icon finder-icon' aria-hidden='true'><svg viewBox='0 0 16 16' fill='none'><rect x='1.2' y='1.2' width='13.6' height='13.6' rx='3.2' fill='#80B6FF' stroke='#4C7CC8' stroke-width='1'></rect><path d='M8 2v12' stroke='#EAF3FF' stroke-width='1'></path><circle cx='5.3' cy='6.2' r='0.8' fill='#0F2A50'></circle><circle cx='10.7' cy='6.2' r='0.8' fill='#0F2A50'></circle><path d='M4.5 10.2c1 .9 2.2 1.4 3.5 1.4s2.5-.5 3.5-1.4' stroke='#0F2A50' stroke-width='1' stroke-linecap='round'></path></svg></span>";
+  }
+
+  function renderOpenMenuIcons() {
+    function setMenuIcon(target, dataUri) {
+      var button = el.openMenu ? el.openMenu.querySelector("button[data-open-target='" + target + "']") : null;
+      if (!button) {
+        return;
+      }
+      var host = button.querySelector(".app-icon");
+      if (!host) {
+        return;
+      }
+      if (!dataUri) {
+        host.classList.remove("real-app-icon");
+        return;
+      }
+      host.classList.add("real-app-icon");
+      host.innerHTML = "<img class='app-icon-img' src='" + escAttr(dataUri) + "' alt=''>";
+    }
+
+    setMenuIcon("finder", state.appIcons.finder || "");
+    setMenuIcon("textmate", state.appIcons.textmate || "");
   }
 
   function commitActionIconMarkup(action) {
@@ -2384,10 +2698,11 @@
       return;
     }
     var ws = activeWorkspace();
-    var target = state.lastOpenTarget || "finder";
+    var target = normalizedOpenTarget(state.lastOpenTarget);
+    state.lastOpenTarget = target;
     var label = openTargetLabel(target);
     if (!ws) {
-      el.openMainBtn.innerHTML = openTargetIconMarkup(target) + "<span class='btn-label'>Open</span>";
+      el.openMainBtn.innerHTML = openTargetIconMarkup(target) + "<span class='btn-label'>" + escHtml(label) + "</span>";
       el.openMainBtn.title = "";
       el.openMainBtn.disabled = true;
       el.openMenuBtn.disabled = true;
@@ -2405,9 +2720,6 @@
         openButtons[i].classList.toggle("active", openTarget === target);
       }
     }
-    if (el.workspacePathWidget) {
-      el.workspacePathWidget.title = "Open " + folder + " " + (ws.path || "");
-    }
   }
 
   function commitActionLabel(action) {
@@ -2424,15 +2736,30 @@
     if (!el.commitMainBtn) {
       return;
     }
+    var ws = activeWorkspace();
+    var gitState = activeGitState();
+    var commitEnabled = !!(ws && gitState && gitState.is_repo);
     var action = state.lastCommitAction || "commit";
     el.commitMainBtn.innerHTML =
       commitActionIconMarkup(action) +
       "<span class='btn-label'>" + escHtml(commitActionLabel(action)) + "</span>";
+    el.commitMainBtn.disabled = !commitEnabled;
+    if (el.commitMenuBtn) {
+      el.commitMenuBtn.disabled = !commitEnabled;
+    }
+    if (!commitEnabled && el.commitMenu && !el.commitMenu.classList.contains("hidden")) {
+      el.commitMenu.classList.add("hidden");
+    }
+    el.commitMainBtn.title = commitEnabled ? "Primary commit action" : "Commit disabled: create a repo first";
+    if (el.commitMenuBtn) {
+      el.commitMenuBtn.title = commitEnabled ? "Choose commit action" : "Commit menu disabled: create a repo first";
+    }
     if (el.commitMenu) {
       var commitButtons = el.commitMenu.querySelectorAll("button[data-commit-action]");
       for (var i = 0; i < commitButtons.length; i += 1) {
         var commitAction = commitButtons[i].getAttribute("data-commit-action");
         commitButtons[i].classList.toggle("active", commitAction === action);
+        commitButtons[i].disabled = !commitEnabled;
       }
     }
   }
@@ -2446,6 +2773,8 @@
       el.workspacePathWidget.classList.add("hidden");
       el.workspacePathWidget.innerHTML = "";
       el.workspacePathWidget.title = "";
+      el.workspacePathWidget.setAttribute("data-tooltip", "No workspace selected");
+      el.workspacePathWidget.setAttribute("aria-label", "No workspace selected");
       el.workspacePathWidget.disabled = true;
       return;
     }
@@ -2454,6 +2783,8 @@
       "<span class='path-widget-icon' aria-hidden='true'><svg viewBox='0 0 16 16' fill='none' stroke='currentColor' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'><path d='M1.8 4.4h4.1l1.2 1.3h7.1v6.1c0 .9-.7 1.6-1.6 1.6H3.4c-.9 0-1.6-.7-1.6-1.6z'></path></svg></span>" +
       "<span class='path-widget-label'>" + escHtml(ws.path) + "</span>";
     el.workspacePathWidget.title = "Click to copy path. Double-click to open folder.";
+    el.workspacePathWidget.setAttribute("data-tooltip", "Click to copy path. Double-click to open folder.");
+    el.workspacePathWidget.setAttribute("aria-label", "Workspace path: " + ws.path);
     el.workspacePathWidget.disabled = false;
   }
 
@@ -2489,7 +2820,11 @@
     var shouldAutoScroll = keyChanged || state.chatAutoScroll;
 
     if (!state.activeWorkspaceId) {
-      el.chatLog.innerHTML = "<p class='empty-state'>Select or add a workspace to begin.</p>";
+      var emptyWorkspaceMarkup = "<p class='empty-state'>Select or add a workspace to begin.</p>";
+      if (state.chatMarkupCache !== emptyWorkspaceMarkup) {
+        el.chatLog.innerHTML = emptyWorkspaceMarkup;
+        state.chatMarkupCache = emptyWorkspaceMarkup;
+      }
       state.chatAutoScroll = true;
       state.chatLastKey = conversationKey;
       updateChatJumpButton();
@@ -2499,9 +2834,17 @@
     if (state.activeDraftWorkspaceId) {
       var draftText = trim(state.draftTextByWorkspace[state.activeDraftWorkspaceId] || "");
       if (draftText) {
-        el.chatLog.innerHTML = "<p class='empty-state'>Draft loaded. Send your first message to create the conversation.</p>";
+        var draftReadyMarkup = "<p class='empty-state'>Draft loaded. Send your first message to create the conversation.</p>";
+        if (state.chatMarkupCache !== draftReadyMarkup) {
+          el.chatLog.innerHTML = draftReadyMarkup;
+          state.chatMarkupCache = draftReadyMarkup;
+        }
       } else {
-        el.chatLog.innerHTML = "<p class='empty-state'>This is a draft. Start typing below; it autosaves to disk.</p>";
+        var draftEmptyMarkup = "<p class='empty-state'>This is a draft. Start typing below; it autosaves to disk.</p>";
+        if (state.chatMarkupCache !== draftEmptyMarkup) {
+          el.chatLog.innerHTML = draftEmptyMarkup;
+          state.chatMarkupCache = draftEmptyMarkup;
+        }
       }
       state.chatAutoScroll = true;
       state.chatLastKey = conversationKey;
@@ -2510,7 +2853,11 @@
     }
 
     if (!state.activeConversationId || !state.activeConversation) {
-      el.chatLog.innerHTML = "<p class='empty-state'>Select a conversation or click + beside a workspace to start a draft.</p>";
+      var noConversationMarkup = "<p class='empty-state'>Select a conversation or click + beside a workspace to start a draft.</p>";
+      if (state.chatMarkupCache !== noConversationMarkup) {
+        el.chatLog.innerHTML = noConversationMarkup;
+        state.chatMarkupCache = noConversationMarkup;
+      }
       state.chatAutoScroll = true;
       state.chatLastKey = conversationKey;
       updateChatJumpButton();
@@ -2521,7 +2868,11 @@
     var events = runEventsForConversation(state.activeConversationId);
 
     if (!messages.length && !events.length) {
-      el.chatLog.innerHTML = "<p class='empty-state'>No messages yet in this conversation.</p>";
+      var noMessagesMarkup = "<p class='empty-state'>No messages yet in this conversation.</p>";
+      if (state.chatMarkupCache !== noMessagesMarkup) {
+        el.chatLog.innerHTML = noMessagesMarkup;
+        state.chatMarkupCache = noMessagesMarkup;
+      }
       state.chatAutoScroll = true;
       state.chatLastKey = conversationKey;
       updateChatJumpButton();
@@ -2551,7 +2902,10 @@
       html += renderRunEvent(events[j]);
     }
 
-    el.chatLog.innerHTML = html;
+    if (state.chatMarkupCache !== html) {
+      el.chatLog.innerHTML = html;
+      state.chatMarkupCache = html;
+    }
     if (shouldAutoScroll) {
       el.chatLog.scrollTop = el.chatLog.scrollHeight;
       state.chatAutoScroll = true;
@@ -2562,6 +2916,7 @@
     }
     state.chatLastKey = conversationKey;
     updateChatJumpButton();
+    refreshRunningElapsedBadges();
   }
 
   function hasActiveChatSelection() {
@@ -2756,11 +3111,10 @@
     safeStep("renderRunButton", renderRunButton);
     safeStep("renderQueueControls", renderQueueControls);
     safeStep("renderOpenButton", renderOpenButton);
+    safeStep("renderOpenMenuIcons", renderOpenMenuIcons);
     safeStep("renderCommitButton", renderCommitButton);
     safeStep("renderWorkspacePathWidget", renderWorkspacePathWidget);
-    safeStep("renderModelList.modelsBox", function () {
-      renderModelListInto(el.modelsBoxList, activeModelName());
-    });
+    safeStep("renderModelsDialog", renderModelsDialog);
     safeStep("renderModelList.modelPicker", function () {
       renderModelListInto(el.modelPickerList, activeModelName());
     });
@@ -2818,6 +3172,60 @@
   function savePermissionMode(mode) {
     state.permissionMode = mode;
     storageSet("artificer.permissionMode", mode);
+  }
+
+  function saveCommandExecMode(mode) {
+    var next = "ask";
+    if (mode === "none" || mode === "ask" || mode === "all") {
+      next = mode;
+    }
+    state.commandExecMode = next;
+    storageSet("artificer.commandExecMode", next);
+  }
+
+  function syncCommandExecModeForWorkspace(workspaceId) {
+    var wsId = trim(workspaceId);
+    if (!wsId) {
+      return Promise.resolve();
+    }
+    return apiGet("command_policy_get", { workspace_id: wsId })
+      .then(function (response) {
+        if (!response || !response.success) {
+          return;
+        }
+        saveCommandExecMode(response.mode || "ask");
+      })
+      .catch(function () {
+        return null;
+      });
+  }
+
+  function setCommandExecMode(mode) {
+    var next = mode;
+    if (next !== "none" && next !== "ask" && next !== "all") {
+      next = "ask";
+    }
+    if (next === "all") {
+      var ok = window.confirm("Allow all agent commands without asking? This can run any command the agent proposes.");
+      if (!ok) {
+        return Promise.resolve(false);
+      }
+    }
+    saveCommandExecMode(next);
+    if (!state.activeWorkspaceId) {
+      return Promise.resolve(true);
+    }
+    return apiPost("command_policy_set", {
+      workspace_id: state.activeWorkspaceId,
+      mode: next
+    })
+      .then(function (response) {
+        if (!response || !response.success) {
+          throw new Error((response && response.error) || "Could not save command policy");
+        }
+        saveCommandExecMode(response.mode || next);
+        return true;
+      });
   }
 
   function saveAgentLoopEnabled(enabled) {
@@ -3111,6 +3519,124 @@
     });
   }
 
+  function loadModelCatalog() {
+    return apiGet("model_catalog").then(function (response) {
+      if (!response.success) {
+        throw new Error(response.error || "Failed to load model catalog");
+      }
+      state.modelCatalog = response.available || [];
+      state.modelInstalls = response.installs || [];
+    });
+  }
+
+  function loadAppIcons() {
+    return apiGet("app_icons").then(function (response) {
+      if (!response.success) {
+        throw new Error(response.error || "Failed to load app icons");
+      }
+      state.appIcons = {
+        finder: String(response.finder || ""),
+        textmate: String(response.textmate || "")
+      };
+    });
+  }
+
+  function stopModelInstallPolling() {
+    if (modelInstallPollTimer) {
+      clearInterval(modelInstallPollTimer);
+      modelInstallPollTimer = null;
+    }
+  }
+
+  function pollModelInstallStatus(jobId) {
+    if (!jobId) {
+      return Promise.resolve();
+    }
+    return apiGet("model_install_status", { job_id: jobId }).then(function (response) {
+      if (!response.success) {
+        throw new Error(response.error || "Failed to load install status");
+      }
+      state.modelInstallJob = response.job || null;
+      state.modelInstallLog = response.job && response.job.log ? String(response.job.log) : "";
+      if (response.job) {
+        var replaced = false;
+        for (var i = 0; i < state.modelInstalls.length; i += 1) {
+          if (String(state.modelInstalls[i].id || "") === String(response.job.id || "")) {
+            state.modelInstalls[i] = response.job;
+            replaced = true;
+            break;
+          }
+        }
+        if (!replaced) {
+          state.modelInstalls.unshift(response.job);
+        }
+      }
+
+      var status = String((response.job && response.job.status) || "");
+      if (status === "done" || status === "failed") {
+        stopModelInstallPolling();
+        return loadModels()
+          .catch(function () { return null; })
+          .then(function () {
+            return loadModelCatalog().catch(function () { return null; });
+          })
+          .then(function () {
+            renderUi();
+          });
+      }
+      renderUi();
+      return null;
+    });
+  }
+
+  function ensureModelInstallPolling(jobId) {
+    if (!jobId) {
+      return;
+    }
+    stopModelInstallPolling();
+    modelInstallPollTimer = setInterval(function () {
+      pollModelInstallStatus(jobId).catch(function () {
+        return null;
+      });
+    }, 1200);
+  }
+
+  function syncModelInstallPollingFromCatalog() {
+    var runningJobId = "";
+    for (var i = 0; i < state.modelInstalls.length; i += 1) {
+      var job = state.modelInstalls[i] || {};
+      if (String(job.status || "") === "running" && String(job.id || "")) {
+        runningJobId = String(job.id);
+        state.modelInstallJob = job;
+        break;
+      }
+    }
+    if (runningJobId) {
+      ensureModelInstallPolling(runningJobId);
+    } else {
+      stopModelInstallPolling();
+    }
+  }
+
+  function startModelInstall(modelName) {
+    var target = trim(modelName);
+    if (!target) {
+      return Promise.resolve();
+    }
+    return apiPost("model_install_start", { model: target }, { timeoutMs: 12000 }).then(function (response) {
+      if (!response.success || !response.job) {
+        throw new Error(response.error || "Model install failed to start");
+      }
+      state.modelInstallJob = response.job;
+      state.modelInstallLog = "";
+      ensureModelInstallPolling(String(response.job.id || ""));
+      renderUi();
+      return pollModelInstallStatus(String(response.job.id || "")).catch(function () {
+        return null;
+      });
+    });
+  }
+
   function loadThemes() {
     return apiGet("themes").then(function (response) {
       if (!response.success) {
@@ -3314,6 +3840,15 @@
       state.modelLoadError = err && err.message ? err.message : "Model check failed";
       return null;
     });
+    var modelCatalogPromise = runWithRetry(loadModelCatalog, 2, 180).catch(function () {
+      state.modelCatalog = [];
+      state.modelInstalls = [];
+      return null;
+    });
+    var appIconsPromise = runWithRetry(loadAppIcons, 2, 180).catch(function () {
+      state.appIcons = { finder: "", textmate: "" };
+      return null;
+    });
     var themesPromise = runWithRetry(loadThemes, 2, 120).catch(function () {
       state.themes = normalizeThemes(themeNameListFallback());
       ensureActiveThemeInList();
@@ -3326,6 +3861,9 @@
         renderUi();
       })
       .then(loadConversation)
+      .then(function () {
+        return syncCommandExecModeForWorkspace(state.activeWorkspaceId);
+      })
       .then(function () {
         return refreshGitStatus().catch(function () {
           return null;
@@ -3348,9 +3886,16 @@
         return modelsPromise;
       })
       .then(function () {
+        return modelCatalogPromise;
+      })
+      .then(function () {
+        return appIconsPromise;
+      })
+      .then(function () {
         return themesPromise;
       })
       .then(function () {
+        syncModelInstallPollingFromCatalog();
         state.initialLoadComplete = true;
         renderUi();
       });
@@ -3438,7 +3983,6 @@
         .then(function () {
           if (state.activeWorkspaceId) {
             return loadConversation().catch(function () {
-              state.activeConversation = null;
               return null;
             });
           }
@@ -3544,6 +4088,12 @@
           if (!isSelectionVersionCurrent(selectionVersion)) {
             return;
           }
+          return syncCommandExecModeForWorkspace(workspaceId);
+        })
+        .then(function () {
+          if (!isSelectionVersionCurrent(selectionVersion)) {
+            return;
+          }
           renderUi();
         });
     }
@@ -3564,6 +4114,9 @@
         return refreshBranches().catch(function () {
           return null;
         });
+      })
+      .then(function () {
+        return syncCommandExecModeForWorkspace(workspaceId);
       })
       .then(function () {
         renderUi();
@@ -3614,6 +4167,12 @@
         if (!isSelectionVersionCurrent(selectionVersion)) {
           return;
         }
+        return syncCommandExecModeForWorkspace(workspaceId);
+      })
+      .then(function () {
+        if (!isSelectionVersionCurrent(selectionVersion)) {
+          return;
+        }
         renderUi();
       });
   }
@@ -3651,6 +4210,12 @@
         if (!isSelectionVersionCurrent(selectionVersion)) {
           return;
         }
+        return syncCommandExecModeForWorkspace(workspaceId);
+      })
+      .then(function () {
+        if (!isSelectionVersionCurrent(selectionVersion)) {
+          return;
+        }
         renderUi();
       });
   }
@@ -3668,6 +4233,9 @@
       .then(function (draft) {
         el.runPrompt.value = draft;
         resetComposerAttachments();
+        return syncCommandExecModeForWorkspace(workspaceId);
+      })
+      .then(function () {
         renderUi();
       })
       .then(function () {
@@ -3748,9 +4316,160 @@
     return Promise.resolve();
   }
 
+  function defaultCommandRulePattern(commandText) {
+    var cmd = trim(commandText);
+    if (!cmd) {
+      return "^.+$";
+    }
+    var first = cmd.split(/\s+/)[0] || "";
+    var escaped = first.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    if (!escaped) {
+      return "^.+$";
+    }
+    return "^" + escaped + "([[:space:]].*)?$";
+  }
+
+  function openCommandApprovalModal(commandText, reasonText) {
+    return new Promise(function (resolve, reject) {
+      if (!el.commandApprovalModal) {
+        reject(new Error("Command approval UI is unavailable."));
+        return;
+      }
+
+      if (el.commandApprovalText) {
+        var reason = trim(reasonText);
+        el.commandApprovalText.textContent = reason
+          ? "Agent requested a command (" + reason + ")."
+          : "Agent requested a command.";
+      }
+      if (el.commandApprovalCommand) {
+        el.commandApprovalCommand.textContent = String(commandText || "");
+      }
+      if (el.commandApprovalMatchMode) {
+        el.commandApprovalMatchMode.value = "exact";
+      }
+      if (el.commandApprovalPattern) {
+        el.commandApprovalPattern.value = defaultCommandRulePattern(commandText);
+      }
+
+      var done = false;
+      function finish(value, isReject) {
+        if (done) {
+          return;
+        }
+        done = true;
+        closeModal(el.commandApprovalModal);
+        if (isReject) {
+          reject(value instanceof Error ? value : new Error(String(value || "Command approval cancelled")));
+        } else {
+          resolve(value);
+        }
+      }
+
+      function choice(decision, scope) {
+        return function () {
+          var matchMode = "exact";
+          var pattern = String(commandText || "");
+          if (scope === "remember") {
+            matchMode = trim(el.commandApprovalMatchMode && el.commandApprovalMatchMode.value) || "exact";
+            pattern = trim(el.commandApprovalPattern && el.commandApprovalPattern.value) || String(commandText || "");
+          }
+          finish({
+            decision: decision,
+            scope: scope,
+            match_mode: matchMode,
+            pattern: pattern
+          }, false);
+        };
+      }
+
+      function closeHandler() {
+        finish(new Error("Command approval cancelled"), true);
+      }
+
+      var handlers = [
+        [el.commandApprovalAllowOnce, choice("allow", "once")],
+        [el.commandApprovalDenyOnce, choice("deny", "once")],
+        [el.commandApprovalAllowRemember, choice("allow", "remember")],
+        [el.commandApprovalDenyRemember, choice("deny", "remember")],
+        [el.commandApprovalClose, closeHandler]
+      ];
+
+      function bindAll() {
+        for (var i = 0; i < handlers.length; i += 1) {
+          var pair = handlers[i];
+          if (pair[0]) {
+            pair[0].addEventListener("click", pair[1], { once: true });
+          }
+        }
+        if (el.commandApprovalModal) {
+          el.commandApprovalModal.addEventListener("click", overlayClick, { once: true });
+        }
+      }
+
+      function overlayClick(event) {
+        if (event.target === el.commandApprovalModal) {
+          closeHandler();
+          return;
+        }
+        if (el.commandApprovalModal) {
+          el.commandApprovalModal.addEventListener("click", overlayClick, { once: true });
+        }
+      }
+
+      bindAll();
+      openModal(el.commandApprovalModal);
+      window.setTimeout(function () {
+        if (el.commandApprovalAllowOnce) {
+          el.commandApprovalAllowOnce.focus();
+        }
+      }, 0);
+    });
+  }
+
+  function handleBlockedCommandsApproval(workspaceId, blockedCommands) {
+    var list = Array.isArray(blockedCommands) ? blockedCommands.slice(0) : [];
+    if (!list.length) {
+      return Promise.resolve(false);
+    }
+
+    function step(index) {
+      if (index >= list.length) {
+        return Promise.resolve(true);
+      }
+      var item = list[index] || {};
+      var commandText = String(item.command || "");
+      var reasonText = String(item.reason || "");
+      if (!trim(commandText)) {
+        return step(index + 1);
+      }
+      return openCommandApprovalModal(commandText, reasonText).then(function (choice) {
+        return apiPost("command_approval_save", {
+          workspace_id: workspaceId,
+          command: commandText,
+          decision: choice.decision || "deny",
+          scope: choice.scope || "once",
+          match_mode: choice.match_mode || "exact",
+          pattern: choice.pattern || commandText
+        }).then(function (response) {
+          if (!response || !response.success) {
+            throw new Error((response && response.error) || "Could not save command approval.");
+          }
+          if ((choice.decision || "") === "deny") {
+            return false;
+          }
+          return step(index + 1);
+        });
+      });
+    }
+
+    return step(0);
+  }
+
   function runAgent(workspaceId, conversationId, promptText, options) {
     var runOptions = options || {};
     var preserveSelection = runOptions.preserveSelection !== false;
+    var approvalRetry = runOptions.approvalRetry === true;
     var attachmentList = Array.isArray(runOptions.attachments) ? runOptions.attachments : [];
     var attachmentIds = [];
     var attachmentNames = [];
@@ -3769,13 +4488,17 @@
       }
     }
 
-    var pendingEvent = pushRunEvent(conversationId, {
-      status: "running",
-      started_at: new Date().toISOString(),
-      stream_text: ""
-    });
+    var pendingEvent = runOptions.pendingEvent || null;
+    if (!pendingEvent) {
+      pendingEvent = pushRunEvent(conversationId, {
+        status: "running",
+        started_at: new Date().toISOString(),
+        stream_text: ""
+      });
+    }
 
     if (
+      !approvalRetry &&
       state.activeWorkspaceId === workspaceId &&
       state.activeConversation &&
       state.activeConversation.id === conversationId
@@ -3871,6 +4594,8 @@
       conversation_id: conversationId,
       prompt: promptText,
       permission_mode: state.permissionMode,
+      command_exec_mode: state.commandExecMode,
+      approval_retry: approvalRetry ? "1" : "0",
       network_access: state.networkAccess ? "1" : "0",
       web_access: state.webAccess ? "1" : "0",
       attachment_ids: attachmentIds.join(","),
@@ -3883,6 +4608,22 @@
         stopStreamPoll();
         if (!response.success) {
           throw new Error(response.error || "Run failed");
+        }
+        var assistantText = trim(String(response.assistant || ""));
+
+        var blockedCommands = Array.isArray(response.blocked_commands) ? response.blocked_commands : [];
+        if (blockedCommands.length) {
+          return handleBlockedCommandsApproval(workspaceId, blockedCommands).then(function (approved) {
+            if (!approved) {
+              throw new Error("Command execution denied.");
+            }
+            return runAgent(workspaceId, conversationId, promptText, {
+              preserveSelection: preserveSelection,
+              attachments: attachmentList,
+              approvalRetry: true,
+              pendingEvent: pendingEvent
+            });
+          });
         }
 
         if (pendingEvent) {
@@ -3909,12 +4650,23 @@
 
             if (state.activeWorkspaceId && state.activeConversationId) {
               return loadConversation().catch(function () {
-                state.activeConversation = null;
+                if (
+                  assistantText &&
+                  state.activeConversation &&
+                  state.activeConversation.id === conversationId
+                ) {
+                  if (!Array.isArray(state.activeConversation.messages)) {
+                    state.activeConversation.messages = [];
+                  }
+                  var msgs = state.activeConversation.messages;
+                  var last = msgs.length ? msgs[msgs.length - 1] : null;
+                  if (!last || last.role !== "assistant" || String(last.content || "") !== assistantText) {
+                    msgs.push({ role: "assistant", content: assistantText });
+                  }
+                }
                 return null;
               });
             }
-
-            state.activeConversation = null;
             return null;
           })
           .then(function () {
@@ -4050,7 +4802,6 @@
       .then(function () {
         if (state.activeWorkspaceId && state.activeConversationId) {
           return loadConversation().catch(function () {
-            state.activeConversation = null;
             return null;
           });
         }
@@ -4787,7 +5538,6 @@
           state.activeConversationId = conversationId;
           state.activeDraftWorkspaceId = "";
           return loadConversation().catch(function () {
-            state.activeConversation = null;
             return null;
           });
         });
@@ -4916,7 +5666,9 @@
       }, 0);
     });
 
-    on(el.organizeBtn, "click", function () {
+    on(el.organizeBtn, "click", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
       toggleMenu("organize-menu", el.organizeBtn);
     });
 
@@ -4939,11 +5691,26 @@
       renderUi();
     });
 
-    on(el.modelStatusBtn, "click", function () {
+    on(el.modelStatusBtn, "click", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
       toggleMenu("models-box", el.modelStatusBtn);
+      if (!el.modelsBox || el.modelsBox.classList.contains("hidden")) {
+        return;
+      }
+      loadModelCatalog()
+        .then(function () {
+          syncModelInstallPollingFromCatalog();
+          renderUi();
+        })
+        .catch(function () {
+          renderUi();
+        });
     });
 
-    on(el.themePickerBtn, "click", function () {
+    on(el.themePickerBtn, "click", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
       toggleMenu("theme-picker-menu", el.themePickerBtn);
     });
 
@@ -4971,15 +5738,32 @@
     });
 
     on(el.refreshModelsBtn, "click", function () {
-      loadModels().then(renderUi).catch(function (err) {
-        state.models = [];
-        state.modelLoadError = err && err.message ? err.message : "Model check failed";
-        renderUi();
-        showError(err);
-      });
+      Promise.all([
+        loadModels().catch(function (err) {
+          state.models = [];
+          state.modelLoadError = err && err.message ? err.message : "Model check failed";
+          return null;
+        }),
+        loadModelCatalog().catch(function () {
+          state.modelCatalog = [];
+          state.modelInstalls = [];
+          return null;
+        })
+      ])
+        .then(function () {
+          syncModelInstallPollingFromCatalog();
+          renderUi();
+        })
+        .catch(showError);
     });
 
     on(el.modelsBoxList, "click", function (event) {
+      var installBtn = event.target.closest("button[data-action='install-model'][data-model-name]");
+      if (installBtn) {
+        var installModel = installBtn.getAttribute("data-model-name");
+        startModelInstall(installModel).catch(showError);
+        return;
+      }
       var button = event.target.closest("button[data-model-name]");
       if (!button) {
         return;
@@ -4991,7 +5775,9 @@
       }).catch(showError);
     });
 
-    on(el.modelPickerBtn, "click", function () {
+    on(el.modelPickerBtn, "click", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
       toggleMenu("model-picker-menu", el.modelPickerBtn);
     });
 
@@ -5014,7 +5800,9 @@
       renderUi();
     });
 
-    on(el.reasoningMenuBtn, "click", function () {
+    on(el.reasoningMenuBtn, "click", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
       toggleMenu("reasoning-menu", el.reasoningMenuBtn);
     });
 
@@ -5089,7 +5877,7 @@
         hideTooltip();
         return;
       }
-      showTooltipFor(target);
+      scheduleTooltipFor(target);
     });
 
     document.addEventListener("focusin", function (event) {
@@ -5098,7 +5886,7 @@
         hideTooltip();
         return;
       }
-      showTooltipFor(target);
+      scheduleTooltipFor(target);
     });
 
     document.addEventListener("mousemove", function (event) {
@@ -5195,7 +5983,9 @@
       });
     }
 
-    on(el.openMenuBtn, "click", function () {
+    on(el.openMenuBtn, "click", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
       toggleMenu("open-menu", el.openMenuBtn);
     });
 
@@ -5208,7 +5998,9 @@
       performOpenTarget(target).catch(showError);
     });
 
-    on(el.branchMenuBtn, "click", function () {
+    on(el.branchMenuBtn, "click", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
       refreshBranches().finally(function () {
         renderBranchMenu();
         toggleMenu("branch-menu", el.branchMenuBtn);
@@ -5302,7 +6094,9 @@
       performCommitAction(state.lastCommitAction).catch(showError);
     });
 
-    on(el.commitMenuBtn, "click", function () {
+    on(el.commitMenuBtn, "click", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
       toggleMenu("commit-menu", el.commitMenuBtn);
     });
 
@@ -5329,11 +6123,25 @@
       onCommitContinue();
     });
 
-    on(el.permissionsMenuBtn, "click", function () {
+    on(el.permissionsMenuBtn, "click", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
       toggleMenu("permissions-menu", el.permissionsMenuBtn);
     });
 
     on(el.permissionsMenu, "click", function (event) {
+      var commandItem = event.target.closest("button[data-command-exec]");
+      if (commandItem) {
+        var commandMode = commandItem.getAttribute("data-command-exec");
+        setCommandExecMode(commandMode)
+          .then(function () {
+            closeAllMenus();
+            renderUi();
+          })
+          .catch(showError);
+        return;
+      }
+
       var item = event.target.closest("button[data-permission]");
       if (!item) {
         return;
@@ -5639,7 +6447,12 @@
     });
 
     document.addEventListener("click", function (event) {
+      if (!event.target || typeof event.target.closest !== "function") {
+        closeAllMenus();
+        return;
+      }
       if (
+        event.target.closest("#model-status-btn") ||
         event.target.closest(".menu-anchor") ||
         event.target.closest(".models-box") ||
         event.target.closest("#organize-menu") ||
@@ -5675,6 +6488,10 @@
         closeModal(el.settingsModal);
         return;
       }
+      if (!el.commandApprovalModal.classList.contains("hidden")) {
+        closeModal(el.commandApprovalModal);
+        return;
+      }
       if (!el.workspaceModal.classList.contains("hidden")) {
         closeModal(el.workspaceModal);
         return;
@@ -5689,6 +6506,7 @@
       clearInterval(liveRunTickTimer);
       liveRunTickTimer = null;
     }
+    stopModelInstallPolling();
     clearPendingAttachments();
   });
 
