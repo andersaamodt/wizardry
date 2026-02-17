@@ -24,7 +24,7 @@ if [ "$it_sourced" -eq 0 ]; then
   printf '%s\n' "This spell cannot be cast directly. Invoke it with: . invoke-thesaurus" >&2
   return 1 2>/dev/null || exit 1
 fi
-unset it_sourced _it_base
+unset it_sourced it_base
 
 # Uncastable spells must remember shell mode and restore on all exits
 invoke_thesaurus_saved_opts=$(set +o)
@@ -187,7 +187,7 @@ it_count=0
 
 if command -v generate-glosses >/dev/null 2>&1; then
   # Generate glosses and eval them into current shell
-  if _it_gloss_output=$(generate-glosses --quiet 2>&1); then
+  if it_gloss_output=$(generate-glosses --quiet 2>&1); then
     if [ -n "$it_gloss_output" ]; then
       eval "$it_gloss_output"
       
