@@ -69,6 +69,14 @@
     return { map: clean, hasSaved: true };
   }
 
+  function parseStoredPaneWidth(key, fallback) {
+    var raw = Number(storageGet(key, String(fallback)));
+    if (!isFinite(raw) || raw <= 0) {
+      return fallback;
+    }
+    return Math.round(raw);
+  }
+
   var initialSeenConversationState = loadSeenConversationState();
 
   var state = {
@@ -88,6 +96,7 @@
     organizeMode: storageGet("artificer.organizeMode", "project"),
     organizeShow: storageGet("artificer.organizeShow", "all"),
     permissionMode: storageGet("artificer.permissionMode", "default"),
+    githubUsername: storageGet("artificer.githubUsername", ""),
     networkAccess: storageGet("artificer.networkAccess", "0") === "1",
     webAccess: storageGet("artificer.webAccess", "0") === "1",
     agentLoopEnabled: storageGet("artificer.agentLoopEnabled", "1") !== "0",
@@ -104,6 +113,8 @@
     commitModalDefault: "commit",
     lastOpenTarget: storageGet("artificer.lastOpenTarget", "finder"),
     lastCommitAction: storageGet("artificer.lastCommitAction", "commit"),
+    activeTheme: storageGet("artificer.activeTheme", "psionic"),
+    themes: [],
     queueWorkerActive: false,
     runningWorkspaceId: "",
     runningConversationId: "",
@@ -119,15 +130,24 @@
     awaitingDirPicker: false,
     conversationLoadSeq: 0,
     modelLoadError: "",
-    contextWindowText: "Context window unknown.",
+    contextWindowText: "Context window information will display here.",
     lastErrorText: "",
     lastErrorAt: 0,
     initialLoadComplete: false,
-    selectionVersion: 0
+    selectionVersion: 0,
+    chatAutoScroll: true,
+    chatLastKey: "",
+    threadsPaneWidth: parseStoredPaneWidth("artificer.threadsPaneWidth", 308),
+    diffPaneWidth: parseStoredPaneWidth("artificer.diffPaneWidth", 620)
   };
 
   var saveDraftTimer = null;
   var liveRunTickTimer = null;
+  var runStreamPollTimers = {};
+  var paneDragState = null;
+  var pathWidgetClickTimer = null;
+  var tooltipEl = null;
+  var tooltipTarget = null;
 
   if (state.sortMode !== "updated" && state.sortMode !== "created") {
     state.sortMode = "updated";
@@ -152,16 +172,24 @@
   ) {
     state.reasoningEffort = "medium";
   }
+  if (!/^[a-z0-9_-]+$/.test(String(state.activeTheme || ""))) {
+    state.activeTheme = "psionic";
+  }
 
   var el = {
     shell: document.getElementById("forge-shell"),
     workspacePanel: document.getElementById("workspace-dropzone"),
+    threadsResizer: document.getElementById("threads-resizer"),
     workspaceTree: document.getElementById("workspace-tree"),
     addWorkspaceBtn: document.getElementById("add-workspace-btn"),
     organizeBtn: document.getElementById("organize-btn"),
     organizeMenu: document.getElementById("organize-menu"),
     modelStatusBtn: document.getElementById("model-status-btn"),
     settingsBtn: document.getElementById("settings-btn"),
+    themePickerBtn: document.getElementById("theme-picker-btn"),
+    themePickerMenu: document.getElementById("theme-picker-menu"),
+    themePickerList: document.getElementById("theme-picker-list"),
+    themeStylesheet: document.getElementById("artificer-theme-stylesheet"),
     modelsBox: document.getElementById("models-box"),
     modelsBoxList: document.getElementById("models-box-list"),
     refreshModelsBtn: document.getElementById("refresh-models-btn"),
@@ -188,9 +216,11 @@
     contextWindowBtn: document.getElementById("context-window-btn"),
     contextWindowMenu: document.getElementById("context-window-menu"),
     contextWindowBody: document.getElementById("context-window-body"),
+    workspacePathWidget: document.getElementById("workspace-path-widget"),
 
     chatTitle: document.getElementById("chat-title"),
     chatLog: document.getElementById("chat-log"),
+    chatJumpBottomBtn: document.getElementById("chat-jump-bottom-btn"),
     runForm: document.getElementById("run-form"),
     runPrompt: document.getElementById("run-prompt"),
     attachBtn: document.getElementById("attach-btn"),
@@ -208,6 +238,7 @@
     runBtn: document.getElementById("run-btn"),
 
     diffPanel: document.getElementById("diff-panel"),
+    diffResizer: document.getElementById("diff-resizer"),
     diffSummary: document.getElementById("diff-summary"),
     diffView: document.getElementById("diff-view"),
     diffCloseBtn: document.getElementById("diff-close-btn"),
@@ -247,20 +278,28 @@
     settingsCloseBtn: document.getElementById("settings-close-btn"),
     ghAuthStatus: document.getElementById("gh-auth-status"),
     sshKeyStatus: document.getElementById("ssh-key-status"),
+    githubUsername: document.getElementById("github-username"),
     sshEmail: document.getElementById("ssh-email"),
     refreshAuthBtn: document.getElementById("refresh-auth-btn"),
     generateSshBtn: document.getElementById("generate-ssh-btn"),
+    chooseSshBtn: document.getElementById("choose-ssh-btn"),
+    clearSshBtn: document.getElementById("clear-ssh-btn"),
+    selectedSshPath: document.getElementById("selected-ssh-path"),
     sshPubOutput: document.getElementById("ssh-pub-output")
   };
 
   if (el.modelStatusBtn) {
     el.modelStatusBtn.textContent = "Loading...";
   }
+  if (el.githubUsername) {
+    el.githubUsername.value = state.githubUsername || "";
+  }
 
   var menuById = {
     "organize-menu": el.organizeMenu,
     "open-menu": el.openMenu,
     "commit-menu": el.commitMenu,
+    "theme-picker-menu": el.themePickerMenu,
     "branch-menu": el.branchMenu,
     "permissions-menu": el.permissionsMenu,
     "model-picker-menu": el.modelPickerMenu,
@@ -284,6 +323,126 @@
 
   function trim(text) {
     return String(text || "").replace(/^\s+|\s+$/g, "");
+  }
+
+  function copyTextToClipboard(text) {
+    var value = String(text || "");
+    if (!value) {
+      return Promise.resolve(false);
+    }
+    if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(value).then(function () {
+        return true;
+      }).catch(function () {
+        return false;
+      });
+    }
+    try {
+      var temp = document.createElement("textarea");
+      temp.value = value;
+      temp.setAttribute("readonly", "readonly");
+      temp.style.position = "absolute";
+      temp.style.left = "-9999px";
+      document.body.appendChild(temp);
+      temp.select();
+      var ok = document.execCommand("copy");
+      document.body.removeChild(temp);
+      return Promise.resolve(!!ok);
+    } catch (_error) {
+      return Promise.resolve(false);
+    }
+  }
+
+  function ensureTooltipEl() {
+    if (tooltipEl && document.body && document.body.contains(tooltipEl)) {
+      return tooltipEl;
+    }
+    tooltipEl = document.createElement("div");
+    tooltipEl.className = "ui-tooltip";
+    tooltipEl.setAttribute("role", "tooltip");
+    tooltipEl.setAttribute("aria-hidden", "true");
+    document.body.appendChild(tooltipEl);
+    return tooltipEl;
+  }
+
+  function tooltipTextFor(node) {
+    if (!node || typeof node.getAttribute !== "function") {
+      return "";
+    }
+    return trim(node.getAttribute("data-tooltip") || "");
+  }
+
+  function positionTooltip(target) {
+    if (!tooltipEl || !target) {
+      return;
+    }
+    var rect = target.getBoundingClientRect();
+    var tipRect = tooltipEl.getBoundingClientRect();
+    var viewportWidth = window.innerWidth || document.documentElement.clientWidth || 1024;
+    var viewportHeight = window.innerHeight || document.documentElement.clientHeight || 768;
+    var left = rect.left + (rect.width - tipRect.width) / 2;
+    var top = rect.top - tipRect.height - 8;
+
+    if (left < 8) {
+      left = 8;
+    }
+    if (left + tipRect.width > viewportWidth - 8) {
+      left = Math.max(8, viewportWidth - tipRect.width - 8);
+    }
+    if (top < 8) {
+      top = rect.bottom + 8;
+      if (top + tipRect.height > viewportHeight - 8) {
+        top = Math.max(8, viewportHeight - tipRect.height - 8);
+      }
+    }
+
+    tooltipEl.style.left = Math.round(left) + "px";
+    tooltipEl.style.top = Math.round(top) + "px";
+  }
+
+  function showTooltipFor(target) {
+    var text = tooltipTextFor(target);
+    if (!text) {
+      return;
+    }
+    var tip = ensureTooltipEl();
+    tooltipTarget = target;
+    tip.textContent = text;
+    tip.setAttribute("aria-hidden", "false");
+    tip.classList.add("show");
+    positionTooltip(target);
+  }
+
+  function hideTooltip() {
+    tooltipTarget = null;
+    if (!tooltipEl) {
+      return;
+    }
+    tooltipEl.classList.remove("show");
+    tooltipEl.setAttribute("aria-hidden", "true");
+  }
+
+  function hydrateTooltips() {
+    var nodes = document.querySelectorAll("button, [role='button'], [aria-label], [title]");
+    for (var i = 0; i < nodes.length; i += 1) {
+      var node = nodes[i];
+      var tip = trim(node.getAttribute("data-tooltip") || "");
+      var title = trim(node.getAttribute("title") || "");
+      var label = trim(node.getAttribute("aria-label") || "");
+      if (!tip) {
+        if (title) {
+          tip = title;
+        } else if (label) {
+          tip = label;
+        }
+      }
+      if (tip) {
+        node.setAttribute("data-tooltip", tip);
+      }
+      if (node.hasAttribute("title")) {
+        node.removeAttribute("title");
+      }
+    }
   }
 
   function waitMs(ms) {
@@ -711,7 +870,10 @@
 
   function requestJson(url, options) {
     var controller = new AbortController();
-    var timeoutMs = 30000;
+    var timeoutMs = Number(options && options.timeoutMs ? options.timeoutMs : 30000);
+    if (!isFinite(timeoutMs) || timeoutMs <= 0) {
+      timeoutMs = 30000;
+    }
     var timeoutId = setTimeout(function () {
       controller.abort();
     }, timeoutMs);
@@ -745,16 +907,27 @@
       });
   }
 
-  function apiGet(action, params) {
+  function apiGet(action, params, options) {
     var search = new URLSearchParams(params || {});
     search.set("action", action);
+    var timeoutMs = 30000;
+    if (options && Number(options.timeoutMs) > 0) {
+      timeoutMs = Number(options.timeoutMs);
+    }
     return requestJson("/cgi/artificer-api?" + search.toString(), {
       method: "GET",
-      headers: { Accept: "application/json" }
+      headers: { Accept: "application/json" },
+      timeoutMs: timeoutMs
     });
   }
 
-  function apiPost(action, data) {
+  function apiPost(action, data, options) {
+    var timeoutMs = 30000;
+    if (action === "run") {
+      timeoutMs = 600000;
+    } else if (options && Number(options.timeoutMs) > 0) {
+      timeoutMs = Number(options.timeoutMs);
+    }
     var body = new URLSearchParams(data || {});
     body.set("action", action);
     return requestJson("/cgi/artificer-api", {
@@ -763,7 +936,8 @@
         "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
         Accept: "application/json"
       },
-      body: body.toString()
+      body: body.toString(),
+      timeoutMs: timeoutMs
     });
   }
 
@@ -1134,14 +1308,19 @@
     var gitState = state.gitByWorkspace[workspaceId] || {};
     var add = Number(gitState.added || 0);
     var del = Number(gitState.deleted || 0);
+    var hasDiff = add > 0 || del > 0;
     var age = formatAgeShort(conversationCreatedNumber(conversation));
-    return (
-      "<span class='conversation-meta' title='Workspace diff since last commit'>" +
-        "<span class='meta-add' title='Lines added since last commit'>+" + escHtml(String(add)) + "</span> " +
-        "<span class='meta-del' title='Lines removed since last commit'>-" + escHtml(String(del)) + "</span> " +
-        "<span class='meta-age' title='Conversation age'>" + escHtml(age) + "</span>" +
-      "</span>"
-    );
+    var conversationId = conversation && conversation.id ? conversation.id : "";
+    var html = "<span class='conversation-meta' title='Workspace diff since last commit'>";
+    if (hasDiff) {
+      html += "<span class='meta-add' title='Lines added since last commit'>+" + escHtml(String(add)) + "</span> ";
+      html += "<span class='meta-del' title='Lines removed since last commit'>-" + escHtml(String(del)) + "</span> ";
+    }
+    html += "<span class='meta-age-slot'>";
+    html += "<span class='meta-age' title='Conversation age'>" + escHtml(age) + "</span>";
+    html += archiveControlMarkup(workspaceId, conversationId);
+    html += "</span></span>";
+    return html;
   }
 
   function archiveControlMarkup(workspaceId, conversationId) {
@@ -1149,7 +1328,7 @@
     var isArmed = key === state.pendingArchiveKey;
     if (!isArmed) {
       return (
-        "<button type='button' class='thread-archive-btn' title='Archive conversation' data-action='arm-archive-conversation' data-workspace-id='" + escHtml(workspaceId) + "' data-conversation-id='" + escHtml(conversationId) + "'><span class='archive-icon' aria-hidden='true'>&#128465;</span></button>"
+        "<button type='button' class='thread-archive-btn' title='Archive conversation' data-action='arm-archive-conversation' data-workspace-id='" + escHtml(workspaceId) + "' data-conversation-id='" + escHtml(conversationId) + "'><span class='archive-icon' aria-hidden='true'><svg viewBox='0 0 16 16' fill='none' stroke='currentColor' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'><rect x='2.4' y='3.2' width='11.2' height='9.2' rx='1.4'></rect><path d='M4.5 6.1h7'></path><path d='M6 8.3h4'></path></svg></span></button>"
       );
     }
 
@@ -1195,6 +1374,19 @@
       default:
         return "Default permissions";
     }
+  }
+
+  function permissionModeIconMarkup(mode) {
+    if (mode === "workspace-write") {
+      return "<svg viewBox='0 0 16 16' fill='none' stroke='currentColor' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'><path d='M3.1 12.9l2.9-.6 6-6-2.3-2.3-6 6z'></path><path d='M8.9 3.7l2.3 2.3'></path></svg>";
+    }
+    if (mode === "read-only") {
+      return "<svg viewBox='0 0 16 16' fill='none' stroke='currentColor' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'><path d='M1.8 8s2.3-3.6 6.2-3.6S14.2 8 14.2 8s-2.3 3.6-6.2 3.6S1.8 8 1.8 8z'></path><circle cx='8' cy='8' r='1.7'></circle></svg>";
+    }
+    if (mode === "full-access") {
+      return "<svg viewBox='0 0 16 16' fill='none' stroke='currentColor' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'><circle cx='8' cy='8' r='1.6'></circle><path d='M8 2.3v1.3'></path><path d='M8 12.4v1.3'></path><path d='M2.3 8h1.3'></path><path d='M12.4 8h1.3'></path><path d='M3.9 3.9l.9.9'></path><path d='M11.2 11.2l.9.9'></path><path d='M12.1 3.9l-.9.9'></path><path d='M4.8 11.2l-.9.9'></path></svg>";
+    }
+    return "<svg viewBox='0 0 16 16' fill='none' stroke='currentColor' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'><path d='M8 1.6l4.6 1.8v3.7c0 3-1.7 5.4-4.6 7.2-2.9-1.8-4.6-4.2-4.6-7.2V3.4L8 1.6z'></path></svg>";
   }
 
   function gitDeltaMarkup(added, deleted) {
@@ -1248,6 +1440,9 @@
     }
     if (el.modelPickerBtn) {
       el.modelPickerBtn.setAttribute("aria-expanded", "false");
+    }
+    if (el.themePickerBtn) {
+      el.themePickerBtn.setAttribute("aria-expanded", "false");
     }
     if (el.reasoningMenuBtn) {
       el.reasoningMenuBtn.setAttribute("aria-expanded", "false");
@@ -1325,11 +1520,6 @@
     if (state.busy) {
       state.runningWorkspaceId = workspaceId || state.runningWorkspaceId || state.activeWorkspaceId || "";
       state.runningConversationId = conversationId || state.runningConversationId || state.activeConversationId || "";
-      if (!liveRunTickTimer) {
-        liveRunTickTimer = setInterval(function () {
-          renderUi();
-        }, 1000);
-      }
     } else {
       state.runningWorkspaceId = "";
       state.runningConversationId = "";
@@ -1380,6 +1570,50 @@
 
   function isSelectionVersionCurrent(version) {
     return version === state.selectionVersion;
+  }
+
+  function isChatAtBottom() {
+    if (!el.chatLog) {
+      return true;
+    }
+    var remaining = el.chatLog.scrollHeight - el.chatLog.clientHeight - el.chatLog.scrollTop;
+    return remaining <= 8;
+  }
+
+  function updateChatJumpButton() {
+    if (!el.chatJumpBottomBtn) {
+      return;
+    }
+    var shouldShow = !state.chatAutoScroll && !!state.activeConversationId;
+    el.chatJumpBottomBtn.classList.toggle("show", shouldShow);
+    el.chatJumpBottomBtn.classList.toggle("hidden", !shouldShow);
+  }
+
+  function jumpChatToBottom() {
+    if (!el.chatLog) {
+      return;
+    }
+    el.chatLog.scrollTop = el.chatLog.scrollHeight;
+    state.chatAutoScroll = true;
+    updateChatJumpButton();
+  }
+
+  function markArchiveConfirmReady(workspaceId, conversationId, key) {
+    if (!workspaceId || !conversationId || !key) {
+      return;
+    }
+    window.setTimeout(function () {
+      if (state.pendingArchiveKey !== key) {
+        return;
+      }
+      var selector = ".thread-confirm-btn[data-workspace-id='" + escAttr(workspaceId) + "'][data-conversation-id='" + escAttr(conversationId) + "']";
+      var button = el.workspaceTree ? el.workspaceTree.querySelector(selector) : null;
+      if (!button) {
+        return;
+      }
+      button.disabled = false;
+      button.classList.add("ready");
+    }, 270);
   }
 
   function runEventsForConversation(conversationId) {
@@ -1448,7 +1682,12 @@
         html += " <span class='run-elapsed'>" + elapsed + "s</span>";
       }
       html += "</p>";
-      html += "<p class='run-line subtle'>Working... live token streaming is not yet wired for this backend.</p></article>";
+      if (trim(event.stream_text || "")) {
+        html += "<pre class='run-stream-preview'>" + escHtml(event.stream_text) + "</pre>";
+      } else {
+        html += "<p class='run-line subtle'>Working...</p>";
+      }
+      html += "</article>";
       return html;
     }
 
@@ -1558,14 +1797,13 @@
             chronoIndicatorClass += " pending";
           }
 
-          html += "<div class='conversation-row chrono-row" + chronoActive + "' role='button' tabindex='0' data-action='select-conversation' data-workspace-id='" + escHtml(entry.workspaceId) + "' data-conversation-id='" + escHtml(entry.conversation.id) + "'>";
+          html += "<div class='conversation-row chrono-row" + chronoActive + "' role='button' tabindex='0' title='Open conversation' data-action='select-conversation' data-workspace-id='" + escHtml(entry.workspaceId) + "' data-conversation-id='" + escHtml(entry.conversation.id) + "'>";
           html += "<span class='" + chronoIndicatorClass + "' aria-hidden='true'></span>";
           html += "<span class='conversation-title' title='" + escAttr(entry.workspaceName) + "'>" + escHtml(entry.conversation.title || "Conversation") + "</span>";
           if (chronoPending > 0) {
             html += "<span class='queue-count'>" + chronoPending + "</span>";
           }
           html += conversationMetaMarkup(entry.workspaceId, entry.conversation);
-          html += archiveControlMarkup(entry.workspaceId, entry.conversation.id);
           html += "</div>";
         }
       }
@@ -1590,9 +1828,6 @@
         }
 
         var groupClass = "workspace-group";
-        if (isActiveWorkspace) {
-          groupClass += " active";
-        }
         if (isExpanded) {
           groupClass += " expanded";
         }
@@ -1600,10 +1835,10 @@
         html += "<section class='" + groupClass + "' data-workspace-id='" + escHtml(workspaceId) + "'>";
         html += "<div class='workspace-row' data-action='select-workspace' data-workspace-id='" + escHtml(workspaceId) + "'>";
         html += folderIcon;
-        html += "<button type='button' class='workspace-caret' data-action='toggle-workspace' data-workspace-id='" + escHtml(workspaceId) + "' aria-label='Toggle'><span aria-hidden='true'>&rsaquo;</span></button>";
+        html += "<button type='button' class='workspace-caret' data-action='toggle-workspace' data-workspace-id='" + escHtml(workspaceId) + "' aria-label='Toggle' title='Expand or collapse workspace'><span aria-hidden='true'>&rsaquo;</span></button>";
         html += "<div class='workspace-meta' title='" + escAttr(workspace.path || "") + "'>" + escHtml(workspace.name || "Workspace") + "</div>";
-        html += "<button type='button' class='workspace-new' data-action='new-conversation' data-workspace-id='" + escHtml(workspaceId) + "' aria-label='New conversation'><span aria-hidden='true'><svg viewBox='0 0 16 16' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M3.1 12.9l2.9-.6 6-6-2.3-2.3-6 6z'/><path d='M8.9 3.7l2.3 2.3'/><path d='M13.6 13.1H8.8'/></svg></span></button>";
-        html += "<button type='button' class='workspace-menu-trigger' data-action='toggle-workspace-menu' data-workspace-id='" + escHtml(workspaceId) + "' aria-label='Workspace menu' aria-expanded='" + (state.openWorkspaceMenuWorkspaceId === workspaceId ? "true" : "false") + "'>&hellip;</button>";
+        html += "<button type='button' class='workspace-new' data-action='new-conversation' data-workspace-id='" + escHtml(workspaceId) + "' aria-label='New conversation' title='New thread'><span aria-hidden='true'><svg viewBox='0 0 16 16' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M3.1 12.9l2.9-.6 6-6-2.3-2.3-6 6z'/><path d='M8.9 3.7l2.3 2.3'/><path d='M13.6 13.1H8.8'/></svg></span></button>";
+        html += "<button type='button' class='workspace-menu-trigger' data-action='toggle-workspace-menu' data-workspace-id='" + escHtml(workspaceId) + "' aria-label='Workspace menu' title='Workspace actions' aria-expanded='" + (state.openWorkspaceMenuWorkspaceId === workspaceId ? "true" : "false") + "'>&hellip;</button>";
         var workspaceMenuClass = "workspace-actions-pop floating-menu";
         if (state.openWorkspaceMenuWorkspaceId !== workspaceId) {
           workspaceMenuClass += " hidden";
@@ -1645,14 +1880,13 @@
             indicatorClass += " pending";
           }
 
-          html += "<div class='conversation-row" + activeConv + "' role='button' tabindex='0' data-action='select-conversation' data-workspace-id='" + escHtml(workspaceId) + "' data-conversation-id='" + escHtml(conversation.id) + "'>";
+          html += "<div class='conversation-row" + activeConv + "' role='button' tabindex='0' title='Open conversation' data-action='select-conversation' data-workspace-id='" + escHtml(workspaceId) + "' data-conversation-id='" + escHtml(conversation.id) + "'>";
           html += "<span class='" + indicatorClass + "' aria-hidden='true'></span>";
           html += "<span class='conversation-title'>" + escHtml(conversation.title || "Conversation") + "</span>";
           if (queuePending > 0) {
             html += "<span class='queue-count'>" + queuePending + "</span>";
           }
           html += conversationMetaMarkup(workspaceId, conversation);
-          html += archiveControlMarkup(workspaceId, conversation.id);
           html += "</div>";
         }
 
@@ -1679,14 +1913,147 @@
     }
     if (state.modelLoadError) {
       el.modelStatusBtn.textContent = "Models unavailable";
+      el.modelStatusBtn.title = "Could not read Ollama models";
       return;
     }
     if (!state.models.length) {
       el.modelStatusBtn.textContent = "No models";
+      el.modelStatusBtn.title = "No Ollama models detected";
       return;
     }
     var noun = state.models.length === 1 ? "model" : "models";
     el.modelStatusBtn.textContent = state.models.length + " " + noun;
+    el.modelStatusBtn.title = state.models.length + " Ollama " + noun + " installed";
+  }
+
+  function themeLabel(name) {
+    var raw = String(name || "");
+    if (!raw) {
+      return "Psionic";
+    }
+    return raw
+      .replace(/[-_]+/g, " ")
+      .replace(/\b[a-z]/g, function (m) {
+        return m.toUpperCase();
+      });
+  }
+
+  function themeNameListFallback() {
+    return [
+      "psionic",
+      "adept",
+      "alchemist",
+      "archmage",
+      "chronomancer",
+      "conjurer",
+      "druid",
+      "empath",
+      "enchanter",
+      "geomancer",
+      "hermeticist",
+      "hierophant",
+      "illusionist",
+      "lich",
+      "necromancer",
+      "pyromancer",
+      "seer",
+      "shaman",
+      "sorcerer",
+      "sorceress",
+      "technomancer",
+      "thaumaturge",
+      "thelemite",
+      "theurgist",
+      "wadjet",
+      "warlock",
+      "wizard"
+    ];
+  }
+
+  function normalizeThemes(list) {
+    var out = [];
+    var seen = {};
+    var input = Array.isArray(list) ? list : [];
+    for (var i = 0; i < input.length; i += 1) {
+      var item = trim(String(input[i] || "")).toLowerCase();
+      if (!item || !/^[a-z0-9_-]+$/.test(item) || seen[item]) {
+        continue;
+      }
+      seen[item] = true;
+      out.push(item);
+    }
+    if (!seen.psionic) {
+      out.unshift("psionic");
+    }
+    out.sort(function (a, b) {
+      if (a === "psionic") {
+        return -1;
+      }
+      if (b === "psionic") {
+        return 1;
+      }
+      return a.localeCompare(b);
+    });
+    return out;
+  }
+
+  function ensureActiveThemeInList() {
+    if (!state.themes.length) {
+      state.themes = normalizeThemes(themeNameListFallback());
+    }
+    if (state.themes.indexOf(state.activeTheme) < 0) {
+      state.activeTheme = "psionic";
+      storageSet("artificer.activeTheme", state.activeTheme);
+    }
+  }
+
+  function applyTheme(themeName) {
+    var normalized = trim(String(themeName || "")).toLowerCase();
+    if (!normalized || !/^[a-z0-9_-]+$/.test(normalized)) {
+      normalized = "psionic";
+    }
+    state.activeTheme = normalized;
+    storageSet("artificer.activeTheme", normalized);
+    if (el.themeStylesheet) {
+      el.themeStylesheet.href = "/static/themes/" + normalized + ".css";
+    }
+  }
+
+  function renderThemePicker() {
+    if (!el.themePickerBtn || !el.themePickerList) {
+      return;
+    }
+    ensureActiveThemeInList();
+    el.themePickerBtn.textContent = themeLabel(state.activeTheme);
+    el.themePickerBtn.setAttribute("data-tooltip", "Theme: " + themeLabel(state.activeTheme));
+
+    var html = "";
+    for (var i = 0; i < state.themes.length; i += 1) {
+      var theme = state.themes[i];
+      var activeClass = theme === state.activeTheme ? " active" : "";
+      html += "<button type='button' class='theme-item" + activeClass + "' data-theme-name='" + escAttr(theme) + "'>" + escHtml(themeLabel(theme)) + "</button>";
+    }
+    el.themePickerList.innerHTML = html;
+  }
+
+  function cycleTheme(step) {
+    ensureActiveThemeInList();
+    if (!state.themes.length) {
+      return;
+    }
+    var delta = step < 0 ? -1 : 1;
+    var currentIndex = state.themes.indexOf(state.activeTheme);
+    if (currentIndex < 0) {
+      currentIndex = 0;
+    }
+    var nextIndex = currentIndex + delta;
+    if (nextIndex < 0) {
+      nextIndex = state.themes.length - 1;
+    } else if (nextIndex >= state.themes.length) {
+      nextIndex = 0;
+    }
+    applyTheme(state.themes[nextIndex]);
+    renderThemePicker();
   }
 
   function renderModelListInto(containerEl, activeModel) {
@@ -1734,7 +2101,9 @@
     }
 
     if (el.reasoningMenuBtn) {
-      el.reasoningMenuBtn.textContent = reasoningLabel(state.reasoningEffort);
+      el.reasoningMenuBtn.innerHTML =
+        "<span class='menu-icon reasoning-brain-icon' aria-hidden='true'>" + reasoningIconMarkup() + "</span>" +
+        "<span>" + escHtml(reasoningLabel(state.reasoningEffort)) + "</span>";
     }
 
     if (el.reasoningMenu) {
@@ -1855,7 +2224,10 @@
     if (!el.permissionsMenuBtn) {
       return;
     }
-    el.permissionsMenuBtn.textContent = permissionModeLabel(state.permissionMode);
+    var label = permissionModeLabel(state.permissionMode);
+    el.permissionsMenuBtn.innerHTML =
+      "<span class='menu-icon mono-icon' aria-hidden='true'>" + permissionModeIconMarkup(state.permissionMode) + "</span><span>" + escHtml(label) + "</span>";
+    el.permissionsMenuBtn.title = label;
     renderPermissionToggles();
   }
 
@@ -1977,23 +2349,65 @@
     return clean.slice(idx + 1);
   }
 
+  function openTargetLabel(target) {
+    if (target === "terminal") {
+      return "Terminal";
+    }
+    if (target === "textmate") {
+      return "TextMate";
+    }
+    return "Finder";
+  }
+
+  function openTargetIconMarkup(target) {
+    if (target === "terminal") {
+      return "<span class='btn-icon app-icon terminal-app-icon' aria-hidden='true'><svg viewBox='0 0 16 16' fill='none'><rect x='1.2' y='2' width='13.6' height='12' rx='2.2' fill='#181B2A' stroke='#454A66' stroke-width='1'></rect><path d='M4 6.1l2 1.9L4 9.9' stroke='#D8DEFF' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'></path><path d='M7.8 10h4.2' stroke='#D8DEFF' stroke-width='1.2' stroke-linecap='round'></path></svg></span>";
+    }
+    if (target === "textmate") {
+      return "<span class='btn-icon app-icon textmate-icon' aria-hidden='true'><svg viewBox='0 0 16 16' fill='none'><circle cx='8' cy='8' r='6.3' fill='#F5ECFF' stroke='#A669D8' stroke-width='1'></circle><path d='M8 3.2l1.2 2.2 2.3-.8-.9 2.2 2.2 1.2-2.2 1.2.9 2.2-2.3-.8L8 12.8l-1.2-2.2-2.3.8.9-2.2L3.2 8l2.2-1.2-.9-2.2 2.3.8L8 3.2z' fill='#B84FE8'></path></svg></span>";
+    }
+    return "<span class='btn-icon app-icon finder-icon' aria-hidden='true'><svg viewBox='0 0 16 16' fill='none'><rect x='1.2' y='1.2' width='13.6' height='13.6' rx='3.2' fill='#80B6FF' stroke='#4C7CC8' stroke-width='1'></rect><path d='M8 2v12' stroke='#EAF3FF' stroke-width='1'></path><circle cx='5.3' cy='6.2' r='0.8' fill='#0F2A50'></circle><circle cx='10.7' cy='6.2' r='0.8' fill='#0F2A50'></circle><path d='M4.5 10.2c1 .9 2.2 1.4 3.5 1.4s2.5-.5 3.5-1.4' stroke='#0F2A50' stroke-width='1' stroke-linecap='round'></path></svg></span>";
+  }
+
+  function commitActionIconMarkup(action) {
+    if (action === "push") {
+      return "<span class='btn-icon' aria-hidden='true'>&#10548;</span>";
+    }
+    if (action === "commit-push") {
+      return "<span class='btn-icon' aria-hidden='true'>&#10549;</span>";
+    }
+    return "<span class='btn-icon' aria-hidden='true'>&#10227;</span>";
+  }
+
   function renderOpenButton() {
     if (!el.openMainBtn || !el.openMenuBtn) {
       return;
     }
     var ws = activeWorkspace();
+    var target = state.lastOpenTarget || "finder";
+    var label = openTargetLabel(target);
     if (!ws) {
-      el.openMainBtn.textContent = "Open";
+      el.openMainBtn.innerHTML = openTargetIconMarkup(target) + "<span class='btn-label'>Open</span>";
       el.openMainBtn.title = "";
       el.openMainBtn.disabled = true;
       el.openMenuBtn.disabled = true;
       return;
     }
     var folder = basename(ws.path || ws.name || "") || "folder";
-    el.openMainBtn.textContent = "Open " + folder;
+    el.openMainBtn.innerHTML = openTargetIconMarkup(target) + "<span class='btn-label'>" + escHtml(label) + "</span>";
     el.openMainBtn.title = ws.path || "";
     el.openMainBtn.disabled = false;
     el.openMenuBtn.disabled = false;
+    if (el.openMenu) {
+      var openButtons = el.openMenu.querySelectorAll("button[data-open-target]");
+      for (var i = 0; i < openButtons.length; i += 1) {
+        var openTarget = openButtons[i].getAttribute("data-open-target");
+        openButtons[i].classList.toggle("active", openTarget === target);
+      }
+    }
+    if (el.workspacePathWidget) {
+      el.workspacePathWidget.title = "Open " + folder + " " + (ws.path || "");
+    }
   }
 
   function commitActionLabel(action) {
@@ -2010,7 +2424,37 @@
     if (!el.commitMainBtn) {
       return;
     }
-    el.commitMainBtn.textContent = commitActionLabel(state.lastCommitAction);
+    var action = state.lastCommitAction || "commit";
+    el.commitMainBtn.innerHTML =
+      commitActionIconMarkup(action) +
+      "<span class='btn-label'>" + escHtml(commitActionLabel(action)) + "</span>";
+    if (el.commitMenu) {
+      var commitButtons = el.commitMenu.querySelectorAll("button[data-commit-action]");
+      for (var i = 0; i < commitButtons.length; i += 1) {
+        var commitAction = commitButtons[i].getAttribute("data-commit-action");
+        commitButtons[i].classList.toggle("active", commitAction === action);
+      }
+    }
+  }
+
+  function renderWorkspacePathWidget() {
+    if (!el.workspacePathWidget) {
+      return;
+    }
+    var ws = activeWorkspace();
+    if (!ws || !ws.path) {
+      el.workspacePathWidget.classList.add("hidden");
+      el.workspacePathWidget.innerHTML = "";
+      el.workspacePathWidget.title = "";
+      el.workspacePathWidget.disabled = true;
+      return;
+    }
+    el.workspacePathWidget.classList.remove("hidden");
+    el.workspacePathWidget.innerHTML =
+      "<span class='path-widget-icon' aria-hidden='true'><svg viewBox='0 0 16 16' fill='none' stroke='currentColor' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'><path d='M1.8 4.4h4.1l1.2 1.3h7.1v6.1c0 .9-.7 1.6-1.6 1.6H3.4c-.9 0-1.6-.7-1.6-1.6z'></path></svg></span>" +
+      "<span class='path-widget-label'>" + escHtml(ws.path) + "</span>";
+    el.workspacePathWidget.title = "Click to copy path. Double-click to open folder.";
+    el.workspacePathWidget.disabled = false;
   }
 
   function renderContextWindowStatus() {
@@ -2019,22 +2463,36 @@
     }
     var model = activeModelName();
     if (!model) {
-      state.contextWindowText = "Context window: unknown (no model selected).";
-      el.contextWindowBtn.title = state.contextWindowText;
+      state.contextWindowText = "Context window information will display here.";
+      el.contextWindowBtn.classList.add("unavailable");
+      el.contextWindowBtn.setAttribute("data-tooltip", state.contextWindowText);
       return;
     }
     var guess = String(model).match(/(\d+)\s*k/i);
     if (guess && guess[1]) {
       state.contextWindowText = "Context window: estimated " + guess[1] + "k tokens (from model name).";
+      el.contextWindowBtn.classList.remove("unavailable");
     } else {
-      state.contextWindowText = "Context window: unavailable from current Ollama model metadata.";
+      state.contextWindowText = "No context window information available for this model yet.";
+      el.contextWindowBtn.classList.add("unavailable");
     }
-    el.contextWindowBtn.title = state.contextWindowText;
+    el.contextWindowBtn.setAttribute("data-tooltip", state.contextWindowText);
   }
 
   function renderChat() {
+    var conversationKey = String(state.activeWorkspaceId || "") + "::" + String(state.activeConversationId || "") + "::" + String(state.activeDraftWorkspaceId || "");
+    var keyChanged = conversationKey !== state.chatLastKey;
+    var prevScrollTop = el.chatLog ? el.chatLog.scrollTop : 0;
+    var prevClientHeight = el.chatLog ? el.chatLog.clientHeight : 0;
+    var prevScrollHeight = el.chatLog ? el.chatLog.scrollHeight : 0;
+    var prevBottomOffset = Math.max(0, prevScrollHeight - prevScrollTop - prevClientHeight);
+    var shouldAutoScroll = keyChanged || state.chatAutoScroll;
+
     if (!state.activeWorkspaceId) {
       el.chatLog.innerHTML = "<p class='empty-state'>Select or add a workspace to begin.</p>";
+      state.chatAutoScroll = true;
+      state.chatLastKey = conversationKey;
+      updateChatJumpButton();
       return;
     }
 
@@ -2045,11 +2503,17 @@
       } else {
         el.chatLog.innerHTML = "<p class='empty-state'>This is a draft. Start typing below; it autosaves to disk.</p>";
       }
+      state.chatAutoScroll = true;
+      state.chatLastKey = conversationKey;
+      updateChatJumpButton();
       return;
     }
 
     if (!state.activeConversationId || !state.activeConversation) {
       el.chatLog.innerHTML = "<p class='empty-state'>Select a conversation or click + beside a workspace to start a draft.</p>";
+      state.chatAutoScroll = true;
+      state.chatLastKey = conversationKey;
+      updateChatJumpButton();
       return;
     }
 
@@ -2058,6 +2522,14 @@
 
     if (!messages.length && !events.length) {
       el.chatLog.innerHTML = "<p class='empty-state'>No messages yet in this conversation.</p>";
+      state.chatAutoScroll = true;
+      state.chatLastKey = conversationKey;
+      updateChatJumpButton();
+      return;
+    }
+
+    if (hasActiveChatSelection()) {
+      updateChatJumpButton();
       return;
     }
 
@@ -2065,7 +2537,14 @@
     for (var i = 0; i < messages.length; i += 1) {
       var msg = messages[i] || {};
       var role = msg.role === "user" ? "user" : "assistant";
-      html += "<article class='msg " + role + "'><span class='role'>" + escHtml(role) + "</span><div class='msg-body'>" + escHtml(msg.content || "") + "</div></article>";
+      if (role === "user") {
+        html += "<article class='msg user'>";
+        html += "<button type='button' class='msg-copy-btn' data-action='copy-user-message' data-copy-text='" + escAttr(msg.content || "") + "' aria-label='Copy message' title='Copy message'><span aria-hidden='true'><svg viewBox='0 0 16 16' fill='none' stroke='currentColor' stroke-width='1.35' stroke-linecap='round' stroke-linejoin='round'><rect x='5.4' y='5.3' width='7.2' height='7.2' rx='1.1'></rect><rect x='3.2' y='3.1' width='7.2' height='7.2' rx='1.1'></rect></svg></span></button>";
+        html += "<div class='msg-body'>" + escHtml(msg.content || "") + "</div>";
+        html += "</article>";
+      } else {
+        html += "<article class='msg assistant'><div class='msg-body'>" + escHtml(msg.content || "") + "</div></article>";
+      }
     }
 
     for (var j = 0; j < events.length; j += 1) {
@@ -2073,7 +2552,33 @@
     }
 
     el.chatLog.innerHTML = html;
-    el.chatLog.scrollTop = el.chatLog.scrollHeight;
+    if (shouldAutoScroll) {
+      el.chatLog.scrollTop = el.chatLog.scrollHeight;
+      state.chatAutoScroll = true;
+    } else {
+      var nextScrollTop = Math.max(0, el.chatLog.scrollHeight - el.chatLog.clientHeight - prevBottomOffset);
+      el.chatLog.scrollTop = nextScrollTop;
+      state.chatAutoScroll = isChatAtBottom();
+    }
+    state.chatLastKey = conversationKey;
+    updateChatJumpButton();
+  }
+
+  function hasActiveChatSelection() {
+    if (!el.chatLog || !window.getSelection) {
+      return false;
+    }
+    var sel = window.getSelection();
+    if (!sel || sel.rangeCount < 1 || sel.isCollapsed) {
+      return false;
+    }
+    var range = sel.getRangeAt(0);
+    var container = range.commonAncestorContainer;
+    if (!container) {
+      return false;
+    }
+    var node = container.nodeType === 1 ? container : container.parentNode;
+    return !!(node && el.chatLog.contains(node));
   }
 
   function renderDiffView() {
@@ -2117,10 +2622,100 @@
     el.terminalOutput.scrollTop = el.terminalOutput.scrollHeight;
   }
 
+  function clampThreadsPaneWidth(width) {
+    var minWidth = 220;
+    var maxWidth = Math.min(620, Math.max(300, Math.floor(window.innerWidth * 0.66)));
+    var value = Number(width || 0);
+    if (!isFinite(value) || value <= 0) {
+      value = 308;
+    }
+    if (value < minWidth) {
+      value = minWidth;
+    }
+    if (value > maxWidth) {
+      value = maxWidth;
+    }
+    return Math.round(value);
+  }
+
+  function clampDiffPaneWidth(width) {
+    var shellWidth = (el.shell && el.shell.clientWidth) || window.innerWidth || 1200;
+    var minWidth = 300;
+    var maxWidth = Math.max(minWidth, Math.min(940, shellWidth - 260));
+    var value = Number(width || 0);
+    if (!isFinite(value) || value <= 0) {
+      value = Math.min(620, Math.max(minWidth, Math.floor(shellWidth * 0.48)));
+    }
+    if (value < minWidth) {
+      value = minWidth;
+    }
+    if (value > maxWidth) {
+      value = maxWidth;
+    }
+    return Math.round(value);
+  }
+
+  function applyPaneWidths() {
+    if (!el.shell) {
+      return;
+    }
+    state.threadsPaneWidth = clampThreadsPaneWidth(state.threadsPaneWidth);
+    state.diffPaneWidth = clampDiffPaneWidth(state.diffPaneWidth);
+    el.shell.style.setProperty("--threads-width", state.threadsPaneWidth + "px");
+    el.shell.style.setProperty("--diff-width", state.diffPaneWidth + "px");
+  }
+
+  function persistPaneWidths() {
+    storageSet("artificer.threadsPaneWidth", String(state.threadsPaneWidth));
+    storageSet("artificer.diffPaneWidth", String(state.diffPaneWidth));
+  }
+
+  function stopPaneDrag() {
+    if (!paneDragState) {
+      return;
+    }
+    paneDragState = null;
+    if (document && document.body) {
+      document.body.classList.remove("pane-resizing");
+    }
+    persistPaneWidths();
+  }
+
+  function onPaneDragMove(event) {
+    if (!paneDragState || !el.shell) {
+      return;
+    }
+    var shellRect = el.shell.getBoundingClientRect();
+    if (paneDragState.type === "threads") {
+      var nextThreads = event.clientX - shellRect.left;
+      state.threadsPaneWidth = clampThreadsPaneWidth(nextThreads);
+    } else if (paneDragState.type === "diff") {
+      var nextDiff = shellRect.right - event.clientX;
+      state.diffPaneWidth = clampDiffPaneWidth(nextDiff);
+    } else {
+      return;
+    }
+    applyPaneWidths();
+  }
+
+  function startPaneDrag(type, event) {
+    if (!el.shell) {
+      return;
+    }
+    event.preventDefault();
+    paneDragState = {
+      type: type
+    };
+    if (document && document.body) {
+      document.body.classList.add("pane-resizing");
+    }
+  }
+
   function renderPanels() {
     if (!el.diffPanel || !el.terminalPanel || !el.shell) {
       return;
     }
+    applyPaneWidths();
     if (state.diffOpen) {
       el.diffPanel.classList.remove("hidden");
     } else {
@@ -2151,8 +2746,10 @@
     }
 
     safeStep("ensureSelection", ensureSelection);
+    safeStep("hydrateTooltips", hydrateTooltips);
     safeStep("renderWorkspaceTree", renderWorkspaceTree);
     safeStep("renderModelStatus", renderModelStatus);
+    safeStep("renderThemePicker", renderThemePicker);
     safeStep("renderOrganizeMenu", renderOrganizeMenu);
     safeStep("renderModelPickerButton", renderModelPickerButton);
     safeStep("renderRunControls", renderRunControls);
@@ -2160,6 +2757,7 @@
     safeStep("renderQueueControls", renderQueueControls);
     safeStep("renderOpenButton", renderOpenButton);
     safeStep("renderCommitButton", renderCommitButton);
+    safeStep("renderWorkspacePathWidget", renderWorkspacePathWidget);
     safeStep("renderModelList.modelsBox", function () {
       renderModelListInto(el.modelsBoxList, activeModelName());
     });
@@ -2247,6 +2845,10 @@
       return "Extra High";
     }
     return "Medium";
+  }
+
+  function reasoningIconMarkup() {
+    return "<svg viewBox='0 0 16 16' fill='none' stroke='currentColor' stroke-width='1.35' stroke-linecap='round' stroke-linejoin='round'><path d='M5.1 3.2c-.9 0-1.8.7-1.8 1.8 0 .4.1.8.4 1.1-.7.4-1.1 1-1.1 1.8 0 1.2.9 2.1 2.1 2.1.1 1.1 1 1.9 2.1 1.9 1 0 1.8-.6 2.1-1.5.2.9 1.1 1.5 2.1 1.5 1.1 0 2-.8 2.1-1.9 1.2 0 2.1-.9 2.1-2.1 0-.8-.4-1.4-1.1-1.8.2-.3.4-.7.4-1.1 0-1-.8-1.8-1.8-1.8-.4 0-.8.1-1.1.4-.4-.8-1.2-1.3-2.1-1.3-.9 0-1.7.5-2.1 1.3-.3-.2-.7-.4-1.1-.4z'></path><path d='M6.3 5.8c-.6.2-.9.6-.9 1.1'></path><path d='M8 5.4v4.3'></path><path d='M9.8 5.9c.6.2.9.6.9 1.1'></path><path d='M6.4 8.6c.4.4 1 .6 1.6.6'></path><path d='M9.6 8.6c-.4.4-1 .6-1.6.6'></path></svg>";
   }
 
   function saveNetworkAccess(enabled) {
@@ -2509,6 +3111,21 @@
     });
   }
 
+  function loadThemes() {
+    return apiGet("themes").then(function (response) {
+      if (!response.success) {
+        throw new Error(response.error || "Failed to load themes");
+      }
+      state.themes = normalizeThemes(response.themes || []);
+      ensureActiveThemeInList();
+      applyTheme(state.activeTheme);
+    }).catch(function () {
+      state.themes = normalizeThemes(themeNameListFallback());
+      ensureActiveThemeInList();
+      applyTheme(state.activeTheme);
+    });
+  }
+
   function loadConversation() {
     if (!state.activeWorkspaceId || !state.activeConversationId) {
       state.activeConversation = null;
@@ -2697,6 +3314,12 @@
       state.modelLoadError = err && err.message ? err.message : "Model check failed";
       return null;
     });
+    var themesPromise = runWithRetry(loadThemes, 2, 120).catch(function () {
+      state.themes = normalizeThemes(themeNameListFallback());
+      ensureActiveThemeInList();
+      applyTheme(state.activeTheme);
+      return null;
+    });
 
     return runWithRetry(loadState, 3, 220)
       .then(function () {
@@ -2723,6 +3346,9 @@
       })
       .then(function () {
         return modelsPromise;
+      })
+      .then(function () {
+        return themesPromise;
       })
       .then(function () {
         state.initialLoadComplete = true;
@@ -2869,6 +3495,7 @@
 
   function selectWorkspace(workspaceId) {
     var selectionVersion = newSelectionVersion();
+    state.chatAutoScroll = true;
     var workspace = getWorkspaceById(workspaceId);
     if (!workspace) {
       return Promise.resolve();
@@ -2945,6 +3572,7 @@
 
   function selectConversation(workspaceId, conversationId) {
     var selectionVersion = newSelectionVersion();
+    state.chatAutoScroll = true;
     state.activeWorkspaceId = workspaceId;
     state.activeConversationId = conversationId;
     state.activeDraftWorkspaceId = "";
@@ -2992,6 +3620,7 @@
 
   function selectDraft(workspaceId) {
     var selectionVersion = newSelectionVersion();
+    state.chatAutoScroll = true;
     state.activeWorkspaceId = workspaceId;
     state.activeConversationId = "";
     state.activeConversation = null;
@@ -3027,6 +3656,7 @@
   }
 
   function createDraftForWorkspace(workspaceId) {
+    state.chatAutoScroll = true;
     state.activeWorkspaceId = workspaceId;
     state.activeConversationId = "";
     state.activeConversation = null;
@@ -3141,7 +3771,8 @@
 
     var pendingEvent = pushRunEvent(conversationId, {
       status: "running",
-      started_at: new Date().toISOString()
+      started_at: new Date().toISOString(),
+      stream_text: ""
     });
 
     if (
@@ -3168,6 +3799,72 @@
       "extra-high": 4
     };
     var selectedIterations = reasoningToIterations[state.reasoningEffort] || 2;
+    var streamSession = String(Date.now()) + "-" + String(Math.floor(Math.random() * 1000000));
+    var streamOffset = 0;
+    var streamPollActive = true;
+    var streamPollBusy = false;
+    var streamRenderTimer = null;
+    var streamTimerKey = workspaceId + "::" + conversationId;
+
+    if (runStreamPollTimers[streamTimerKey]) {
+      clearInterval(runStreamPollTimers[streamTimerKey]);
+      delete runStreamPollTimers[streamTimerKey];
+    }
+
+    function stopStreamPoll() {
+      streamPollActive = false;
+      if (streamRenderTimer) {
+        clearTimeout(streamRenderTimer);
+        streamRenderTimer = null;
+      }
+      if (runStreamPollTimers[streamTimerKey]) {
+        clearInterval(runStreamPollTimers[streamTimerKey]);
+        delete runStreamPollTimers[streamTimerKey];
+      }
+    }
+
+    function scheduleStreamRender() {
+      if (streamRenderTimer) {
+        return;
+      }
+      streamRenderTimer = setTimeout(function () {
+        streamRenderTimer = null;
+        renderUi();
+      }, 260);
+    }
+
+    function pollStreamOnce() {
+      if (!streamPollActive || streamPollBusy) {
+        return;
+      }
+      streamPollBusy = true;
+      apiGet("run_stream_poll", {
+        workspace_id: workspaceId,
+        conversation_id: conversationId,
+        stream_session: streamSession,
+        offset: String(streamOffset)
+      })
+        .then(function (response) {
+          if (!response || !response.success) {
+            return;
+          }
+          var delta = String(response.delta || "");
+          streamOffset = Number(response.offset || streamOffset || 0);
+          if (delta && pendingEvent) {
+            pendingEvent.stream_text = String(pendingEvent.stream_text || "") + delta;
+            scheduleStreamRender();
+          }
+        })
+        .catch(function () {
+          return null;
+        })
+        .finally(function () {
+          streamPollBusy = false;
+        });
+    }
+
+    runStreamPollTimers[streamTimerKey] = setInterval(pollStreamOnce, 180);
+    pollStreamOnce();
 
     return apiPost("run", {
       workspace_id: workspaceId,
@@ -3179,9 +3876,11 @@
       attachment_ids: attachmentIds.join(","),
       advanced_loop: state.agentLoopEnabled ? "1" : "0",
       reasoning_effort: state.reasoningEffort,
-      max_iterations: String(selectedIterations)
+      max_iterations: String(selectedIterations),
+      stream_session: streamSession
     })
       .then(function (response) {
+        stopStreamPoll();
         if (!response.success) {
           throw new Error(response.error || "Run failed");
         }
@@ -3197,6 +3896,7 @@
           pendingEvent.failures = response.failures || "";
           pendingEvent.session_log = response.session_log || "";
           pendingEvent.finished_at = new Date().toISOString();
+          pendingEvent.stream_text = "";
         }
 
         return loadState()
@@ -3240,12 +3940,16 @@
           });
       })
       .catch(function (err) {
+        stopStreamPoll();
         if (pendingEvent) {
           pendingEvent.status = "error";
           pendingEvent.error = err && err.message ? err.message : String(err);
         }
         renderUi();
         throw err;
+      })
+      .finally(function () {
+        stopStreamPoll();
       });
   }
 
@@ -3663,7 +4367,14 @@
   }
 
   function loadAuthStatus() {
-    return apiGet("git_auth_status").then(function (response) {
+    if (el.ghAuthStatus) {
+      el.ghAuthStatus.textContent = "Checking...";
+    }
+    if (el.sshKeyStatus) {
+      el.sshKeyStatus.textContent = "Checking...";
+    }
+
+    return apiGet("git_auth_status", {}, { timeoutMs: 12000 }).then(function (response) {
       if (!response.success) {
         throw new Error(response.error || "Failed to load auth status");
       }
@@ -3681,6 +4392,30 @@
         el.sshKeyStatus.textContent = "No SSH key";
         el.sshPubOutput.value = "";
       }
+
+      if (el.selectedSshPath) {
+        if (response.selected_ssh_pub_path) {
+          el.selectedSshPath.value = response.selected_ssh_pub_path;
+        } else {
+          el.selectedSshPath.value = "";
+          el.selectedSshPath.placeholder = "Using auto-detected SSH key.";
+        }
+      }
+    }).catch(function (error) {
+      if (el.ghAuthStatus) {
+        el.ghAuthStatus.textContent = "Unavailable";
+      }
+      if (el.sshKeyStatus) {
+        el.sshKeyStatus.textContent = "Unavailable";
+      }
+      if (el.sshPubOutput) {
+        el.sshPubOutput.value = "";
+      }
+      if (el.selectedSshPath) {
+        el.selectedSshPath.value = "";
+        el.selectedSshPath.placeholder = "Could not load SSH key status.";
+      }
+      throw error;
     });
   }
 
@@ -3765,12 +4500,11 @@
       }
       event.preventDefault();
       event.stopPropagation();
-      state.pendingArchiveKey = conversationReadKey(workspaceId, conversationId);
+      var archiveKey = conversationReadKey(workspaceId, conversationId);
+      state.pendingArchiveKey = archiveKey;
       state.pendingArchiveReadyAt = Date.now() + 250;
       renderUi();
-      window.setTimeout(function () {
-        renderUi();
-      }, 270);
+      markArchiveConfirmReady(workspaceId, conversationId, archiveKey);
       return;
     }
 
@@ -3792,7 +4526,8 @@
       if (workspaceId) {
         state.pendingArchiveKey = "";
         state.pendingArchiveReadyAt = 0;
-        selectWorkspace(workspaceId).catch(showError);
+        state.expandedWorkspaceIds[workspaceId] = !state.expandedWorkspaceIds[workspaceId];
+        renderUi();
       }
       return;
     }
@@ -4208,6 +4943,33 @@
       toggleMenu("models-box", el.modelStatusBtn);
     });
 
+    on(el.themePickerBtn, "click", function () {
+      toggleMenu("theme-picker-menu", el.themePickerBtn);
+    });
+
+    on(el.themePickerBtn, "keydown", function (event) {
+      if (event.key !== "ArrowUp" && event.key !== "ArrowDown") {
+        return;
+      }
+      event.preventDefault();
+      closeAllMenus();
+      cycleTheme(event.key === "ArrowUp" ? -1 : 1);
+    });
+
+    on(el.themePickerList, "click", function (event) {
+      var button = event.target.closest("button[data-theme-name]");
+      if (!button) {
+        return;
+      }
+      var themeName = button.getAttribute("data-theme-name");
+      applyTheme(themeName);
+      closeAllMenus();
+      renderThemePicker();
+      if (el.themePickerBtn) {
+        el.themePickerBtn.focus();
+      }
+    });
+
     on(el.refreshModelsBtn, "click", function () {
       loadModels().then(renderUi).catch(function (err) {
         state.models = [];
@@ -4305,6 +5067,70 @@
       }, 0);
     });
 
+    window.addEventListener("mousemove", function (event) {
+      onPaneDragMove(event);
+    });
+
+    window.addEventListener("mouseup", function () {
+      stopPaneDrag();
+    });
+
+    window.addEventListener("blur", function () {
+      stopPaneDrag();
+    });
+
+    window.addEventListener("resize", function () {
+      applyPaneWidths();
+    });
+
+    document.addEventListener("mouseover", function (event) {
+      var target = event.target.closest("[data-tooltip]");
+      if (!target) {
+        hideTooltip();
+        return;
+      }
+      showTooltipFor(target);
+    });
+
+    document.addEventListener("focusin", function (event) {
+      var target = event.target.closest("[data-tooltip]");
+      if (!target) {
+        hideTooltip();
+        return;
+      }
+      showTooltipFor(target);
+    });
+
+    document.addEventListener("mousemove", function (event) {
+      if (!tooltipTarget || !tooltipEl || tooltipEl.getAttribute("aria-hidden") === "true") {
+        return;
+      }
+      positionTooltip(tooltipTarget);
+      if (!tooltipTarget.contains(event.target) && event.target !== tooltipTarget) {
+        hideTooltip();
+      }
+    });
+
+    document.addEventListener("mouseout", function (event) {
+      if (!tooltipTarget) {
+        return;
+      }
+      if (tooltipTarget.contains(event.relatedTarget)) {
+        return;
+      }
+      hideTooltip();
+    });
+
+    document.addEventListener("focusout", function (event) {
+      if (!tooltipTarget) {
+        return;
+      }
+      if (tooltipTarget.contains(event.relatedTarget)) {
+        return;
+      }
+      hideTooltip();
+    });
+
     on(el.workspacePanel, "dragenter", function (event) {
       event.preventDefault();
       setWorkspaceDropActive(true);
@@ -4325,9 +5151,49 @@
       onWorkspaceDropped(event).catch(showError);
     });
 
+    if (el.threadsResizer) {
+      on(el.threadsResizer, "mousedown", function (event) {
+        startPaneDrag("threads", event);
+      });
+    }
+
+    if (el.diffResizer) {
+      on(el.diffResizer, "mousedown", function (event) {
+        startPaneDrag("diff", event);
+      });
+    }
+
     on(el.openMainBtn, "click", function () {
       performOpenTarget(state.lastOpenTarget).catch(showError);
     });
+
+    if (el.workspacePathWidget) {
+      on(el.workspacePathWidget, "click", function () {
+        var ws = activeWorkspace();
+        if (!ws || !ws.path) {
+          return;
+        }
+        if (pathWidgetClickTimer) {
+          clearTimeout(pathWidgetClickTimer);
+          pathWidgetClickTimer = null;
+        }
+        pathWidgetClickTimer = setTimeout(function () {
+          pathWidgetClickTimer = null;
+          copyTextToClipboard(ws.path).catch(function () {
+            return null;
+          });
+        }, 220);
+      });
+
+      on(el.workspacePathWidget, "dblclick", function (event) {
+        event.preventDefault();
+        if (pathWidgetClickTimer) {
+          clearTimeout(pathWidgetClickTimer);
+          pathWidgetClickTimer = null;
+        }
+        performOpenTarget("finder").catch(showError);
+      });
+    }
 
     on(el.openMenuBtn, "click", function () {
       toggleMenu("open-menu", el.openMenuBtn);
@@ -4551,6 +5417,13 @@
       loadAuthStatus().catch(showError);
     });
 
+    if (el.githubUsername) {
+      on(el.githubUsername, "input", function () {
+        state.githubUsername = trim(el.githubUsername.value);
+        storageSet("artificer.githubUsername", state.githubUsername);
+      });
+    }
+
     on(el.generateSshBtn, "click", function () {
       apiPost("git_generate_ssh", { email: trim(el.sshEmail.value) })
         .then(function (response) {
@@ -4562,6 +5435,44 @@
         })
         .catch(showError);
     });
+
+    if (el.chooseSshBtn) {
+      on(el.chooseSshBtn, "click", function () {
+        apiPost("git_choose_ssh_key", {})
+          .then(function (response) {
+            if (!response.success) {
+              throw new Error(response.error || "Could not choose SSH key");
+            }
+            if (response.cancelled) {
+              return null;
+            }
+            if (el.selectedSshPath) {
+              el.selectedSshPath.value = response.selected_ssh_pub_path || "";
+            }
+            if (el.sshPubOutput && typeof response.selected_ssh_pub_key !== "undefined") {
+              el.sshPubOutput.value = response.selected_ssh_pub_key || "";
+            }
+            if (el.sshKeyStatus) {
+              el.sshKeyStatus.textContent = response.selected_ssh_pub_path ? "Custom SSH key selected" : "SSH key found";
+            }
+            return null;
+          })
+          .catch(showError);
+      });
+    }
+
+    if (el.clearSshBtn) {
+      on(el.clearSshBtn, "click", function () {
+        apiPost("git_clear_ssh_key", {})
+          .then(function (response) {
+            if (!response.success) {
+              throw new Error(response.error || "Could not clear SSH key selection");
+            }
+            return loadAuthStatus();
+          })
+          .catch(showError);
+      });
+    }
 
     on(el.terminalToggleBtn, "click", function () {
       toggleTerminal();
@@ -4650,6 +5561,30 @@
         }
       });
     }
+
+    on(el.chatLog, "click", function (event) {
+      var copyBtn = event.target.closest("[data-action='copy-user-message']");
+      if (!copyBtn) {
+        return;
+      }
+      event.preventDefault();
+      var text = copyBtn.getAttribute("data-copy-text") || "";
+      copyTextToClipboard(text).then(function () {
+        copyBtn.classList.add("copied");
+        window.setTimeout(function () {
+          copyBtn.classList.remove("copied");
+        }, 900);
+      });
+    });
+
+    on(el.chatLog, "scroll", function () {
+      state.chatAutoScroll = isChatAtBottom();
+      updateChatJumpButton();
+    });
+
+    on(el.chatJumpBottomBtn, "click", function () {
+      jumpChatToBottom();
+    });
 
     if (el.queueSteerBtn) {
       on(el.queueSteerBtn, "click", function () {

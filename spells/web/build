@@ -63,6 +63,7 @@ fi
 
 build_site() {
   step "Building site: $site_name"
+  shared_theme_dir="$WIZARDRY_DIR/.web/.themes"
   
   # Create build directories
   mkdir -p "$SITE_DIR/build/pages"
@@ -97,6 +98,12 @@ build_site() {
   cp "$js_lib_dir/idiomorph-ext.min.js" "$SITE_DIR/build/static/js/" || \
     die "build: failed to copy idiomorph-ext.min.js"
   
+  # Copy static files
+  if [ -d "$shared_theme_dir" ]; then
+    mkdir -p "$SITE_DIR/site/static/themes"
+    cp -f "$shared_theme_dir"/*.css "$SITE_DIR/site/static/themes/" 2>/dev/null || true
+  fi
+
   # Copy static files
   if [ -d "$SITE_DIR/site/static" ]; then
     info "Copying static files to build/static/..."

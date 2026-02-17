@@ -153,6 +153,7 @@ fi
 # Get WIZARDRY_DIR to find templates
 WIZARDRY_DIR=${WIZARDRY_DIR:-$HOME/.wizardry}
 template_dir="$WIZARDRY_DIR/.web/$template"
+shared_theme_dir="$WIZARDRY_DIR/.web/.themes"
 
 if [ ! -d "$template_dir" ]; then
   die "update-from-template: template '$template' not found at $template_dir"
@@ -213,6 +214,12 @@ fi
 
 if [ -d "$template_dir/static" ]; then
   cp -r "$template_dir/static" "$SITE_DIR/site/"
+fi
+
+# Sync shared theme catalog into every site.
+if [ -d "$shared_theme_dir" ]; then
+  mkdir -p "$SITE_DIR/site/static/themes"
+  cp -f "$shared_theme_dir"/*.css "$SITE_DIR/site/static/themes/" 2>/dev/null || true
 fi
 
 if [ -d "$template_dir/includes" ]; then

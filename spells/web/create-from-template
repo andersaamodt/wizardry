@@ -46,6 +46,7 @@ fi
 
 # Get WIZARDRY_DIR to find templates
 template_dir="$WIZARDRY_DIR/.web/$template"
+shared_theme_dir="$WIZARDRY_DIR/.web/.themes"
 
 if [ ! -d "$template_dir" ]; then
   die "create-from-template: template '$template' not found"
@@ -71,6 +72,12 @@ fi
 if [ -d "$SITE_DIR/includes" ]; then
   [ ! -d "$SITE_DIR/site" ] && mkdir -p "$SITE_DIR/site"
   mv "$SITE_DIR/includes" "$SITE_DIR/site/"
+fi
+
+# Sync shared theme catalog into every site template.
+if [ -d "$shared_theme_dir" ]; then
+  mkdir -p "$SITE_DIR/site/static/themes"
+  cp -f "$shared_theme_dir"/*.css "$SITE_DIR/site/static/themes/" 2>/dev/null || true
 fi
 
 # Create additional required directories

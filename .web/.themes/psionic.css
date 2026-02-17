@@ -1,0 +1,32 @@
+:root {
+  /* Shared blog theme tokens */
+  --primary: #6a74c9;
+  --accent: #7782d6;
+  --accent-dark: #5560ba;
+  --teal: #8f79ff;
+  --green: #84cb9b;
+  --purple: #8f97df;
+  --violet: #e8e5f7;
+  --text: #2a2e47;
+  --light-text: #5d6486;
+  --border: #d4d0e6;
+  --bg: #eceaf4;
+  --light-bg: #f8f7fc;
+  --code-bg: #f2f1f8;
+  --shadow: rgba(27, 22, 56, 0.07);
+  --nav-link-hover: #e6e3f4;
+  --nav-link-active: #6a74c9;
+  --nav-icon: #6a74c9;
+
+  /* Shared Artificer tokens */
+  --bg-panel: #f8f7fc;
+  --bg-panel-2: #f2f1f8;
+  --line: #d4d0e6;
+  --line-strong: #c2bcd9;
+  --text-muted: #5d6486;
+  --accent-strong: #5560ba;
+  --accent-soft: #e6e3f4;
+  --success: #2c8d64;
+  --danger: #a14d5b;
+  --terminal-height: 248px;
+}
