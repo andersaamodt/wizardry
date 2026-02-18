@@ -176,8 +176,9 @@ git_diff() {
 
   staged=$(cd "$ws" && git --no-pager diff --cached --no-color 2>/dev/null || true)
   unstaged=$(cd "$ws" && git --no-pager diff --no-color 2>/dev/null || true)
+  untracked=$(cd "$ws" && git ls-files --others --exclude-standard 2>/dev/null || true)
 
-  if [ -z "$staged" ] && [ -z "$unstaged" ]; then
+  if [ -z "$staged" ] && [ -z "$unstaged" ] && [ -z "$untracked" ]; then
     printf '%s\n' 'No working tree changes.'
     return 0
   fi
@@ -191,6 +192,29 @@ git_diff() {
       printf '\n'
     fi
     printf '%s\n%s\n' '### Unstaged' "$unstaged"
+  fi
+
+  if [ -n "$untracked" ]; then
+    if [ -n "$staged" ] || [ -n "$unstaged" ]; then
+      printf '\n'
+    fi
+    printf '%s\n' '### Untracked'
+    printf '%s\n' "$untracked" | while IFS= read -r rel_path; do
+      [ -n "$rel_path" ] || continue
+      file_path="$ws/$rel_path"
+      if [ ! -f "$file_path" ]; then
+        printf '%s\n' "new file: $rel_path"
+        continue
+      fi
+      # no-index returns exit 1 when differences are present; ignore that.
+      file_diff=$(cd "$ws" && git --no-pager diff --no-index --no-color /dev/null "$rel_path" 2>/dev/null || true)
+      if [ -n "$file_diff" ]; then
+        printf '%s\n' "$file_diff"
+      else
+        printf '%s\n' "new file: $rel_path"
+      fi
+      printf '\n'
+    done
   fi
 }
 

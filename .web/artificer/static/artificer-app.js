@@ -6,6 +6,7 @@
   }
 
   var seenConversationStorageKey = "artificer.conversationSeenUpdated";
+  var workspaceStateCacheKey = "artificer.workspaceStateCache.v1";
 
   function storageGet(key, fallback) {
     try {
@@ -75,6 +76,121 @@
       return fallback;
     }
     return Math.round(raw);
+  }
+
+  function loadWorkspaceStateCache() {
+    var raw = "";
+    try {
+      raw = window.localStorage.getItem(workspaceStateCacheKey) || "";
+    } catch (_err) {
+      return null;
+    }
+    if (!raw) {
+      return null;
+    }
+    var parsed = null;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (_err2) {
+      return null;
+    }
+    if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.workspaces)) {
+      return null;
+    }
+    var savedAt = Number(parsed.saved_at || 0);
+    if (!isFinite(savedAt) || savedAt <= 0) {
+      return null;
+    }
+    if (Date.now() - savedAt > 1000 * 60 * 60 * 24) {
+      return null;
+    }
+    return parsed;
+  }
+
+  function saveWorkspaceStateCache(workspaces) {
+    if (!Array.isArray(workspaces)) {
+      return;
+    }
+    try {
+      window.localStorage.setItem(workspaceStateCacheKey, JSON.stringify({
+        saved_at: Date.now(),
+        workspaces: workspaces
+      }));
+    } catch (_err) {
+      return;
+    }
+  }
+
+  function slugifyRoutePart(text) {
+    var value = String(text || "").toLowerCase();
+    value = value.replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    return value;
+  }
+
+  function encodeRoutePart(text) {
+    return encodeURIComponent(String(text || ""));
+  }
+
+  function decodeRoutePart(text) {
+    try {
+      return decodeURIComponent(String(text || ""));
+    } catch (_err) {
+      return String(text || "");
+    }
+  }
+
+  function normalizeRoutePath(pathname) {
+    var raw = String(pathname || "/");
+    if (!raw) {
+      raw = "/";
+    }
+    if (raw.charAt(0) !== "/") {
+      raw = "/" + raw;
+    }
+    return raw.replace(/\/{2,}/g, "/");
+  }
+
+  function routeTokenFromLabelAndId(label, id) {
+    var idText = String(id || "");
+    var slug = slugifyRoutePart(label || idText);
+    if (slug && idText) {
+      return slug + "--" + idText;
+    }
+    return slug || idText;
+  }
+
+  function routeIdHint(token) {
+    var raw = String(token || "");
+    var marker = raw.lastIndexOf("--");
+    if (marker > 0 && marker + 2 < raw.length) {
+      return raw.slice(marker + 2);
+    }
+    return raw;
+  }
+
+  function parseRouteSelectionFromLocation() {
+    if (typeof window === "undefined" || !window.location) {
+      return null;
+    }
+    var path = normalizeRoutePath(window.location.pathname || "/");
+    var segments = path.split("/").filter(function (part) {
+      return !!part;
+    });
+    if (segments.length >= 2 && segments[0] === "pages" && /^index\.html?$/i.test(segments[1])) {
+      segments = segments.slice(2);
+    }
+    if (!segments.length) {
+      return null;
+    }
+    var workspaceToken = decodeRoutePart(segments[0]);
+    var conversationToken = segments.length > 1 ? decodeRoutePart(segments[1]) : "";
+    if (!workspaceToken) {
+      return null;
+    }
+    return {
+      workspaceToken: workspaceToken,
+      conversationToken: conversationToken
+    };
   }
 
   var initialSeenConversationState = loadSeenConversationState();
@@ -159,7 +275,9 @@
     conversationCacheByKey: {},
     threadsPaneWidth: parseStoredPaneWidth("artificer.threadsPaneWidth", 308),
     diffPaneWidth: 300,
-    modelsPaneHeight: parseStoredPaneWidth("artificer.modelsPaneHeight", 300)
+    modelsPaneHeight: parseStoredPaneWidth("artificer.modelsPaneHeight", 300),
+    pendingRouteSelection: parseRouteSelectionFromLocation(),
+    suppressSelectionUrlSync: false
   };
 
   var saveDraftTimer = null;
@@ -183,6 +301,7 @@
   var noticeEl = null;
   var noticeHideTimer = null;
   var pendingCommandApproval = null;
+  var approvalAnswerPending = false;
   var TOOLTIP_DELAY_MS = 520;
 
   if (state.sortMode !== "updated" && state.sortMode !== "created") {
@@ -446,20 +565,26 @@
     return noticeEl;
   }
 
-  function showTransientNotice(message) {
+  function showTransientNotice(message, options) {
     var text = trim(message);
     if (!text) {
       return;
     }
+    var opts = options || {};
     var node = ensureNoticeEl();
     if (noticeHideTimer) {
       clearTimeout(noticeHideTimer);
       noticeHideTimer = null;
     }
+    node.classList.remove("transparent");
+    if (opts.transparent) {
+      node.classList.add("transparent");
+    }
     node.textContent = text;
     node.classList.add("show");
     noticeHideTimer = setTimeout(function () {
       node.classList.remove("show");
+      node.classList.remove("transparent");
       noticeHideTimer = null;
     }, 1350);
   }
@@ -1116,6 +1241,85 @@
     });
   }
 
+  function setControlPending(control, isPending, options) {
+    var node = control && control.nodeType === 1 ? control : null;
+    if (!node || !node.classList) {
+      return;
+    }
+
+    var pending = !!isPending;
+    if (pending && String(node.getAttribute("data-ui-pending") || "") === "1") {
+      return;
+    }
+    if (!pending && String(node.getAttribute("data-ui-pending") || "") !== "1") {
+      return;
+    }
+
+    if (pending) {
+      node.setAttribute("data-ui-pending", "1");
+      node.setAttribute("aria-busy", "true");
+      node.classList.add("ui-pending");
+
+      var allowSpinner = !(options && options.spinner === false);
+      if (allowSpinner && node.tagName === "BUTTON") {
+        var width = 0;
+        try {
+          width = Math.round(node.getBoundingClientRect().width || 0);
+        } catch (_err) {
+          width = 0;
+        }
+        if (width >= 56) {
+          node.classList.add("ui-pending-spinner");
+        }
+      }
+
+      if ("disabled" in node) {
+        node.setAttribute("data-ui-pending-was-disabled", node.disabled ? "1" : "0");
+        node.disabled = true;
+      } else {
+        node.setAttribute("data-ui-pending-block-pointer", "1");
+      }
+      return;
+    }
+
+    node.removeAttribute("data-ui-pending");
+    node.removeAttribute("aria-busy");
+    node.classList.remove("ui-pending");
+    node.classList.remove("ui-pending-spinner");
+
+    if ("disabled" in node) {
+      var wasDisabled = node.getAttribute("data-ui-pending-was-disabled") === "1";
+      node.removeAttribute("data-ui-pending-was-disabled");
+      if (!wasDisabled) {
+        node.disabled = false;
+      }
+    } else {
+      node.removeAttribute("data-ui-pending-block-pointer");
+    }
+  }
+
+  function runWithControlPending(control, runner, options) {
+    var node = control && control.nodeType === 1 ? control : null;
+    if (node && String(node.getAttribute("data-ui-pending") || "") === "1") {
+      return Promise.resolve(null);
+    }
+    if (node) {
+      setControlPending(node, true, options);
+    }
+    return Promise.resolve()
+      .then(function () {
+        if (typeof runner === "function") {
+          return runner();
+        }
+        return null;
+      })
+      .finally(function () {
+        if (node) {
+          setControlPending(node, false, options);
+        }
+      });
+  }
+
   function getWorkspaceById(workspaceId) {
     for (var i = 0; i < state.workspaces.length; i += 1) {
       if (state.workspaces[i].id === workspaceId) {
@@ -1678,7 +1882,7 @@
       html += "<span class='meta-del' title='Lines removed since last commit'>-" + escHtml(String(del)) + "</span> ";
     }
     html += "<span class='meta-age-slot'>";
-    html += "<span class='meta-age' title='Conversation age'>" + ((isArchiveArmed || isArchiveSubmitting) ? "" : escHtml(age)) + "</span>";
+    html += "<span class='meta-age' title='Thread age'>" + ((isArchiveArmed || isArchiveSubmitting) ? "" : escHtml(age)) + "</span>";
     html += archiveControlMarkup(workspaceId, conversationId);
     html += "</span></span>";
     return html;
@@ -1690,7 +1894,7 @@
     var isSubmitting = key === state.pendingArchiveSubmittingKey;
     if (!isArmed) {
       return (
-        "<button type='button' class='thread-archive-btn' title='Archive conversation' data-action='arm-archive-conversation' data-workspace-id='" + escHtml(workspaceId) + "' data-conversation-id='" + escHtml(conversationId) + "'><span class='archive-icon' aria-hidden='true'><svg viewBox='0 0 16 16' fill='none' stroke='currentColor' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'><rect x='2.4' y='3.2' width='11.2' height='9.2' rx='1.4'></rect><path d='M4.5 6.1h7'></path><path d='M6 8.3h4'></path></svg></span></button>"
+        "<button type='button' class='thread-archive-btn' title='Archive thread' data-action='arm-archive-conversation' data-workspace-id='" + escHtml(workspaceId) + "' data-conversation-id='" + escHtml(conversationId) + "'><span class='archive-icon' aria-hidden='true'><svg viewBox='0 0 16 16' fill='none' stroke='currentColor' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'><rect x='2.4' y='3.2' width='11.2' height='9.2' rx='1.4'></rect><path d='M4.5 6.1h7'></path><path d='M6 8.3h4'></path></svg></span></button>"
       );
     }
 
@@ -1949,6 +2153,142 @@
     if (state.activeDraftWorkspaceId && !getWorkspaceById(state.activeDraftWorkspaceId)) {
       state.activeDraftWorkspaceId = "";
     }
+  }
+
+  function resolveWorkspaceFromRouteToken(token) {
+    var raw = String(token || "");
+    if (!raw) {
+      return null;
+    }
+    var idHint = String(routeIdHint(raw) || "");
+    for (var i = 0; i < state.workspaces.length; i += 1) {
+      if (String(state.workspaces[i].id || "") === idHint) {
+        return state.workspaces[i];
+      }
+    }
+    var wantedSlug = slugifyRoutePart(raw);
+    for (var j = 0; j < state.workspaces.length; j += 1) {
+      if (slugifyRoutePart(state.workspaces[j].name || state.workspaces[j].id) === wantedSlug) {
+        return state.workspaces[j];
+      }
+    }
+    return null;
+  }
+
+  function resolveConversationFromRouteToken(workspace, token) {
+    if (!workspace || !token || !Array.isArray(workspace.conversations)) {
+      return null;
+    }
+    var raw = String(token || "");
+    var idHint = String(routeIdHint(raw) || "");
+    for (var i = 0; i < workspace.conversations.length; i += 1) {
+      if (String(workspace.conversations[i].id || "") === idHint) {
+        return workspace.conversations[i];
+      }
+    }
+    var wantedSlug = slugifyRoutePart(raw);
+    var match = null;
+    var matchUpdated = 0;
+    for (var j = 0; j < workspace.conversations.length; j += 1) {
+      var conversation = workspace.conversations[j] || {};
+      var slug = slugifyRoutePart(conversation.title || conversation.id);
+      if (slug !== wantedSlug) {
+        continue;
+      }
+      var updated = conversationUpdatedNumber(conversation);
+      if (!match || updated > matchUpdated) {
+        match = conversation;
+        matchUpdated = updated;
+      }
+    }
+    return match;
+  }
+
+  function applyRouteSelectionIfPending() {
+    var requested = state.pendingRouteSelection;
+    if (!requested || !requested.workspaceToken) {
+      return;
+    }
+    state.pendingRouteSelection = null;
+    var workspace = resolveWorkspaceFromRouteToken(requested.workspaceToken);
+    if (!workspace) {
+      return;
+    }
+    state.activeWorkspaceId = workspace.id;
+    state.activeConversation = null;
+    state.activeDraftWorkspaceId = "";
+    state.expandedWorkspaceIds[workspace.id] = true;
+    var conversation = resolveConversationFromRouteToken(workspace, requested.conversationToken || "");
+    state.activeConversationId = conversation && conversation.id ? conversation.id : "";
+  }
+
+  function buildRoutePathForSelection() {
+    var workspace = getWorkspaceById(state.activeWorkspaceId);
+    if (!workspace) {
+      return "/";
+    }
+    var workspaceToken = routeTokenFromLabelAndId(workspace.name || workspace.id, workspace.id);
+    if (!workspaceToken) {
+      return "/";
+    }
+    var parts = [encodeRoutePart(workspaceToken)];
+    if (state.activeConversationId) {
+      var conversation = getConversationById(workspace, state.activeConversationId);
+      var conversationToken = routeTokenFromLabelAndId(
+        (conversation && (conversation.title || conversation.id)) || state.activeConversationId,
+        state.activeConversationId
+      );
+      if (conversationToken) {
+        parts.push(encodeRoutePart(conversationToken));
+      }
+    }
+    return "/" + parts.join("/") + "/";
+  }
+
+  function syncSelectionUrl(replace) {
+    if (state.suppressSelectionUrlSync || typeof window === "undefined" || !window.history || !window.location) {
+      return;
+    }
+    var nextPath = normalizeRoutePath(buildRoutePathForSelection());
+    var currentPath = normalizeRoutePath(window.location.pathname || "/");
+    if (nextPath === currentPath) {
+      return;
+    }
+    var method = replace ? "replaceState" : "pushState";
+    if (typeof window.history[method] !== "function") {
+      return;
+    }
+    try {
+      window.history[method]({}, "", nextPath);
+    } catch (_err) {
+      return;
+    }
+  }
+
+  function navigateToRouteSelection() {
+    var requested = parseRouteSelectionFromLocation();
+    if (!requested || !requested.workspaceToken) {
+      return Promise.resolve();
+    }
+    if (!state.workspaces.length) {
+      state.pendingRouteSelection = requested;
+      return Promise.resolve();
+    }
+    var workspace = resolveWorkspaceFromRouteToken(requested.workspaceToken);
+    if (!workspace) {
+      return Promise.resolve();
+    }
+    var conversation = resolveConversationFromRouteToken(workspace, requested.conversationToken || "");
+    if (conversation && String(conversation.id || "") === String(state.activeConversationId || "") && String(workspace.id || "") === String(state.activeWorkspaceId || "")) {
+      return Promise.resolve();
+    }
+    state.suppressSelectionUrlSync = true;
+    var task = conversation && conversation.id
+      ? selectConversation(workspace.id, conversation.id)
+      : selectWorkspace(workspace.id);
+    return task.finally(function () {
+      state.suppressSelectionUrlSync = false;
+    });
   }
 
   function newSelectionVersion() {
@@ -2527,7 +2867,12 @@
 
   function renderWorkspaceTree() {
     if (!state.workspaces.length) {
-      var emptyMarkup = "<p class='empty-state'>Drop a folder here or click + to add a project.</p>";
+      var emptyMarkup = "";
+      if (!state.initialLoadComplete) {
+        emptyMarkup = "<p class='empty-state'><span class='run-spinner' aria-hidden='true'></span> Loading projects...</p>";
+      } else {
+        emptyMarkup = "<p class='empty-state'>Drop a folder here or click + to add a project.</p>";
+      }
       if (state.workspaceTreeMarkupCache === emptyMarkup) {
         return;
       }
@@ -2604,9 +2949,9 @@
             chronoIndicatorClass += " pending";
           }
 
-          html += "<div class='conversation-row chrono-row" + chronoActive + "' role='button' tabindex='0' title='Open conversation' data-action='select-conversation' data-workspace-id='" + escHtml(entry.workspaceId) + "' data-conversation-id='" + escHtml(entry.conversation.id) + "'>";
+          html += "<div class='conversation-row chrono-row" + chronoActive + "' role='button' tabindex='0' title='Open thread' data-action='select-conversation' data-workspace-id='" + escHtml(entry.workspaceId) + "' data-conversation-id='" + escHtml(entry.conversation.id) + "'>";
           html += "<span class='" + chronoIndicatorClass + "' aria-hidden='true'></span>";
-          html += "<span class='conversation-title' title='" + escAttr(entry.workspaceName) + "'>" + escHtml(entry.conversation.title || "Conversation") + "</span>";
+          html += "<span class='conversation-title' title='" + escAttr(entry.workspaceName) + "'>" + escHtml(entry.conversation.title || "Thread") + "</span>";
           html += conversationStatusPillMarkup(entry.workspaceId, entry.conversation, chronoRunning);
           if (chronoPending > 0) {
             html += "<span class='queue-count'>" + chronoPending + "</span>";
@@ -2655,8 +3000,8 @@
         html += folderIcon;
         html += "<button type='button' class='workspace-caret' data-action='toggle-workspace' data-workspace-id='" + escHtml(workspaceId) + "' aria-label='Toggle' title='Expand or collapse project'><span aria-hidden='true'>&rsaquo;</span></button>";
         html += "<div class='workspace-meta' title='" + escAttr(workspace.path || "") + "'>" + escHtml(workspace.name || "Project") + "</div>";
-        html += "<button type='button' class='workspace-new' data-action='new-conversation' data-workspace-id='" + escHtml(workspaceId) + "' aria-label='New conversation' title='New thread'><span aria-hidden='true'><svg viewBox='0 0 16 16' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M3.1 12.9l2.9-.6 6-6-2.3-2.3-6 6z'/><path d='M8.9 3.7l2.3 2.3'/><path d='M13.6 13.1H8.8'/></svg></span></button>";
         html += "<button type='button' class='workspace-menu-trigger' data-action='toggle-workspace-menu' data-workspace-id='" + escHtml(workspaceId) + "' aria-label='Project menu' title='Project actions' aria-expanded='" + (state.openWorkspaceMenuWorkspaceId === workspaceId ? "true" : "false") + "'>&hellip;</button>";
+        html += "<button type='button' class='workspace-new' data-action='new-conversation' data-workspace-id='" + escHtml(workspaceId) + "' aria-label='New thread' title='New thread'><span aria-hidden='true'><svg viewBox='0 0 16 16' fill='none' stroke='currentColor' stroke-width='1.35' stroke-linecap='round' stroke-linejoin='round'><rect x='2.2' y='2.1' width='11.6' height='11.8' rx='1.6'></rect><path d='M6.1 9.8l-.5 2 2-.5 3.8-3.8-1.5-1.5z'></path><path d='M9.8 6.1l1.5 1.5'></path></svg></span></button>";
         var workspaceMenuClass = "workspace-actions-pop floating-menu";
         if (state.openWorkspaceMenuWorkspaceId !== workspaceId) {
           workspaceMenuClass += " hidden";
@@ -2672,6 +3017,10 @@
         if (hasDraftForWorkspace(workspace)) {
           var draftActive = state.activeDraftWorkspaceId === workspaceId ? " active" : "";
           html += "<button type='button' class='conversation-draft" + draftActive + "' data-action='select-draft' data-workspace-id='" + escHtml(workspaceId) + "'>Draft (unsent)</button>";
+        }
+
+        if (!filteredConversations.length && !hasDraftForWorkspace(workspace)) {
+          html += "<div class='conversation-empty' aria-hidden='true'>No threads</div>";
         }
 
         for (var j = 0; j < filteredConversations.length; j += 1) {
@@ -2698,9 +3047,9 @@
             indicatorClass += " pending";
           }
 
-          html += "<div class='conversation-row" + activeConv + "' role='button' tabindex='0' title='Open conversation' data-action='select-conversation' data-workspace-id='" + escHtml(workspaceId) + "' data-conversation-id='" + escHtml(conversation.id) + "'>";
+          html += "<div class='conversation-row" + activeConv + "' role='button' tabindex='0' title='Open thread' data-action='select-conversation' data-workspace-id='" + escHtml(workspaceId) + "' data-conversation-id='" + escHtml(conversation.id) + "'>";
           html += "<span class='" + indicatorClass + "' aria-hidden='true'></span>";
-          html += "<span class='conversation-title'>" + escHtml(conversation.title || "Conversation") + "</span>";
+          html += "<span class='conversation-title'>" + escHtml(conversation.title || "Thread") + "</span>";
           html += conversationStatusPillMarkup(workspaceId, conversation, queueRunning);
           if (queuePending > 0) {
             html += "<span class='queue-count'>" + queuePending + "</span>";
@@ -3246,6 +3595,7 @@
 
     if (!state.activeWorkspaceId) {
       el.branchMenuBtn.textContent = "No repo";
+      el.branchMenuBtn.title = "Select a project first";
       el.commitMainBtn.disabled = true;
       if (el.commitMenuBtn) {
         el.commitMenuBtn.disabled = true;
@@ -3255,7 +3605,8 @@
     }
 
     if (!gitState.is_repo) {
-      el.branchMenuBtn.textContent = "No repo";
+      el.branchMenuBtn.textContent = "Create repo";
+      el.branchMenuBtn.title = "Initialize git repository";
       el.commitMainBtn.disabled = true;
       if (el.commitMenuBtn) {
         el.commitMenuBtn.disabled = true;
@@ -3265,6 +3616,7 @@
     }
 
     el.branchMenuBtn.textContent = gitState.branch || "Branch";
+    el.branchMenuBtn.title = "Git branch and repository";
     el.commitMainBtn.disabled = false;
     if (el.commitMenuBtn) {
       el.commitMenuBtn.disabled = false;
@@ -3274,12 +3626,12 @@
 
   function renderChatHeader() {
     if (!state.activeWorkspaceId) {
-      el.chatTitle.textContent = "No conversation";
+      el.chatTitle.textContent = "No thread";
       return;
     }
 
     if (state.activeDraftWorkspaceId) {
-      el.chatTitle.textContent = "Draft conversation";
+      el.chatTitle.textContent = "Draft thread";
       return;
     }
 
@@ -3288,7 +3640,7 @@
       return;
     }
 
-    el.chatTitle.textContent = "No conversation";
+    el.chatTitle.textContent = "No thread";
   }
 
   function activeDecisionRequestInfo() {
@@ -3330,8 +3682,9 @@
         String(conversation.queue_last_status || "") === "awaiting_approval" ||
         isAwaitingApprovalConversation(state.activeWorkspaceId, state.activeConversationId);
       if (awaitingApproval) {
+        var inferredCommand = inferredApprovalCommandFromConversation();
         request = {
-          command: "",
+          command: inferredCommand,
           reason: ""
         };
       }
@@ -3360,6 +3713,49 @@
         }
       }
     }
+    return "";
+  }
+
+  function latestAssistantMessageFromActiveConversation() {
+    var messages = Array.isArray(state.activeConversation && state.activeConversation.messages)
+      ? state.activeConversation.messages
+      : [];
+    for (var i = messages.length - 1; i >= 0; i -= 1) {
+      var msg = messages[i] || {};
+      if (String(msg.role || "") === "assistant") {
+        var content = trim(String(msg.content || ""));
+        if (content) {
+          return content;
+        }
+      }
+    }
+    return "";
+  }
+
+  function inferredApprovalCommandFromConversation() {
+    var text = latestAssistantMessageFromActiveConversation();
+    if (!text) {
+      return "";
+    }
+
+    var commandLine = text.match(/Command:\s*([^\n\r]+)/i);
+    if (commandLine && commandLine[1]) {
+      var candidate = trim(commandLine[1]).replace(/[.,;:]+$/, "");
+      if (/^[./A-Za-z0-9_-]+$/.test(candidate)) {
+        return candidate;
+      }
+    }
+
+    var explicitPath = text.match(/\b(\.\/[A-Za-z0-9._/-]+)\b/);
+    if (explicitPath && explicitPath[1]) {
+      return explicitPath[1];
+    }
+
+    var shellFile = text.match(/\b([A-Za-z0-9._-]+\.sh)\b/);
+    if (shellFile && shellFile[1]) {
+      return "./" + shellFile[1];
+    }
+
     return "";
   }
 
@@ -3404,6 +3800,72 @@
     }).then(function () {
       renderUi();
       kickQueueWorker();
+    });
+  }
+
+  function commandApprovalActionButtons() {
+    return [
+      el.commandApprovalInlineAllowOnce,
+      el.commandApprovalInlineDenyOnce,
+      el.commandApprovalInlineAllowRemember,
+      el.commandApprovalInlineDenyRemember,
+      el.commandApprovalAllowOnce,
+      el.commandApprovalDenyOnce,
+      el.commandApprovalAllowRemember,
+      el.commandApprovalDenyRemember
+    ];
+  }
+
+  function setApprovalAnswerUiPending(isPending, activeButton) {
+    var buttons = commandApprovalActionButtons();
+    for (var i = 0; i < buttons.length; i += 1) {
+      var btn = buttons[i];
+      if (!btn) {
+        continue;
+      }
+      if (isPending) {
+        if (!btn.hasAttribute("data-default-label")) {
+          btn.setAttribute("data-default-label", btn.textContent || "");
+        }
+        btn.disabled = true;
+      } else {
+        if (btn.hasAttribute("data-default-label")) {
+          btn.textContent = btn.getAttribute("data-default-label") || "";
+          btn.removeAttribute("data-default-label");
+        }
+      }
+      btn.classList.toggle("approval-submit-pending", isPending && btn === activeButton);
+    }
+    if (activeButton && isPending) {
+      activeButton.textContent = "Submitting...";
+    }
+    if (el.commandApprovalInlineMatchMode) {
+      el.commandApprovalInlineMatchMode.disabled = !!isPending;
+    }
+    if (el.commandApprovalInlinePattern) {
+      el.commandApprovalInlinePattern.disabled = !!isPending;
+    }
+    if (el.commandApprovalInlineClose) {
+      el.commandApprovalInlineClose.disabled = !!isPending;
+    }
+    if (el.commandApprovalInline) {
+      el.commandApprovalInline.classList.toggle("is-submitting", !!isPending);
+    }
+    if (el.commandApprovalModal) {
+      el.commandApprovalModal.classList.toggle("is-submitting", !!isPending);
+    }
+  }
+
+  function submitApprovalRequestAnswerWithUi(decision, scope, sourceButton) {
+    if (approvalAnswerPending) {
+      return Promise.resolve();
+    }
+    approvalAnswerPending = true;
+    setApprovalAnswerUiPending(true, sourceButton || null);
+    return submitApprovalRequestAnswer(decision, scope).finally(function () {
+      approvalAnswerPending = false;
+      setApprovalAnswerUiPending(false, null);
+      renderUi();
     });
   }
 
@@ -3523,7 +3985,7 @@
     ) {
       return;
     }
-    if (pendingCommandApproval) {
+    if (pendingCommandApproval || approvalAnswerPending) {
       return;
     }
     var info = activeApprovalRequestInfo();
@@ -3552,16 +4014,16 @@
       el.commandApprovalInlinePattern.disabled = !info.hasCommand;
     }
     el.commandApprovalInlineAllowOnce.onclick = function () {
-      submitApprovalRequestAnswer("allow", "once").catch(showError);
+      submitApprovalRequestAnswerWithUi("allow", "once", el.commandApprovalInlineAllowOnce).catch(showError);
     };
     el.commandApprovalInlineDenyOnce.onclick = function () {
-      submitApprovalRequestAnswer("deny", "once").catch(showError);
+      submitApprovalRequestAnswerWithUi("deny", "once", el.commandApprovalInlineDenyOnce).catch(showError);
     };
     el.commandApprovalInlineAllowRemember.onclick = function () {
-      submitApprovalRequestAnswer("allow", "remember").catch(showError);
+      submitApprovalRequestAnswerWithUi("allow", "remember", el.commandApprovalInlineAllowRemember).catch(showError);
     };
     el.commandApprovalInlineDenyRemember.onclick = function () {
-      submitApprovalRequestAnswer("deny", "remember").catch(showError);
+      submitApprovalRequestAnswerWithUi("deny", "remember", el.commandApprovalInlineDenyRemember).catch(showError);
     };
     el.commandApprovalInlineAllowRemember.disabled = !info.hasCommand;
     el.commandApprovalInlineDenyRemember.disabled = !info.hasCommand;
@@ -3629,7 +4091,7 @@
     if (finderIcon) {
       return "<span class='btn-icon app-icon finder-icon real-app-icon' aria-hidden='true'><img class='app-icon-img' src='" + escAttr(finderIcon) + "' alt=''></span>";
     }
-    return "<span class='btn-icon app-icon finder-icon' aria-hidden='true'><svg viewBox='0 0 16 16' fill='none'><rect x='1.2' y='1.2' width='13.6' height='13.6' rx='3.2' fill='#80B6FF' stroke='#4C7CC8' stroke-width='1'></rect><path d='M8 2v12' stroke='#EAF3FF' stroke-width='1'></path><circle cx='5.3' cy='6.2' r='0.8' fill='#0F2A50'></circle><circle cx='10.7' cy='6.2' r='0.8' fill='#0F2A50'></circle><path d='M4.5 10.2c1 .9 2.2 1.4 3.5 1.4s2.5-.5 3.5-1.4' stroke='#0F2A50' stroke-width='1' stroke-linecap='round'></path></svg></span>";
+    return "<span class='btn-icon app-icon finder-icon' aria-hidden='true'></span>";
   }
 
   function renderOpenMenuIcons() {
@@ -3644,6 +4106,7 @@
       }
       if (!dataUri) {
         host.classList.remove("real-app-icon");
+        host.innerHTML = "";
         return;
       }
       host.classList.add("real-app-icon");
@@ -3793,6 +4256,96 @@
     }
   }
 
+  function contextKFromCatalogEntry(entry) {
+    var raw = entry && typeof entry.context_k !== "undefined" ? entry.context_k : "";
+    var parsed = Number(raw);
+    if (!isFinite(parsed) || parsed <= 0) {
+      return 0;
+    }
+    return Math.round(parsed);
+  }
+
+  function normalizedModelKey(text) {
+    return trim(String(text || "")).toLowerCase();
+  }
+
+  function baseModelKey(text) {
+    var key = normalizedModelKey(text);
+    if (!key) {
+      return "";
+    }
+    return key.split(":")[0];
+  }
+
+  function modelContextFromCatalog(modelName) {
+    var target = normalizedModelKey(modelName);
+    if (!target || !Array.isArray(state.modelCatalog) || !state.modelCatalog.length) {
+      return 0;
+    }
+    var targetBase = baseModelKey(target);
+    for (var i = 0; i < state.modelCatalog.length; i += 1) {
+      var entry = state.modelCatalog[i] || {};
+      if (normalizedModelKey(entry.name) === target) {
+        return contextKFromCatalogEntry(entry);
+      }
+    }
+    for (var j = 0; j < state.modelCatalog.length; j += 1) {
+      var entry2 = state.modelCatalog[j] || {};
+      if (baseModelKey(entry2.name) === targetBase) {
+        return contextKFromCatalogEntry(entry2);
+      }
+    }
+    return 0;
+  }
+
+  function inferredModelContextK(modelName) {
+    var model = normalizedModelKey(modelName);
+    if (!model) {
+      return 0;
+    }
+    var explicitK = model.match(/(?:^|[^0-9])(\d{1,4})\s*k(?:[^a-z0-9]|$)/i);
+    if (explicitK && explicitK[1]) {
+      var parsed = Number(explicitK[1]);
+      if (isFinite(parsed) && parsed > 0) {
+        return Math.round(parsed);
+      }
+    }
+    if (model.indexOf("llama3.1:8b") >= 0) {
+      return 128;
+    }
+    if (model.indexOf("deepseek-coder-v2:16b") >= 0 || model.indexOf("qwen2.5-coder:7b") >= 0) {
+      return 32;
+    }
+    if (model.indexOf("starcoder2:7b") >= 0 || model.indexOf("codellama:13b") >= 0) {
+      return 16;
+    }
+    if (model.indexOf("phi3:mini") >= 0 || model.indexOf("mistral:7b") >= 0) {
+      return 8;
+    }
+    return 0;
+  }
+
+  function activeModelContextInfo(modelName) {
+    var catalogK = modelContextFromCatalog(modelName);
+    if (catalogK > 0) {
+      return {
+        contextK: catalogK,
+        source: "catalog"
+      };
+    }
+    var inferredK = inferredModelContextK(modelName);
+    if (inferredK > 0) {
+      return {
+        contextK: inferredK,
+        source: "inferred"
+      };
+    }
+    return {
+      contextK: 0,
+      source: "unknown"
+    };
+  }
+
   function renderContextWindowStatus() {
     if (!el.contextWindowBtn) {
       return;
@@ -3802,17 +4355,22 @@
       state.contextWindowText = "Context window information will display here.";
       el.contextWindowBtn.classList.add("unavailable");
       el.contextWindowBtn.setAttribute("data-tooltip", state.contextWindowText);
+      el.contextWindowBtn.title = state.contextWindowText;
       return;
     }
-    var guess = String(model).match(/(\d+)\s*k/i);
-    if (guess && guess[1]) {
-      state.contextWindowText = "Context window: estimated " + guess[1] + "k tokens (from model name).";
+    var info = activeModelContextInfo(model);
+    if (info.contextK > 0) {
+      var contextLabel = String(info.contextK) + "k tokens";
+      var sourceLabel = info.source === "catalog" ? "catalog metadata" : "model-name inference";
+      state.contextWindowText = "Context window: " + contextLabel + " (" + sourceLabel + "). Auto compaction: enabled.";
       el.contextWindowBtn.classList.remove("unavailable");
     } else {
-      state.contextWindowText = "No context window information available for this model yet.";
+      state.contextWindowText = "Context window unknown for this model. Auto compaction remains enabled with conservative limits.";
       el.contextWindowBtn.classList.add("unavailable");
     }
     el.contextWindowBtn.setAttribute("data-tooltip", state.contextWindowText);
+    el.contextWindowBtn.setAttribute("aria-label", "Context window status. " + state.contextWindowText);
+    el.contextWindowBtn.title = state.contextWindowText;
   }
 
   function renderChat() {
@@ -3825,7 +4383,12 @@
     var shouldAutoScroll = keyChanged || state.chatAutoScroll;
 
     if (!state.activeWorkspaceId) {
-      var emptyWorkspaceMarkup = "<p class='empty-state'>Select or add a project to begin.</p>";
+      var emptyWorkspaceMarkup = "";
+      if (!state.initialLoadComplete) {
+        emptyWorkspaceMarkup = "<p class='empty-state'><span class='run-spinner' aria-hidden='true'></span> Loading threads...</p>";
+      } else {
+        emptyWorkspaceMarkup = "<p class='empty-state'>Select or add a project to begin.</p>";
+      }
       if (state.chatMarkupCache !== emptyWorkspaceMarkup) {
         el.chatLog.innerHTML = emptyWorkspaceMarkup;
         state.chatMarkupCache = emptyWorkspaceMarkup;
@@ -3852,7 +4415,7 @@
           state.chatMarkupCache = draftPendingHtml;
         }
       } else if (draftText) {
-        var draftReadyMarkup = "<p class='empty-state'>Draft loaded. Send your first message to create the conversation.</p>";
+        var draftReadyMarkup = "<p class='empty-state'>Draft loaded. Send your first message to create the thread.</p>";
         if (state.chatMarkupCache !== draftReadyMarkup) {
           el.chatLog.innerHTML = draftReadyMarkup;
           state.chatMarkupCache = draftReadyMarkup;
@@ -3871,7 +4434,7 @@
     }
 
     if (!state.activeConversationId || !state.activeConversation) {
-      var noConversationMarkup = "<p class='empty-state'>Select a conversation or click + beside a project to start a draft.</p>";
+      var noConversationMarkup = "<p class='empty-state'>Select a thread or click + beside a project to start a draft.</p>";
       if (state.chatMarkupCache !== noConversationMarkup) {
         el.chatLog.innerHTML = noConversationMarkup;
         state.chatMarkupCache = noConversationMarkup;
@@ -3886,7 +4449,7 @@
     var events = runEventsForConversation(state.activeConversationId);
 
     if (!messages.length && !events.length && !pendingOutgoing.length) {
-      var noMessagesMarkup = "<p class='empty-state'>No messages yet in this conversation.</p>";
+      var noMessagesMarkup = "<p class='empty-state'>No messages yet in this thread.</p>";
       if (state.chatMarkupCache !== noMessagesMarkup) {
         el.chatLog.innerHTML = noMessagesMarkup;
         state.chatMarkupCache = noMessagesMarkup;
@@ -4003,6 +4566,9 @@
   function renderTerminal() {
     if (!el.terminalOutput) {
       return;
+    }
+    if (el.terminalPanel) {
+      el.terminalPanel.classList.toggle("busy", !!state.terminalBusy);
     }
     if (el.terminalCwd) {
       el.terminalCwd.textContent = state.terminalCwd || "Terminal";
@@ -4387,7 +4953,7 @@
   function titleFromPrompt(promptText) {
     var first = trim(String(promptText || "").split(/\r?\n/)[0] || "");
     if (!first) {
-      return "New Conversation";
+      return "New Thread";
     }
     if (first.length > 52) {
       return first.slice(0, 49) + "...";
@@ -4612,10 +5178,13 @@
           conv.approval_request = normalizeApprovalRequest(conv.approval_request);
         }
       }
+      saveWorkspaceStateCache(state.workspaces);
       bootstrapSeenConversationsIfNeeded();
       pruneSeenConversationState();
+      applyRouteSelectionIfPending();
       ensureSelection();
       reconcileRunEventsFromQueueState();
+      syncSelectionUrl(true);
     });
   }
 
@@ -4834,7 +5403,7 @@
       conversation_id: conversationId
     }).then(function (response) {
       if (!response.success) {
-        throw new Error(response.error || "Failed to load conversation");
+        throw new Error(response.error || "Failed to load thread");
       }
       if (state.activeWorkspaceId !== workspaceId || state.activeConversationId !== conversationId) {
         return;
@@ -5026,6 +5595,17 @@
       return null;
     });
 
+    var sideDataPromise = Promise.all([
+      modelsPromise,
+      modelCatalogPromise,
+      appIconsPromise,
+      themesPromise
+    ]).then(function () {
+      syncModelInstallPollingFromCatalog();
+      modelAutoRefreshLastAt = Date.now();
+      renderUi();
+    });
+
     return runWithRetry(loadState, 3, 220)
       .then(function () {
         renderUi();
@@ -5053,23 +5633,60 @@
         return null;
       })
       .then(function () {
-        return modelsPromise;
-      })
-      .then(function () {
-        return modelCatalogPromise;
-      })
-      .then(function () {
-        return appIconsPromise;
-      })
-      .then(function () {
-        return themesPromise;
-      })
-      .then(function () {
-        syncModelInstallPollingFromCatalog();
-        modelAutoRefreshLastAt = Date.now();
         state.initialLoadComplete = true;
         renderUi();
+        return sideDataPromise;
       });
+  }
+
+  function hydrateWorkspaceStateFromCache() {
+    var cached = loadWorkspaceStateCache();
+    if (!cached || !Array.isArray(cached.workspaces) || !cached.workspaces.length) {
+      return false;
+    }
+    state.workspaces = cached.workspaces;
+    for (var i = 0; i < state.workspaces.length; i += 1) {
+      if (!Array.isArray(state.workspaces[i].conversations)) {
+        state.workspaces[i].conversations = [];
+      }
+      for (var j = 0; j < state.workspaces[i].conversations.length; j += 1) {
+        var conv = state.workspaces[i].conversations[j];
+        if (typeof conv.created === "undefined" || conv.created === null || conv.created === "") {
+          conv.created = typeof conv.updated !== "undefined" && conv.updated !== null && conv.updated !== "" ? String(conv.updated) : "0";
+        } else {
+          conv.created = String(conv.created);
+        }
+        if (typeof conv.updated === "undefined" || conv.updated === null || conv.updated === "") {
+          conv.updated = conv.created;
+        } else {
+          conv.updated = String(conv.updated);
+        }
+        if (typeof conv.queue_pending === "undefined") {
+          conv.queue_pending = "0";
+        }
+        if (typeof conv.queue_running === "undefined") {
+          conv.queue_running = "0";
+        }
+        if (typeof conv.queue_done === "undefined") {
+          conv.queue_done = "0";
+        }
+        if (typeof conv.queue_last_status === "undefined") {
+          conv.queue_last_status = "";
+        }
+        if (typeof conv.queue_first_id === "undefined") {
+          conv.queue_first_id = "";
+        }
+        conv.decision_request = normalizeDecisionRequest(conv.decision_request);
+        conv.approval_request = normalizeApprovalRequest(conv.approval_request);
+      }
+    }
+    bootstrapSeenConversationsIfNeeded();
+    pruneSeenConversationState();
+    applyRouteSelectionIfPending();
+    ensureSelection();
+    reconcileRunEventsFromQueueState();
+    syncSelectionUrl(true);
+    return true;
   }
 
   function addWorkspaceByPath(pathText, nameText) {
@@ -5146,7 +5763,7 @@
       conversation_id: conversationId
     }).then(function (response) {
       if (!response.success) {
-        throw new Error(response.error || "Could not archive conversation");
+        throw new Error(response.error || "Could not archive thread");
       }
 
       if (state.activeWorkspaceId === workspaceId && state.activeConversationId === conversationId) {
@@ -5233,6 +5850,7 @@
     var conversations = getSortedConversations(workspace);
     if (conversations.length > 0) {
       state.activeConversationId = conversations[0].id;
+      syncSelectionUrl(false);
       return loadConversation()
         .then(function () {
           if (!isSelectionVersionCurrent(selectionVersion)) {
@@ -5277,15 +5895,16 @@
         });
     }
 
-  state.activeConversationId = "";
-  if (workspace.draft_exists === "1") {
-    return selectDraft(workspaceId);
-  }
+    state.activeConversationId = "";
+    syncSelectionUrl(false);
+    if (workspace.draft_exists === "1") {
+      return selectDraft(workspaceId);
+    }
 
-  el.runPrompt.value = "";
-  resetComposerAttachments();
+    el.runPrompt.value = "";
+    resetComposerAttachments();
 
-  return refreshGitStatus()
+    return refreshGitStatus()
       .catch(function () {
         return null;
       })
@@ -5315,7 +5934,7 @@
       if (summary) {
         cachedConversation = {
           id: summary.id,
-          title: summary.title || "Conversation",
+          title: summary.title || "Thread",
           model: summary.model || "",
           created: summary.created || "",
           updated: summary.updated || "",
@@ -5329,6 +5948,7 @@
     state.activeDraftWorkspaceId = "";
     state.openWorkspaceMenuWorkspaceId = "";
     state.expandedWorkspaceIds[workspaceId] = true;
+    syncSelectionUrl(false);
     renderUi();
 
     return loadConversation()
@@ -5396,6 +6016,7 @@
     state.activeDraftWorkspaceId = workspaceId;
     state.openWorkspaceMenuWorkspaceId = "";
     state.expandedWorkspaceIds[workspaceId] = true;
+    syncSelectionUrl(false);
 
     return loadDraft(workspaceId)
       .then(function (draft) {
@@ -5470,7 +6091,7 @@
       model: model
     }).then(function (response) {
       if (!response.success || !response.conversation || !response.conversation.id) {
-        throw new Error(response.error || "Failed to create conversation from draft");
+        throw new Error(response.error || "Failed to create thread from draft");
       }
 
       return saveDraft(workspaceId, "").catch(function () {
@@ -5782,7 +6403,7 @@
     var attachmentNames = [];
 
     if (!workspaceId || !conversationId) {
-      return Promise.reject(new Error("Choose a project conversation first."));
+      return Promise.reject(new Error("Choose a project thread first."));
     }
 
     for (var i = 0; i < attachmentList.length; i += 1) {
@@ -6910,7 +7531,7 @@
 
   function openSettingsModal() {
     openModal(el.settingsModal);
-    loadAuthStatus().catch(showError);
+    return loadAuthStatus();
   }
 
   function handleWorkspaceTreeClick(event) {
@@ -6948,7 +7569,9 @@
         state.pendingArchiveKey = "";
         state.pendingArchiveReadyAt = 0;
         state.pendingArchiveSubmittingKey = "";
-        createDraftForWorkspace(workspaceId).catch(showError);
+        runWithControlPending(target, function () {
+          return createDraftForWorkspace(workspaceId);
+        }).catch(showError);
       }
       return;
     }
@@ -6965,7 +7588,9 @@
       if (nextName === null) {
         return;
       }
-      renameWorkspace(workspaceId, nextName).catch(showError);
+      runWithControlPending(target, function () {
+        return renameWorkspace(workspaceId, nextName);
+      }).catch(showError);
       return;
     }
 
@@ -6977,10 +7602,12 @@
       event.stopPropagation();
       var workspace = getWorkspaceById(workspaceId);
       var label = workspace && workspace.name ? workspace.name : "this project";
-      if (!window.confirm("Remove " + label + " and its Artificer conversation history?")) {
+      if (!window.confirm("Remove " + label + " and its Artificer thread history?")) {
         return;
       }
-      removeWorkspace(workspaceId).catch(showError);
+      runWithControlPending(target, function () {
+        return removeWorkspace(workspaceId);
+      }).catch(showError);
       return;
     }
 
@@ -7034,7 +7661,9 @@
         state.pendingArchiveKey = "";
         state.pendingArchiveReadyAt = 0;
         state.pendingArchiveSubmittingKey = "";
-        selectConversation(workspaceId, conversationId).catch(showError);
+        runWithControlPending(target, function () {
+          return selectConversation(workspaceId, conversationId);
+        }, { spinner: false }).catch(showError);
       }
       return;
     }
@@ -7044,7 +7673,9 @@
         state.pendingArchiveKey = "";
         state.pendingArchiveReadyAt = 0;
         state.pendingArchiveSubmittingKey = "";
-        selectDraft(workspaceId).catch(showError);
+        runWithControlPending(target, function () {
+          return selectDraft(workspaceId);
+        }, { spinner: false }).catch(showError);
       }
     }
   }
@@ -7284,7 +7915,7 @@
       .then(function (conversationId) {
         var workspaceId = state.activeWorkspaceId;
         if (!workspaceId || !conversationId) {
-          throw new Error("Choose a project conversation first.");
+          throw new Error("Choose a project thread first.");
         }
         var conversationKey = outgoingKeyFor(workspaceId, conversationId, "");
         movePendingOutgoing(pendingKey, conversationKey, pendingId);
@@ -7303,6 +7934,7 @@
           state.activeWorkspaceId = workspaceId;
           state.activeConversationId = conversationId;
           state.activeDraftWorkspaceId = "";
+          syncSelectionUrl(false);
           return loadConversation().catch(function () {
             return null;
           });
@@ -7324,15 +7956,14 @@
 
   function onCommitContinue() {
     if (!state.activeWorkspaceId) {
-      showError(new Error("Select a project first."));
-      return;
+      return Promise.reject(new Error("Select a project first."));
     }
 
     var includeUnstaged = el.commitIncludeUnstaged.checked ? "1" : "0";
     var message = el.commitMessage.value;
     var nextStep = el.commitNextStep.value === "commit-push" ? "1" : "0";
 
-    apiPost("git_commit", {
+    return apiPost("git_commit", {
       workspace_id: state.activeWorkspaceId,
       include_unstaged: includeUnstaged,
       message: message,
@@ -7361,25 +7992,27 @@
       })
       .then(function () {
         renderUi();
-      })
-      .catch(showError);
+      });
   }
 
   function openDiffPanel() {
     state.diffOpen = true;
-    refreshDiff().then(renderUi).catch(showError);
+    return refreshDiff().then(function () {
+      renderUi();
+    });
   }
 
   function closeDiffPanel() {
     state.diffOpen = false;
     renderUi();
+    return Promise.resolve();
   }
 
   function toggleDiffPanel() {
     if (state.diffOpen) {
-      closeDiffPanel();
+      return closeDiffPanel();
     } else {
-      openDiffPanel();
+      return openDiffPanel();
     }
   }
 
@@ -7487,13 +8120,17 @@
       if (!el.modelsPane || el.modelsPane.classList.contains("hidden")) {
         return;
       }
-      refreshModelData({ force: true, silent: false })
-        .then(function () {
-          return null;
-        })
-        .catch(function () {
-          renderUi();
-        });
+      runWithControlPending(el.modelStatusBtn, function () {
+        return refreshModelData({ force: true, silent: false })
+          .then(function () {
+            return null;
+          })
+          .catch(function () {
+            renderUi();
+          });
+      }, { spinner: false }).catch(function () {
+        return null;
+      });
     });
 
     on(el.themePickerBtn, "click", function (event) {
@@ -7529,7 +8166,9 @@
       var installBtn = event.target.closest("button[data-action='install-model'][data-model-name]");
       if (installBtn) {
         var installModel = installBtn.getAttribute("data-model-name");
-        startModelInstall(installModel).catch(showError);
+        runWithControlPending(installBtn, function () {
+          return startModelInstall(installModel);
+        }).catch(showError);
         return;
       }
       var button = event.target.closest("button[data-model-name]");
@@ -7537,9 +8176,11 @@
         return;
       }
       var modelName = button.getAttribute("data-model-name");
-      applyModelSelection(modelName).then(function () {
-        closeAllMenus();
-        renderUi();
+      runWithControlPending(button, function () {
+        return applyModelSelection(modelName).then(function () {
+          closeAllMenus();
+          renderUi();
+        });
       }).catch(showError);
     });
 
@@ -7555,12 +8196,13 @@
         return;
       }
       var modelName = button.getAttribute("data-model-name");
-      applyModelSelection(modelName)
-        .then(function () {
-          closeAllMenus();
-          renderUi();
-        })
-        .catch(showError);
+      runWithControlPending(button, function () {
+        return applyModelSelection(modelName)
+          .then(function () {
+            closeAllMenus();
+            renderUi();
+          });
+      }).catch(showError);
     });
 
     on(el.agentLoopToggle, "click", function () {
@@ -7599,11 +8241,16 @@
     });
 
     on(el.workspaceForm, "submit", function (event) {
-      onWorkspaceModalSubmit(event).catch(showError);
+      var submitter = event.submitter || (el.workspaceForm && el.workspaceForm.querySelector("button[type='submit']"));
+      runWithControlPending(submitter, function () {
+        return onWorkspaceModalSubmit(event);
+      }).catch(showError);
     });
 
     on(el.workspaceBrowseBtn, "click", function () {
-      onWorkspaceBrowseClick().catch(showError);
+      runWithControlPending(el.workspaceBrowseBtn, function () {
+        return onWorkspaceBrowseClick();
+      }).catch(showError);
     });
 
     on(el.workspaceDirPicker, "change", function (event) {
@@ -7629,6 +8276,10 @@
           return null;
         });
       }
+    });
+
+    window.addEventListener("popstate", function () {
+      navigateToRouteSelection().catch(showError);
     });
 
     window.addEventListener("mousemove", function (event) {
@@ -7713,7 +8364,9 @@
     });
 
     on(el.workspacePanel, "drop", function (event) {
-      onWorkspaceDropped(event).catch(showError);
+      runWithControlPending(el.workspacePanel, function () {
+        return onWorkspaceDropped(event);
+      }, { spinner: false }).catch(showError);
     });
 
     if (el.threadsResizer) {
@@ -7738,7 +8391,9 @@
     }
 
     on(el.openMainBtn, "click", function () {
-      performOpenTarget(state.lastOpenTarget).catch(showError);
+      runWithControlPending(el.openMainBtn, function () {
+        return performOpenTarget(state.lastOpenTarget);
+      }).catch(showError);
     });
 
     if (el.workspacePathWidget) {
@@ -7752,7 +8407,9 @@
             clearTimeout(pathWidgetClickTimer);
             pathWidgetClickTimer = null;
           }
-          performOpenTarget("finder").catch(showError);
+          runWithControlPending(el.workspacePathWidget, function () {
+            return performOpenTarget("finder");
+          }, { spinner: false }).catch(showError);
           return;
         }
         if (pathWidgetClickTimer) {
@@ -7778,7 +8435,9 @@
           clearTimeout(pathWidgetClickTimer);
           pathWidgetClickTimer = null;
         }
-        performOpenTarget("finder").catch(showError);
+        runWithControlPending(el.workspacePathWidget, function () {
+          return performOpenTarget("finder");
+        }, { spinner: false }).catch(showError);
       });
     }
 
@@ -7794,16 +8453,30 @@
         return;
       }
       var target = item.getAttribute("data-open-target");
-      performOpenTarget(target).catch(showError);
+      runWithControlPending(item, function () {
+        return performOpenTarget(target);
+      }).catch(showError);
     });
 
     on(el.branchMenuBtn, "click", function (event) {
       event.preventDefault();
       event.stopPropagation();
-      refreshBranches().finally(function () {
-        renderBranchMenu();
-        toggleMenu("branch-menu", el.branchMenuBtn);
-      });
+      if (!state.activeWorkspaceId) {
+        return;
+      }
+      var gitState = activeGitState();
+      if (!gitState.is_repo) {
+        runWithControlPending(el.branchMenuBtn, function () {
+          return createRepoForActiveWorkspace();
+        }).catch(showError);
+        return;
+      }
+      runWithControlPending(el.branchMenuBtn, function () {
+        return refreshBranches().finally(function () {
+          renderBranchMenu();
+          toggleMenu("branch-menu", el.branchMenuBtn);
+        });
+      }, { spinner: false }).catch(showError);
     });
 
     on(el.branchMenuList, "click", function (event) {
@@ -7811,7 +8484,9 @@
       if (actionItem) {
         var branchAction = actionItem.getAttribute("data-branch-action");
         if (branchAction === "create-repo") {
-          createRepoForActiveWorkspace()
+          runWithControlPending(actionItem, function () {
+            return createRepoForActiveWorkspace();
+          })
             .then(function () {
               closeAllMenus();
             })
@@ -7825,26 +8500,27 @@
         return;
       }
       var branch = item.getAttribute("data-branch-select");
-      apiPost("git_checkout_branch", {
-        workspace_id: state.activeWorkspaceId,
-        branch: branch,
-        create: "0"
-      })
-        .then(function (response) {
-          if (!response.success) {
-            throw new Error(response.error || "Branch checkout failed");
-          }
-          appendTerminalLine(response.output || ("Checked out " + branch));
-          return refreshGitStatus();
+      runWithControlPending(item, function () {
+        return apiPost("git_checkout_branch", {
+          workspace_id: state.activeWorkspaceId,
+          branch: branch,
+          create: "0"
         })
-        .then(function () {
-          return refreshBranches();
-        })
-        .then(function () {
-          closeAllMenus();
-          renderUi();
-        })
-        .catch(showError);
+          .then(function (response) {
+            if (!response.success) {
+              throw new Error(response.error || "Branch checkout failed");
+            }
+            appendTerminalLine(response.output || ("Checked out " + branch));
+            return refreshGitStatus();
+          })
+          .then(function () {
+            return refreshBranches();
+          })
+          .then(function () {
+            closeAllMenus();
+            renderUi();
+          });
+      }).catch(showError);
     });
 
     on(el.branchCreateForm, "submit", function (event) {
@@ -7856,30 +8532,32 @@
       if (!branchName) {
         return;
       }
-      apiPost("git_checkout_branch", {
-        workspace_id: state.activeWorkspaceId,
-        branch: branchName,
-        create: "1"
-      })
-        .then(function (response) {
-          if (!response.success) {
-            throw new Error(response.error || "Branch create failed");
-          }
-          appendTerminalLine(response.output || ("Created branch " + branchName));
-          el.branchCreateInput.value = "";
-          if (el.branchCreateSubmit) {
-            el.branchCreateSubmit.disabled = true;
-          }
-          return refreshGitStatus();
+      var submitter = event.submitter || el.branchCreateSubmit;
+      runWithControlPending(submitter, function () {
+        return apiPost("git_checkout_branch", {
+          workspace_id: state.activeWorkspaceId,
+          branch: branchName,
+          create: "1"
         })
-        .then(function () {
-          return refreshBranches();
-        })
-        .then(function () {
-          closeAllMenus();
-          renderUi();
-        })
-        .catch(showError);
+          .then(function (response) {
+            if (!response.success) {
+              throw new Error(response.error || "Branch create failed");
+            }
+            appendTerminalLine(response.output || ("Created branch " + branchName));
+            el.branchCreateInput.value = "";
+            if (el.branchCreateSubmit) {
+              el.branchCreateSubmit.disabled = true;
+            }
+            return refreshGitStatus();
+          })
+          .then(function () {
+            return refreshBranches();
+          })
+          .then(function () {
+            closeAllMenus();
+            renderUi();
+          });
+      }).catch(showError);
     });
 
     on(el.branchCreateInput, "input", function () {
@@ -7890,7 +8568,9 @@
     });
 
     on(el.commitMainBtn, "click", function () {
-      performCommitAction(state.lastCommitAction).catch(showError);
+      runWithControlPending(el.commitMainBtn, function () {
+        return performCommitAction(state.lastCommitAction);
+      }, { spinner: false }).catch(showError);
     });
 
     on(el.commitMenuBtn, "click", function (event) {
@@ -7905,7 +8585,9 @@
         return;
       }
       var action = item.getAttribute("data-commit-action");
-      performCommitAction(action).catch(showError);
+      runWithControlPending(item, function () {
+        return performCommitAction(action);
+      }, { spinner: false }).catch(showError);
     });
 
     on(el.commitModalClose, "click", function () {
@@ -7919,7 +8601,9 @@
     });
 
     on(el.commitContinueBtn, "click", function () {
-      onCommitContinue();
+      runWithControlPending(el.commitContinueBtn, function () {
+        return onCommitContinue();
+      }).catch(showError);
     });
 
     on(el.permissionsMenuBtn, "click", function (event) {
@@ -7932,12 +8616,13 @@
       var commandItem = event.target.closest("button[data-command-exec]");
       if (commandItem) {
         var commandMode = commandItem.getAttribute("data-command-exec");
-        setCommandExecMode(commandMode)
-          .then(function () {
-            closeAllMenus();
-            renderUi();
-          })
-          .catch(showError);
+        runWithControlPending(commandItem, function () {
+          return setCommandExecMode(commandMode)
+            .then(function () {
+              closeAllMenus();
+              renderUi();
+            });
+        }).catch(showError);
         return;
       }
 
@@ -7997,17 +8682,21 @@
       if (!trim(commandText)) {
         return;
       }
-      openTerminal();
-      runCommandViaApi(commandText, "run_action")
-        .then(function () {
-          closeModal(el.runActionModal);
-          el.runActionCommand.value = "";
-        })
-        .catch(showError);
+      var submitter = event.submitter || (el.runActionForm && el.runActionForm.querySelector("button[type='submit']"));
+      runWithControlPending(submitter, function () {
+        openTerminal();
+        return runCommandViaApi(commandText, "run_action")
+          .then(function () {
+            closeModal(el.runActionModal);
+            el.runActionCommand.value = "";
+          });
+      }).catch(showError);
     });
 
     on(el.settingsBtn, "click", function () {
-      openSettingsModal();
+      runWithControlPending(el.settingsBtn, function () {
+        return openSettingsModal();
+      }, { spinner: false }).catch(showError);
     });
 
     on(el.settingsCloseBtn, "click", function () {
@@ -8021,7 +8710,9 @@
     });
 
     on(el.refreshAuthBtn, "click", function () {
-      loadAuthStatus().catch(showError);
+      runWithControlPending(el.refreshAuthBtn, function () {
+        return loadAuthStatus();
+      }).catch(showError);
     });
 
     if (el.githubUsername) {
@@ -8032,52 +8723,55 @@
     }
 
     on(el.generateSshBtn, "click", function () {
-      apiPost("git_generate_ssh", { email: trim(el.sshEmail.value) })
-        .then(function (response) {
-          if (!response.success) {
-            throw new Error(response.error || "Could not generate SSH key");
-          }
-          el.sshPubOutput.value = response.ssh_pub_key || "";
-          el.sshKeyStatus.textContent = "SSH key ready";
-        })
-        .catch(showError);
+      runWithControlPending(el.generateSshBtn, function () {
+        return apiPost("git_generate_ssh", { email: trim(el.sshEmail.value) })
+          .then(function (response) {
+            if (!response.success) {
+              throw new Error(response.error || "Could not generate SSH key");
+            }
+            el.sshPubOutput.value = response.ssh_pub_key || "";
+            el.sshKeyStatus.textContent = "SSH key ready";
+          });
+      }).catch(showError);
     });
 
     if (el.chooseSshBtn) {
       on(el.chooseSshBtn, "click", function () {
-        apiPost("git_choose_ssh_key", {})
-          .then(function (response) {
-            if (!response.success) {
-              throw new Error(response.error || "Could not choose SSH key");
-            }
-            if (response.cancelled) {
+        runWithControlPending(el.chooseSshBtn, function () {
+          return apiPost("git_choose_ssh_key", {})
+            .then(function (response) {
+              if (!response.success) {
+                throw new Error(response.error || "Could not choose SSH key");
+              }
+              if (response.cancelled) {
+                return null;
+              }
+              if (el.selectedSshPath) {
+                el.selectedSshPath.value = response.selected_ssh_pub_path || "";
+              }
+              if (el.sshPubOutput && typeof response.selected_ssh_pub_key !== "undefined") {
+                el.sshPubOutput.value = response.selected_ssh_pub_key || "";
+              }
+              if (el.sshKeyStatus) {
+                el.sshKeyStatus.textContent = response.selected_ssh_pub_path ? "Custom SSH key selected" : "SSH key found";
+              }
               return null;
-            }
-            if (el.selectedSshPath) {
-              el.selectedSshPath.value = response.selected_ssh_pub_path || "";
-            }
-            if (el.sshPubOutput && typeof response.selected_ssh_pub_key !== "undefined") {
-              el.sshPubOutput.value = response.selected_ssh_pub_key || "";
-            }
-            if (el.sshKeyStatus) {
-              el.sshKeyStatus.textContent = response.selected_ssh_pub_path ? "Custom SSH key selected" : "SSH key found";
-            }
-            return null;
-          })
-          .catch(showError);
+            });
+        }).catch(showError);
       });
     }
 
     if (el.clearSshBtn) {
       on(el.clearSshBtn, "click", function () {
-        apiPost("git_clear_ssh_key", {})
-          .then(function (response) {
-            if (!response.success) {
-              throw new Error(response.error || "Could not clear SSH key selection");
-            }
-            return loadAuthStatus();
-          })
-          .catch(showError);
+        runWithControlPending(el.clearSshBtn, function () {
+          return apiPost("git_clear_ssh_key", {})
+            .then(function (response) {
+              if (!response.success) {
+                throw new Error(response.error || "Could not clear SSH key selection");
+              }
+              return loadAuthStatus();
+            });
+        }).catch(showError);
       });
     }
 
@@ -8112,6 +8806,8 @@
         if (!trim(commandText)) {
           return;
         }
+        state.terminalBusy = true;
+        renderTerminal();
         ensureTerminalSession()
           .then(function () {
             return apiPost("terminal_session_input", {
@@ -8125,6 +8821,10 @@
               throw new Error((response && response.error) || "Could not send terminal input");
             }
             return pollTerminalSessionOnce();
+          })
+          .finally(function () {
+            state.terminalBusy = false;
+            renderTerminal();
           })
           .catch(showError);
         return;
@@ -8177,7 +8877,9 @@
         showError(new Error("Select a project first."));
         return;
       }
-      toggleDiffPanel();
+      runWithControlPending(el.changesBtn, function () {
+        return toggleDiffPanel();
+      }, { spinner: false }).catch(showError);
     });
 
     on(el.diffCloseBtn, "click", function () {
@@ -8215,7 +8917,10 @@
 
     on(el.decisionRequestForm, "submit", function (event) {
       event.preventDefault();
-      submitDecisionRequest().catch(showError);
+      var submitter = event.submitter || el.decisionRequestSubmit;
+      runWithControlPending(submitter, function () {
+        return submitDecisionRequest();
+      }).catch(showError);
     });
 
     if (el.attachBtn && el.attachmentPicker) {
@@ -8265,10 +8970,9 @@
         event.preventDefault();
         var stopWorkspaceId = stopBtn.getAttribute("data-workspace-id") || "";
         var stopConversationId = stopBtn.getAttribute("data-conversation-id") || "";
-        stopBtn.disabled = true;
-        stopConversationRun(stopWorkspaceId, stopConversationId).catch(showError).finally(function () {
-          stopBtn.disabled = false;
-        });
+        runWithControlPending(stopBtn, function () {
+          return stopConversationRun(stopWorkspaceId, stopConversationId);
+        }).catch(showError);
         return;
       }
 
@@ -8280,6 +8984,7 @@
       var text = copyBtn.getAttribute("data-copy-text") || "";
       copyTextToClipboard(text).then(function () {
         copyBtn.classList.add("copied");
+        showTransientNotice("Copied text", { transparent: true });
         window.setTimeout(function () {
           copyBtn.classList.remove("copied");
         }, 900);
@@ -8317,13 +9022,17 @@
 
     if (el.queueSteerBtn) {
       on(el.queueSteerBtn, "click", function () {
-        steerQueuedMessage().catch(showError);
+        runWithControlPending(el.queueSteerBtn, function () {
+          return steerQueuedMessage();
+        }).catch(showError);
       });
     }
 
     if (el.queueCancelBtn) {
       on(el.queueCancelBtn, "click", function () {
-        cancelQueuedMessage().catch(showError);
+        runWithControlPending(el.queueCancelBtn, function () {
+          return cancelQueuedMessage();
+        }).catch(showError);
       });
     }
 
@@ -8447,6 +9156,14 @@
     stopModelAutoRefreshLoop();
     clearPendingAttachments();
   });
+
+  try {
+    hydrateWorkspaceStateFromCache();
+  } catch (cacheErr) {
+    if (window && window.console && typeof window.console.warn === "function") {
+      window.console.warn("Artificer cache hydrate failed:", cacheErr);
+    }
+  }
 
   try {
     bindEvents();

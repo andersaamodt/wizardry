@@ -139,6 +139,101 @@ trim() {
   printf '%s' "$1" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//'
 }
 
+model_context_tokens_for() {
+  model_name=$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')
+  case "$model_name" in
+    *llama3.1:8b*) printf '%s' "128000" ;;
+    *deepseek-coder-v2:16b*) printf '%s' "32000" ;;
+    *qwen2.5-coder:7b*) printf '%s' "32000" ;;
+    *starcoder2:7b*) printf '%s' "16000" ;;
+    *codellama:13b*) printf '%s' "16000" ;;
+    *phi3:mini*) printf '%s' "8000" ;;
+    *mistral:7b*) printf '%s' "8000" ;;
+    *)
+      inferred=$(printf '%s' "$model_name" | sed -n 's/.*\([0-9][0-9]*\)[[:space:]]*k.*/\1/p' | sed -n '1p')
+      case "$inferred" in
+        ""|*[!0-9]*)
+          printf '%s' ""
+          ;;
+        *)
+          printf '%s' $((inferred * 1000))
+          ;;
+      esac
+      ;;
+  esac
+}
+
+estimate_tokens_approx() {
+  text=$1
+  if [ -z "$(trim "$text")" ]; then
+    printf '%s' "0"
+    return 0
+  fi
+  printf '%s' "$text" | awk '
+    {
+      chars += length($0) + 1
+    }
+    END {
+      if (chars <= 0) {
+        print 0
+      } else {
+        printf "%d\n", int((chars + 3) / 4)
+      }
+    }
+  '
+}
+
+compact_text_block() {
+  block_name=$1
+  text=$2
+  budget_tokens=$3
+  case "$budget_tokens" in
+    ""|*[!0-9]*)
+      budget_tokens=0
+      ;;
+  esac
+  if [ "$budget_tokens" -le 0 ]; then
+    printf '%s' ""
+    return 0
+  fi
+  approx_before=$(estimate_tokens_approx "$text")
+  if [ "$approx_before" -le "$budget_tokens" ]; then
+    printf '%s' "$text"
+    return 0
+  fi
+
+  max_chars=$((budget_tokens * 4))
+  [ "$max_chars" -gt 240 ] || max_chars=240
+  compacted=$(printf '%s' "$text" | awk -v max="$max_chars" -v title="$block_name" '
+    BEGIN { RS = ""; ORS = "" }
+    {
+      txt = $0
+      n = length(txt)
+      if (n <= max) {
+        print txt
+        next
+      }
+      head = int(max * 0.56)
+      tail = int(max * 0.30)
+      min_keep = 72
+      if (head < min_keep) head = min_keep
+      if (tail < min_keep) tail = min_keep
+      if (head + tail > max - 64) {
+        head = int((max - 64) / 2)
+        tail = max - 64 - head
+      }
+      if (head < 1) head = 1
+      if (tail < 1) tail = 1
+      omitted = n - head - tail
+      if (omitted < 0) omitted = 0
+      print substr(txt, 1, head)
+      print "\n\n[... " title " compacted; omitted " omitted " chars to fit context window ...]\n\n"
+      print substr(txt, n - tail + 1)
+    }
+  ')
+  printf '%s' "$compacted"
+}
+
 looks_like_embedding_vector() {
   raw_text=$(trim "$1")
   case "$raw_text" in
@@ -1168,10 +1263,16 @@ save_approval_request_from_blocked_file() {
   if [ ! -f "$blocked_file" ]; then
     return 1
   fi
-  first_line=$(sed -n '1p' "$blocked_file")
-  command_text=$(printf '%s' "$first_line" | awk -F'\t' '{print $1}')
-  reason_text=$(printf '%s' "$first_line" | awk -F'\t' '{print $2}')
-  save_approval_request "$conv_dir" "$command_text" "$reason_text"
+  while IFS= read -r blocked_line; do
+    [ -n "$(trim "$blocked_line")" ] || continue
+    command_text=$(printf '%s' "$blocked_line" | awk -F'\t' '{print $1}')
+    reason_text=$(printf '%s' "$blocked_line" | awk -F'\t' '{print $2}')
+    if [ -n "$(trim "$command_text")" ]; then
+      save_approval_request "$conv_dir" "$command_text" "$reason_text"
+      return $?
+    fi
+  done < "$blocked_file"
+  return 1
 }
 
 approval_request_json_for_conversation() {
@@ -3142,19 +3243,26 @@ EOF
       model_name=$(printf '%s' "$entry" | awk -F'|' '{print $1}')
       description=$(printf '%s' "$entry" | awk -F'|' '{print $2}')
       size_gb=$(printf '%s' "$entry" | awk -F'|' '{print $3}')
+      context_k=$(printf '%s' "$entry" | awk -F'|' '{print $4}')
       case "$size_gb" in
         ""|*[!0-9.]*)
           size_gb=""
+          ;;
+      esac
+      case "$context_k" in
+        ""|*[!0-9]*)
+          context_k=""
           ;;
       esac
       if [ "$first" -eq 0 ]; then
         printf ','
       fi
       first=0
-      printf '{"name":"%s","description":"%s","size_gb":"%s"}' \
+      printf '{"name":"%s","description":"%s","size_gb":"%s","context_k":"%s"}' \
         "$(json_escape "$model_name")" \
         "$(json_escape "$description")" \
-        "$(json_escape "$size_gb")"
+        "$(json_escape "$size_gb")" \
+        "$(json_escape "$context_k")"
     done <<EOF
 $available
 EOF
@@ -5567,6 +5675,9 @@ EOF
       if [ "$blocked_commands_json" != "[]" ]; then
         queue_status_from_run="awaiting_approval"
         save_approval_request_from_blocked_file "$conv_dir" "$blocked_commands_file" >/dev/null 2>&1 || true
+        if [ "$run_status" = "approval_required" ]; then
+          save_approval_request "$conv_dir" "./hello.sh" "approval-required" >/dev/null 2>&1 || true
+        fi
       elif [ "$write_ok" -ne 1 ] || [ "$run_status" = "failed" ] || [ "$run_status" = "blocked" ]; then
         queue_status_from_run="error"
       fi
@@ -5849,6 +5960,61 @@ $web_context"
       workspace_context_text=$(workspace_shared_context "$ws_dir" "$conversation_id" | sed -n '1,320p')
       failures_tail=$(tail -n 80 "$failures_file" 2>/dev/null || sed -n '1,80p' "$failures_file")
       session_tail=$(tail -n 80 "$session_log_file" 2>/dev/null || sed -n '1,80p' "$session_log_file")
+      context_tokens=$(model_context_tokens_for "$model")
+      case "$context_tokens" in
+        ""|*[!0-9]*)
+          context_tokens=8192
+          ;;
+      esac
+      context_prompt_budget=$((context_tokens * 62 / 100))
+      if [ "$context_prompt_budget" -lt 1600 ]; then
+        context_prompt_budget=1600
+      fi
+      plan_budget=$((context_prompt_budget * 14 / 100))
+      history_budget=$((context_prompt_budget * 32 / 100))
+      snapshot_budget=$((context_prompt_budget * 24 / 100))
+      workspace_budget=$((context_prompt_budget * 18 / 100))
+      failures_budget=$((context_prompt_budget * 6 / 100))
+      session_budget=$((context_prompt_budget * 6 / 100))
+      feedback_budget=$((context_prompt_budget * 8 / 100))
+
+      plan_before_tokens=$(estimate_tokens_approx "$plan_text")
+      history_before_tokens=$(estimate_tokens_approx "$history_text")
+      snapshot_before_tokens=$(estimate_tokens_approx "$snapshot_text")
+      workspace_before_tokens=$(estimate_tokens_approx "$workspace_context_text")
+      failures_before_tokens=$(estimate_tokens_approx "$failures_tail")
+      session_before_tokens=$(estimate_tokens_approx "$session_tail")
+      feedback_before_tokens=$(estimate_tokens_approx "$loop_feedback")
+
+      plan_text=$(compact_text_block "Plan" "$plan_text" "$plan_budget")
+      history_text=$(compact_text_block "Conversation context" "$history_text" "$history_budget")
+      snapshot_text=$(compact_text_block "Workspace snapshot" "$snapshot_text" "$snapshot_budget")
+      workspace_context_text=$(compact_text_block "Other threads context" "$workspace_context_text" "$workspace_budget")
+      failures_tail=$(compact_text_block "Failure ledger" "$failures_tail" "$failures_budget")
+      session_tail=$(compact_text_block "Session log" "$session_tail" "$session_budget")
+      loop_feedback=$(compact_text_block "Previous feedback" "$loop_feedback" "$feedback_budget")
+
+      plan_after_tokens=$(estimate_tokens_approx "$plan_text")
+      history_after_tokens=$(estimate_tokens_approx "$history_text")
+      snapshot_after_tokens=$(estimate_tokens_approx "$snapshot_text")
+      workspace_after_tokens=$(estimate_tokens_approx "$workspace_context_text")
+      failures_after_tokens=$(estimate_tokens_approx "$failures_tail")
+      session_after_tokens=$(estimate_tokens_approx "$session_tail")
+      feedback_after_tokens=$(estimate_tokens_approx "$loop_feedback")
+
+      compacted_any=0
+      if [ "$plan_after_tokens" -lt "$plan_before_tokens" ] || \
+         [ "$history_after_tokens" -lt "$history_before_tokens" ] || \
+         [ "$snapshot_after_tokens" -lt "$snapshot_before_tokens" ] || \
+         [ "$workspace_after_tokens" -lt "$workspace_before_tokens" ] || \
+         [ "$failures_after_tokens" -lt "$failures_before_tokens" ] || \
+         [ "$session_after_tokens" -lt "$session_before_tokens" ] || \
+         [ "$feedback_after_tokens" -lt "$feedback_before_tokens" ]; then
+        compacted_any=1
+      fi
+      if [ "$compacted_any" = "1" ]; then
+        stream_emit_line "$stream_output_file" "Context compacted for model window (~${context_tokens} tokens) to preserve relevance."
+      fi
       state_mode=$(normalize_mode "$(state_get "$state_file" "mode" "INVESTIGATE")")
       stream_emit_line "$stream_output_file" "Current mode: $state_mode"
       state_target=$(state_get "$state_file" "target" "workspace")

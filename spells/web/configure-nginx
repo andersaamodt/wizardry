@@ -218,9 +218,19 @@ http {
         # Disable directory listing
         autoindex off;
         
-        # Root path - serve main index page
+        # Root path should always resolve to the app shell.
+        # Using an exact-match block avoids "/" being treated as a
+        # directory and returning 403 when autoindex is disabled.
         location = / {
             try_files /pages/index.html =404;
+        }
+
+        # SPA deep-link routing:
+        # - serve real files when they exist
+        # - otherwise fall back to the app shell so routes like
+        #   /workspace-slug--id/thread-slug--id/ survive refresh
+        location / {
+            try_files \$uri /pages/index.html;
         }
         
         # Serve pages

@@ -55,6 +55,46 @@ button,
   cursor: pointer;
 }
 
+[data-ui-pending-block-pointer="1"] {
+  pointer-events: none !important;
+}
+
+.ui-pending {
+  cursor: progress !important;
+}
+
+button.ui-pending,
+.icon-btn.ui-pending,
+.toolbar-btn.ui-pending,
+.queue-btn.ui-pending,
+.run-stop-btn.ui-pending,
+.thread-confirm-btn.ui-pending,
+.workspace-menu-trigger.ui-pending,
+.workspace-row.ui-pending,
+.conversation-row.ui-pending,
+.path-widget.ui-pending {
+  opacity: 0.72;
+}
+
+.ui-pending-spinner {
+  position: relative;
+  padding-right: 24px !important;
+}
+
+.ui-pending-spinner::after {
+  content: "";
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  margin-top: -5px;
+  border: 2px solid color-mix(in srgb, var(--line) 72%, transparent);
+  border-top-color: var(--accent);
+  border-radius: 999px;
+  animation: thread-spin 0.8s linear infinite;
+}
+
 .hidden {
   display: none !important;
 }
@@ -179,6 +219,11 @@ h2 {
 
 .workspace-tree .empty-state {
   padding: 12px 10px;
+}
+
+.empty-state .run-spinner {
+  margin-right: 6px;
+  vertical-align: -1px;
 }
 
 .workspace-group {
@@ -366,6 +411,21 @@ h2 {
   line-height: 1;
   color: var(--text-muted);
   cursor: pointer;
+}
+
+.conversation-empty {
+  width: 100%;
+  min-height: 30px;
+  height: 30px;
+  margin: 0;
+  padding: 0 10px 0 31px;
+  font-size: 0.89rem;
+  font-style: italic;
+  line-height: 30px;
+  color: var(--text-muted);
+  cursor: default;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .conversation-row {
@@ -663,6 +723,7 @@ h2 {
   grid-template-rows: auto minmax(0, 1fr);
   background: var(--bg-panel);
   padding-bottom: var(--terminal-offset);
+  transition: padding-bottom 190ms ease;
 }
 
 .toolbar {
@@ -1499,6 +1560,17 @@ h2 {
   color: color-mix(in srgb, var(--danger) 70%, var(--text) 30%);
 }
 
+.command-approval-inline.is-submitting button,
+#command-approval-modal.is-submitting button {
+  cursor: progress;
+}
+
+.command-approval-inline button.approval-submit-pending,
+#command-approval-modal button.approval-submit-pending {
+  position: relative;
+  opacity: 0.86;
+}
+
 .decision-request-inline {
   position: sticky;
   top: 0;
@@ -2010,6 +2082,9 @@ h2 {
   border-top: 1px solid var(--line);
   min-height: 44px;
   padding: 8px 10px;
+  position: relative;
+  z-index: 24;
+  overflow: visible;
 }
 
 .branch-anchor {
@@ -2049,6 +2124,7 @@ h2 {
 .session-row .menu-anchor .floating-menu {
   top: auto;
   bottom: calc(100% + 7px);
+  z-index: 140;
 }
 
 .compact-btn {
@@ -2543,6 +2619,20 @@ textarea::-webkit-scrollbar-thumb {
   z-index: 32;
 }
 
+.terminal-panel.busy::after {
+  content: "";
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  width: 11px;
+  height: 11px;
+  border: 2px solid color-mix(in srgb, var(--line) 78%, transparent);
+  border-top-color: var(--accent);
+  border-radius: 999px;
+  animation: thread-spin 0.8s linear infinite;
+  pointer-events: none;
+}
+
 .forge-shell.terminal-open .terminal-panel {
   transform: translateY(0%);
   pointer-events: auto;
@@ -2622,6 +2712,13 @@ textarea::-webkit-scrollbar-thumb {
 }
 
 #organize-btn svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 1.6;
+  color: var(--btn-text);
+}
+
+#add-workspace-btn svg {
   width: 16px;
   height: 16px;
   stroke-width: 1.6;
@@ -2800,6 +2897,12 @@ select:focus {
 .ui-notice.show {
   opacity: 1;
   transform: translate(-50%, 0);
+}
+
+.ui-notice.transparent {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
 }
 
 .modal-actions button:hover,

@@ -50,7 +50,7 @@ pagetitle: "Artificer"
 <main class="main-shell">
 <header class="toolbar">
 <div class="toolbar-left">
-<h2 id="chat-title" class="toolbar-title">No conversation</h2>
+<h2 id="chat-title" class="toolbar-title">No thread</h2>
 <button id="workspace-path-widget" class="path-widget" type="button" title="No project selected" aria-label="Project path"></button>
 </div>
 <div class="toolbar-right">
@@ -63,7 +63,7 @@ pagetitle: "Artificer"
 <button id="open-menu-btn" class="toolbar-btn split-caret" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Open menu" title="Choose open target"><span aria-hidden="true">&#9662;</span></button>
 </div>
 <div id="open-menu" class="floating-menu hidden" role="menu" aria-label="Open in">
-<button type="button" data-open-target="finder" title="Open in Finder"><span class="menu-icon app-icon finder-icon" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none"><rect x="1.2" y="1.2" width="13.6" height="13.6" rx="3.2" fill="#80B6FF" stroke="#4C7CC8" stroke-width="1"/><path d="M8 2v12" stroke="#EAF3FF" stroke-width="1"/><circle cx="5.3" cy="6.2" r="0.8" fill="#0F2A50"/><circle cx="10.7" cy="6.2" r="0.8" fill="#0F2A50"/><path d="M4.5 10.2c1 .9 2.2 1.4 3.5 1.4s2.5-.5 3.5-1.4" stroke="#0F2A50" stroke-width="1" stroke-linecap="round"/></svg></span><span>Finder</span></button>
+<button type="button" data-open-target="finder" title="Open in Finder"><span class="menu-icon app-icon finder-icon" aria-hidden="true"></span><span>Finder</span></button>
 <button type="button" data-open-target="terminal" title="Open in Terminal"><span class="menu-icon app-icon terminal-app-icon" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none"><rect x="1.2" y="2" width="13.6" height="12" rx="2.2" fill="#181B2A" stroke="#454A66" stroke-width="1"/><path d="M4 6.1l2 1.9L4 9.9" stroke="#D8DEFF" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.8 10h4.2" stroke="#D8DEFF" stroke-width="1.2" stroke-linecap="round"/></svg></span><span>Terminal</span></button>
 <button type="button" data-open-target="textmate" title="Open in TextMate"><span class="menu-icon app-icon textmate-icon" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.3" fill="#F5ECFF" stroke="#A669D8" stroke-width="1"/><path d="M8 3.2l1.2 2.2 2.3-.8-.9 2.2 2.2 1.2-2.2 1.2.9 2.2-2.3-.8L8 12.8l-1.2-2.2-2.3.8.9-2.2L3.2 8l2.2-1.2-.9-2.2 2.3.8L8 3.2z" fill="#B84FE8"/></svg></span><span>TextMate</span></button>
 </div>

@@ -74,6 +74,7 @@ if [ ! -x "$cgi_script" ]; then
   cgi_script="$HOME/.wizardry/.templates/artificer/cgi/artificer-api"
 fi
 [ -x "$cgi_script" ] || die "test-artificer: artificer-api script not found"
+cleanup_helper="$HOME/.wizardry/spells/.arcana/ai-dev/cleanup-artificer-test-workspaces"
 
 step "Artificer smoke test for $site_name"
 
@@ -143,9 +144,16 @@ cleanup() {
   if [ -n "$workspace_id" ]; then
     api_post "action=delete_workspace&workspace_id=$workspace_id" >/dev/null 2>&1 || true
   fi
+  if [ -x "$cleanup_helper" ]; then
+    "$cleanup_helper" "$site_name" >/dev/null 2>&1 || true
+  fi
   rm -rf "$tmp_workspace" 2>/dev/null || true
 }
 trap cleanup EXIT INT TERM
+
+if [ -x "$cleanup_helper" ]; then
+  "$cleanup_helper" "$site_name" >/dev/null 2>&1 || true
+fi
 
 printf '%s\n' '#!/bin/sh' 'echo "smoke"' > "$tmp_workspace/smoke.sh"
 chmod +x "$tmp_workspace/smoke.sh"

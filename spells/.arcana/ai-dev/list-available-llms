@@ -16,12 +16,12 @@ esac
 set -eu
 . env-clear
 
-# Curated list of recommended LLMs with descriptions and download size.
-# Format: model_name|description|size_gb
-printf '%s\n' "phi3:mini|fast local helper|2.2"
-printf '%s\n' "starcoder2:7b|everyday code writer|4.0"
-printf '%s\n' "deepseek-coder-v2:16b|adversarial code reviewer|8.9"
-printf '%s\n' "qwen2.5-coder:7b|system design architect|4.7"
-printf '%s\n' "codellama:13b|legacy code translator|7.4"
-printf '%s\n' "mistral:7b|multi-perspective strategist|4.4"
-printf '%s\n' "llama3.1:8b|deep reasoning oracle|4.9"
+# Curated list of recommended LLMs with descriptions, download size, and context window.
+# Format: model_name|description|size_gb|context_k
+printf '%s\n' "phi3:mini|fast local helper|2.2|8"
+printf '%s\n' "starcoder2:7b|everyday code writer|4.0|16"
+printf '%s\n' "deepseek-coder-v2:16b|adversarial code reviewer|8.9|32"
+printf '%s\n' "qwen2.5-coder:7b|system design architect|4.7|32"
+printf '%s\n' "codellama:13b|legacy code translator|7.4|16"
+printf '%s\n' "mistral:7b|multi-perspective strategist|4.4|8"
+printf '%s\n' "llama3.1:8b|deep reasoning oracle|4.9|128"
