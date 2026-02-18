@@ -104,6 +104,7 @@ EOFINFO
 
   staged_numstat=$(cd "$ws" && git diff --cached --numstat 2>/dev/null || true)
   unstaged_numstat=$(cd "$ws" && git diff --numstat 2>/dev/null || true)
+  untracked_files=$(cd "$ws" && git ls-files --others --exclude-standard 2>/dev/null || true)
 
   staged_sums=$(printf '%s\n' "$staged_numstat" | sum_numstat)
   unstaged_sums=$(printf '%s\n' "$unstaged_numstat" | sum_numstat)
@@ -112,8 +113,34 @@ EOFINFO
   staged_deleted=$(printf '%s' "$staged_sums" | awk -F'|' '{print $2+0}')
   unstaged_added=$(printf '%s' "$unstaged_sums" | awk -F'|' '{print $1+0}')
   unstaged_deleted=$(printf '%s' "$unstaged_sums" | awk -F'|' '{print $2+0}')
+  untracked_added=0
+  while IFS= read -r rel_path; do
+    [ -n "$rel_path" ] || continue
+    file_path="$ws/$rel_path"
+    [ -f "$file_path" ] || continue
+    line_count=$(wc -l < "$file_path" 2>/dev/null | tr -d ' ' || true)
+    case "$line_count" in
+      ""|*[!0-9]*)
+        line_count=0
+        ;;
+    esac
+    if [ "$line_count" -eq 0 ]; then
+      byte_count=$(wc -c < "$file_path" 2>/dev/null | tr -d ' ' || true)
+      case "$byte_count" in
+        ""|*[!0-9]*)
+          byte_count=0
+          ;;
+      esac
+      if [ "$byte_count" -gt 0 ]; then
+        line_count=1
+      fi
+    fi
+    untracked_added=$((untracked_added + line_count))
+  done <<EOF
+$untracked_files
+EOF
 
-  added=$((staged_added + unstaged_added))
+  added=$((staged_added + unstaged_added + untracked_added))
   deleted=$((staged_deleted + unstaged_deleted))
 
   printf '%s\n' "is_repo=1"

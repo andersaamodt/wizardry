@@ -109,7 +109,12 @@
     terminalOpen: false,
     terminalBusy: false,
     terminalLines: [],
+    terminalSessionId: "",
+    terminalSessionWorkspaceId: "",
+    terminalStreamText: "",
+    terminalStreamOffset: 0,
     terminalCwd: "",
+    terminalInputBuffer: "",
     openMenus: {},
     commitModalDefault: "commit",
     lastOpenTarget: storageGet("artificer.lastOpenTarget", "finder"),
@@ -119,17 +124,19 @@
     queueWorkerActive: false,
     runningWorkspaceId: "",
     runningConversationId: "",
+    awaitingApprovalByConversation: {},
     lastQueuedItemIdByConversation: {},
+    decisionInlineDismissedKey: "",
     seenConversationUpdatedByKey: initialSeenConversationState.map,
     seenConversationBootstrapPending: !initialSeenConversationState.hasSaved,
     openWorkspaceMenuWorkspaceId: "",
     workspaceTreeMarkupCache: "",
     pendingArchiveKey: "",
     pendingArchiveReadyAt: 0,
+    pendingArchiveSubmittingKey: "",
     pendingAttachments: [],
     composerDragDepth: 0,
     awaitingDirPicker: false,
-    conversationLoadSeq: 0,
     modelLoadError: "",
     appIcons: {
       finder: "",
@@ -147,20 +154,35 @@
     chatAutoScroll: true,
     chatLastKey: "",
     chatMarkupCache: "",
+    runDetailsOpenByEventId: {},
+    pendingOutgoingByKey: {},
+    conversationCacheByKey: {},
     threadsPaneWidth: parseStoredPaneWidth("artificer.threadsPaneWidth", 308),
-    diffPaneWidth: parseStoredPaneWidth("artificer.diffPaneWidth", 620)
+    diffPaneWidth: 300,
+    modelsPaneHeight: parseStoredPaneWidth("artificer.modelsPaneHeight", 300)
   };
 
   var saveDraftTimer = null;
   var liveRunTickTimer = null;
   var runStreamPollTimers = {};
   var modelInstallPollTimer = null;
+  var modelAutoRefreshTimer = null;
+  var modelAutoRefreshBusy = false;
+  var modelAutoRefreshLastAt = 0;
+  var runReconcileTimer = null;
+  var runReconcileBusy = false;
+  var terminalPollTimer = null;
+  var terminalPollBusy = false;
+  var terminalSessionStartPromise = null;
   var paneDragState = null;
   var pathWidgetClickTimer = null;
   var tooltipEl = null;
   var tooltipTarget = null;
   var tooltipShowTimer = null;
   var tooltipPendingTarget = null;
+  var noticeEl = null;
+  var noticeHideTimer = null;
+  var pendingCommandApproval = null;
   var TOOLTIP_DELAY_MS = 520;
 
   if (state.sortMode !== "updated" && state.sortMode !== "created") {
@@ -169,7 +191,7 @@
   if (state.organizeMode !== "project" && state.organizeMode !== "chrono") {
     state.organizeMode = "project";
   }
-  if (state.organizeShow !== "all" && state.organizeShow !== "relevant") {
+  if (state.organizeShow !== "all" && state.organizeShow !== "relevant" && state.organizeShow !== "running") {
     state.organizeShow = "all";
   }
   if (state.lastOpenTarget !== "finder" && state.lastOpenTarget !== "terminal" && state.lastOpenTarget !== "textmate") {
@@ -195,6 +217,7 @@
 
   var el = {
     shell: document.getElementById("forge-shell"),
+    toolbar: document.querySelector(".toolbar"),
     workspacePanel: document.getElementById("workspace-dropzone"),
     threadsResizer: document.getElementById("threads-resizer"),
     workspaceTree: document.getElementById("workspace-tree"),
@@ -207,9 +230,10 @@
     themePickerMenu: document.getElementById("theme-picker-menu"),
     themePickerList: document.getElementById("theme-picker-list"),
     themeStylesheet: document.getElementById("artificer-theme-stylesheet"),
+    modelsPane: document.getElementById("models-pane"),
+    modelsPaneResizer: document.getElementById("models-pane-resizer"),
     modelsBox: document.getElementById("models-box"),
     modelsBoxList: document.getElementById("models-box-list"),
-    refreshModelsBtn: document.getElementById("refresh-models-btn"),
 
     openMainBtn: document.getElementById("open-main-btn"),
     openMenuBtn: document.getElementById("open-menu-btn"),
@@ -295,6 +319,24 @@
     commandApprovalDenyOnce: document.getElementById("command-approval-deny-once"),
     commandApprovalAllowRemember: document.getElementById("command-approval-allow-remember"),
     commandApprovalDenyRemember: document.getElementById("command-approval-deny-remember"),
+    commandApprovalInline: document.getElementById("command-approval-inline"),
+    commandApprovalInlineClose: document.getElementById("command-approval-inline-close"),
+    commandApprovalInlineText: document.getElementById("command-approval-inline-text"),
+    commandApprovalInlineCommand: document.getElementById("command-approval-inline-command"),
+    commandApprovalInlineMatchMode: document.getElementById("command-approval-inline-match-mode"),
+    commandApprovalInlinePattern: document.getElementById("command-approval-inline-pattern"),
+    commandApprovalInlineAllowOnce: document.getElementById("command-approval-inline-allow-once"),
+    commandApprovalInlineDenyOnce: document.getElementById("command-approval-inline-deny-once"),
+    commandApprovalInlineAllowRemember: document.getElementById("command-approval-inline-allow-remember"),
+    commandApprovalInlineDenyRemember: document.getElementById("command-approval-inline-deny-remember"),
+    decisionRequestInline: document.getElementById("decision-request-inline"),
+    decisionRequestInlineClose: document.getElementById("decision-request-inline-close"),
+    decisionRequestInlineQuestion: document.getElementById("decision-request-inline-question"),
+    decisionRequestForm: document.getElementById("decision-request-form"),
+    decisionRequestOptions: document.getElementById("decision-request-options"),
+    decisionRequestOtherWrap: document.getElementById("decision-request-other-wrap"),
+    decisionRequestOtherInput: document.getElementById("decision-request-other-input"),
+    decisionRequestSubmit: document.getElementById("decision-request-submit"),
 
     runActionModal: document.getElementById("run-action-modal"),
     runActionClose: document.getElementById("run-action-close"),
@@ -332,7 +374,7 @@
     "model-picker-menu": el.modelPickerMenu,
     "reasoning-menu": el.reasoningMenu,
     "context-window-menu": el.contextWindowMenu,
-    "models-box": el.modelsBox
+    "models-pane": el.modelsPane
   };
 
   function escHtml(text) {
@@ -390,6 +432,36 @@
     tooltipEl.setAttribute("aria-hidden", "true");
     document.body.appendChild(tooltipEl);
     return tooltipEl;
+  }
+
+  function ensureNoticeEl() {
+    if (noticeEl && document.body && document.body.contains(noticeEl)) {
+      return noticeEl;
+    }
+    noticeEl = document.createElement("div");
+    noticeEl.className = "ui-notice";
+    noticeEl.setAttribute("aria-live", "polite");
+    noticeEl.setAttribute("aria-atomic", "true");
+    document.body.appendChild(noticeEl);
+    return noticeEl;
+  }
+
+  function showTransientNotice(message) {
+    var text = trim(message);
+    if (!text) {
+      return;
+    }
+    var node = ensureNoticeEl();
+    if (noticeHideTimer) {
+      clearTimeout(noticeHideTimer);
+      noticeHideTimer = null;
+    }
+    node.textContent = text;
+    node.classList.add("show");
+    noticeHideTimer = setTimeout(function () {
+      node.classList.remove("show");
+      noticeHideTimer = null;
+    }, 1350);
   }
 
   function tooltipTextFor(node) {
@@ -1027,7 +1099,7 @@
   function apiPost(action, data, options) {
     var timeoutMs = 30000;
     if (action === "run") {
-      timeoutMs = 600000;
+      timeoutMs = 240000;
     } else if (options && Number(options.timeoutMs) > 0) {
       timeoutMs = Number(options.timeoutMs);
     }
@@ -1072,6 +1144,26 @@
     return null;
   }
 
+  function findWorkspaceIdForConversation(conversationId) {
+    var targetId = String(conversationId || "");
+    if (!targetId) {
+      return "";
+    }
+    for (var i = 0; i < state.workspaces.length; i += 1) {
+      var workspace = state.workspaces[i];
+      if (!workspace || !Array.isArray(workspace.conversations)) {
+        continue;
+      }
+      for (var j = 0; j < workspace.conversations.length; j += 1) {
+        var conversation = workspace.conversations[j];
+        if (conversation && String(conversation.id || "") === targetId) {
+          return String(workspace.id || "");
+        }
+      }
+    }
+    return "";
+  }
+
   function queueNumber(value) {
     var parsed = Number(value || 0);
     if (!isFinite(parsed) || parsed < 0) {
@@ -1082,6 +1174,102 @@
 
   function conversationReadKey(workspaceId, conversationId) {
     return String(workspaceId || "") + "::" + String(conversationId || "");
+  }
+
+  function cloneConversationData(conversation) {
+    if (!conversation || typeof conversation !== "object") {
+      return null;
+    }
+    try {
+      return JSON.parse(JSON.stringify(conversation));
+    } catch (_err) {
+      return null;
+    }
+  }
+
+  function normalizeDecisionRequest(request) {
+    var source = request && typeof request === "object" ? request : null;
+    if (!source) {
+      return null;
+    }
+    var question = trim(String(source.question || ""));
+    if (!question) {
+      return null;
+    }
+    var optionsRaw = Array.isArray(source.options) ? source.options : [];
+    var options = [];
+    for (var i = 0; i < optionsRaw.length; i += 1) {
+      var optionText = trim(String(optionsRaw[i] || ""));
+      if (!optionText) {
+        continue;
+      }
+      if (optionText.toLowerCase() === "other") {
+        continue;
+      }
+      options.push(optionText);
+      if (options.length >= 5) {
+        break;
+      }
+    }
+    if (!options.length) {
+      return null;
+    }
+    return {
+      question: question,
+      options: options
+    };
+  }
+
+  function normalizeApprovalRequest(request) {
+    var source = request && typeof request === "object" ? request : null;
+    if (!source) {
+      return null;
+    }
+    var command = trim(String(source.command || ""));
+    if (!command) {
+      return null;
+    }
+    return {
+      command: command,
+      reason: trim(String(source.reason || ""))
+    };
+  }
+
+  function conversationDecisionRequest(conversation) {
+    return normalizeDecisionRequest(conversation && conversation.decision_request ? conversation.decision_request : null);
+  }
+
+  function conversationApprovalRequest(conversation) {
+    return normalizeApprovalRequest(conversation && conversation.approval_request ? conversation.approval_request : null);
+  }
+
+  function setConversationDecisionRequest(workspaceId, conversationId, request) {
+    var workspace = getWorkspaceById(workspaceId);
+    var conversation = getConversationById(workspace, conversationId);
+    if (!conversation) {
+      return;
+    }
+    conversation.decision_request = normalizeDecisionRequest(request);
+  }
+
+  function setAwaitingApprovalState(workspaceId, conversationId, value) {
+    if (!workspaceId || !conversationId) {
+      return;
+    }
+    var key = conversationReadKey(workspaceId, conversationId);
+    if (value) {
+      state.awaitingApprovalByConversation[key] = 1;
+    } else if (state.awaitingApprovalByConversation[key]) {
+      delete state.awaitingApprovalByConversation[key];
+    }
+  }
+
+  function isAwaitingApprovalConversation(workspaceId, conversationId) {
+    if (!workspaceId || !conversationId) {
+      return false;
+    }
+    var key = conversationReadKey(workspaceId, conversationId);
+    return !!state.awaitingApprovalByConversation[key];
   }
 
   function conversationUpdatedNumber(conversation) {
@@ -1255,6 +1443,12 @@
     if (typeof patch.firstId !== "undefined") {
       conversation.queue_first_id = String(patch.firstId || "");
     }
+    if (typeof patch.decisionRequest !== "undefined") {
+      conversation.decision_request = normalizeDecisionRequest(patch.decisionRequest);
+    }
+    if (typeof patch.approvalRequest !== "undefined") {
+      conversation.approval_request = normalizeApprovalRequest(patch.approvalRequest);
+    }
   }
 
   function activeConversationQueueStats() {
@@ -1374,6 +1568,18 @@
     if (workspaceId === state.activeWorkspaceId && conversation.id === state.activeConversationId) {
       return true;
     }
+    if (conversationDecisionRequest(conversation)) {
+      return true;
+    }
+    if (String(conversation.queue_last_status || "") === "awaiting_decision") {
+      return true;
+    }
+    if (String(conversation.queue_last_status || "") === "awaiting_approval") {
+      return true;
+    }
+    if (isAwaitingApprovalConversation(workspaceId, conversation.id)) {
+      return true;
+    }
     if (queueNumber(conversation.queue_pending) > 0) {
       return true;
     }
@@ -1381,6 +1587,32 @@
       return true;
     }
     if (String(conversation.queue_done || "0") === "1" && isConversationUnread(workspaceId, conversation)) {
+      return true;
+    }
+    return false;
+  }
+
+  function isConversationRunning(workspaceId, conversation) {
+    if (!workspaceId || !conversation || !conversation.id) {
+      return false;
+    }
+    var events = runEventsForConversation(conversation.id);
+    for (var i = events.length - 1; i >= 0; i -= 1) {
+      if (String(events[i].status || "") === "running") {
+        return true;
+      }
+    }
+    if (String(conversation.queue_running || "0") === "1") {
+      return true;
+    }
+    if (String(conversation.queue_last_status || "") === "running") {
+      return true;
+    }
+    if (
+      state.busy &&
+      String(state.runningWorkspaceId || "") === String(workspaceId) &&
+      String(state.runningConversationId || "") === String(conversation.id)
+    ) {
       return true;
     }
     return false;
@@ -1414,6 +1646,22 @@
     return Math.floor(diff / (86400 * 365)) + "y";
   }
 
+  function conversationStatusPillMarkup(workspaceId, conversation) {
+    if (!workspaceId || !conversation || !conversation.id) {
+      return "";
+    }
+    var lastStatus = String(conversation.queue_last_status || "");
+    var awaitingApproval = isAwaitingApprovalConversation(workspaceId, conversation.id) || lastStatus === "awaiting_approval";
+    if (awaitingApproval) {
+      return "<span class='thread-status-pill approval'><span class='pill-spinner' aria-hidden='true'></span><span>Awaiting approval</span></span>";
+    }
+    var decisionRequest = conversationDecisionRequest(conversation);
+    if (decisionRequest || lastStatus === "awaiting_decision") {
+      return "<span class='thread-status-pill decision'>Awaiting decision</span>";
+    }
+    return "";
+  }
+
   function conversationMetaMarkup(workspaceId, conversation) {
     var gitState = state.gitByWorkspace[workspaceId] || {};
     var add = Number(gitState.added || 0);
@@ -1421,13 +1669,16 @@
     var hasDiff = add > 0 || del > 0;
     var age = formatAgeShort(conversationCreatedNumber(conversation));
     var conversationId = conversation && conversation.id ? conversation.id : "";
+    var archiveKey = conversationReadKey(workspaceId, conversationId);
+    var isArchiveArmed = archiveKey === state.pendingArchiveKey;
+    var isArchiveSubmitting = archiveKey === state.pendingArchiveSubmittingKey;
     var html = "<span class='conversation-meta' title='Workspace diff since last commit'>";
     if (hasDiff) {
       html += "<span class='meta-add' title='Lines added since last commit'>+" + escHtml(String(add)) + "</span> ";
       html += "<span class='meta-del' title='Lines removed since last commit'>-" + escHtml(String(del)) + "</span> ";
     }
     html += "<span class='meta-age-slot'>";
-    html += "<span class='meta-age' title='Conversation age'>" + escHtml(age) + "</span>";
+    html += "<span class='meta-age' title='Conversation age'>" + ((isArchiveArmed || isArchiveSubmitting) ? "" : escHtml(age)) + "</span>";
     html += archiveControlMarkup(workspaceId, conversationId);
     html += "</span></span>";
     return html;
@@ -1436,17 +1687,22 @@
   function archiveControlMarkup(workspaceId, conversationId) {
     var key = conversationReadKey(workspaceId, conversationId);
     var isArmed = key === state.pendingArchiveKey;
+    var isSubmitting = key === state.pendingArchiveSubmittingKey;
     if (!isArmed) {
       return (
         "<button type='button' class='thread-archive-btn' title='Archive conversation' data-action='arm-archive-conversation' data-workspace-id='" + escHtml(workspaceId) + "' data-conversation-id='" + escHtml(conversationId) + "'><span class='archive-icon' aria-hidden='true'><svg viewBox='0 0 16 16' fill='none' stroke='currentColor' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'><rect x='2.4' y='3.2' width='11.2' height='9.2' rx='1.4'></rect><path d='M4.5 6.1h7'></path><path d='M6 8.3h4'></path></svg></span></button>"
       );
     }
 
-    var ready = Date.now() >= Number(state.pendingArchiveReadyAt || 0);
+    var ready = !isSubmitting && Date.now() >= Number(state.pendingArchiveReadyAt || 0);
     var disabledAttr = ready ? "" : " disabled";
     var readyClass = ready ? " ready" : "";
+    var loadingClass = isSubmitting ? " loading" : "";
+    var label = isSubmitting
+      ? "<span class='thread-confirm-spinner' aria-hidden='true'></span><span>Archiving...</span>"
+      : "Confirm";
     return (
-      "<button type='button' class='thread-confirm-btn" + readyClass + "' data-action='confirm-archive-conversation' data-workspace-id='" + escHtml(workspaceId) + "' data-conversation-id='" + escHtml(conversationId) + "'" + disabledAttr + ">Confirm</button>"
+      "<button type='button' class='thread-confirm-btn" + readyClass + loadingClass + "' data-action='confirm-archive-conversation' data-workspace-id='" + escHtml(workspaceId) + "' data-conversation-id='" + escHtml(conversationId) + "'" + disabledAttr + ">" + label + "</button>"
     );
   }
 
@@ -1476,7 +1732,7 @@
   function permissionModeLabel(mode) {
     switch (mode) {
       case "workspace-write":
-        return "Workspace write";
+        return "Project write";
       case "read-only":
         return "Read only";
       case "full-access":
@@ -1646,13 +1902,19 @@
           refreshRunningElapsedBadges();
         }, 1000);
       }
+      if (!runReconcileTimer) {
+        runReconcileTimer = setInterval(function () {
+          reconcileRunningState();
+        }, 2200);
+      }
     } else {
       state.runningWorkspaceId = "";
       state.runningConversationId = "";
-      if (liveRunTickTimer) {
-        clearInterval(liveRunTickTimer);
-        liveRunTickTimer = null;
+      if (runReconcileTimer) {
+        clearInterval(runReconcileTimer);
+        runReconcileTimer = null;
       }
+      runReconcileBusy = false;
     }
   }
 
@@ -1749,6 +2011,290 @@
     return state.runEventsByConversation[conversationId] || [];
   }
 
+  function outgoingKeyFor(workspaceId, conversationId, draftWorkspaceId) {
+    var wsId = String(workspaceId || "");
+    var convId = String(conversationId || "");
+    var draftId = String(draftWorkspaceId || "");
+    if (wsId && convId) {
+      return "c:" + wsId + "::" + convId;
+    }
+    if (draftId) {
+      return "d:" + draftId;
+    }
+    return "";
+  }
+
+  function activeOutgoingKey() {
+    var draftWorkspaceId = state.activeDraftWorkspaceId;
+    if (!draftWorkspaceId && state.activeWorkspaceId && !state.activeConversationId) {
+      draftWorkspaceId = state.activeWorkspaceId;
+    }
+    return outgoingKeyFor(state.activeWorkspaceId, state.activeConversationId, draftWorkspaceId);
+  }
+
+  function pendingOutgoingList(key) {
+    var safeKey = String(key || "");
+    if (!safeKey) {
+      return [];
+    }
+    var list = state.pendingOutgoingByKey[safeKey];
+    return Array.isArray(list) ? list : [];
+  }
+
+  function addPendingOutgoing(key, text) {
+    var safeKey = String(key || "");
+    var content = trim(text || "");
+    if (!safeKey || !content) {
+      return "";
+    }
+    if (!Array.isArray(state.pendingOutgoingByKey[safeKey])) {
+      state.pendingOutgoingByKey[safeKey] = [];
+    }
+    var id = "pending-" + String(Date.now()) + "-" + String(Math.floor(Math.random() * 1000000));
+    state.pendingOutgoingByKey[safeKey].push({
+      id: id,
+      content: content,
+      createdAt: Date.now()
+    });
+    return id;
+  }
+
+  function removePendingOutgoing(key, pendingId) {
+    var safeKey = String(key || "");
+    var id = String(pendingId || "");
+    if (!safeKey || !id) {
+      return;
+    }
+    var list = pendingOutgoingList(safeKey);
+    if (!list.length) {
+      return;
+    }
+    var kept = [];
+    for (var i = 0; i < list.length; i += 1) {
+      if (String(list[i].id || "") !== id) {
+        kept.push(list[i]);
+      }
+    }
+    if (kept.length) {
+      state.pendingOutgoingByKey[safeKey] = kept;
+    } else {
+      delete state.pendingOutgoingByKey[safeKey];
+    }
+  }
+
+  function movePendingOutgoing(oldKey, newKey, pendingId) {
+    var fromKey = String(oldKey || "");
+    var toKey = String(newKey || "");
+    var id = String(pendingId || "");
+    if (!fromKey || !toKey || !id || fromKey === toKey) {
+      return;
+    }
+    var fromList = pendingOutgoingList(fromKey);
+    if (!fromList.length) {
+      return;
+    }
+    var entry = null;
+    var kept = [];
+    for (var i = 0; i < fromList.length; i += 1) {
+      var item = fromList[i];
+      if (!entry && String(item.id || "") === id) {
+        entry = item;
+      } else {
+        kept.push(item);
+      }
+    }
+    if (!entry) {
+      return;
+    }
+    if (kept.length) {
+      state.pendingOutgoingByKey[fromKey] = kept;
+    } else {
+      delete state.pendingOutgoingByKey[fromKey];
+    }
+    if (!Array.isArray(state.pendingOutgoingByKey[toKey])) {
+      state.pendingOutgoingByKey[toKey] = [];
+    }
+    state.pendingOutgoingByKey[toKey].push(entry);
+  }
+
+  function consumePendingOutgoingByText(key, text) {
+    var safeKey = String(key || "");
+    var content = trim(text || "");
+    if (!safeKey || !content) {
+      return false;
+    }
+    var list = pendingOutgoingList(safeKey);
+    if (!list.length) {
+      return false;
+    }
+    var kept = [];
+    var removed = false;
+    for (var i = 0; i < list.length; i += 1) {
+      var item = list[i];
+      if (!removed && trim(item.content || "") === content) {
+        removed = true;
+      } else {
+        kept.push(item);
+      }
+    }
+    if (!removed) {
+      return false;
+    }
+    if (kept.length) {
+      state.pendingOutgoingByKey[safeKey] = kept;
+    } else {
+      delete state.pendingOutgoingByKey[safeKey];
+    }
+    return true;
+  }
+
+  function reconcilePendingOutgoingFromConversation(workspaceId, conversationId, conversation) {
+    var key = outgoingKeyFor(workspaceId, conversationId, "");
+    var pendingList = pendingOutgoingList(key);
+    if (!pendingList.length) {
+      return;
+    }
+    var messages = Array.isArray(conversation && conversation.messages) ? conversation.messages : [];
+    var userCounts = {};
+    for (var i = 0; i < messages.length; i += 1) {
+      var msg = messages[i] || {};
+      if (String(msg.role || "") !== "user") {
+        continue;
+      }
+      var content = trim(msg.content || "");
+      if (!content) {
+        continue;
+      }
+      userCounts[content] = (userCounts[content] || 0) + 1;
+    }
+    var kept = [];
+    for (var j = 0; j < pendingList.length; j += 1) {
+      var pending = pendingList[j] || {};
+      var pendingText = trim(pending.content || "");
+      if (pendingText && userCounts[pendingText] > 0) {
+        userCounts[pendingText] -= 1;
+      } else {
+        kept.push(pending);
+      }
+    }
+    if (kept.length) {
+      state.pendingOutgoingByKey[key] = kept;
+    } else {
+      delete state.pendingOutgoingByKey[key];
+    }
+  }
+
+  function finalizeLatestRunningEvent(conversationId, status, errorText) {
+    var convId = String(conversationId || "");
+    if (!convId) {
+      return;
+    }
+    var events = state.runEventsByConversation[convId];
+    if (!Array.isArray(events) || !events.length) {
+      return;
+    }
+    for (var i = events.length - 1; i >= 0; i -= 1) {
+      if (String(events[i].status || "") === "running") {
+        events[i].status = status === "error" ? "error" : (status === "cancelled" ? "cancelled" : "done");
+        events[i].finished_at = new Date().toISOString();
+        if (status === "error") {
+          events[i].error = trim(errorText || "Run did not complete.");
+        }
+        return;
+      }
+    }
+  }
+
+  function finalizeStaleRunningEventsForConversation(workspaceId, conversation) {
+    if (!workspaceId || !conversation || !conversation.id) {
+      return;
+    }
+    var pending = queueNumber(conversation.queue_pending);
+    var running = String(conversation.queue_running || "0") === "1";
+    if (running || pending > 0) {
+      return;
+    }
+    var queueStatus = String(conversation.queue_last_status || "");
+    var events = state.runEventsByConversation[String(conversation.id || "")];
+    if (!Array.isArray(events) || !events.length) {
+      return;
+    }
+    var finishedAt = new Date().toISOString();
+    for (var i = events.length - 1; i >= 0; i -= 1) {
+      if (String(events[i].status || "") !== "running") {
+        continue;
+      }
+      if (queueStatus === "error") {
+        events[i].status = "error";
+        if (!trim(events[i].error || "")) {
+          events[i].error = "Run did not complete.";
+        }
+      } else if (queueStatus === "cancelled") {
+        events[i].status = "cancelled";
+      } else {
+        events[i].status = "done";
+      }
+      events[i].finished_at = finishedAt;
+    }
+  }
+
+  function reconcileRunEventsFromQueueState() {
+    for (var i = 0; i < state.workspaces.length; i += 1) {
+      var workspace = state.workspaces[i];
+      if (!workspace || !Array.isArray(workspace.conversations)) {
+        continue;
+      }
+      for (var j = 0; j < workspace.conversations.length; j += 1) {
+        finalizeStaleRunningEventsForConversation(workspace.id, workspace.conversations[j]);
+      }
+    }
+  }
+
+  function reconcileRunningState() {
+    if (!state.busy || runReconcileBusy) {
+      return;
+    }
+    var workspaceId = String(state.runningWorkspaceId || "");
+    var conversationId = String(state.runningConversationId || "");
+    if (!workspaceId || !conversationId) {
+      return;
+    }
+    runReconcileBusy = true;
+    loadState()
+      .then(function () {
+        var gitRefresh = Promise.resolve();
+        if (state.activeWorkspaceId === workspaceId) {
+          gitRefresh = refreshGitStatus().catch(function () {
+            return null;
+          });
+        }
+        return gitRefresh.then(function () {
+          var ws = getWorkspaceById(workspaceId);
+          var conv = getConversationById(ws, conversationId);
+          var stillRunning = !!(conv && String(conv.queue_running || "0") === "1");
+          var pending = conv ? queueNumber(conv.queue_pending) : 0;
+          if (stillRunning || pending > 0) {
+            return;
+          }
+          setBusy(false);
+          finalizeLatestRunningEvent(conversationId, "done", "");
+          if (state.activeWorkspaceId === workspaceId && state.activeConversationId === conversationId) {
+            return loadConversation().catch(function () {
+              return null;
+            });
+          }
+          return null;
+        });
+      })
+      .catch(function () {
+        return null;
+      })
+      .finally(function () {
+        runReconcileBusy = false;
+        renderUi();
+      });
+  }
+
   function pushRunEvent(conversationId, eventData) {
     if (!conversationId) {
       return null;
@@ -1788,14 +2334,100 @@
     return html;
   }
 
-  function renderRunEvent(event) {
+  function runTraceAttemptCount(event) {
+    var combined = trim(String((event && event.failures) || "")) + "\n" + trim(String((event && event.session_log) || ""));
+    if (!trim(combined)) {
+      return 0;
+    }
+    var matches = combined.match(/^##\s+/gm);
+    return matches ? matches.length : 0;
+  }
+
+  function runDetailsShouldBeOpen(eventId) {
+    var key = String(eventId || "");
+    if (!key) {
+      return false;
+    }
+    return !!state.runDetailsOpenByEventId[key];
+  }
+
+  function formatRunTrace(event) {
+    if (!event) {
+      return "";
+    }
+    var sections = "";
+    if (trim(event.stream_text || "")) {
+      sections += "<div class='run-trace-block'><p class='run-trace-title'>Stream Transcript</p><pre>" + escHtml(event.stream_text || "") + "</pre></div>";
+    }
+    if (trim(event.plan)) {
+      sections += "<div class='run-trace-block'><p class='run-trace-title'>Plan</p><pre>" + escHtml(event.plan) + "</pre></div>";
+    }
+    if (event.commands && event.commands.length) {
+      sections += "<div class='run-trace-block'><p class='run-trace-title'>Command Runs</p>" + formatRunCommands(event.commands || []) + "</div>";
+    }
+    if (trim(event.git_status || "")) {
+      sections += "<div class='run-trace-block'><p class='run-trace-title'>Git Status</p><pre>" + escHtml(event.git_status || "") + "</pre></div>";
+    }
+    if (trim(event.git_diff || "")) {
+      sections += "<div class='run-trace-block'><p class='run-trace-title'>Git Diff</p><div class='diff-view run-diff-view'>" + formatDiff(event.git_diff || "") + "</div></div>";
+    }
+    if (trim(event.state)) {
+      sections += "<div class='run-trace-block'><p class='run-trace-title'>Mode State</p><pre>" + escHtml(event.state) + "</pre></div>";
+    }
+    if (trim(event.failures)) {
+      sections += "<div class='run-trace-block'><p class='run-trace-title'>Failure Ledger</p><pre>" + escHtml(event.failures) + "</pre></div>";
+    }
+    if (trim(event.session_log)) {
+      sections += "<div class='run-trace-block'><p class='run-trace-title'>Session Log</p><pre>" + escHtml(event.session_log) + "</pre></div>";
+    }
+    if (!sections) {
+      return "";
+    }
+    var eventId = String(event.id || "");
+    var openAttr = runDetailsShouldBeOpen(eventId) ? " open" : "";
+    return "<details class='run-details run-thinking' data-event-id='" + escAttr(eventId) + "'" + openAttr + "><summary>Thinking trace</summary>" + sections + "</details>";
+  }
+
+  function friendlyRunErrorText(event) {
+    var attempts = runTraceAttemptCount(event);
+    var base = attempts > 0
+      ? "I couldn't complete that run after " + attempts + " attempt" + (attempts === 1 ? "" : "s") + "."
+      : "I couldn't complete that run.";
+    var raw = String((event && event.error) || "").toLowerCase();
+    if (raw.indexOf("approval") >= 0 || raw.indexOf("blocked") >= 0 || raw.indexOf("denied") >= 0) {
+      return base + " A command needed approval.";
+    }
+    if (trim(event && event.error)) {
+      return base + " " + String(event.error || "");
+    }
+    return base + " Please retry.";
+  }
+
+  function assistantLooksLikeTrace(text) {
+    var raw = String(text || "");
+    if (!trim(raw)) {
+      return false;
+    }
+    var hasAttemptHeaders = /^##\s+\d{4}-\d{2}-\d{2}T/m.test(raw);
+    var hasTraceMarkers = /(Action:|Hypothesis:|Next Attempt:|approval_required|Tool call failed|Refine command set)/i.test(raw);
+    if (hasAttemptHeaders && hasTraceMarkers) {
+      return true;
+    }
+    if (hasAttemptHeaders) {
+      return true;
+    }
+    var hasControlScaffold = /(MODE_UPDATE:|PLAN_UPDATE:|DONE_CLAIM:|Transition:\s+[A-Z]+\s*->\s*[A-Z]+|Checkpoint:|final action plan|Next Action:\s*Completion Criteria:)/i.test(raw);
+    var hasAgentModeMarkers = /(INVESTIGATE|DESIGN|IMPLEMENT|VERIFY|DONE)/i.test(raw);
+    return hasControlScaffold && hasAgentModeMarkers;
+  }
+
+  function renderRunEvent(event, workspaceId, conversationId) {
     if (!event) {
       return "";
     }
 
     var status = event.status || "done";
     var html = "<article class='msg run " + escHtml(status) + "'>";
-    html += "<span class='role'>run</span>";
 
     if (status === "running") {
       var startedAt = Date.parse(event.started_at || "");
@@ -1803,20 +2435,35 @@
       if (isFinite(startedAt) && startedAt > 0) {
         elapsed = Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
       }
-      html += "<p class='run-line running' data-started-at='" + escAttr(event.started_at || "") + "'><span class='run-spinner' aria-hidden='true'></span> Running agent";
+      html += "<p class='run-line running' data-started-at='" + escAttr(event.started_at || "") + "'><span class='run-spinner' aria-hidden='true'></span> Thinking";
       html += " <span class='run-elapsed'>" + (elapsed > 0 ? elapsed + "s" : "") + "</span>";
+      if (workspaceId && conversationId) {
+        html += "<button type='button' class='run-stop-btn' aria-label='Stop run' title='Stop run' data-action='stop-run' data-workspace-id='" + escAttr(workspaceId) + "' data-conversation-id='" + escAttr(conversationId) + "'><span class='run-stop-square' aria-hidden='true'>&#9632;</span></button>";
+      }
       html += "</p>";
-      if (trim(event.stream_text || "")) {
-        html += "<pre class='run-stream-preview'>" + escHtml(event.stream_text) + "</pre>";
-      } else {
-        html += "<p class='run-line subtle'>Working...</p>";
+      var runningEventId = String(event.id || "");
+      var streamText = String(event.stream_text || "");
+      if (trim(streamText)) {
+        var hasSeenToggle = Object.prototype.hasOwnProperty.call(state.runDetailsOpenByEventId, runningEventId);
+        var runningOpen = hasSeenToggle ? runDetailsShouldBeOpen(runningEventId) : true;
+        var runningOpenAttr = runningOpen ? " open" : "";
+        html += "<details class='run-details run-thinking' data-event-id='" + escAttr(runningEventId) + "'" + runningOpenAttr + "><summary>Thinking trace</summary><pre class='run-stream-preview'>" + escHtml(streamText) + "</pre></details>";
       }
       html += "</article>";
       return html;
     }
 
+    if (status === "cancelled") {
+      html += "<p class='run-line subtle'>Run stopped.</p>";
+      html += formatRunTrace(event);
+      html += "</article>";
+      return html;
+    }
+
     if (status === "error") {
-      html += "<p class='run-line error'>" + escHtml(event.error || "Run failed") + "</p></article>";
+      html += "<p class='run-line error'>" + escHtml(friendlyRunErrorText(event)) + "</p>";
+      html += formatRunTrace(event);
+      html += "</article>";
       return html;
     }
 
@@ -1829,19 +2476,7 @@
       }
     }
     html += "<p class='run-line success'>Run complete" + (runModelText ? " with " + escHtml(runModelText) : "") + "</p>";
-    html += "<details class='run-details'><summary>Plan</summary><pre>" + escHtml(event.plan || "No plan returned.") + "</pre></details>";
-    html += "<details class='run-details'><summary>Command Runs</summary>" + formatRunCommands(event.commands || []) + "</details>";
-    html += "<details class='run-details'><summary>Git Status</summary><pre>" + escHtml(event.git_status || "") + "</pre></details>";
-    html += "<details class='run-details'><summary>Git Diff</summary><div class='diff-view run-diff-view'>" + formatDiff(event.git_diff || "") + "</div></details>";
-    if (trim(event.state)) {
-      html += "<details class='run-details'><summary>Mode State</summary><pre>" + escHtml(event.state) + "</pre></details>";
-    }
-    if (trim(event.failures)) {
-      html += "<details class='run-details'><summary>Failure Ledger</summary><pre>" + escHtml(event.failures) + "</pre></details>";
-    }
-    if (trim(event.session_log)) {
-      html += "<details class='run-details'><summary>Session Log</summary><pre>" + escHtml(event.session_log) + "</pre></details>";
-    }
+    html += formatRunTrace(event);
     html += "</article>";
     return html;
   }
@@ -1870,9 +2505,29 @@
     }
   }
 
+  function syncRunThinkingPreviewScroll() {
+    if (!el.chatLog) {
+      return;
+    }
+    var panels = el.chatLog.querySelectorAll("details.run-details.run-thinking[data-event-id]");
+    if (!panels || !panels.length) {
+      return;
+    }
+    for (var i = 0; i < panels.length; i += 1) {
+      var panel = panels[i];
+      if (!panel.open) {
+        continue;
+      }
+      var preview = panel.querySelector(".run-stream-preview");
+      if (preview) {
+        preview.scrollTop = preview.scrollHeight;
+      }
+    }
+  }
+
   function renderWorkspaceTree() {
     if (!state.workspaces.length) {
-      var emptyMarkup = "<p class='empty-state'>Drop a folder here or click + to add a workspace.</p>";
+      var emptyMarkup = "<p class='empty-state'>Drop a folder here or click + to add a project.</p>";
       if (state.workspaceTreeMarkupCache === emptyMarkup) {
         return;
       }
@@ -1890,6 +2545,7 @@
     var html = "";
     var workspaces = getSortedWorkspaces();
     var showRelevantOnly = state.organizeShow === "relevant";
+    var showRunningOnly = state.organizeShow === "running";
 
     if (state.organizeMode === "chrono") {
       var entries = [];
@@ -1899,12 +2555,15 @@
         var chronoConversations = getSortedConversations(chronoWorkspace);
         for (var cj = 0; cj < chronoConversations.length; cj += 1) {
           var chronoConversation = chronoConversations[cj];
+          if (showRunningOnly && !isConversationRunning(chronoWorkspaceId, chronoConversation)) {
+            continue;
+          }
           if (showRelevantOnly && !isConversationRelevant(chronoWorkspaceId, chronoConversation)) {
             continue;
           }
           entries.push({
             workspaceId: chronoWorkspaceId,
-            workspaceName: chronoWorkspace.name || "Workspace",
+            workspaceName: chronoWorkspace.name || "Project",
             conversation: chronoConversation
           });
         }
@@ -1948,6 +2607,7 @@
           html += "<div class='conversation-row chrono-row" + chronoActive + "' role='button' tabindex='0' title='Open conversation' data-action='select-conversation' data-workspace-id='" + escHtml(entry.workspaceId) + "' data-conversation-id='" + escHtml(entry.conversation.id) + "'>";
           html += "<span class='" + chronoIndicatorClass + "' aria-hidden='true'></span>";
           html += "<span class='conversation-title' title='" + escAttr(entry.workspaceName) + "'>" + escHtml(entry.conversation.title || "Conversation") + "</span>";
+          html += conversationStatusPillMarkup(entry.workspaceId, entry.conversation, chronoRunning);
           if (chronoPending > 0) {
             html += "<span class='queue-count'>" + chronoPending + "</span>";
           }
@@ -1960,15 +2620,25 @@
         var workspace = workspaces[i];
         var workspaceId = workspace.id;
         var isActiveWorkspace = workspaceId === state.activeWorkspaceId;
-        var isExpanded = !!state.expandedWorkspaceIds[workspaceId] || isActiveWorkspace;
-        state.expandedWorkspaceIds[workspaceId] = isExpanded;
+        var isExpanded = !!state.expandedWorkspaceIds[workspaceId];
+        if (typeof state.expandedWorkspaceIds[workspaceId] === "undefined") {
+          isExpanded = true;
+          state.expandedWorkspaceIds[workspaceId] = true;
+        }
 
         var filteredConversations = [];
         var conversations = getSortedConversations(workspace);
         for (var fc = 0; fc < conversations.length; fc += 1) {
+          if (showRunningOnly && !isConversationRunning(workspaceId, conversations[fc])) {
+            continue;
+          }
           if (!showRelevantOnly || isConversationRelevant(workspaceId, conversations[fc])) {
             filteredConversations.push(conversations[fc]);
           }
+        }
+
+        if (showRunningOnly && !filteredConversations.length) {
+          continue;
         }
 
         if (showRelevantOnly && !filteredConversations.length && !hasDraftForWorkspace(workspace) && !isActiveWorkspace) {
@@ -1983,15 +2653,15 @@
         html += "<section class='" + groupClass + "' data-workspace-id='" + escHtml(workspaceId) + "'>";
         html += "<div class='workspace-row' data-action='select-workspace' data-workspace-id='" + escHtml(workspaceId) + "'>";
         html += folderIcon;
-        html += "<button type='button' class='workspace-caret' data-action='toggle-workspace' data-workspace-id='" + escHtml(workspaceId) + "' aria-label='Toggle' title='Expand or collapse workspace'><span aria-hidden='true'>&rsaquo;</span></button>";
-        html += "<div class='workspace-meta' title='" + escAttr(workspace.path || "") + "'>" + escHtml(workspace.name || "Workspace") + "</div>";
+        html += "<button type='button' class='workspace-caret' data-action='toggle-workspace' data-workspace-id='" + escHtml(workspaceId) + "' aria-label='Toggle' title='Expand or collapse project'><span aria-hidden='true'>&rsaquo;</span></button>";
+        html += "<div class='workspace-meta' title='" + escAttr(workspace.path || "") + "'>" + escHtml(workspace.name || "Project") + "</div>";
         html += "<button type='button' class='workspace-new' data-action='new-conversation' data-workspace-id='" + escHtml(workspaceId) + "' aria-label='New conversation' title='New thread'><span aria-hidden='true'><svg viewBox='0 0 16 16' fill='none' stroke='currentColor' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M3.1 12.9l2.9-.6 6-6-2.3-2.3-6 6z'/><path d='M8.9 3.7l2.3 2.3'/><path d='M13.6 13.1H8.8'/></svg></span></button>";
-        html += "<button type='button' class='workspace-menu-trigger' data-action='toggle-workspace-menu' data-workspace-id='" + escHtml(workspaceId) + "' aria-label='Workspace menu' title='Workspace actions' aria-expanded='" + (state.openWorkspaceMenuWorkspaceId === workspaceId ? "true" : "false") + "'>&hellip;</button>";
+        html += "<button type='button' class='workspace-menu-trigger' data-action='toggle-workspace-menu' data-workspace-id='" + escHtml(workspaceId) + "' aria-label='Project menu' title='Project actions' aria-expanded='" + (state.openWorkspaceMenuWorkspaceId === workspaceId ? "true" : "false") + "'>&hellip;</button>";
         var workspaceMenuClass = "workspace-actions-pop floating-menu";
         if (state.openWorkspaceMenuWorkspaceId !== workspaceId) {
           workspaceMenuClass += " hidden";
         }
-        html += "<div class='" + workspaceMenuClass + "' data-workspace-menu='" + escHtml(workspaceId) + "' role='menu' aria-label='Workspace actions'>";
+        html += "<div class='" + workspaceMenuClass + "' data-workspace-menu='" + escHtml(workspaceId) + "' role='menu' aria-label='Project actions'>";
         html += "<button type='button' data-action='rename-workspace' data-workspace-id='" + escHtml(workspaceId) + "'>Rename</button>";
         html += "<button type='button' data-action='remove-workspace' data-workspace-id='" + escHtml(workspaceId) + "'>Remove</button>";
         html += "</div>";
@@ -2031,6 +2701,7 @@
           html += "<div class='conversation-row" + activeConv + "' role='button' tabindex='0' title='Open conversation' data-action='select-conversation' data-workspace-id='" + escHtml(workspaceId) + "' data-conversation-id='" + escHtml(conversation.id) + "'>";
           html += "<span class='" + indicatorClass + "' aria-hidden='true'></span>";
           html += "<span class='conversation-title'>" + escHtml(conversation.title || "Conversation") + "</span>";
+          html += conversationStatusPillMarkup(workspaceId, conversation, queueRunning);
           if (queuePending > 0) {
             html += "<span class='queue-count'>" + queuePending + "</span>";
           }
@@ -2107,6 +2778,14 @@
     return null;
   }
 
+  function formatCatalogSizeLabel(sizeRaw) {
+    var parsed = Number(sizeRaw);
+    if (!isFinite(parsed) || parsed <= 0) {
+      return "";
+    }
+    return parsed.toFixed(1) + "GB";
+  }
+
   function renderModelsDialog() {
     if (!el.modelsBoxList) {
       return;
@@ -2146,6 +2825,7 @@
         }
         var modelParts = parseModelDisplay(modelName);
         var description = trim(entry.description || "");
+        var sizeLabel = formatCatalogSizeLabel(entry.size_gb);
         var isInstalled = isModelInstalled(modelName);
         var installJob = currentModelInstallFor(modelName);
         var isInstalling = !!(installJob && String(installJob.status || "") === "running");
@@ -2154,6 +2834,9 @@
         html += "<div class='catalog-item'>";
         html += "<div class='catalog-copy'><span class='model-primary'>" + escHtml(modelParts.primary) + "</span>";
         html += "<span class='model-meta'>" + escHtml(modelParts.meta || modelParts.raw) + "</span>";
+        if (sizeLabel) {
+          html += "<span class='catalog-size'>" + escHtml(sizeLabel) + "</span>";
+        }
         if (description) {
           html += "<span class='catalog-description'>" + escHtml(description) + "</span>";
         }
@@ -2236,12 +2919,6 @@
       out.unshift("psionic");
     }
     out.sort(function (a, b) {
-      if (a === "psionic") {
-        return -1;
-      }
-      if (b === "psionic") {
-        return 1;
-      }
       return a.localeCompare(b);
     });
     return out;
@@ -2373,7 +3050,7 @@
       return;
     }
     var hasPrompt = trim(el.runPrompt ? el.runPrompt.value : "") !== "";
-    var canRun = hasPrompt && !!(state.activeWorkspaceId || state.activeDraftWorkspaceId);
+    var canRun = hasPrompt && !!(state.activeWorkspaceId || state.activeDraftWorkspaceId || state.activeConversationId);
     var runningHere =
       state.busy &&
       state.activeWorkspaceId &&
@@ -2432,7 +3109,7 @@
     var gitState = activeGitState();
 
     if (!workspaceId) {
-      el.branchMenuList.innerHTML = "<p class='empty-state'>Select a workspace first.</p>";
+      el.branchMenuList.innerHTML = "<p class='empty-state'>Select a project first.</p>";
       el.branchCreateForm.classList.add("hidden");
       if (el.branchCreateSubmit) {
         el.branchCreateSubmit.disabled = true;
@@ -2481,8 +3158,20 @@
     el.permissionsMenuBtn.innerHTML =
       "<span class='menu-icon mono-icon' aria-hidden='true'>" + permissionModeIconMarkup(state.permissionMode) + "</span><span>" + escHtml(label) + "</span>";
     el.permissionsMenuBtn.title = label;
+    renderPermissionModeMenu();
     renderCommandExecMenu();
     renderPermissionToggles();
+  }
+
+  function renderPermissionModeMenu() {
+    if (!el.permissionsMenu) {
+      return;
+    }
+    var items = el.permissionsMenu.querySelectorAll("button[data-permission]");
+    for (var i = 0; i < items.length; i += 1) {
+      var mode = String(items[i].getAttribute("data-permission") || "");
+      items[i].classList.toggle("active", mode === state.permissionMode);
+    }
   }
 
   function renderCommandExecMenu() {
@@ -2602,6 +3291,288 @@
     el.chatTitle.textContent = "No conversation";
   }
 
+  function activeDecisionRequestInfo() {
+    if (!state.activeWorkspaceId || !state.activeConversationId) {
+      return null;
+    }
+    var request = conversationDecisionRequest(state.activeConversation);
+    if (!request) {
+      var workspace = getWorkspaceById(state.activeWorkspaceId);
+      var conversation = getConversationById(workspace, state.activeConversationId);
+      request = conversationDecisionRequest(conversation);
+    }
+    if (!request) {
+      return null;
+    }
+    var key = conversationReadKey(state.activeWorkspaceId, state.activeConversationId);
+    var marker = key + "::" + request.question + "::" + request.options.join("||");
+    return {
+      workspaceId: state.activeWorkspaceId,
+      conversationId: state.activeConversationId,
+      key: key,
+      marker: marker,
+      request: request
+    };
+  }
+
+  function activeApprovalRequestInfo() {
+    if (!state.activeWorkspaceId || !state.activeConversationId) {
+      return null;
+    }
+    var workspace = getWorkspaceById(state.activeWorkspaceId);
+    var conversation = getConversationById(workspace, state.activeConversationId);
+    var request = conversationApprovalRequest(state.activeConversation);
+    if (!request) {
+      request = conversationApprovalRequest(conversation);
+    }
+    if (!request && conversation) {
+      var awaitingApproval =
+        String(conversation.queue_last_status || "") === "awaiting_approval" ||
+        isAwaitingApprovalConversation(state.activeWorkspaceId, state.activeConversationId);
+      if (awaitingApproval) {
+        request = {
+          command: "",
+          reason: ""
+        };
+      }
+    }
+    if (!request) {
+      return null;
+    }
+    return {
+      workspaceId: state.activeWorkspaceId,
+      conversationId: state.activeConversationId,
+      request: request,
+      hasCommand: !!trim(request.command || "")
+    };
+  }
+
+  function latestUserPromptFromActiveConversation() {
+    var messages = Array.isArray(state.activeConversation && state.activeConversation.messages)
+      ? state.activeConversation.messages
+      : [];
+    for (var i = messages.length - 1; i >= 0; i -= 1) {
+      var msg = messages[i] || {};
+      if (String(msg.role || "") === "user") {
+        var content = trim(String(msg.content || ""));
+        if (content) {
+          return content;
+        }
+      }
+    }
+    return "";
+  }
+
+  function submitApprovalRequestAnswer(decision, scope) {
+    var info = activeApprovalRequestInfo();
+    if (!info) {
+      return Promise.resolve();
+    }
+    var matchMode = trim(el.commandApprovalInlineMatchMode && el.commandApprovalInlineMatchMode.value) || "exact";
+    var pattern = trim(el.commandApprovalInlinePattern && el.commandApprovalInlinePattern.value) || info.request.command;
+    var commandText = String(info.request.command || "");
+    var effectiveScope = scope;
+    if (!trim(commandText)) {
+      effectiveScope = "once";
+    }
+    return apiPost("approval_answer", {
+      workspace_id: info.workspaceId,
+      conversation_id: info.conversationId,
+      command: commandText,
+      decision: decision,
+      scope: effectiveScope,
+      match_mode: matchMode,
+      pattern: pattern
+    }).then(function (response) {
+      if (!response || !response.success) {
+        throw new Error((response && response.error) || "Could not submit approval.");
+      }
+      applyQueueStateFromResponse(info.workspaceId, info.conversationId, response);
+      setConversationQueueFields(info.workspaceId, info.conversationId, {
+        approvalRequest: null
+      });
+      if (
+        state.activeConversation &&
+        state.activeWorkspaceId === info.workspaceId &&
+        state.activeConversationId === info.conversationId
+      ) {
+        state.activeConversation.approval_request = null;
+      }
+      return loadConversation().catch(function () {
+        return null;
+      });
+    }).then(function () {
+      renderUi();
+      kickQueueWorker();
+    });
+  }
+
+  function updateDecisionOtherVisibility() {
+    if (!el.decisionRequestOptions || !el.decisionRequestOtherWrap || !el.decisionRequestOtherInput) {
+      return;
+    }
+    var selected = el.decisionRequestOptions.querySelector("input[name='decision-request-choice']:checked");
+    var isOther = !!(selected && selected.value === "other");
+    el.decisionRequestOtherWrap.classList.toggle("hidden", !isOther);
+    if (isOther) {
+      el.decisionRequestOtherInput.focus();
+    }
+  }
+
+  function selectedDecisionAnswer() {
+    if (!el.decisionRequestOptions) {
+      return "";
+    }
+    var selected = el.decisionRequestOptions.querySelector("input[name='decision-request-choice']:checked");
+    if (!selected) {
+      return "";
+    }
+    if (selected.value === "other") {
+      return trim(el.decisionRequestOtherInput && el.decisionRequestOtherInput.value || "");
+    }
+    return trim(selected.getAttribute("data-choice") || "");
+  }
+
+  function submitDecisionRequest() {
+    var info = activeDecisionRequestInfo();
+    if (!info) {
+      return Promise.resolve();
+    }
+    var answer = selectedDecisionAnswer();
+    if (!answer) {
+      return Promise.reject(new Error("Choose an option or type an Other answer."));
+    }
+    if (el.decisionRequestSubmit) {
+      el.decisionRequestSubmit.disabled = true;
+    }
+    return apiPost("decision_answer", {
+      workspace_id: info.workspaceId,
+      conversation_id: info.conversationId,
+      answer: answer
+    }).then(function (response) {
+      if (!response || !response.success) {
+        throw new Error((response && response.error) || "Could not submit decision.");
+      }
+      state.decisionInlineDismissedKey = "";
+      applyQueueStateFromResponse(info.workspaceId, info.conversationId, response);
+      setConversationDecisionRequest(info.workspaceId, info.conversationId, response.decision_request || null);
+      if (
+        state.activeConversation &&
+        state.activeWorkspaceId === info.workspaceId &&
+        state.activeConversationId === info.conversationId
+      ) {
+        state.activeConversation.decision_request = normalizeDecisionRequest(response.decision_request);
+      }
+      return loadConversation().catch(function () {
+        return null;
+      });
+    }).then(function () {
+      renderUi();
+      kickQueueWorker();
+    }).finally(function () {
+      if (el.decisionRequestSubmit) {
+        el.decisionRequestSubmit.disabled = false;
+      }
+    });
+  }
+
+  function renderDecisionRequestInline() {
+    if (
+      !el.decisionRequestInline ||
+      !el.decisionRequestInlineQuestion ||
+      !el.decisionRequestOptions
+    ) {
+      return;
+    }
+    var info = activeDecisionRequestInfo();
+    if (!info) {
+      el.decisionRequestInline.classList.add("hidden");
+      return;
+    }
+    if (state.decisionInlineDismissedKey === info.marker) {
+      el.decisionRequestInline.classList.add("hidden");
+      return;
+    }
+
+    var options = Array.isArray(info.request.options) ? info.request.options : [];
+    var optionsMarkup = "";
+    for (var i = 0; i < options.length; i += 1) {
+      optionsMarkup += "<label class='decision-option'><input type='radio' name='decision-request-choice' value='choice-" + String(i) + "' data-choice='" + escAttr(options[i]) + "'" + (i === 0 ? " checked" : "") + "><span class='decision-option-index'>" + String(i + 1) + ".</span><span class='decision-option-text'>" + escHtml(options[i]) + "</span></label>";
+    }
+    optionsMarkup += "<label class='decision-option'><input type='radio' name='decision-request-choice' value='other'><span class='decision-option-index'>" + String(options.length + 1) + ".</span><span class='decision-option-text'>Other</span></label>";
+
+    el.decisionRequestInlineQuestion.textContent = info.request.question;
+    el.decisionRequestOptions.innerHTML = optionsMarkup;
+    if (el.decisionRequestOtherInput) {
+      el.decisionRequestOtherInput.value = "";
+    }
+    if (el.decisionRequestInline) {
+      el.decisionRequestInline.dataset.marker = info.marker;
+    }
+    updateDecisionOtherVisibility();
+    el.decisionRequestInline.classList.remove("hidden");
+  }
+
+  function renderCommandApprovalInline() {
+    if (
+      !el.commandApprovalInline ||
+      !el.commandApprovalInlineAllowOnce ||
+      !el.commandApprovalInlineDenyOnce ||
+      !el.commandApprovalInlineAllowRemember ||
+      !el.commandApprovalInlineDenyRemember
+    ) {
+      return;
+    }
+    if (pendingCommandApproval) {
+      return;
+    }
+    var info = activeApprovalRequestInfo();
+    if (!info) {
+      el.commandApprovalInline.classList.add("hidden");
+      return;
+    }
+    if (el.commandApprovalInlineText) {
+      if (!info.hasCommand) {
+        el.commandApprovalInlineText.textContent = "A command approval is pending, but command details were unavailable. You can allow once to retry or deny once to cancel.";
+      } else {
+        el.commandApprovalInlineText.textContent = info.request.reason
+          ? "Agent requested a command (" + info.request.reason + ")."
+          : "Agent requested command execution approval.";
+      }
+    }
+    if (el.commandApprovalInlineCommand) {
+      el.commandApprovalInlineCommand.textContent = info.hasCommand ? info.request.command : "(Command unavailable)";
+    }
+    if (el.commandApprovalInlineMatchMode) {
+      el.commandApprovalInlineMatchMode.value = "exact";
+      el.commandApprovalInlineMatchMode.disabled = !info.hasCommand;
+    }
+    if (el.commandApprovalInlinePattern) {
+      el.commandApprovalInlinePattern.value = info.hasCommand ? defaultCommandRulePattern(info.request.command) : "";
+      el.commandApprovalInlinePattern.disabled = !info.hasCommand;
+    }
+    el.commandApprovalInlineAllowOnce.onclick = function () {
+      submitApprovalRequestAnswer("allow", "once").catch(showError);
+    };
+    el.commandApprovalInlineDenyOnce.onclick = function () {
+      submitApprovalRequestAnswer("deny", "once").catch(showError);
+    };
+    el.commandApprovalInlineAllowRemember.onclick = function () {
+      submitApprovalRequestAnswer("allow", "remember").catch(showError);
+    };
+    el.commandApprovalInlineDenyRemember.onclick = function () {
+      submitApprovalRequestAnswer("deny", "remember").catch(showError);
+    };
+    el.commandApprovalInlineAllowRemember.disabled = !info.hasCommand;
+    el.commandApprovalInlineDenyRemember.disabled = !info.hasCommand;
+    if (el.commandApprovalInlineClose) {
+      el.commandApprovalInlineClose.onclick = function () {
+        el.commandApprovalInline.classList.add("hidden");
+      };
+    }
+    el.commandApprovalInline.classList.remove("hidden");
+  }
+
   function basename(pathText) {
     var clean = trim(String(pathText || "")).replace(/[\\/]+$/, "");
     if (!clean) {
@@ -2700,7 +3671,7 @@
     var ws = activeWorkspace();
     var target = normalizedOpenTarget(state.lastOpenTarget);
     state.lastOpenTarget = target;
-    var label = openTargetLabel(target);
+    var label = "Open";
     if (!ws) {
       el.openMainBtn.innerHTML = openTargetIconMarkup(target) + "<span class='btn-label'>" + escHtml(label) + "</span>";
       el.openMainBtn.title = "";
@@ -2708,7 +3679,6 @@
       el.openMenuBtn.disabled = true;
       return;
     }
-    var folder = basename(ws.path || ws.name || "") || "folder";
     el.openMainBtn.innerHTML = openTargetIconMarkup(target) + "<span class='btn-label'>" + escHtml(label) + "</span>";
     el.openMainBtn.title = ws.path || "";
     el.openMainBtn.disabled = false;
@@ -2738,7 +3708,7 @@
     }
     var ws = activeWorkspace();
     var gitState = activeGitState();
-    var commitEnabled = !!(ws && gitState && gitState.is_repo);
+    var commitEnabled = !!ws;
     var action = state.lastCommitAction || "commit";
     el.commitMainBtn.innerHTML =
       commitActionIconMarkup(action) +
@@ -2750,16 +3720,22 @@
     if (!commitEnabled && el.commitMenu && !el.commitMenu.classList.contains("hidden")) {
       el.commitMenu.classList.add("hidden");
     }
-    el.commitMainBtn.title = commitEnabled ? "Primary commit action" : "Commit disabled: create a repo first";
+    if (!ws) {
+      el.commitMainBtn.title = "Select a project first";
+    } else if (gitState && gitState.is_repo) {
+      el.commitMainBtn.title = "Primary commit action";
+    } else {
+      el.commitMainBtn.title = "No repo yet: click to create one";
+    }
     if (el.commitMenuBtn) {
-      el.commitMenuBtn.title = commitEnabled ? "Choose commit action" : "Commit menu disabled: create a repo first";
+      el.commitMenuBtn.title = commitEnabled ? "Choose commit action" : "Select a project first";
     }
     if (el.commitMenu) {
       var commitButtons = el.commitMenu.querySelectorAll("button[data-commit-action]");
       for (var i = 0; i < commitButtons.length; i += 1) {
         var commitAction = commitButtons[i].getAttribute("data-commit-action");
         commitButtons[i].classList.toggle("active", commitAction === action);
-        commitButtons[i].disabled = !commitEnabled;
+        commitButtons[i].disabled = !ws;
       }
     }
   }
@@ -2773,8 +3749,8 @@
       el.workspacePathWidget.classList.add("hidden");
       el.workspacePathWidget.innerHTML = "";
       el.workspacePathWidget.title = "";
-      el.workspacePathWidget.setAttribute("data-tooltip", "No workspace selected");
-      el.workspacePathWidget.setAttribute("aria-label", "No workspace selected");
+      el.workspacePathWidget.setAttribute("data-tooltip", "No project selected");
+      el.workspacePathWidget.setAttribute("aria-label", "No project selected");
       el.workspacePathWidget.disabled = true;
       return;
     }
@@ -2784,8 +3760,37 @@
       "<span class='path-widget-label'>" + escHtml(ws.path) + "</span>";
     el.workspacePathWidget.title = "Click to copy path. Double-click to open folder.";
     el.workspacePathWidget.setAttribute("data-tooltip", "Click to copy path. Double-click to open folder.");
-    el.workspacePathWidget.setAttribute("aria-label", "Workspace path: " + ws.path);
+    el.workspacePathWidget.setAttribute("aria-label", "Project path: " + ws.path);
     el.workspacePathWidget.disabled = false;
+  }
+
+  function updateToolbarCompaction() {
+    if (!el.toolbar) {
+      return;
+    }
+    function commitControlVisible() {
+      if (!el.commitMainBtn || !el.commitMenuBtn) {
+        return true;
+      }
+      var toolbarRect = el.toolbar.getBoundingClientRect();
+      var mainRect = el.commitMainBtn.getBoundingClientRect();
+      var menuRect = el.commitMenuBtn.getBoundingClientRect();
+      return mainRect.left >= toolbarRect.left - 1 && menuRect.right <= toolbarRect.right + 1;
+    }
+    function fitsWithinToolbar() {
+      return el.toolbar.scrollWidth <= el.toolbar.clientWidth + 1 && commitControlVisible();
+    }
+    var compactClasses = ["path-icon-only", "open-icon-only", "commit-icon-only"];
+    var i = 0;
+    for (i = 0; i < compactClasses.length; i += 1) {
+      el.toolbar.classList.remove(compactClasses[i]);
+    }
+    for (i = 0; i < compactClasses.length; i += 1) {
+      if (fitsWithinToolbar()) {
+        break;
+      }
+      el.toolbar.classList.add(compactClasses[i]);
+    }
   }
 
   function renderContextWindowStatus() {
@@ -2820,7 +3825,7 @@
     var shouldAutoScroll = keyChanged || state.chatAutoScroll;
 
     if (!state.activeWorkspaceId) {
-      var emptyWorkspaceMarkup = "<p class='empty-state'>Select or add a workspace to begin.</p>";
+      var emptyWorkspaceMarkup = "<p class='empty-state'>Select or add a project to begin.</p>";
       if (state.chatMarkupCache !== emptyWorkspaceMarkup) {
         el.chatLog.innerHTML = emptyWorkspaceMarkup;
         state.chatMarkupCache = emptyWorkspaceMarkup;
@@ -2831,9 +3836,22 @@
       return;
     }
 
+    var outgoingKey = activeOutgoingKey();
+    var pendingOutgoing = pendingOutgoingList(outgoingKey);
+
     if (state.activeDraftWorkspaceId) {
       var draftText = trim(state.draftTextByWorkspace[state.activeDraftWorkspaceId] || "");
-      if (draftText) {
+      if (pendingOutgoing.length) {
+        var draftPendingHtml = "";
+        for (var d = 0; d < pendingOutgoing.length; d += 1) {
+          var pendingDraft = pendingOutgoing[d] || {};
+          draftPendingHtml += "<article class='msg user pending'><div class='msg-body'>" + escHtml(pendingDraft.content || "") + "</div><p class='msg-pending-line'><span class='run-spinner' aria-hidden='true'></span>Sending...</p></article>";
+        }
+        if (state.chatMarkupCache !== draftPendingHtml) {
+          el.chatLog.innerHTML = draftPendingHtml;
+          state.chatMarkupCache = draftPendingHtml;
+        }
+      } else if (draftText) {
         var draftReadyMarkup = "<p class='empty-state'>Draft loaded. Send your first message to create the conversation.</p>";
         if (state.chatMarkupCache !== draftReadyMarkup) {
           el.chatLog.innerHTML = draftReadyMarkup;
@@ -2853,7 +3871,7 @@
     }
 
     if (!state.activeConversationId || !state.activeConversation) {
-      var noConversationMarkup = "<p class='empty-state'>Select a conversation or click + beside a workspace to start a draft.</p>";
+      var noConversationMarkup = "<p class='empty-state'>Select a conversation or click + beside a project to start a draft.</p>";
       if (state.chatMarkupCache !== noConversationMarkup) {
         el.chatLog.innerHTML = noConversationMarkup;
         state.chatMarkupCache = noConversationMarkup;
@@ -2867,7 +3885,7 @@
     var messages = Array.isArray(state.activeConversation.messages) ? state.activeConversation.messages : [];
     var events = runEventsForConversation(state.activeConversationId);
 
-    if (!messages.length && !events.length) {
+    if (!messages.length && !events.length && !pendingOutgoing.length) {
       var noMessagesMarkup = "<p class='empty-state'>No messages yet in this conversation.</p>";
       if (state.chatMarkupCache !== noMessagesMarkup) {
         el.chatLog.innerHTML = noMessagesMarkup;
@@ -2898,8 +3916,13 @@
       }
     }
 
+    for (var p = 0; p < pendingOutgoing.length; p += 1) {
+      var pending = pendingOutgoing[p] || {};
+      html += "<article class='msg user pending'><div class='msg-body'>" + escHtml(pending.content || "") + "</div><p class='msg-pending-line'><span class='run-spinner' aria-hidden='true'></span>Sending...</p></article>";
+    }
+
     for (var j = 0; j < events.length; j += 1) {
-      html += renderRunEvent(events[j]);
+      html += renderRunEvent(events[j], state.activeWorkspaceId, state.activeConversationId);
     }
 
     if (state.chatMarkupCache !== html) {
@@ -2917,6 +3940,15 @@
     state.chatLastKey = conversationKey;
     updateChatJumpButton();
     refreshRunningElapsedBadges();
+    if (!liveRunTickTimer && el.chatLog && el.chatLog.querySelector(".run-line.running[data-started-at]")) {
+      liveRunTickTimer = setInterval(function () {
+        refreshRunningElapsedBadges();
+      }, 1000);
+    } else if (liveRunTickTimer && !state.busy && el.chatLog && !el.chatLog.querySelector(".run-line.running[data-started-at]")) {
+      clearInterval(liveRunTickTimer);
+      liveRunTickTimer = null;
+    }
+    syncRunThinkingPreviewScroll();
   }
 
   function hasActiveChatSelection() {
@@ -2969,11 +4001,20 @@
   }
 
   function renderTerminal() {
-    if (!el.terminalCwd || !el.terminalOutput) {
+    if (!el.terminalOutput) {
       return;
     }
-    el.terminalCwd.textContent = state.terminalCwd || "Terminal";
-    el.terminalOutput.textContent = state.terminalLines.join("\n");
+    if (el.terminalCwd) {
+      el.terminalCwd.textContent = state.terminalCwd || "Terminal";
+    }
+    var terminalText = String(state.terminalStreamText || "");
+    if (state.terminalInputBuffer) {
+      if (terminalText && terminalText.charAt(terminalText.length - 1) !== "\n") {
+        terminalText += "\n";
+      }
+      terminalText += state.terminalInputBuffer;
+    }
+    el.terminalOutput.textContent = terminalText;
     el.terminalOutput.scrollTop = el.terminalOutput.scrollHeight;
   }
 
@@ -2999,7 +4040,7 @@
     var maxWidth = Math.max(minWidth, Math.min(940, shellWidth - 260));
     var value = Number(width || 0);
     if (!isFinite(value) || value <= 0) {
-      value = Math.min(620, Math.max(minWidth, Math.floor(shellWidth * 0.48)));
+      value = minWidth;
     }
     if (value < minWidth) {
       value = minWidth;
@@ -3010,19 +4051,52 @@
     return Math.round(value);
   }
 
+  function clampModelsPaneHeight(height) {
+    var value = Number(height || 0);
+    if (!isFinite(value) || value <= 0) {
+      value = 300;
+    }
+    var minHeight = 140;
+    var maxHeight = 560;
+    if (el.workspacePanel) {
+      var sidebarHeight = Number(el.workspacePanel.clientHeight || 0);
+      var headEl = el.workspacePanel.querySelector(".workspace-sidebar-head");
+      var footerEl = el.workspacePanel.querySelector(".workspace-sidebar-footer");
+      var headHeight = headEl ? Number(headEl.offsetHeight || 0) : 0;
+      var footerHeight = footerEl ? Number(footerEl.offsetHeight || 0) : 0;
+      var minTreeHeight = 110;
+      var dynamicMax = sidebarHeight - headHeight - footerHeight - minTreeHeight;
+      if (isFinite(dynamicMax) && dynamicMax > 0) {
+        maxHeight = Math.max(minHeight, Math.min(maxHeight, Math.floor(dynamicMax)));
+      }
+    }
+    if (value < minHeight) {
+      value = minHeight;
+    }
+    if (value > maxHeight) {
+      value = maxHeight;
+    }
+    return Math.round(value);
+  }
+
   function applyPaneWidths() {
     if (!el.shell) {
       return;
     }
     state.threadsPaneWidth = clampThreadsPaneWidth(state.threadsPaneWidth);
     state.diffPaneWidth = clampDiffPaneWidth(state.diffPaneWidth);
+    state.modelsPaneHeight = clampModelsPaneHeight(state.modelsPaneHeight);
     el.shell.style.setProperty("--threads-width", state.threadsPaneWidth + "px");
     el.shell.style.setProperty("--diff-width", state.diffPaneWidth + "px");
+    if (el.workspacePanel) {
+      el.workspacePanel.style.setProperty("--models-pane-height", state.modelsPaneHeight + "px");
+    }
   }
 
   function persistPaneWidths() {
     storageSet("artificer.threadsPaneWidth", String(state.threadsPaneWidth));
     storageSet("artificer.diffPaneWidth", String(state.diffPaneWidth));
+    storageSet("artificer.modelsPaneHeight", String(state.modelsPaneHeight));
   }
 
   function stopPaneDrag() {
@@ -3032,6 +4106,7 @@
     paneDragState = null;
     if (document && document.body) {
       document.body.classList.remove("pane-resizing");
+      document.body.classList.remove("pane-resizing-y");
     }
     persistPaneWidths();
   }
@@ -3047,6 +4122,15 @@
     } else if (paneDragState.type === "diff") {
       var nextDiff = shellRect.right - event.clientX;
       state.diffPaneWidth = clampDiffPaneWidth(nextDiff);
+    } else if (paneDragState.type === "models") {
+      if (!el.workspacePanel) {
+        return;
+      }
+      var sidebarRect = el.workspacePanel.getBoundingClientRect();
+      var footerEl = el.workspacePanel.querySelector(".workspace-sidebar-footer");
+      var footerHeight = footerEl ? Number(footerEl.offsetHeight || 0) : 0;
+      var nextModels = sidebarRect.bottom - event.clientY - footerHeight;
+      state.modelsPaneHeight = clampModelsPaneHeight(nextModels);
     } else {
       return;
     }
@@ -3062,7 +4146,7 @@
       type: type
     };
     if (document && document.body) {
-      document.body.classList.add("pane-resizing");
+      document.body.classList.add(type === "models" ? "pane-resizing-y" : "pane-resizing");
     }
   }
 
@@ -3073,13 +4157,24 @@
     applyPaneWidths();
     if (state.diffOpen) {
       el.diffPanel.classList.remove("hidden");
+      el.shell.classList.add("diff-open");
     } else {
       el.diffPanel.classList.add("hidden");
+      el.shell.classList.remove("diff-open");
     }
 
     if (state.terminalOpen) {
       el.terminalPanel.classList.remove("hidden");
       el.shell.classList.add("terminal-open");
+      if (
+        state.activeWorkspaceId &&
+        state.terminalSessionWorkspaceId &&
+        state.terminalSessionWorkspaceId !== state.activeWorkspaceId
+      ) {
+        ensureTerminalSession().catch(function () {
+          return null;
+        });
+      }
     } else {
       el.terminalPanel.classList.add("hidden");
       el.shell.classList.remove("terminal-open");
@@ -3123,9 +4218,15 @@
     safeStep("renderToolbarGit", renderToolbarGit);
     safeStep("renderBranchMenu", renderBranchMenu);
     safeStep("renderChatHeader", renderChatHeader);
+    safeStep("renderDecisionRequestInline", renderDecisionRequestInline);
+    safeStep("renderCommandApprovalInline", renderCommandApprovalInline);
     safeStep("renderChat", renderChat);
     safeStep("renderAttachmentStrip", renderAttachmentStrip);
     safeStep("renderPanels", renderPanels);
+    safeStep("updateToolbarCompaction", updateToolbarCompaction);
+    if (window && typeof window.requestAnimationFrame === "function") {
+      window.requestAnimationFrame(updateToolbarCompaction);
+    }
   }
 
   function saveSortMode(mode) {
@@ -3141,7 +4242,12 @@
   }
 
   function saveOrganizeShow(mode) {
-    var next = mode === "relevant" ? "relevant" : "all";
+    var next = "all";
+    if (mode === "relevant") {
+      next = "relevant";
+    } else if (mode === "running") {
+      next = "running";
+    }
     state.organizeShow = next;
     storageSet("artificer.organizeShow", next);
   }
@@ -3270,10 +4376,11 @@
   }
 
   function appendTerminalLine(line) {
-    state.terminalLines.push(String(line || ""));
-    if (state.terminalLines.length > 600) {
-      state.terminalLines = state.terminalLines.slice(state.terminalLines.length - 600);
+    var next = state.terminalStreamText + String(line || "") + "\n";
+    if (next.length > 180000) {
+      next = next.slice(next.length - 180000);
     }
+    state.terminalStreamText = next;
     renderTerminal();
   }
 
@@ -3501,11 +4608,14 @@
           if (typeof conv.queue_first_id === "undefined") {
             conv.queue_first_id = "";
           }
+          conv.decision_request = normalizeDecisionRequest(conv.decision_request);
+          conv.approval_request = normalizeApprovalRequest(conv.approval_request);
         }
       }
       bootstrapSeenConversationsIfNeeded();
       pruneSeenConversationState();
       ensureSelection();
+      reconcileRunEventsFromQueueState();
     });
   }
 
@@ -3527,6 +4637,64 @@
       state.modelCatalog = response.available || [];
       state.modelInstalls = response.installs || [];
     });
+  }
+
+  function refreshModelData(options) {
+    var opts = options || {};
+    var force = !!opts.force;
+    var silent = opts.silent !== false;
+    var now = Date.now();
+    if (modelAutoRefreshBusy && !force) {
+      return Promise.resolve(false);
+    }
+    if (!force && modelAutoRefreshLastAt > 0 && now - modelAutoRefreshLastAt < 2500) {
+      return Promise.resolve(false);
+    }
+    modelAutoRefreshBusy = true;
+    return Promise.all([
+      loadModels().catch(function (err) {
+        state.models = [];
+        state.modelLoadError = err && err.message ? err.message : "Model check failed";
+        return null;
+      }),
+      loadModelCatalog().catch(function () {
+        state.modelCatalog = [];
+        state.modelInstalls = [];
+        return null;
+      })
+    ]).then(function () {
+      syncModelInstallPollingFromCatalog();
+      modelAutoRefreshLastAt = Date.now();
+      if (!silent) {
+        renderUi();
+      }
+      return true;
+    }).finally(function () {
+      modelAutoRefreshBusy = false;
+    });
+  }
+
+  function startModelAutoRefreshLoop() {
+    if (modelAutoRefreshTimer) {
+      clearInterval(modelAutoRefreshTimer);
+      modelAutoRefreshTimer = null;
+    }
+    modelAutoRefreshTimer = setInterval(function () {
+      refreshModelData({ silent: true }).then(function (updated) {
+        if (updated) {
+          renderUi();
+        }
+      }).catch(function () {
+        return null;
+      });
+    }, 15000);
+  }
+
+  function stopModelAutoRefreshLoop() {
+    if (modelAutoRefreshTimer) {
+      clearInterval(modelAutoRefreshTimer);
+      modelAutoRefreshTimer = null;
+    }
   }
 
   function loadAppIcons() {
@@ -3660,8 +4828,6 @@
 
     var workspaceId = state.activeWorkspaceId;
     var conversationId = state.activeConversationId;
-    state.conversationLoadSeq += 1;
-    var seq = state.conversationLoadSeq;
 
     return apiGet("get_conversation", {
       workspace_id: workspaceId,
@@ -3670,13 +4836,17 @@
       if (!response.success) {
         throw new Error(response.error || "Failed to load conversation");
       }
-      if (seq !== state.conversationLoadSeq) {
-        return;
-      }
       if (state.activeWorkspaceId !== workspaceId || state.activeConversationId !== conversationId) {
         return;
       }
       state.activeConversation = response.conversation;
+      state.conversationCacheByKey[conversationReadKey(workspaceId, conversationId)] = cloneConversationData(response.conversation) || response.conversation;
+      if (state.activeConversation) {
+        state.activeConversation.decision_request = normalizeDecisionRequest(state.activeConversation.decision_request);
+        state.activeConversation.approval_request = normalizeApprovalRequest(state.activeConversation.approval_request);
+        finalizeStaleRunningEventsForConversation(workspaceId, state.activeConversation);
+        reconcilePendingOutgoingFromConversation(workspaceId, conversationId, state.activeConversation);
+      }
       markConversationSeen(workspaceId, conversationId, response.conversation);
     });
   }
@@ -3896,6 +5066,7 @@
       })
       .then(function () {
         syncModelInstallPollingFromCatalog();
+        modelAutoRefreshLastAt = Date.now();
         state.initialLoadComplete = true;
         renderUi();
       });
@@ -3913,7 +5084,7 @@
       name: name
     }).then(function (response) {
       if (!response.success) {
-        throw new Error(response.error || "Could not add workspace");
+        throw new Error(response.error || "Could not add project");
       }
 
       return loadState().then(function () {
@@ -3941,7 +5112,7 @@
       workspace_id: workspaceId
     }).then(function (response) {
       if (!response.success) {
-        throw new Error(response.error || "Could not remove workspace");
+        throw new Error(response.error || "Could not remove project");
       }
       if (state.activeWorkspaceId === workspaceId) {
         state.activeWorkspaceId = "";
@@ -3952,6 +5123,12 @@
       if (state.openWorkspaceMenuWorkspaceId === workspaceId) {
         state.openWorkspaceMenuWorkspaceId = "";
       }
+      var workspacePrefix = String(workspaceId || "") + "::";
+      Object.keys(state.conversationCacheByKey).forEach(function (key) {
+        if (String(key || "").indexOf(workspacePrefix) === 0) {
+          delete state.conversationCacheByKey[key];
+        }
+      });
       delete state.expandedWorkspaceIds[workspaceId];
       delete state.gitByWorkspace[workspaceId];
       delete state.branchesByWorkspace[workspaceId];
@@ -3976,9 +5153,11 @@
         state.activeConversationId = "";
         state.activeConversation = null;
       }
+      delete state.conversationCacheByKey[conversationReadKey(workspaceId, conversationId)];
 
       state.pendingArchiveKey = "";
       state.pendingArchiveReadyAt = 0;
+      state.pendingArchiveSubmittingKey = "";
       return loadState()
         .then(function () {
           if (state.activeWorkspaceId) {
@@ -4008,7 +5187,7 @@
       name: name
     }).then(function (response) {
       if (!response.success) {
-        throw new Error(response.error || "Could not rename workspace");
+        throw new Error(response.error || "Could not rename project");
       }
 
       var workspace = getWorkspaceById(workspaceId);
@@ -4128,12 +5307,43 @@
     state.chatAutoScroll = true;
     state.activeWorkspaceId = workspaceId;
     state.activeConversationId = conversationId;
+    var convKey = conversationReadKey(workspaceId, conversationId);
+    var cachedConversation = cloneConversationData(state.conversationCacheByKey[convKey]);
+    if (!cachedConversation) {
+      var workspace = getWorkspaceById(workspaceId);
+      var summary = getConversationById(workspace, conversationId);
+      if (summary) {
+        cachedConversation = {
+          id: summary.id,
+          title: summary.title || "Conversation",
+          model: summary.model || "",
+          created: summary.created || "",
+          updated: summary.updated || "",
+          messages: [],
+          decision_request: normalizeDecisionRequest(summary.decision_request),
+          approval_request: normalizeApprovalRequest(summary.approval_request)
+        };
+      }
+    }
+    state.activeConversation = cachedConversation;
     state.activeDraftWorkspaceId = "";
     state.openWorkspaceMenuWorkspaceId = "";
     state.expandedWorkspaceIds[workspaceId] = true;
     renderUi();
 
     return loadConversation()
+      .catch(function (firstErr) {
+        return loadState()
+          .then(function () {
+            if (state.activeWorkspaceId !== workspaceId || state.activeConversationId !== conversationId) {
+              return null;
+            }
+            return loadConversation();
+          })
+          .catch(function () {
+            throw firstErr;
+          });
+      })
       .then(function () {
         if (!isSelectionVersionCurrent(selectionVersion)) {
           return;
@@ -4329,6 +5539,97 @@
     return "^" + escaped + "([[:space:]].*)?$";
   }
 
+  function openCommandApprovalPanel(commandText, reasonText) {
+    return new Promise(function (resolve, reject) {
+      if (
+        !el.commandApprovalInline ||
+        !el.commandApprovalInlineAllowOnce ||
+        !el.commandApprovalInlineDenyOnce ||
+        !el.commandApprovalInlineAllowRemember ||
+        !el.commandApprovalInlineDenyRemember
+      ) {
+        openCommandApprovalModal(commandText, reasonText).then(resolve).catch(reject);
+        return;
+      }
+
+      if (pendingCommandApproval && typeof pendingCommandApproval.cancel === "function") {
+        pendingCommandApproval.cancel(new Error("Command approval replaced by a newer request."));
+      }
+
+      var done = false;
+      function finish(value, isReject) {
+        if (done) {
+          return;
+        }
+        done = true;
+        pendingCommandApproval = null;
+        el.commandApprovalInline.classList.add("hidden");
+        if (isReject) {
+          reject(value instanceof Error ? value : new Error(String(value || "Command approval cancelled")));
+        } else {
+          resolve(value);
+        }
+      }
+
+      function choice(decision, scope) {
+        return function () {
+          var matchMode = "exact";
+          var pattern = String(commandText || "");
+          if (scope === "remember") {
+            matchMode = trim(el.commandApprovalInlineMatchMode && el.commandApprovalInlineMatchMode.value) || "exact";
+            pattern = trim(el.commandApprovalInlinePattern && el.commandApprovalInlinePattern.value) || String(commandText || "");
+          }
+          finish({
+            decision: decision,
+            scope: scope,
+            match_mode: matchMode,
+            pattern: pattern
+          }, false);
+        };
+      }
+
+      function closeHandler() {
+        finish(new Error("Command approval cancelled"), true);
+      }
+
+      pendingCommandApproval = {
+        cancel: closeHandler
+      };
+
+      var reason = trim(reasonText);
+      if (el.commandApprovalInlineText) {
+        el.commandApprovalInlineText.textContent = reason
+          ? "Agent requested a command (" + reason + ")."
+          : "Agent requested a command.";
+      }
+      if (el.commandApprovalInlineCommand) {
+        el.commandApprovalInlineCommand.textContent = String(commandText || "");
+      }
+      if (el.commandApprovalInlineMatchMode) {
+        el.commandApprovalInlineMatchMode.value = "exact";
+      }
+      if (el.commandApprovalInlinePattern) {
+        el.commandApprovalInlinePattern.value = defaultCommandRulePattern(commandText);
+      }
+
+      el.commandApprovalInlineAllowOnce.onclick = choice("allow", "once");
+      el.commandApprovalInlineDenyOnce.onclick = choice("deny", "once");
+      el.commandApprovalInlineAllowRemember.onclick = choice("allow", "remember");
+      el.commandApprovalInlineDenyRemember.onclick = choice("deny", "remember");
+      if (el.commandApprovalInlineClose) {
+        el.commandApprovalInlineClose.onclick = closeHandler;
+      }
+
+      el.commandApprovalInline.classList.remove("hidden");
+      renderUi();
+      window.setTimeout(function () {
+        if (el.commandApprovalInlineAllowOnce) {
+          el.commandApprovalInlineAllowOnce.focus();
+        }
+      }, 0);
+    });
+  }
+
   function openCommandApprovalModal(commandText, reasonText) {
     return new Promise(function (resolve, reject) {
       if (!el.commandApprovalModal) {
@@ -4427,11 +5728,13 @@
     });
   }
 
-  function handleBlockedCommandsApproval(workspaceId, blockedCommands) {
+  function handleBlockedCommandsApproval(workspaceId, conversationId, blockedCommands) {
     var list = Array.isArray(blockedCommands) ? blockedCommands.slice(0) : [];
     if (!list.length) {
       return Promise.resolve(false);
     }
+    setAwaitingApprovalState(workspaceId, conversationId, true);
+    renderUi();
 
     function step(index) {
       if (index >= list.length) {
@@ -4443,7 +5746,7 @@
       if (!trim(commandText)) {
         return step(index + 1);
       }
-      return openCommandApprovalModal(commandText, reasonText).then(function (choice) {
+      return openCommandApprovalPanel(commandText, reasonText).then(function (choice) {
         return apiPost("command_approval_save", {
           workspace_id: workspaceId,
           command: commandText,
@@ -4463,19 +5766,23 @@
       });
     }
 
-    return step(0);
+    return step(0).finally(function () {
+      setAwaitingApprovalState(workspaceId, conversationId, false);
+      renderUi();
+    });
   }
 
   function runAgent(workspaceId, conversationId, promptText, options) {
     var runOptions = options || {};
     var preserveSelection = runOptions.preserveSelection !== false;
     var approvalRetry = runOptions.approvalRetry === true;
+    var queueItemId = String(runOptions.queueItemId || "");
     var attachmentList = Array.isArray(runOptions.attachments) ? runOptions.attachments : [];
     var attachmentIds = [];
     var attachmentNames = [];
 
     if (!workspaceId || !conversationId) {
-      return Promise.reject(new Error("Choose a workspace conversation first."));
+      return Promise.reject(new Error("Choose a project conversation first."));
     }
 
     for (var i = 0; i < attachmentList.length; i += 1) {
@@ -4503,6 +5810,7 @@
       state.activeConversation &&
       state.activeConversation.id === conversationId
     ) {
+      consumePendingOutgoingByText(outgoingKeyFor(workspaceId, conversationId, ""), promptText);
       if (!Array.isArray(state.activeConversation.messages)) {
         state.activeConversation.messages = [];
       }
@@ -4516,10 +5824,10 @@
     renderUi();
 
     var reasoningToIterations = {
-      low: 1,
-      medium: 2,
-      high: 3,
-      "extra-high": 4
+      low: 2,
+      medium: 4,
+      high: 6,
+      "extra-high": 8
     };
     var selectedIterations = reasoningToIterations[state.reasoningEffort] || 2;
     var streamSession = String(Date.now()) + "-" + String(Math.floor(Math.random() * 1000000));
@@ -4566,7 +5874,7 @@
         conversation_id: conversationId,
         stream_session: streamSession,
         offset: String(streamOffset)
-      })
+      }, { timeoutMs: 1200 })
         .then(function (response) {
           if (!response || !response.success) {
             return;
@@ -4586,7 +5894,7 @@
         });
     }
 
-    runStreamPollTimers[streamTimerKey] = setInterval(pollStreamOnce, 180);
+    runStreamPollTimers[streamTimerKey] = setInterval(pollStreamOnce, 700);
     pollStreamOnce();
 
     return apiPost("run", {
@@ -4599,6 +5907,7 @@
       network_access: state.networkAccess ? "1" : "0",
       web_access: state.webAccess ? "1" : "0",
       attachment_ids: attachmentIds.join(","),
+      queue_item_id: queueItemId,
       advanced_loop: state.agentLoopEnabled ? "1" : "0",
       reasoning_effort: state.reasoningEffort,
       max_iterations: String(selectedIterations),
@@ -4609,17 +5918,44 @@
         if (!response.success) {
           throw new Error(response.error || "Run failed");
         }
+        var decisionRequest = normalizeDecisionRequest(response.decision_request);
+        if (typeof response.decision_request !== "undefined") {
+          setConversationDecisionRequest(workspaceId, conversationId, decisionRequest);
+        }
+        if (
+          state.activeConversation &&
+          state.activeWorkspaceId === workspaceId &&
+          state.activeConversationId === conversationId
+        ) {
+          state.activeConversation.decision_request = decisionRequest;
+        }
         var assistantText = trim(String(response.assistant || ""));
+        if (assistantLooksLikeTrace(assistantText)) {
+          if (pendingEvent && !trim(String(pendingEvent.failures || ""))) {
+            pendingEvent.failures = assistantText;
+          }
+          assistantText = "";
+        }
+        if (!assistantText) {
+          var attemptCount = runTraceAttemptCount(response || {});
+          if (!attemptCount && pendingEvent) {
+            attemptCount = runTraceAttemptCount(pendingEvent);
+          }
+          assistantText = attemptCount > 0
+            ? "I couldn't complete that run after " + attemptCount + " attempt" + (attemptCount === 1 ? "" : "s") + ". Check the Thinking trace and try again."
+            : "I couldn't produce a final response for that run. Please retry.";
+        }
 
         var blockedCommands = Array.isArray(response.blocked_commands) ? response.blocked_commands : [];
         if (blockedCommands.length) {
-          return handleBlockedCommandsApproval(workspaceId, blockedCommands).then(function (approved) {
+          return handleBlockedCommandsApproval(workspaceId, conversationId, blockedCommands).then(function (approved) {
             if (!approved) {
               throw new Error("Command execution denied.");
             }
             return runAgent(workspaceId, conversationId, promptText, {
               preserveSelection: preserveSelection,
               attachments: attachmentList,
+              queueItemId: queueItemId,
               approvalRetry: true,
               pendingEvent: pendingEvent
             });
@@ -4637,7 +5973,6 @@
           pendingEvent.failures = response.failures || "";
           pendingEvent.session_log = response.session_log || "";
           pendingEvent.finished_at = new Date().toISOString();
-          pendingEvent.stream_text = "";
         }
 
         return loadState()
@@ -4689,10 +6024,15 @@
           })
           .then(function () {
             renderUi();
+            return {
+              awaitingDecision: !!decisionRequest,
+              awaitingApproval: false
+            };
           });
       })
       .catch(function (err) {
         stopStreamPoll();
+        setAwaitingApprovalState(workspaceId, conversationId, false);
         if (pendingEvent) {
           pendingEvent.status = "error";
           pendingEvent.error = err && err.message ? err.message : String(err);
@@ -4717,11 +6057,31 @@
       running: Number(response.queue_running || 0) > 0,
       done: Number(response.queue_done || 0) > 0,
       lastStatus: response.queue_last_status || "",
-      firstId: response.queue_first_id || ""
+      firstId: response.queue_first_id || "",
+      decisionRequest: typeof response.decision_request === "undefined" ? undefined : response.decision_request,
+      approvalRequest: typeof response.approval_request === "undefined" ? undefined : response.approval_request
     });
+
+    var queueLastStatus = String(response.queue_last_status || "");
+    if (queueLastStatus === "awaiting_approval") {
+      setAwaitingApprovalState(workspaceId, conversationId, true);
+    } else if (
+      queueLastStatus === "done" ||
+      queueLastStatus === "error" ||
+      queueLastStatus === "cancelled" ||
+      queueLastStatus === "awaiting_decision"
+    ) {
+      setAwaitingApprovalState(workspaceId, conversationId, false);
+    }
 
     if (pendingCount === 0 && conversationId) {
       delete state.lastQueuedItemIdByConversation[conversationId];
+    }
+
+    var workspace = getWorkspaceById(workspaceId);
+    var conversation = getConversationById(workspace, conversationId);
+    if (conversation) {
+      finalizeStaleRunningEventsForConversation(workspaceId, conversation);
     }
   }
 
@@ -4761,10 +6121,139 @@
     });
   }
 
+  function findConversationStateEntry(stateResponse, workspaceId, conversationId) {
+    if (!stateResponse || !stateResponse.success || !Array.isArray(stateResponse.workspaces)) {
+      return null;
+    }
+    for (var i = 0; i < stateResponse.workspaces.length; i += 1) {
+      var workspace = stateResponse.workspaces[i];
+      if (!workspace || String(workspace.id || "") !== String(workspaceId || "")) {
+        continue;
+      }
+      var conversations = Array.isArray(workspace.conversations) ? workspace.conversations : [];
+      for (var j = 0; j < conversations.length; j += 1) {
+        var conversation = conversations[j];
+        if (conversation && String(conversation.id || "") === String(conversationId || "")) {
+          return conversation;
+        }
+      }
+    }
+    return null;
+  }
+
+  function startQueueCompletionWatch(workspaceId, conversationId, queueItemId) {
+    var active = true;
+    var inFlight = false;
+    var pollTimer = null;
+    var maxWaitMs = 180000;
+    var pollFailures = 0;
+
+    var promise = new Promise(function (resolve) {
+      function finish(payload) {
+        if (!active) {
+          return;
+        }
+        active = false;
+        if (pollTimer) {
+          clearInterval(pollTimer);
+          pollTimer = null;
+        }
+        resolve(payload || null);
+      }
+
+      function checkOnce() {
+        if (!active || inFlight) {
+          return;
+        }
+        inFlight = true;
+        apiGet("state", {}, { timeoutMs: 12000 })
+          .then(function (response) {
+            if (!active) {
+              return;
+            }
+            var conversation = findConversationStateEntry(response, workspaceId, conversationId);
+            if (!conversation) {
+              return;
+            }
+            var running = String(conversation.queue_running || "0") === "1";
+            var pending = queueNumber(conversation.queue_pending);
+            var firstId = String(conversation.queue_first_id || "");
+            var lastStatus = String(conversation.queue_last_status || "");
+            pollFailures = 0;
+
+            if (running) {
+              return;
+            }
+            if (
+              lastStatus !== "done" &&
+              lastStatus !== "error" &&
+              lastStatus !== "cancelled" &&
+              lastStatus !== "awaiting_approval" &&
+              lastStatus !== "awaiting_decision"
+            ) {
+              return;
+            }
+            if (pending > 0 && queueItemId && firstId === String(queueItemId || "")) {
+              return;
+            }
+
+            finish({
+              lastStatus: lastStatus,
+              pending: pending,
+              firstId: firstId,
+              decisionRequest: typeof conversation.decision_request === "undefined" ? undefined : conversation.decision_request
+            });
+          })
+          .catch(function () {
+            pollFailures += 1;
+            if (pollFailures >= 5) {
+              finish({
+                lastStatus: "error",
+                pending: 0,
+                firstId: "",
+                decisionRequest: undefined
+              });
+            }
+            return null;
+          })
+          .finally(function () {
+            inFlight = false;
+          });
+      }
+
+      pollTimer = setInterval(checkOnce, 2400);
+      setTimeout(checkOnce, 900);
+      setTimeout(function () {
+        finish({
+          lastStatus: "error",
+          pending: 0,
+          firstId: "",
+          decisionRequest: undefined
+        });
+      }, maxWaitMs);
+    });
+
+    return {
+      promise: promise,
+      stop: function () {
+        active = false;
+        if (pollTimer) {
+          clearInterval(pollTimer);
+          pollTimer = null;
+        }
+      }
+    };
+  }
+
   function executeQueuedItem(workspaceId, conversationId, queueItem) {
     var item = queueItem || {};
     var itemId = item.id || "";
     var runError = null;
+    var runResult = null;
+    var finalStatus = "done";
+    var finalErrorText = "";
+    var queueFinalizeApplied = false;
+    var queueWatch = null;
 
     if (itemId && state.lastQueuedItemIdByConversation[conversationId] === itemId) {
       delete state.lastQueuedItemIdByConversation[conversationId];
@@ -4778,19 +6267,110 @@
     });
     renderUi();
 
-    return runAgent(workspaceId, conversationId, item.prompt || "", {
-      preserveSelection: true,
-      attachments: Array.isArray(item.attachments) ? item.attachments : []
-    })
-      .catch(function (err) {
-        runError = err;
+    queueWatch = startQueueCompletionWatch(workspaceId, conversationId, itemId);
+
+    function applyWatchInfo(watchInfo) {
+      if (!watchInfo) {
+        return false;
+      }
+      finalStatus = String(watchInfo.lastStatus || "done");
+      if (
+        finalStatus !== "done" &&
+        finalStatus !== "error" &&
+        finalStatus !== "cancelled" &&
+        finalStatus !== "awaiting_decision" &&
+        finalStatus !== "awaiting_approval"
+      ) {
+        finalStatus = "done";
+      }
+      queueFinalizeApplied = true;
+      if (typeof watchInfo.decisionRequest !== "undefined") {
+        setConversationQueueFields(workspaceId, conversationId, {
+          decisionRequest: watchInfo.decisionRequest
+        });
+      }
+      setConversationQueueFields(workspaceId, conversationId, {
+        pending: queueNumber(watchInfo.pending),
+        running: false,
+        done: finalStatus === "done",
+        lastStatus: finalStatus,
+        firstId: watchInfo.firstId || ""
+      });
+      if (finalStatus === "error") {
+        runError = new Error("Run ended with an error.");
+        finalErrorText = runError.message;
+      } else {
+        runResult = {
+          awaitingDecision: finalStatus === "awaiting_decision",
+          awaitingApproval: finalStatus === "awaiting_approval"
+        };
+      }
+      return true;
+    }
+
+    return Promise.race([
+      runAgent(workspaceId, conversationId, item.prompt || "", {
+        preserveSelection: true,
+        attachments: Array.isArray(item.attachments) ? item.attachments : [],
+        queueItemId: itemId
+      })
+        .then(function (result) {
+          return { kind: "run", result: result || null };
+        })
+        .catch(function (err) {
+          return { kind: "run-error", error: err };
+        }),
+      queueWatch.promise.then(function (watchInfo) {
+        return { kind: "watch", info: watchInfo || null };
+      })
+    ])
+      .then(function (outcome) {
+        if (!outcome) {
+          return null;
+        }
+        if (outcome.kind === "run-error") {
+          runError = outcome.error;
+          if (queueWatch && isRetriableRequestError(runError)) {
+            return queueWatch.promise.then(function (watchInfo) {
+              if (applyWatchInfo(watchInfo)) {
+                runError = null;
+              }
+              return null;
+            });
+          }
+          return null;
+        }
+        if (outcome.kind === "watch" && outcome.info) {
+          applyWatchInfo(outcome.info);
+          return null;
+        }
+        runResult = outcome.result || null;
         return null;
       })
       .then(function () {
-        var status = runError ? "error" : "done";
-        var errorText = runError && runError.message ? runError.message : "";
-        return queueFinish(workspaceId, conversationId, itemId, status, errorText).catch(function (queueErr) {
+        if (queueFinalizeApplied) {
+          return null;
+        }
+        if (runError) {
+          finalStatus = "error";
+        } else if (runResult && runResult.awaitingDecision) {
+          finalStatus = "awaiting_decision";
+        } else if (runResult && runResult.awaitingApproval) {
+          finalStatus = "awaiting_approval";
+        } else {
+          finalStatus = "done";
+        }
+        finalErrorText = runError && runError.message ? runError.message : "";
+        return queueFinish(workspaceId, conversationId, itemId, finalStatus, finalErrorText).then(function (response) {
+          queueFinalizeApplied = true;
+          return response;
+        }).catch(function (queueErr) {
           showError(queueErr);
+          setConversationQueueFields(workspaceId, conversationId, {
+            running: false,
+            done: finalStatus === "done",
+            lastStatus: finalStatus
+          });
           return null;
         });
       })
@@ -4808,6 +6388,17 @@
         return null;
       })
       .finally(function () {
+        if (queueWatch) {
+          queueWatch.stop();
+        }
+        if (!queueFinalizeApplied) {
+          setConversationQueueFields(workspaceId, conversationId, {
+            running: false,
+            done: finalStatus === "done",
+            lastStatus: finalStatus
+          });
+        }
+        finalizeLatestRunningEvent(conversationId, finalStatus, finalErrorText);
         setBusy(false);
         renderUi();
       });
@@ -4934,9 +6525,152 @@
     });
   }
 
+  function stopConversationRun(workspaceId, conversationId) {
+    var wsId = String(workspaceId || "");
+    var convId = String(conversationId || "");
+    if (!wsId || !convId) {
+      return Promise.resolve();
+    }
+
+    return apiPost("queue_stop", {
+      workspace_id: wsId,
+      conversation_id: convId
+    }).then(function (response) {
+      if (!response.success) {
+        throw new Error(response.error || "Could not stop run");
+      }
+
+      if (state.busy && state.runningWorkspaceId === wsId && state.runningConversationId === convId) {
+        setBusy(false);
+      }
+      setAwaitingApprovalState(wsId, convId, false);
+      applyQueueStateFromResponse(wsId, convId, response);
+      finalizeLatestRunningEvent(convId, "cancelled", "");
+
+      return loadState()
+        .catch(function () {
+          return null;
+        })
+        .then(function () {
+          if (state.activeWorkspaceId === wsId && state.activeConversationId === convId) {
+            return loadConversation().catch(function () {
+              return null;
+            });
+          }
+          return null;
+        })
+        .then(function () {
+          showTransientNotice("Run stopped");
+          renderUi();
+        });
+    });
+  }
+
+  function stopTerminalPolling() {
+    if (terminalPollTimer) {
+      clearInterval(terminalPollTimer);
+      terminalPollTimer = null;
+    }
+    terminalPollBusy = false;
+  }
+
+  function appendTerminalDelta(deltaText) {
+    var delta = String(deltaText || "");
+    if (!delta) {
+      return;
+    }
+    var next = String(state.terminalStreamText || "") + delta;
+    if (next.length > 220000) {
+      next = next.slice(next.length - 220000);
+    }
+    state.terminalStreamText = next;
+  }
+
+  function pollTerminalSessionOnce() {
+    if (!state.terminalOpen || terminalPollBusy) {
+      return Promise.resolve();
+    }
+    var workspaceId = String(state.activeWorkspaceId || "");
+    var sessionId = String(state.terminalSessionId || "");
+    if (!workspaceId || !sessionId) {
+      return Promise.resolve();
+    }
+    terminalPollBusy = true;
+    return apiGet("terminal_session_poll", {
+      workspace_id: workspaceId,
+      session_id: sessionId,
+      offset: String(Number(state.terminalStreamOffset || 0))
+    }, { timeoutMs: 12000 })
+      .then(function (response) {
+        if (!response || !response.success) {
+          return;
+        }
+        if (response.session_changed) {
+          state.terminalSessionId = "";
+          state.terminalSessionWorkspaceId = "";
+          stopTerminalPolling();
+          return;
+        }
+        appendTerminalDelta(response.delta || "");
+        state.terminalStreamOffset = Number(response.offset || state.terminalStreamOffset || 0);
+        renderTerminal();
+      })
+      .catch(function () {
+        return null;
+      })
+      .finally(function () {
+        terminalPollBusy = false;
+      });
+  }
+
+  function ensureTerminalSession() {
+    if (!state.activeWorkspaceId) {
+      return Promise.reject(new Error("Select a project first."));
+    }
+    if (
+      state.terminalSessionId &&
+      state.terminalSessionWorkspaceId &&
+      state.terminalSessionWorkspaceId === state.activeWorkspaceId
+    ) {
+      return Promise.resolve(state.terminalSessionId);
+    }
+    stopTerminalPolling();
+    state.terminalSessionId = "";
+    state.terminalSessionWorkspaceId = "";
+    state.terminalStreamText = "";
+    state.terminalStreamOffset = 0;
+    state.terminalInputBuffer = "";
+    renderTerminal();
+
+    if (terminalSessionStartPromise) {
+      return terminalSessionStartPromise;
+    }
+
+    terminalSessionStartPromise = apiPost("terminal_session_start", {
+      workspace_id: state.activeWorkspaceId
+    }, { timeoutMs: 15000 }).then(function (response) {
+      if (!response || !response.success) {
+        throw new Error((response && response.error) || "Could not start terminal session");
+      }
+      state.terminalSessionId = String(response.session_id || "");
+      state.terminalSessionWorkspaceId = state.activeWorkspaceId;
+      state.terminalStreamText = String(response.delta || "");
+      state.terminalStreamOffset = Number(response.offset || 0);
+      renderTerminal();
+      terminalPollTimer = setInterval(function () {
+        pollTerminalSessionOnce();
+      }, 220);
+      return state.terminalSessionId;
+    }).finally(function () {
+      terminalSessionStartPromise = null;
+    });
+
+    return terminalSessionStartPromise;
+  }
+
   function runCommandViaApi(commandText, actionName) {
     if (!state.activeWorkspaceId) {
-      return Promise.reject(new Error("Select a workspace first."));
+      return Promise.reject(new Error("Select a project first."));
     }
 
     var trimmedCommand = trim(commandText);
@@ -4984,6 +6718,7 @@
         });
     }).finally(function () {
       state.terminalBusy = false;
+      renderTerminal();
     });
   }
 
@@ -5031,7 +6766,7 @@
 
   function performOpenTarget(target) {
     if (!state.activeWorkspaceId) {
-      return Promise.reject(new Error("Select a workspace first."));
+      return Promise.reject(new Error("Select a project first."));
     }
     if (target !== "finder" && target !== "terminal" && target !== "textmate") {
       target = "finder";
@@ -5053,7 +6788,7 @@
 
   function createRepoForActiveWorkspace() {
     if (!state.activeWorkspaceId) {
-      return Promise.reject(new Error("Select a workspace first."));
+      return Promise.reject(new Error("Select a project first."));
     }
     return apiPost("git_init", { workspace_id: state.activeWorkspaceId })
       .then(function (response) {
@@ -5069,13 +6804,14 @@
         });
       })
       .then(function () {
+        showTransientNotice("Repository created");
         renderUi();
       });
   }
 
   function performCommitAction(action) {
     if (!state.activeWorkspaceId) {
-      return Promise.reject(new Error("Select a workspace first."));
+      return Promise.reject(new Error("Select a project first."));
     }
     if (action !== "commit" && action !== "push" && action !== "commit-push") {
       action = "commit";
@@ -5086,10 +6822,12 @@
 
     var gitState = activeGitState();
     if (!gitState.is_repo) {
-      if (!window.confirm("This workspace is not a git repo yet. Create one now?")) {
+      if (!window.confirm("This project is not a git repo yet. Create one now?")) {
         return Promise.resolve();
       }
-      return createRepoForActiveWorkspace();
+      return createRepoForActiveWorkspace().then(function () {
+        return performCommitAction(action);
+      });
     }
 
     if (action === "push") {
@@ -5209,6 +6947,7 @@
       if (workspaceId) {
         state.pendingArchiveKey = "";
         state.pendingArchiveReadyAt = 0;
+        state.pendingArchiveSubmittingKey = "";
         createDraftForWorkspace(workspaceId).catch(showError);
       }
       return;
@@ -5222,7 +6961,7 @@
       event.stopPropagation();
       var workspaceToRename = getWorkspaceById(workspaceId);
       var currentName = workspaceToRename && workspaceToRename.name ? workspaceToRename.name : "";
-      var nextName = window.prompt("Rename workspace", currentName);
+      var nextName = window.prompt("Rename project", currentName);
       if (nextName === null) {
         return;
       }
@@ -5237,7 +6976,7 @@
       event.preventDefault();
       event.stopPropagation();
       var workspace = getWorkspaceById(workspaceId);
-      var label = workspace && workspace.name ? workspace.name : "this workspace";
+      var label = workspace && workspace.name ? workspace.name : "this project";
       if (!window.confirm("Remove " + label + " and its Artificer conversation history?")) {
         return;
       }
@@ -5266,10 +7005,16 @@
       event.preventDefault();
       event.stopPropagation();
       var key = conversationReadKey(workspaceId, conversationId);
-      if (key !== state.pendingArchiveKey || Date.now() < Number(state.pendingArchiveReadyAt || 0)) {
+      if (key !== state.pendingArchiveKey || key === state.pendingArchiveSubmittingKey || Date.now() < Number(state.pendingArchiveReadyAt || 0)) {
         return;
       }
-      archiveConversation(workspaceId, conversationId).catch(showError);
+      state.pendingArchiveSubmittingKey = key;
+      renderUi();
+      archiveConversation(workspaceId, conversationId).catch(function (error) {
+        state.pendingArchiveSubmittingKey = "";
+        renderUi();
+        showError(error);
+      });
       return;
     }
 
@@ -5277,6 +7022,7 @@
       if (workspaceId) {
         state.pendingArchiveKey = "";
         state.pendingArchiveReadyAt = 0;
+        state.pendingArchiveSubmittingKey = "";
         state.expandedWorkspaceIds[workspaceId] = !state.expandedWorkspaceIds[workspaceId];
         renderUi();
       }
@@ -5287,6 +7033,7 @@
       if (workspaceId && conversationId) {
         state.pendingArchiveKey = "";
         state.pendingArchiveReadyAt = 0;
+        state.pendingArchiveSubmittingKey = "";
         selectConversation(workspaceId, conversationId).catch(showError);
       }
       return;
@@ -5296,6 +7043,7 @@
       if (workspaceId) {
         state.pendingArchiveKey = "";
         state.pendingArchiveReadyAt = 0;
+        state.pendingArchiveSubmittingKey = "";
         selectDraft(workspaceId).catch(showError);
       }
     }
@@ -5418,7 +7166,7 @@
     var path = trim(el.workspacePath.value);
     var name = trim(el.workspaceName.value);
     if (!path) {
-      return Promise.reject(new Error("Workspace path is required."));
+      return Promise.reject(new Error("Project path is required."));
     }
 
     return addWorkspaceByPath(path, name).then(function () {
@@ -5510,18 +7258,37 @@
       return;
     }
 
+    if (!state.activeWorkspaceId && state.activeConversationId) {
+      var resolvedWorkspaceId = findWorkspaceIdForConversation(state.activeConversationId);
+      if (resolvedWorkspaceId) {
+        state.activeWorkspaceId = resolvedWorkspaceId;
+      }
+    }
+
     if (!state.activeConversationId && !state.activeDraftWorkspaceId && state.activeWorkspaceId) {
       state.activeDraftWorkspaceId = state.activeWorkspaceId;
     }
 
+    var queuedPrompt = prompt;
+    var pendingKey = activeOutgoingKey();
+    var pendingId = addPendingOutgoing(pendingKey, queuedPrompt);
+    el.runPrompt.value = "";
+    if (state.activeDraftWorkspaceId) {
+      state.draftTextByWorkspace[state.activeDraftWorkspaceId] = "";
+    }
+    renderUi();
+
     clearDraftAutosaveTimer();
 
-    ensureConversationFromDraft(prompt)
+    ensureConversationFromDraft(queuedPrompt)
       .then(function (conversationId) {
         var workspaceId = state.activeWorkspaceId;
         if (!workspaceId || !conversationId) {
-          throw new Error("Choose a workspace conversation first.");
+          throw new Error("Choose a project conversation first.");
         }
+        var conversationKey = outgoingKeyFor(workspaceId, conversationId, "");
+        movePendingOutgoing(pendingKey, conversationKey, pendingId);
+        pendingKey = conversationKey;
         return uploadPendingAttachments(workspaceId, conversationId).then(function (uploadedAttachments) {
           var attachmentIds = [];
           for (var i = 0; i < uploadedAttachments.length; i += 1) {
@@ -5529,8 +7296,7 @@
               attachmentIds.push(String(uploadedAttachments[i].id));
             }
           }
-          return enqueuePrompt(workspaceId, conversationId, prompt, "tail", attachmentIds).then(function () {
-            el.runPrompt.value = "";
+          return enqueuePrompt(workspaceId, conversationId, queuedPrompt, "tail", attachmentIds).then(function () {
             resetComposerAttachments();
           });
         }).then(function () {
@@ -5546,7 +7312,11 @@
         renderUi();
         kickQueueWorker();
       })
-      .catch(showError)
+      .catch(function (err) {
+        removePendingOutgoing(pendingKey, pendingId);
+        el.runPrompt.value = queuedPrompt;
+        showError(err);
+      })
       .finally(function () {
         renderUi();
       });
@@ -5554,7 +7324,7 @@
 
   function onCommitContinue() {
     if (!state.activeWorkspaceId) {
-      showError(new Error("Select a workspace first."));
+      showError(new Error("Select a project first."));
       return;
     }
 
@@ -5620,15 +7390,34 @@
       state.terminalCwd = ws ? ws.path : "";
     }
     renderUi();
+    ensureTerminalSession().then(function () {
+      return pollTerminalSessionOnce();
+    }).catch(showError);
     setTimeout(function () {
-      if (el.terminalInput) {
-        el.terminalInput.focus();
+      if (el.terminalOutput) {
+        el.terminalOutput.focus();
       }
     }, 0);
   }
 
   function closeTerminal() {
+    var wsId = String(state.terminalSessionWorkspaceId || state.activeWorkspaceId || "");
+    var sessionId = String(state.terminalSessionId || "");
+    stopTerminalPolling();
+    if (wsId && sessionId) {
+      apiPost("terminal_session_stop", {
+        workspace_id: wsId,
+        session_id: sessionId
+      }, { timeoutMs: 5000 }).catch(function () {
+        return null;
+      });
+    }
     state.terminalOpen = false;
+    state.terminalSessionId = "";
+    state.terminalSessionWorkspaceId = "";
+    state.terminalStreamText = "";
+    state.terminalStreamOffset = 0;
+    state.terminalInputBuffer = "";
     renderUi();
   }
 
@@ -5694,14 +7483,13 @@
     on(el.modelStatusBtn, "click", function (event) {
       event.preventDefault();
       event.stopPropagation();
-      toggleMenu("models-box", el.modelStatusBtn);
-      if (!el.modelsBox || el.modelsBox.classList.contains("hidden")) {
+      toggleMenu("models-pane", el.modelStatusBtn);
+      if (!el.modelsPane || el.modelsPane.classList.contains("hidden")) {
         return;
       }
-      loadModelCatalog()
+      refreshModelData({ force: true, silent: false })
         .then(function () {
-          syncModelInstallPollingFromCatalog();
-          renderUi();
+          return null;
         })
         .catch(function () {
           renderUi();
@@ -5735,26 +7523,6 @@
       if (el.themePickerBtn) {
         el.themePickerBtn.focus();
       }
-    });
-
-    on(el.refreshModelsBtn, "click", function () {
-      Promise.all([
-        loadModels().catch(function (err) {
-          state.models = [];
-          state.modelLoadError = err && err.message ? err.message : "Model check failed";
-          return null;
-        }),
-        loadModelCatalog().catch(function () {
-          state.modelCatalog = [];
-          state.modelInstalls = [];
-          return null;
-        })
-      ])
-        .then(function () {
-          syncModelInstallPollingFromCatalog();
-          renderUi();
-        })
-        .catch(showError);
     });
 
     on(el.modelsBoxList, "click", function (event) {
@@ -5843,16 +7611,24 @@
     });
 
     window.addEventListener("focus", function () {
-      if (!state.awaitingDirPicker) {
-        return;
+      if (state.awaitingDirPicker) {
+        window.setTimeout(function () {
+          if (!state.awaitingDirPicker) {
+            return;
+          }
+          state.awaitingDirPicker = false;
+          state.pickingWorkspace = false;
+        }, 0);
       }
-      window.setTimeout(function () {
-        if (!state.awaitingDirPicker) {
-          return;
-        }
-        state.awaitingDirPicker = false;
-        state.pickingWorkspace = false;
-      }, 0);
+      if (state.initialLoadComplete) {
+        refreshModelData({ force: true, silent: true }).then(function (updated) {
+          if (updated) {
+            renderUi();
+          }
+        }).catch(function () {
+          return null;
+        });
+      }
     });
 
     window.addEventListener("mousemove", function (event) {
@@ -5869,6 +7645,7 @@
 
     window.addEventListener("resize", function () {
       applyPaneWidths();
+      updateToolbarCompaction();
     });
 
     document.addEventListener("mouseover", function (event) {
@@ -5951,14 +7728,31 @@
       });
     }
 
+    if (el.modelsPaneResizer) {
+      on(el.modelsPaneResizer, "mousedown", function (event) {
+        if (!el.modelsPane || el.modelsPane.classList.contains("hidden")) {
+          return;
+        }
+        startPaneDrag("models", event);
+      });
+    }
+
     on(el.openMainBtn, "click", function () {
       performOpenTarget(state.lastOpenTarget).catch(showError);
     });
 
     if (el.workspacePathWidget) {
-      on(el.workspacePathWidget, "click", function () {
+      on(el.workspacePathWidget, "click", function (event) {
         var ws = activeWorkspace();
         if (!ws || !ws.path) {
+          return;
+        }
+        if (event && Number(event.detail || 0) >= 2) {
+          if (pathWidgetClickTimer) {
+            clearTimeout(pathWidgetClickTimer);
+            pathWidgetClickTimer = null;
+          }
+          performOpenTarget("finder").catch(showError);
           return;
         }
         if (pathWidgetClickTimer) {
@@ -5967,8 +7761,13 @@
         }
         pathWidgetClickTimer = setTimeout(function () {
           pathWidgetClickTimer = null;
-          copyTextToClipboard(ws.path).catch(function () {
-            return null;
+          copyTextToClipboard(ws.path).then(function (ok) {
+            if (!ok) {
+              throw new Error("Could not copy path.");
+            }
+            showTransientNotice("Path copied");
+          }).catch(function (error) {
+            showError(error);
           });
         }, 220);
       });
@@ -6286,36 +8085,96 @@
       toggleTerminal();
     });
 
-    on(el.terminalCloseBtn, "click", function () {
-      closeTerminal();
-    });
-
-    on(el.terminalClearBtn, "click", function () {
-      state.terminalLines = [];
-      renderTerminal();
-    });
-
     if (el.terminalPanel) {
       on(el.terminalPanel, "click", function () {
-        if (el.terminalInput) {
-          el.terminalInput.focus();
+        if (el.terminalOutput) {
+          el.terminalOutput.focus();
         }
       });
     }
 
-    on(el.terminalForm, "submit", function (event) {
-      event.preventDefault();
-      var commandText = el.terminalInput.value;
-      if (!trim(commandText)) {
+    on(el.terminalPanel, "keydown", function (event) {
+      if (!state.terminalOpen) {
         return;
       }
-      el.terminalInput.value = "";
-      runCommandViaApi(commandText, "terminal_exec").catch(showError);
+      if (event.metaKey || event.ctrlKey) {
+        return;
+      }
+      if (event.altKey) {
+        return;
+      }
+
+      if (event.key === "Enter") {
+        event.preventDefault();
+        var commandText = String(state.terminalInputBuffer || "");
+        state.terminalInputBuffer = "";
+        renderTerminal();
+        if (!trim(commandText)) {
+          return;
+        }
+        ensureTerminalSession()
+          .then(function () {
+            return apiPost("terminal_session_input", {
+              workspace_id: state.activeWorkspaceId,
+              session_id: state.terminalSessionId,
+              input: commandText + "\n"
+            }, { timeoutMs: 10000 });
+          })
+          .then(function (response) {
+            if (!response || !response.success) {
+              throw new Error((response && response.error) || "Could not send terminal input");
+            }
+            return pollTerminalSessionOnce();
+          })
+          .catch(showError);
+        return;
+      }
+
+      if (event.key === "Backspace") {
+        event.preventDefault();
+        state.terminalInputBuffer = String(state.terminalInputBuffer || "").slice(0, -1);
+        renderTerminal();
+        return;
+      }
+
+      if (event.key === "Escape") {
+        event.preventDefault();
+        state.terminalInputBuffer = "";
+        renderTerminal();
+        return;
+      }
+
+      if (event.key === "Tab") {
+        event.preventDefault();
+        state.terminalInputBuffer += "  ";
+        renderTerminal();
+        return;
+      }
+
+      if (event.key && event.key.length === 1) {
+        event.preventDefault();
+        state.terminalInputBuffer += event.key;
+        renderTerminal();
+      }
+    });
+
+    on(el.terminalPanel, "paste", function (event) {
+      if (!state.terminalOpen) {
+        return;
+      }
+      var text = event.clipboardData && event.clipboardData.getData ? event.clipboardData.getData("text") : "";
+      if (!text) {
+        return;
+      }
+      event.preventDefault();
+      var chunk = String(text).replace(/\r?\n/g, " ");
+      state.terminalInputBuffer += chunk;
+      renderTerminal();
     });
 
     on(el.changesBtn, "click", function () {
       if (!state.activeWorkspaceId) {
-        showError(new Error("Select a workspace first."));
+        showError(new Error("Select a project first."));
         return;
       }
       toggleDiffPanel();
@@ -6327,6 +8186,36 @@
 
     on(el.runForm, "submit", function (event) {
       onRunSubmit(event);
+    });
+
+    on(el.decisionRequestInlineClose, "click", function () {
+      var info = activeDecisionRequestInfo();
+      if (info) {
+        state.decisionInlineDismissedKey = info.marker;
+      }
+      if (el.decisionRequestInline) {
+        el.decisionRequestInline.classList.add("hidden");
+      }
+    });
+
+    on(el.decisionRequestOptions, "change", function () {
+      updateDecisionOtherVisibility();
+    });
+
+    on(el.decisionRequestOtherInput, "input", function () {
+      if (!el.decisionRequestOptions) {
+        return;
+      }
+      var otherRadio = el.decisionRequestOptions.querySelector("input[name='decision-request-choice'][value='other']");
+      if (otherRadio) {
+        otherRadio.checked = true;
+      }
+      updateDecisionOtherVisibility();
+    });
+
+    on(el.decisionRequestForm, "submit", function (event) {
+      event.preventDefault();
+      submitDecisionRequest().catch(showError);
     });
 
     if (el.attachBtn && el.attachmentPicker) {
@@ -6371,6 +8260,18 @@
     }
 
     on(el.chatLog, "click", function (event) {
+      var stopBtn = event.target.closest("[data-action='stop-run'][data-workspace-id][data-conversation-id]");
+      if (stopBtn) {
+        event.preventDefault();
+        var stopWorkspaceId = stopBtn.getAttribute("data-workspace-id") || "";
+        var stopConversationId = stopBtn.getAttribute("data-conversation-id") || "";
+        stopBtn.disabled = true;
+        stopConversationRun(stopWorkspaceId, stopConversationId).catch(showError).finally(function () {
+          stopBtn.disabled = false;
+        });
+        return;
+      }
+
       var copyBtn = event.target.closest("[data-action='copy-user-message']");
       if (!copyBtn) {
         return;
@@ -6384,6 +8285,26 @@
         }, 900);
       });
     });
+
+    if (el.chatLog) {
+      el.chatLog.addEventListener("toggle", function (event) {
+        var panel = event.target;
+        if (!panel || !panel.matches || !panel.matches("details.run-details[data-event-id]")) {
+          return;
+        }
+        var eventId = String(panel.getAttribute("data-event-id") || "");
+        if (!eventId) {
+          return;
+        }
+        state.runDetailsOpenByEventId[eventId] = panel.open ? 1 : 0;
+        if (panel.open) {
+          var preview = panel.querySelector(".run-stream-preview");
+          if (preview) {
+            preview.scrollTop = preview.scrollHeight;
+          }
+        }
+      }, true);
+    }
 
     on(el.chatLog, "scroll", function () {
       state.chatAutoScroll = isChatAtBottom();
@@ -6454,6 +8375,7 @@
       if (
         event.target.closest("#model-status-btn") ||
         event.target.closest(".menu-anchor") ||
+        event.target.closest(".models-pane") ||
         event.target.closest(".models-box") ||
         event.target.closest("#organize-menu") ||
         event.target.closest("#organize-btn") ||
@@ -6492,6 +8414,10 @@
         closeModal(el.commandApprovalModal);
         return;
       }
+      if (pendingCommandApproval && typeof pendingCommandApproval.cancel === "function") {
+        pendingCommandApproval.cancel(new Error("Command approval cancelled"));
+        return;
+      }
       if (!el.workspaceModal.classList.contains("hidden")) {
         closeModal(el.workspaceModal);
         return;
@@ -6502,11 +8428,23 @@
   }
 
   window.addEventListener("beforeunload", function () {
+    var unloadWorkspaceId = String(state.terminalSessionWorkspaceId || state.activeWorkspaceId || "");
+    var unloadSessionId = String(state.terminalSessionId || "");
+    stopTerminalPolling();
+    if (unloadWorkspaceId && unloadSessionId) {
+      apiPost("terminal_session_stop", {
+        workspace_id: unloadWorkspaceId,
+        session_id: unloadSessionId
+      }, { timeoutMs: 1200 }).catch(function () {
+        return null;
+      });
+    }
     if (liveRunTickTimer) {
       clearInterval(liveRunTickTimer);
       liveRunTickTimer = null;
     }
     stopModelInstallPolling();
+    stopModelAutoRefreshLoop();
     clearPendingAttachments();
   });
 
@@ -6537,6 +8475,7 @@
     })
     .then(function () {
       kickQueueWorker();
+      startModelAutoRefreshLoop();
       if (typeof window !== "undefined") {
         window.__artificerBooted = true;
       }
