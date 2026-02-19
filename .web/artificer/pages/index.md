@@ -352,4 +352,4 @@ pagetitle: "Artificer"
 </div>
 </div>
 
-<script src="/static/artificer-app.js?v=20260217-opencommitfix01"></script>
+<script src="/static/artificer-app.js?v=20260219-approvalux04"></script>

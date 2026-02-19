@@ -395,7 +395,7 @@ h2 {
 }
 
 .workspace-group.expanded .conversation-shell {
-  max-height: 520px;
+  max-height: none;
 }
 
 .conversation-row,
@@ -403,6 +403,7 @@ h2 {
   width: 100%;
   border: 0;
   background: transparent;
+  border-radius: 8px;
   min-height: 30px;
   height: 30px;
   margin: 0;
@@ -1492,6 +1493,23 @@ h2 {
   animation: approval-pop 120ms ease-out;
 }
 
+.chat-log > .command-approval-inline.in-chat {
+  position: static;
+  top: auto;
+  z-index: 0;
+  margin: 0;
+  width: min(84ch, 96%);
+  max-width: min(84ch, 96%);
+  justify-self: start;
+  box-shadow: 0 4px 12px var(--shadow);
+}
+
+.command-approval-inline #command-approval-inline-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
 .command-approval-inline.hidden {
   display: none !important;
 }
@@ -1501,6 +1519,7 @@ h2 {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  padding-right: 30px;
 }
 
 .command-approval-inline-head strong {
@@ -2415,8 +2434,9 @@ h2 {
   color: #111;
   font-size: 0.86rem;
   line-height: 1;
-  padding: 3px 8px;
-  min-width: 34px;
+  padding: 2px 8px;
+  min-width: 40px;
+  min-height: 26px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2433,8 +2453,9 @@ h2 {
 }
 
 .run-stop-square {
-  font-size: 0.68rem;
-  line-height: 1;
+  display: block;
+  font-size: 2.58rem;
+  line-height: 0.5;
 }
 
 .run-spinner {

@@ -289,6 +289,16 @@
   var modelAutoRefreshLastAt = 0;
   var runReconcileTimer = null;
   var runReconcileBusy = false;
+  var runEventHealTimer = null;
+  var runEventHealBusy = false;
+  var runEventHealBusySince = 0;
+  var runEventHealGuardTimer = null;
+  var terminalStateWatchTimer = null;
+  var terminalStateWatchBusy = false;
+  var approvalResumeWatchTimer = null;
+  var approvalResumeWatchBusy = false;
+  var approvalResumeWatchKey = "";
+  var approvalResumeWatchDeadline = 0;
   var terminalPollTimer = null;
   var terminalPollBusy = false;
   var terminalSessionStartPromise = null;
@@ -1171,38 +1181,62 @@
     if (!isFinite(timeoutMs) || timeoutMs <= 0) {
       timeoutMs = 30000;
     }
-    var timeoutId = setTimeout(function () {
-      controller.abort();
-    }, timeoutMs);
-
-    return fetch(url, {
-      method: options.method,
-      headers: options.headers,
-      body: options.body,
-      cache: options.cacheMode || "default",
-      signal: controller.signal
-    })
-      .then(function (response) {
-        return response.text().then(function (raw) {
-          if (!response.ok) {
-            throw new Error("Request failed (" + response.status + "): " + raw.slice(0, 220));
-          }
-          try {
-            return JSON.parse(raw);
-          } catch (_err) {
-            throw new Error("Server returned non-JSON response: " + raw.slice(0, 220));
-          }
-        });
-      })
-      .catch(function (err) {
-        if (err && err.name === "AbortError") {
-          throw new Error("Request timed out after " + Math.round(timeoutMs / 1000) + "s.");
+    return new Promise(function (resolve, reject) {
+      var settled = false;
+      var timeoutErrorText = "Request timed out after " + Math.round(timeoutMs / 1000) + "s.";
+      var timeoutId = setTimeout(function () {
+        if (settled) {
+          return;
         }
-        throw err;
+        settled = true;
+        try {
+          controller.abort();
+        } catch (_abortErr) {
+          // Ignore abort failures; timeout already finalized.
+        }
+        reject(new Error(timeoutErrorText));
+      }, timeoutMs);
+
+      fetch(url, {
+        method: options.method,
+        headers: options.headers,
+        body: options.body,
+        cache: options.cacheMode || "default",
+        signal: controller.signal
       })
-      .finally(function () {
-        clearTimeout(timeoutId);
-      });
+        .then(function (response) {
+          return response.text().then(function (raw) {
+            if (!response.ok) {
+              throw new Error("Request failed (" + response.status + "): " + raw.slice(0, 220));
+            }
+            try {
+              return JSON.parse(raw);
+            } catch (_err) {
+              throw new Error("Server returned non-JSON response: " + raw.slice(0, 220));
+            }
+          });
+        })
+        .then(function (json) {
+          if (settled) {
+            return;
+          }
+          settled = true;
+          clearTimeout(timeoutId);
+          resolve(json);
+        })
+        .catch(function (err) {
+          if (settled) {
+            return;
+          }
+          settled = true;
+          clearTimeout(timeoutId);
+          if (err && err.name === "AbortError") {
+            reject(new Error(timeoutErrorText));
+            return;
+          }
+          reject(err);
+        });
+    });
   }
 
   function apiGet(action, params, options) {
@@ -2488,6 +2522,32 @@
     return true;
   }
 
+  function appendAssistantMessageOptimistic(workspaceId, conversationId, assistantText) {
+    var wsId = String(workspaceId || "");
+    var convId = String(conversationId || "");
+    var content = trim(assistantText || "");
+    if (!wsId || !convId || !content) {
+      return false;
+    }
+    if (
+      !state.activeConversation ||
+      String(state.activeWorkspaceId || "") !== wsId ||
+      String(state.activeConversationId || "") !== convId
+    ) {
+      return false;
+    }
+    if (!Array.isArray(state.activeConversation.messages)) {
+      state.activeConversation.messages = [];
+    }
+    var messages = state.activeConversation.messages;
+    var last = messages.length ? messages[messages.length - 1] : null;
+    if (last && String(last.role || "") === "assistant" && String(last.content || "") === content) {
+      return false;
+    }
+    messages.push({ role: "assistant", content: content });
+    return true;
+  }
+
   function reconcilePendingOutgoingFromConversation(workspaceId, conversationId, conversation) {
     var key = outgoingKeyFor(workspaceId, conversationId, "");
     var pendingList = pendingOutgoingList(key);
@@ -2524,6 +2584,29 @@
     }
   }
 
+  function applyRunEventTerminalState(event, status, errorText, finishedAt) {
+    if (!event) {
+      return;
+    }
+    if (status === "error") {
+      event.status = "error";
+      if (!trim(errorText || "")) {
+        event.error = trim(event.error || "Run did not complete.");
+      } else {
+        event.error = trim(errorText);
+      }
+    } else if (status === "cancelled") {
+      event.status = "cancelled";
+    } else if (status === "awaiting_approval") {
+      event.status = "awaiting_approval";
+    } else if (status === "awaiting_decision") {
+      event.status = "awaiting_decision";
+    } else {
+      event.status = "done";
+    }
+    event.finished_at = finishedAt || new Date().toISOString();
+  }
+
   function finalizeLatestRunningEvent(conversationId, status, errorText) {
     var convId = String(conversationId || "");
     if (!convId) {
@@ -2533,15 +2616,30 @@
     if (!Array.isArray(events) || !events.length) {
       return;
     }
+    var finishedAt = new Date().toISOString();
     for (var i = events.length - 1; i >= 0; i -= 1) {
       if (String(events[i].status || "") === "running") {
-        events[i].status = status === "error" ? "error" : (status === "cancelled" ? "cancelled" : "done");
-        events[i].finished_at = new Date().toISOString();
-        if (status === "error") {
-          events[i].error = trim(errorText || "Run did not complete.");
-        }
+        applyRunEventTerminalState(events[i], status, errorText, finishedAt);
         return;
       }
+    }
+  }
+
+  function finalizeAllRunningEvents(conversationId, status, errorText) {
+    var convId = String(conversationId || "");
+    if (!convId) {
+      return;
+    }
+    var events = state.runEventsByConversation[convId];
+    if (!Array.isArray(events) || !events.length) {
+      return;
+    }
+    var finishedAt = new Date().toISOString();
+    for (var i = events.length - 1; i >= 0; i -= 1) {
+      if (String(events[i].status || "") !== "running") {
+        continue;
+      }
+      applyRunEventTerminalState(events[i], status, errorText, finishedAt);
     }
   }
 
@@ -2555,27 +2653,26 @@
       return;
     }
     var queueStatus = String(conversation.queue_last_status || "");
-    var events = state.runEventsByConversation[String(conversation.id || "")];
-    if (!Array.isArray(events) || !events.length) {
-      return;
-    }
-    var finishedAt = new Date().toISOString();
-    for (var i = events.length - 1; i >= 0; i -= 1) {
-      if (String(events[i].status || "") !== "running") {
-        continue;
+    if (!queueStatus) {
+      if (conversationApprovalRequest(conversation) || isAwaitingApprovalConversation(workspaceId, conversation.id)) {
+        queueStatus = "awaiting_approval";
       }
-      if (queueStatus === "error") {
-        events[i].status = "error";
-        if (!trim(events[i].error || "")) {
-          events[i].error = "Run did not complete.";
-        }
-      } else if (queueStatus === "cancelled") {
-        events[i].status = "cancelled";
-      } else {
-        events[i].status = "done";
-      }
-      events[i].finished_at = finishedAt;
     }
+    var eventStatus = "done";
+    if (queueStatus === "error") {
+      eventStatus = "error";
+    } else if (queueStatus === "cancelled") {
+      eventStatus = "cancelled";
+    } else if (queueStatus === "awaiting_approval") {
+      eventStatus = "awaiting_approval";
+    } else if (queueStatus === "awaiting_decision") {
+      eventStatus = "awaiting_decision";
+    }
+    finalizeAllRunningEvents(
+      String(conversation.id || ""),
+      eventStatus,
+      eventStatus === "error" ? "Run did not complete." : ""
+    );
   }
 
   function reconcileRunEventsFromQueueState() {
@@ -2590,18 +2687,176 @@
     }
   }
 
+  function hasAnyRunningRunEvent() {
+    var keys = Object.keys(state.runEventsByConversation || {});
+    for (var i = 0; i < keys.length; i += 1) {
+      var events = state.runEventsByConversation[keys[i]];
+      if (!Array.isArray(events) || !events.length) {
+        continue;
+      }
+      for (var j = events.length - 1; j >= 0; j -= 1) {
+        if (String(events[j].status || "") === "running") {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  function hasAnyQueuedOrRunningConversation() {
+    for (var i = 0; i < state.workspaces.length; i += 1) {
+      var workspace = state.workspaces[i];
+      var conversations = workspace && Array.isArray(workspace.conversations) ? workspace.conversations : [];
+      for (var j = 0; j < conversations.length; j += 1) {
+        var conversation = conversations[j] || {};
+        if (String(conversation.queue_running || "0") === "1") {
+          return true;
+        }
+        if (queueNumber(conversation.queue_pending) > 0) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  function hasAnyQueuedOrRunningConversationInStateResponse(stateResponse) {
+    if (!stateResponse || !stateResponse.success || !Array.isArray(stateResponse.workspaces)) {
+      return false;
+    }
+    for (var i = 0; i < stateResponse.workspaces.length; i += 1) {
+      var workspace = stateResponse.workspaces[i];
+      var conversations = workspace && Array.isArray(workspace.conversations) ? workspace.conversations : [];
+      for (var j = 0; j < conversations.length; j += 1) {
+        var conversation = conversations[j] || {};
+        if (String(conversation.queue_running || "0") === "1") {
+          return true;
+        }
+        if (queueNumber(conversation.queue_pending) > 0) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  function syncConversationQueueFromStateEntry(workspaceId, conversationId, conversationEntry) {
+    var wsId = String(workspaceId || "");
+    var convId = String(conversationId || "");
+    var entry = conversationEntry || null;
+    if (!wsId || !convId || !entry) {
+      return;
+    }
+
+    var pending = queueNumber(entry.queue_pending);
+    var running = String(entry.queue_running || "0") === "1";
+    var lastStatus = String(entry.queue_last_status || "");
+    setConversationQueueFields(wsId, convId, {
+      pending: pending,
+      running: running,
+      done: lastStatus === "done",
+      lastStatus: lastStatus,
+      firstId: String(entry.queue_first_id || ""),
+      decisionRequest: typeof entry.decision_request === "undefined" ? undefined : entry.decision_request,
+      approvalRequest: typeof entry.approval_request === "undefined" ? undefined : entry.approval_request
+    });
+    setAwaitingApprovalState(
+      wsId,
+      convId,
+      lastStatus === "awaiting_approval" || !!normalizeApprovalRequest(entry.approval_request)
+    );
+    finalizeStaleRunningEventsForConversation(wsId, entry);
+  }
+
+  function normalizedTerminalRunStatus(queueLastStatus) {
+    var status = String(queueLastStatus || "");
+    if (
+      status !== "done" &&
+      status !== "error" &&
+      status !== "cancelled" &&
+      status !== "awaiting_decision" &&
+      status !== "awaiting_approval"
+    ) {
+      status = "done";
+    }
+    return status;
+  }
+
+  function healRunningEventsForConversationFromSummary(workspaceId, conversationId) {
+    var wsId = String(workspaceId || "");
+    var convId = String(conversationId || "");
+    if (!wsId || !convId) {
+      return;
+    }
+    var workspace = getWorkspaceById(wsId);
+    var conversation = getConversationById(workspace, convId);
+    if (!conversation) {
+      return;
+    }
+
+    finalizeStaleRunningEventsForConversation(wsId, conversation);
+
+    var pending = queueNumber(conversation.queue_pending);
+    var running = String(conversation.queue_running || "0") === "1";
+    if (running || pending > 0) {
+      return;
+    }
+
+    var events = runEventsForConversation(convId);
+    var hasRunning = false;
+    for (var i = events.length - 1; i >= 0; i -= 1) {
+      if (String(events[i].status || "") === "running") {
+        hasRunning = true;
+        break;
+      }
+    }
+    if (!hasRunning) {
+      return;
+    }
+
+    var terminalStatus = normalizedTerminalRunStatus(conversation.queue_last_status);
+    finalizeLatestRunningEvent(convId, terminalStatus, "");
+    if (terminalStatus !== "awaiting_approval") {
+      setAwaitingApprovalState(wsId, convId, false);
+    }
+    if (
+      state.busy &&
+      String(state.runningWorkspaceId || "") === wsId &&
+      String(state.runningConversationId || "") === convId
+    ) {
+      setBusy(false);
+    }
+  }
+
   function reconcileRunningState() {
-    if (!state.busy || runReconcileBusy) {
+    var shouldReconcile = state.busy || hasAnyRunningRunEvent();
+    if (!shouldReconcile || runReconcileBusy) {
       return;
     }
     var workspaceId = String(state.runningWorkspaceId || "");
     var conversationId = String(state.runningConversationId || "");
-    if (!workspaceId || !conversationId) {
-      return;
-    }
     runReconcileBusy = true;
-    loadState()
+    loadState({ timeoutMs: 6000 })
       .then(function () {
+        reconcileRunEventsFromQueueState();
+        var hasQueuedOrRunning = hasAnyQueuedOrRunningConversation();
+        if (state.busy && !hasQueuedOrRunning) {
+          setBusy(false);
+        }
+        if (!state.busy && hasQueuedOrRunning) {
+          state.queueWorkerActive = false;
+          kickQueueWorker();
+        }
+
+        if (!workspaceId || !conversationId) {
+          if (state.activeWorkspaceId && state.activeConversationId) {
+            loadConversation({ timeoutMs: 6000 }).catch(function () {
+              return null;
+            });
+          }
+          return null;
+        }
+
         var gitRefresh = Promise.resolve();
         if (state.activeWorkspaceId === workspaceId) {
           gitRefresh = refreshGitStatus().catch(function () {
@@ -2619,7 +2874,7 @@
           setBusy(false);
           finalizeLatestRunningEvent(conversationId, "done", "");
           if (state.activeWorkspaceId === workspaceId && state.activeConversationId === conversationId) {
-            return loadConversation().catch(function () {
+            loadConversation({ timeoutMs: 6000 }).catch(function () {
               return null;
             });
           }
@@ -2633,6 +2888,126 @@
         runReconcileBusy = false;
         renderUi();
       });
+  }
+
+  function startRunEventHealLoop() {
+    if (runEventHealTimer) {
+      clearInterval(runEventHealTimer);
+      runEventHealTimer = null;
+    }
+    runEventHealTimer = setInterval(function () {
+      if (runEventHealBusy) {
+        if (runEventHealBusySince > 0 && Date.now() - runEventHealBusySince > 12000) {
+          runEventHealBusy = false;
+          runEventHealBusySince = 0;
+          renderUi();
+        }
+        return;
+      }
+      var domShowsRunning = !!(el.chatLog && el.chatLog.querySelector(".run-line.running"));
+      if (!state.busy && !hasAnyRunningRunEvent() && !domShowsRunning) {
+        return;
+      }
+      runEventHealBusy = true;
+      runEventHealBusySince = Date.now();
+      if (runEventHealGuardTimer) {
+        clearTimeout(runEventHealGuardTimer);
+        runEventHealGuardTimer = null;
+      }
+      runEventHealGuardTimer = setTimeout(function () {
+        if (!runEventHealBusy) {
+          runEventHealGuardTimer = null;
+          return;
+        }
+        runEventHealBusy = false;
+        runEventHealBusySince = 0;
+        runEventHealGuardTimer = null;
+        renderUi();
+      }, 12500);
+      var watchedWorkspaceId = String(state.runningWorkspaceId || state.activeWorkspaceId || "");
+      var watchedConversationId = String(state.runningConversationId || state.activeConversationId || "");
+      loadState({ timeoutMs: 6000 })
+        .then(function () {
+          reconcileRunEventsFromQueueState();
+
+          var hasQueuedOrRunning = hasAnyQueuedOrRunningConversation();
+          if (state.busy && !hasQueuedOrRunning) {
+            setBusy(false);
+          }
+          if (!state.busy && findNextQueuedConversation()) {
+            state.queueWorkerActive = false;
+            kickQueueWorker();
+          }
+
+          if (state.activeWorkspaceId && state.activeConversationId) {
+            loadConversation({ timeoutMs: 6000 }).catch(function () {
+              return null;
+            });
+          }
+          return null;
+        })
+        .catch(function () {
+          return apiGet("state", {}, { timeoutMs: 9000 })
+            .then(function (response) {
+              if (!response || !response.success) {
+                return null;
+              }
+              var hasQueuedOrRunning = hasAnyQueuedOrRunningConversationInStateResponse(response);
+              var entry = findConversationStateEntry(response, watchedWorkspaceId, watchedConversationId);
+              if (entry && watchedWorkspaceId && watchedConversationId) {
+                syncConversationQueueFromStateEntry(watchedWorkspaceId, watchedConversationId, entry);
+              } else if (!hasQueuedOrRunning && watchedConversationId) {
+                finalizeLatestRunningEvent(watchedConversationId, "done", "");
+              }
+
+              if (state.busy && !hasQueuedOrRunning) {
+                setBusy(false);
+              }
+
+              if (
+                !state.busy &&
+                entry &&
+                queueNumber(entry.queue_pending) > 0 &&
+                String(entry.queue_running || "0") !== "1"
+              ) {
+                state.queueWorkerActive = false;
+                kickQueueWorker();
+              }
+
+              if (state.activeWorkspaceId && state.activeConversationId) {
+                loadConversation({ timeoutMs: 6000 }).catch(function () {
+                  return null;
+                });
+              }
+              return null;
+            })
+            .catch(function () {
+              return null;
+            });
+        })
+        .finally(function () {
+          runEventHealBusy = false;
+          runEventHealBusySince = 0;
+          if (runEventHealGuardTimer) {
+            clearTimeout(runEventHealGuardTimer);
+            runEventHealGuardTimer = null;
+          }
+          renderUi();
+        });
+    }, 1800);
+  }
+
+  function stopRunEventHealLoop() {
+    if (runEventHealTimer) {
+      clearInterval(runEventHealTimer);
+      runEventHealTimer = null;
+    }
+    runEventHealBusy = false;
+    runEventHealBusySince = 0;
+    if (runEventHealGuardTimer) {
+      clearTimeout(runEventHealGuardTimer);
+      runEventHealGuardTimer = null;
+    }
   }
 
   function pushRunEvent(conversationId, eventData) {
@@ -2691,6 +3066,37 @@
     return !!state.runDetailsOpenByEventId[key];
   }
 
+  function thoughtDurationLabel(startedAt, finishedAt) {
+    var startedMs = Date.parse(startedAt || "");
+    var endedMs = Date.parse(finishedAt || "");
+    if (!isFinite(startedMs) || startedMs <= 0) {
+      return "";
+    }
+    if (!isFinite(endedMs) || endedMs <= 0 || endedMs < startedMs) {
+      endedMs = Date.now();
+    }
+    var totalSeconds = Math.max(0, Math.floor((endedMs - startedMs) / 1000));
+    if (totalSeconds < 60) {
+      return String(totalSeconds) + "s";
+    }
+    if (totalSeconds < 3600) {
+      return String(Math.floor(totalSeconds / 60)) + "m";
+    }
+    return String(Math.floor(totalSeconds / 3600)) + "h";
+  }
+
+  function runTraceSummaryLabel(event, isRunning) {
+    if (isRunning) {
+      var runningDuration = thoughtDurationLabel(event && event.started_at, "");
+      return "Thinking... " + (runningDuration || "0s");
+    }
+    var completedDuration = thoughtDurationLabel(event && event.started_at, event && event.finished_at);
+    if (!completedDuration) {
+      return "Thought process";
+    }
+    return "Thought for " + completedDuration;
+  }
+
   function formatRunTrace(event) {
     if (!event) {
       return "";
@@ -2725,7 +3131,7 @@
     }
     var eventId = String(event.id || "");
     var openAttr = runDetailsShouldBeOpen(eventId) ? " open" : "";
-    return "<details class='run-details run-thinking' data-event-id='" + escAttr(eventId) + "'" + openAttr + "><summary>Thinking trace</summary>" + sections + "</details>";
+    return "<details class='run-details run-thinking' data-event-id='" + escAttr(eventId) + "'" + openAttr + "><summary>" + escHtml(runTraceSummaryLabel(event, false)) + "</summary>" + sections + "</details>";
   }
 
   function friendlyRunErrorText(event) {
@@ -2787,7 +3193,7 @@
         var hasSeenToggle = Object.prototype.hasOwnProperty.call(state.runDetailsOpenByEventId, runningEventId);
         var runningOpen = hasSeenToggle ? runDetailsShouldBeOpen(runningEventId) : true;
         var runningOpenAttr = runningOpen ? " open" : "";
-        html += "<details class='run-details run-thinking' data-event-id='" + escAttr(runningEventId) + "'" + runningOpenAttr + "><summary>Thinking trace</summary><pre class='run-stream-preview'>" + escHtml(streamText) + "</pre></details>";
+        html += "<details class='run-details run-thinking' data-event-id='" + escAttr(runningEventId) + "'" + runningOpenAttr + " data-started-at='" + escAttr(event.started_at || "") + "'><summary>" + escHtml(runTraceSummaryLabel(event, true)) + "</summary><pre class='run-stream-preview'>" + escHtml(streamText) + "</pre></details>";
       }
       html += "</article>";
       return html;
@@ -2800,8 +3206,34 @@
       return html;
     }
 
+    if (status === "approval_granted") {
+      var approvedScope = String(event.approved_scope || "once");
+      var approvedCommand = trim(String(event.approved_command || ""));
+      var approvalText = approvedScope === "remember"
+        ? "Execution approved and remembered."
+        : "Execution approved once.";
+      if (approvedCommand) {
+        approvalText += " " + approvedCommand;
+      }
+      html += "<p class='run-line subtle'>" + escHtml(approvalText) + "</p>";
+      html += "</article>";
+      return html;
+    }
+
     if (status === "error") {
       html += "<p class='run-line error'>" + escHtml(friendlyRunErrorText(event)) + "</p>";
+      html += formatRunTrace(event);
+      html += "</article>";
+      return html;
+    }
+    if (status === "awaiting_approval") {
+      html += "<p class='run-line subtle'>Awaiting command approval.</p>";
+      html += formatRunTrace(event);
+      html += "</article>";
+      return html;
+    }
+    if (status === "awaiting_decision") {
+      html += "<p class='run-line subtle'>Awaiting your decision.</p>";
       html += formatRunTrace(event);
       html += "</article>";
       return html;
@@ -2815,10 +3247,59 @@
         runModelText += " (" + runModelParts.meta + ")";
       }
     }
-    html += "<p class='run-line success'>Run complete" + (runModelText ? " with " + escHtml(runModelText) : "") + "</p>";
+    var conversation = null;
+    if (workspaceId && conversationId) {
+      conversation = getConversationById(getWorkspaceById(workspaceId), conversationId);
+    }
+    var queuePending = queueNumber(conversation && conversation.queue_pending);
+    var queueRunning = !!(conversation && String(conversation.queue_running || "0") === "1");
+    var queueLastStatus = String(conversation && conversation.queue_last_status || "");
+    var queueAwaitingApproval = (
+      queueLastStatus === "awaiting_approval" ||
+      isAwaitingApprovalConversation(workspaceId, conversationId) ||
+      !!conversationApprovalRequest(conversation)
+    );
+    var queueAwaitingDecision = queueLastStatus === "awaiting_decision" || !!normalizeDecisionRequest(conversation && conversation.decision_request);
+
+    if (queueRunning || queuePending > 0) {
+      html += "<p class='run-line subtle'>Run step complete. Continuing...</p>";
+    } else if (queueAwaitingApproval) {
+      html += "<p class='run-line subtle'>Run paused. Awaiting command approval.</p>";
+    } else if (queueAwaitingDecision) {
+      html += "<p class='run-line subtle'>Run paused. Awaiting your decision.</p>";
+    } else {
+      html += "<p class='run-line success'>Run complete" + (runModelText ? " with " + escHtml(runModelText) : "") + "</p>";
+    }
     html += formatRunTrace(event);
     html += "</article>";
     return html;
+  }
+
+  function isTerminalInfoRunEventStatus(statusText) {
+    var status = String(statusText || "");
+    return status === "done" || status === "approval_granted";
+  }
+
+  function findLatestRunEventByStatus(conversationId, statuses) {
+    var convId = String(conversationId || "");
+    var wanted = Array.isArray(statuses) ? statuses : [];
+    if (!convId || !wanted.length) {
+      return null;
+    }
+    var events = state.runEventsByConversation[convId];
+    if (!Array.isArray(events) || !events.length) {
+      return null;
+    }
+    for (var i = events.length - 1; i >= 0; i -= 1) {
+      var event = events[i] || {};
+      var status = String(event.status || "");
+      for (var j = 0; j < wanted.length; j += 1) {
+        if (status === String(wanted[j] || "")) {
+          return event;
+        }
+      }
+    }
+    return null;
   }
 
   function refreshRunningElapsedBadges() {
@@ -2842,6 +3323,18 @@
       if (badge) {
         badge.textContent = elapsed > 0 ? String(elapsed) + "s" : "";
       }
+    }
+
+    var details = el.chatLog.querySelectorAll("details.run-details.run-thinking[data-started-at]");
+    for (var j = 0; j < details.length; j += 1) {
+      var panel = details[j];
+      var started = panel.getAttribute("data-started-at") || "";
+      var summary = panel.querySelector("summary");
+      if (!summary) {
+        continue;
+      }
+      var duration = thoughtDurationLabel(started, "");
+      summary.textContent = "Thinking... " + (duration || "0s");
     }
   }
 
@@ -3677,17 +4170,29 @@
     if (!request) {
       request = conversationApprovalRequest(conversation);
     }
-    if (!request && conversation) {
-      var awaitingApproval =
-        String(conversation.queue_last_status || "") === "awaiting_approval" ||
-        isAwaitingApprovalConversation(state.activeWorkspaceId, state.activeConversationId);
-      if (awaitingApproval) {
-        var inferredCommand = inferredApprovalCommandFromConversation();
-        request = {
-          command: inferredCommand,
-          reason: ""
-        };
+    var awaitingApproval = false;
+    if (conversation) {
+      awaitingApproval = String(conversation.queue_last_status || "") === "awaiting_approval";
+    }
+    if (!awaitingApproval) {
+      awaitingApproval = isAwaitingApprovalConversation(state.activeWorkspaceId, state.activeConversationId);
+    }
+    if (!awaitingApproval) {
+      var events = runEventsForConversation(state.activeConversationId);
+      for (var i = events.length - 1; i >= 0; i -= 1) {
+        if (String(events[i].status || "") === "awaiting_approval") {
+          awaitingApproval = true;
+          break;
+        }
       }
+    }
+
+    if (!request && awaitingApproval) {
+      var inferredCommand = inferredApprovalCommandFromConversation();
+      request = {
+        command: inferredCommand,
+        reason: ""
+      };
     }
     if (!request) {
       return null;
@@ -3764,6 +4269,7 @@
     if (!info) {
       return Promise.resolve();
     }
+    var approvedDecision = String(decision || "") === "allow";
     var matchMode = trim(el.commandApprovalInlineMatchMode && el.commandApprovalInlineMatchMode.value) || "exact";
     var pattern = trim(el.commandApprovalInlinePattern && el.commandApprovalInlinePattern.value) || info.request.command;
     var commandText = String(info.request.command || "");
@@ -3783,10 +4289,28 @@
       if (!response || !response.success) {
         throw new Error((response && response.error) || "Could not submit approval.");
       }
+      var queuedAfterApproval = queueNumber(response.queue_pending) > 0 || Number(response.queue_running || 0) > 0;
+      if (approvedDecision && !queuedAfterApproval) {
+        throw new Error("Approval was accepted, but no retry run was queued.");
+      }
+      if (approvedDecision) {
+        startApprovalResumeWatch(info.workspaceId, info.conversationId);
+      } else {
+        stopApprovalResumeWatch();
+      }
       applyQueueStateFromResponse(info.workspaceId, info.conversationId, response);
       setConversationQueueFields(info.workspaceId, info.conversationId, {
         approvalRequest: null
       });
+      if (approvedDecision) {
+        pushRunEvent(info.conversationId, {
+          status: "approval_granted",
+          approved_scope: effectiveScope || "once",
+          approved_command: commandText,
+          started_at: new Date().toISOString(),
+          finished_at: new Date().toISOString()
+        });
+      }
       if (
         state.activeConversation &&
         state.activeWorkspaceId === info.workspaceId &&
@@ -3794,11 +4318,27 @@
       ) {
         state.activeConversation.approval_request = null;
       }
-      return loadConversation().catch(function () {
+      loadConversation({ timeoutMs: 6000 }).catch(function () {
         return null;
       });
+      return null;
     }).then(function () {
       renderUi();
+      state.queueWorkerActive = false;
+      if (approvedDecision) {
+        resumeConversationQueueNow(info.workspaceId, info.conversationId)
+          .then(function (started) {
+            if (!started) {
+              kickQueueWorker();
+            }
+            return null;
+          })
+          .catch(function () {
+            kickQueueWorker();
+            return null;
+          });
+        return;
+      }
       kickQueueWorker();
     });
   }
@@ -3829,6 +4369,7 @@
         }
         btn.disabled = true;
       } else {
+        btn.disabled = false;
         if (btn.hasAttribute("data-default-label")) {
           btn.textContent = btn.getAttribute("data-default-label") || "";
           btn.removeAttribute("data-default-label");
@@ -3837,7 +4378,7 @@
       btn.classList.toggle("approval-submit-pending", isPending && btn === activeButton);
     }
     if (activeButton && isPending) {
-      activeButton.textContent = "Submitting...";
+      activeButton.textContent = "Sending...";
     }
     if (el.commandApprovalInlineMatchMode) {
       el.commandApprovalInlineMatchMode.disabled = !!isPending;
@@ -3856,9 +4397,38 @@
     }
   }
 
+  function releaseApprovalAnswerUiPendingIfAdvanced(workspaceId, conversationId, conversationEntry) {
+    if (!approvalAnswerPending) {
+      return;
+    }
+    var wsId = String(workspaceId || "");
+    var convId = String(conversationId || "");
+    if (!wsId || !convId) {
+      return;
+    }
+    if (
+      String(state.activeWorkspaceId || "") !== wsId ||
+      String(state.activeConversationId || "") !== convId
+    ) {
+      return;
+    }
+    var entry = conversationEntry || {};
+    var lastStatus = String(entry.queue_last_status || "");
+    var hasApprovalRequest = !!normalizeApprovalRequest(entry.approval_request);
+    if (lastStatus === "awaiting_approval" || hasApprovalRequest) {
+      return;
+    }
+    approvalAnswerPending = false;
+    setApprovalAnswerUiPending(false, null);
+  }
+
   function submitApprovalRequestAnswerWithUi(decision, scope, sourceButton) {
     if (approvalAnswerPending) {
       return Promise.resolve();
+    }
+    var info = activeApprovalRequestInfo();
+    if (String(decision || "") === "allow" && info) {
+      startApprovalResumeWatch(info.workspaceId, info.conversationId);
     }
     approvalAnswerPending = true;
     setApprovalAnswerUiPending(true, sourceButton || null);
@@ -3925,9 +4495,10 @@
       ) {
         state.activeConversation.decision_request = normalizeDecisionRequest(response.decision_request);
       }
-      return loadConversation().catch(function () {
+      loadConversation({ timeoutMs: 6000 }).catch(function () {
         return null;
       });
+      return null;
     }).then(function () {
       renderUi();
       kickQueueWorker();
@@ -4446,6 +5017,7 @@
     }
 
     var messages = Array.isArray(state.activeConversation.messages) ? state.activeConversation.messages : [];
+    healRunningEventsForConversationFromSummary(state.activeWorkspaceId, state.activeConversationId);
     var events = runEventsForConversation(state.activeConversationId);
 
     if (!messages.length && !events.length && !pendingOutgoing.length) {
@@ -4466,8 +5038,9 @@
     }
 
     var html = "";
-    for (var i = 0; i < messages.length; i += 1) {
-      var msg = messages[i] || {};
+
+    function renderMessageAt(index) {
+      var msg = messages[index] || {};
       var role = msg.role === "user" ? "user" : "assistant";
       if (role === "user") {
         html += "<article class='msg user'>";
@@ -4479,13 +5052,50 @@
       }
     }
 
+    var queuePending = queueNumber(state.activeConversation && state.activeConversation.queue_pending);
+    var queueRunning = !!(state.activeConversation && String(state.activeConversation.queue_running || "0") === "1");
+    var queueIdle = !queueRunning && queuePending === 0;
+    var lastAssistantIndex = -1;
+    for (var i = messages.length - 1; i >= 0; i -= 1) {
+      if (String(messages[i] && messages[i].role || "") === "assistant") {
+        lastAssistantIndex = i;
+        break;
+      }
+    }
+    var latestDoneEvent = findLatestRunEventByStatus(state.activeConversationId, ["done"]);
+    var latestApprovalEvent = findLatestRunEventByStatus(state.activeConversationId, ["approval_granted"]);
+    var inlineTerminalBeforeLastAssistant = queueIdle && lastAssistantIndex >= 0 && (!!latestDoneEvent || !!latestApprovalEvent);
+
+    if (inlineTerminalBeforeLastAssistant) {
+      for (var before = 0; before < lastAssistantIndex; before += 1) {
+        renderMessageAt(before);
+      }
+      if (latestApprovalEvent) {
+        html += renderRunEvent(latestApprovalEvent, state.activeWorkspaceId, state.activeConversationId);
+      }
+      if (latestDoneEvent) {
+        html += renderRunEvent(latestDoneEvent, state.activeWorkspaceId, state.activeConversationId);
+      }
+      for (var after = lastAssistantIndex; after < messages.length; after += 1) {
+        renderMessageAt(after);
+      }
+    } else {
+      for (var m = 0; m < messages.length; m += 1) {
+        renderMessageAt(m);
+      }
+    }
+
     for (var p = 0; p < pendingOutgoing.length; p += 1) {
       var pending = pendingOutgoing[p] || {};
       html += "<article class='msg user pending'><div class='msg-body'>" + escHtml(pending.content || "") + "</div><p class='msg-pending-line'><span class='run-spinner' aria-hidden='true'></span>Sending...</p></article>";
     }
 
     for (var j = 0; j < events.length; j += 1) {
-      html += renderRunEvent(events[j], state.activeWorkspaceId, state.activeConversationId);
+      var event = events[j] || {};
+      if (inlineTerminalBeforeLastAssistant && isTerminalInfoRunEventStatus(event.status)) {
+        continue;
+      }
+      html += renderRunEvent(event, state.activeWorkspaceId, state.activeConversationId);
     }
 
     if (state.chatMarkupCache !== html) {
@@ -4531,14 +5141,10 @@
     return !!(node && el.chatLog.contains(node));
   }
 
-  function renderDiffView() {
-    if (!el.diffView) {
-      return;
-    }
-    var raw = state.diffText || "";
+  function formatDiff(diffText) {
+    var raw = String(diffText || "");
     if (!trim(raw)) {
-      el.diffView.innerHTML = "<p class='empty-state'>No diff available.</p>";
-      return;
+      return "<p class='empty-state'>No diff available.</p>";
     }
 
     var lines = raw.split(/\r?\n/);
@@ -4559,8 +5165,14 @@
 
       html += "<span class='diff-line" + cls + "'>" + escHtml(line || " ") + "</span>";
     }
+    return html;
+  }
 
-    el.diffView.innerHTML = html;
+  function renderDiffView() {
+    if (!el.diffView) {
+      return;
+    }
+    el.diffView.innerHTML = formatDiff(state.diffText || "");
   }
 
   function renderTerminal() {
@@ -5133,8 +5745,12 @@
     });
   }
 
-  function loadState() {
-    return apiGet("state").then(function (response) {
+  function loadState(options) {
+    var requestOptions = null;
+    if (options && Number(options.timeoutMs) > 0) {
+      requestOptions = { timeoutMs: Number(options.timeoutMs) };
+    }
+    return apiGet("state", {}, requestOptions).then(function (response) {
       if (!response.success) {
         throw new Error(response.error || "Failed to load state");
       }
@@ -5389,7 +6005,7 @@
     });
   }
 
-  function loadConversation() {
+  function loadConversation(options) {
     if (!state.activeWorkspaceId || !state.activeConversationId) {
       state.activeConversation = null;
       return Promise.resolve();
@@ -5397,11 +6013,15 @@
 
     var workspaceId = state.activeWorkspaceId;
     var conversationId = state.activeConversationId;
+    var requestOptions = null;
+    if (options && Number(options.timeoutMs) > 0) {
+      requestOptions = { timeoutMs: Number(options.timeoutMs) };
+    }
 
     return apiGet("get_conversation", {
       workspace_id: workspaceId,
       conversation_id: conversationId
-    }).then(function (response) {
+    }, requestOptions).then(function (response) {
       if (!response.success) {
         throw new Error(response.error || "Failed to load thread");
       }
@@ -6427,6 +7047,7 @@
 
     if (
       !approvalRetry &&
+      !queueItemId &&
       state.activeWorkspaceId === workspaceId &&
       state.activeConversation &&
       state.activeConversation.id === conversationId
@@ -6551,6 +7172,25 @@
           state.activeConversation.decision_request = decisionRequest;
         }
         var assistantText = trim(String(response.assistant || ""));
+        var responseQueueStatus = String(response.queue_last_status || "");
+        var responseApprovalRequest = normalizeApprovalRequest(response.approval_request);
+        var awaitingApproval = responseQueueStatus === "awaiting_approval" || !!responseApprovalRequest;
+        var awaitingDecision = responseQueueStatus === "awaiting_decision" || !!decisionRequest;
+        if (responseQueueStatus) {
+          setConversationQueueFields(workspaceId, conversationId, {
+            lastStatus: responseQueueStatus,
+            approvalRequest: typeof response.approval_request === "undefined" ? undefined : responseApprovalRequest
+          });
+        }
+        setAwaitingApprovalState(workspaceId, conversationId, awaitingApproval);
+        if (
+          state.activeConversation &&
+          state.activeWorkspaceId === workspaceId &&
+          state.activeConversationId === conversationId &&
+          typeof response.approval_request !== "undefined"
+        ) {
+          state.activeConversation.approval_request = responseApprovalRequest;
+        }
         if (assistantLooksLikeTrace(assistantText)) {
           if (pendingEvent && !trim(String(pendingEvent.failures || ""))) {
             pendingEvent.failures = assistantText;
@@ -6567,8 +7207,10 @@
             : "I couldn't produce a final response for that run. Please retry.";
         }
 
+        appendAssistantMessageOptimistic(workspaceId, conversationId, assistantText);
+
         var blockedCommands = Array.isArray(response.blocked_commands) ? response.blocked_commands : [];
-        if (blockedCommands.length) {
+        if (blockedCommands.length && !queueItemId) {
           return handleBlockedCommandsApproval(workspaceId, conversationId, blockedCommands).then(function (approved) {
             if (!approved) {
               throw new Error("Command execution denied.");
@@ -6584,7 +7226,9 @@
         }
 
         if (pendingEvent) {
-          pendingEvent.status = "done";
+          pendingEvent.status = awaitingApproval
+            ? "awaiting_approval"
+            : (awaitingDecision ? "awaiting_decision" : "done");
           pendingEvent.model = response.model || "";
           pendingEvent.plan = response.plan || "";
           pendingEvent.commands = response.commands || [];
@@ -6595,6 +7239,7 @@
           pendingEvent.session_log = response.session_log || "";
           pendingEvent.finished_at = new Date().toISOString();
         }
+        renderUi();
 
         return loadState()
           .then(function () {
@@ -6605,7 +7250,7 @@
             }
 
             if (state.activeWorkspaceId && state.activeConversationId) {
-              return loadConversation().catch(function () {
+              return loadConversation({ timeoutMs: 6000 }).catch(function () {
                 if (
                   assistantText &&
                   state.activeConversation &&
@@ -6646,8 +7291,8 @@
           .then(function () {
             renderUi();
             return {
-              awaitingDecision: !!decisionRequest,
-              awaitingApproval: false
+              awaitingDecision: awaitingDecision,
+              awaitingApproval: awaitingApproval
             };
           });
       })
@@ -6684,15 +7329,60 @@
     });
 
     var queueLastStatus = String(response.queue_last_status || "");
-    if (queueLastStatus === "awaiting_approval") {
-      setAwaitingApprovalState(workspaceId, conversationId, true);
-    } else if (
-      queueLastStatus === "done" ||
-      queueLastStatus === "error" ||
-      queueLastStatus === "cancelled" ||
-      queueLastStatus === "awaiting_decision"
+    var hasApprovalRequest = !!normalizeApprovalRequest(response.approval_request);
+    setAwaitingApprovalState(
+      workspaceId,
+      conversationId,
+      queueLastStatus === "awaiting_approval" || hasApprovalRequest
+    );
+    releaseApprovalAnswerUiPendingIfAdvanced(workspaceId, conversationId, {
+      queue_last_status: queueLastStatus,
+      approval_request: response.approval_request
+    });
+    var responseRunning = Number(response.queue_running || 0) > 0;
+    var queueTerminal = !responseRunning && pendingCount === 0;
+    if (queueTerminal) {
+      var eventStatus = queueLastStatus;
+      if (
+        eventStatus !== "done" &&
+        eventStatus !== "error" &&
+        eventStatus !== "cancelled" &&
+        eventStatus !== "awaiting_decision" &&
+        eventStatus !== "awaiting_approval"
+      ) {
+        eventStatus = "done";
+      }
+      finalizeAllRunningEvents(
+        conversationId,
+        eventStatus || "done",
+        eventStatus === "error" ? "Run did not complete." : ""
+      );
+      if (eventStatus !== "awaiting_approval") {
+        setAwaitingApprovalState(workspaceId, conversationId, false);
+      }
+    }
+    if (
+      !responseRunning &&
+      state.busy &&
+      String(state.runningWorkspaceId || "") === String(workspaceId || "") &&
+      String(state.runningConversationId || "") === String(conversationId || "")
     ) {
-      setAwaitingApprovalState(workspaceId, conversationId, false);
+      var eventStatus = queueLastStatus;
+      if (
+        eventStatus !== "done" &&
+        eventStatus !== "error" &&
+        eventStatus !== "cancelled" &&
+        eventStatus !== "awaiting_decision" &&
+        eventStatus !== "awaiting_approval"
+      ) {
+        eventStatus = "done";
+      }
+      finalizeAllRunningEvents(
+        conversationId,
+        eventStatus || "done",
+        eventStatus === "error" ? "Run did not complete." : ""
+      );
+      setBusy(false);
     }
 
     if (pendingCount === 0 && conversationId) {
@@ -6768,6 +7458,7 @@
     var pollTimer = null;
     var maxWaitMs = 180000;
     var pollFailures = 0;
+    var missingConversationPolls = 0;
 
     var promise = new Promise(function (resolve) {
       function finish(payload) {
@@ -6792,10 +7483,22 @@
             if (!active) {
               return;
             }
+            var hasQueuedOrRunning = hasAnyQueuedOrRunningConversationInStateResponse(response);
             var conversation = findConversationStateEntry(response, workspaceId, conversationId);
             if (!conversation) {
+              missingConversationPolls += 1;
+              if (!hasQueuedOrRunning || missingConversationPolls >= 4) {
+                finish({
+                  lastStatus: "done",
+                  pending: 0,
+                  firstId: "",
+                  decisionRequest: undefined,
+                  approvalRequest: undefined
+                });
+              }
               return;
             }
+            missingConversationPolls = 0;
             var running = String(conversation.queue_running || "0") === "1";
             var pending = queueNumber(conversation.queue_pending);
             var firstId = String(conversation.queue_first_id || "");
@@ -6822,7 +7525,8 @@
               lastStatus: lastStatus,
               pending: pending,
               firstId: firstId,
-              decisionRequest: typeof conversation.decision_request === "undefined" ? undefined : conversation.decision_request
+              decisionRequest: typeof conversation.decision_request === "undefined" ? undefined : conversation.decision_request,
+              approvalRequest: typeof conversation.approval_request === "undefined" ? undefined : conversation.approval_request
             });
           })
           .catch(function () {
@@ -6866,8 +7570,9 @@
     };
   }
 
-  function executeQueuedItem(workspaceId, conversationId, queueItem) {
+  function executeQueuedItem(workspaceId, conversationId, queueItem, executeOptions) {
     var item = queueItem || {};
+    var options = executeOptions || {};
     var itemId = item.id || "";
     var runError = null;
     var runResult = null;
@@ -6875,6 +7580,7 @@
     var finalErrorText = "";
     var queueFinalizeApplied = false;
     var queueWatch = null;
+    var resumedPendingEvent = null;
 
     if (itemId && state.lastQueuedItemIdByConversation[conversationId] === itemId) {
       delete state.lastQueuedItemIdByConversation[conversationId];
@@ -6886,6 +7592,17 @@
       done: false,
       lastStatus: "running"
     });
+    if (options.approvalRetry === true) {
+      resumedPendingEvent = findLatestRunEventByStatus(conversationId, ["awaiting_approval", "done", "running"]);
+      if (resumedPendingEvent) {
+        resumedPendingEvent.status = "running";
+        resumedPendingEvent.finished_at = "";
+        resumedPendingEvent.error = "";
+        if (!trim(String(resumedPendingEvent.started_at || ""))) {
+          resumedPendingEvent.started_at = new Date().toISOString();
+        }
+      }
+    }
     renderUi();
 
     queueWatch = startQueueCompletionWatch(workspaceId, conversationId, itemId);
@@ -6910,6 +7627,12 @@
           decisionRequest: watchInfo.decisionRequest
         });
       }
+      if (typeof watchInfo.approvalRequest !== "undefined") {
+        setConversationQueueFields(workspaceId, conversationId, {
+          approvalRequest: watchInfo.approvalRequest
+        });
+      }
+      setAwaitingApprovalState(workspaceId, conversationId, finalStatus === "awaiting_approval");
       setConversationQueueFields(workspaceId, conversationId, {
         pending: queueNumber(watchInfo.pending),
         running: false,
@@ -6921,11 +7644,25 @@
         runError = new Error("Run ended with an error.");
         finalErrorText = runError.message;
       } else {
+        finalErrorText = "";
         runResult = {
           awaitingDecision: finalStatus === "awaiting_decision",
           awaitingApproval: finalStatus === "awaiting_approval"
         };
       }
+      finalizeAllRunningEvents(
+        conversationId,
+        finalStatus,
+        finalStatus === "error" ? finalErrorText || "Run did not complete." : finalErrorText
+      );
+      if (
+        state.busy &&
+        String(state.runningWorkspaceId || "") === String(workspaceId || "") &&
+        String(state.runningConversationId || "") === String(conversationId || "")
+      ) {
+        setBusy(false);
+      }
+      renderUi();
       return true;
     }
 
@@ -6933,7 +7670,9 @@
       runAgent(workspaceId, conversationId, item.prompt || "", {
         preserveSelection: true,
         attachments: Array.isArray(item.attachments) ? item.attachments : [],
-        queueItemId: itemId
+        queueItemId: itemId,
+        approvalRetry: options.approvalRetry === true,
+        pendingEvent: resumedPendingEvent
       })
         .then(function (result) {
           return { kind: "run", result: result || null };
@@ -6995,19 +7734,6 @@
           return null;
         });
       })
-      .then(function () {
-        return loadState().catch(function () {
-          return null;
-        });
-      })
-      .then(function () {
-        if (state.activeWorkspaceId && state.activeConversationId) {
-          return loadConversation().catch(function () {
-            return null;
-          });
-        }
-        return null;
-      })
       .finally(function () {
         if (queueWatch) {
           queueWatch.stop();
@@ -7019,15 +7745,39 @@
             lastStatus: finalStatus
           });
         }
-        finalizeLatestRunningEvent(conversationId, finalStatus, finalErrorText);
+        finalizeAllRunningEvents(
+          conversationId,
+          finalStatus,
+          finalStatus === "error" ? finalErrorText || "Run did not complete." : finalErrorText
+        );
         setBusy(false);
         renderUi();
+        loadState()
+          .catch(function () {
+            return null;
+          })
+          .then(function () {
+            if (state.activeWorkspaceId && state.activeConversationId) {
+              return loadConversation({ timeoutMs: 6000 }).catch(function () {
+                return null;
+              });
+            }
+            return null;
+          })
+          .finally(function () {
+            renderUi();
+          });
       });
   }
 
   function drainQueuedRuns() {
     if (state.busy) {
-      return Promise.resolve();
+      return clearStaleBusyIfNeeded().then(function (cleared) {
+        if (cleared) {
+          return drainQueuedRuns();
+        }
+        return null;
+      });
     }
 
     var target = findNextQueuedConversation();
@@ -7064,6 +7814,174 @@
 
       return executeQueuedItem(target.workspaceId, target.conversationId, response.item).then(function () {
         return drainQueuedRuns();
+      });
+    });
+  }
+
+  function clearStaleBusyIfNeeded() {
+    if (!state.busy) {
+      return Promise.resolve(false);
+    }
+    return apiGet("state", {}, { timeoutMs: 9000 })
+      .then(function (response) {
+        var workspaces = response && Array.isArray(response.workspaces) ? response.workspaces : [];
+        var hasQueueRunning = false;
+        for (var i = 0; i < workspaces.length; i += 1) {
+          var workspace = workspaces[i] || {};
+          var conversations = Array.isArray(workspace.conversations) ? workspace.conversations : [];
+          for (var j = 0; j < conversations.length; j += 1) {
+            if (String(conversations[j] && conversations[j].queue_running || "0") === "1") {
+              hasQueueRunning = true;
+              break;
+            }
+          }
+          if (hasQueueRunning) {
+            break;
+          }
+        }
+        if (!hasQueueRunning) {
+          setBusy(false);
+          return true;
+        }
+        return false;
+      })
+      .catch(function () {
+        return false;
+      });
+  }
+
+  function stopApprovalResumeWatch() {
+    if (approvalResumeWatchTimer) {
+      clearInterval(approvalResumeWatchTimer);
+      approvalResumeWatchTimer = null;
+    }
+    approvalResumeWatchBusy = false;
+    approvalResumeWatchKey = "";
+    approvalResumeWatchDeadline = 0;
+  }
+
+  function startApprovalResumeWatch(workspaceId, conversationId) {
+    var wsId = String(workspaceId || "");
+    var convId = String(conversationId || "");
+    if (!wsId || !convId) {
+      return;
+    }
+
+    stopApprovalResumeWatch();
+    var watchKey = conversationReadKey(wsId, convId);
+    approvalResumeWatchKey = watchKey;
+    approvalResumeWatchDeadline = Date.now() + 90000;
+
+    function tick() {
+      if (
+        approvalResumeWatchKey !== watchKey ||
+        approvalResumeWatchBusy
+      ) {
+        return;
+      }
+      if (Date.now() > approvalResumeWatchDeadline) {
+        stopApprovalResumeWatch();
+        return;
+      }
+
+      approvalResumeWatchBusy = true;
+      apiGet("state", {}, { timeoutMs: 9000 })
+        .then(function (response) {
+          if (approvalResumeWatchKey !== watchKey) {
+            return;
+          }
+
+          var conversation = findConversationStateEntry(response, wsId, convId);
+          if (!conversation) {
+            return;
+          }
+
+          var pending = queueNumber(conversation.queue_pending);
+          var running = String(conversation.queue_running || "0") === "1";
+          syncConversationQueueFromStateEntry(wsId, convId, conversation);
+          releaseApprovalAnswerUiPendingIfAdvanced(wsId, convId, conversation);
+
+          if (pending > 0 && !running && !state.busy) {
+            state.queueWorkerActive = false;
+            kickQueueWorker();
+            return;
+          }
+
+          if (running || pending > 0) {
+            return;
+          }
+
+          if (
+            state.busy &&
+            String(state.runningWorkspaceId || "") === wsId &&
+            String(state.runningConversationId || "") === convId
+          ) {
+            setBusy(false);
+          }
+
+          if (
+            state.activeWorkspaceId === wsId &&
+            state.activeConversationId === convId
+          ) {
+            loadConversation({ timeoutMs: 6000 }).catch(function () {
+              return null;
+            });
+            renderUi();
+            stopApprovalResumeWatch();
+            return;
+          }
+
+          renderUi();
+          stopApprovalResumeWatch();
+        })
+        .catch(function () {
+          return null;
+        })
+        .finally(function () {
+          approvalResumeWatchBusy = false;
+        });
+    }
+
+    approvalResumeWatchTimer = setInterval(tick, 1200);
+    tick();
+  }
+
+  function resumeConversationQueueNow(workspaceId, conversationId) {
+    var wsId = String(workspaceId || "");
+    var convId = String(conversationId || "");
+    if (!wsId || !convId) {
+      return Promise.resolve(false);
+    }
+
+    if (state.busy) {
+      return clearStaleBusyIfNeeded().then(function (cleared) {
+        if (!cleared && state.busy) {
+          return false;
+        }
+        return resumeConversationQueueNow(wsId, convId);
+      });
+    }
+
+    return apiPost("queue_take", {
+      workspace_id: wsId,
+      conversation_id: convId
+    }).then(function (response) {
+      if (!response || !response.success) {
+        throw new Error((response && response.error) || "Could not resume queued run");
+      }
+      applyQueueStateFromResponse(wsId, convId, response);
+      if (response.busy || !response.has_item || !response.item) {
+        return false;
+      }
+      setConversationQueueFields(wsId, convId, {
+        pending: queueNumber(response.queue_pending),
+        running: true,
+        done: false,
+        firstId: response.queue_first_id || "",
+        lastStatus: "running"
+      });
+      return executeQueuedItem(wsId, convId, response.item, { approvalRetry: true }).then(function () {
+        return true;
       });
     });
   }
@@ -9154,6 +10072,8 @@
     }
     stopModelInstallPolling();
     stopModelAutoRefreshLoop();
+    stopRunEventHealLoop();
+    stopApprovalResumeWatch();
     clearPendingAttachments();
   });
 
@@ -9193,12 +10113,16 @@
     .then(function () {
       kickQueueWorker();
       startModelAutoRefreshLoop();
+      startRunEventHealLoop();
       if (typeof window !== "undefined") {
         window.__artificerBooted = true;
       }
     })
     .catch(function (error) {
       state.initialLoadComplete = true;
+      startRunEventHealLoop();
+      state.queueWorkerActive = false;
+      kickQueueWorker();
       showError(error);
     });
 })();

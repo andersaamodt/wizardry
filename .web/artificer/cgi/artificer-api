@@ -541,7 +541,9 @@ rule_matches_command() {
   cmd=$3
   case "$match_mode" in
     exact)
-      [ "$cmd" = "$pattern" ]
+      cmd_norm=$(normalize_rule_field "$cmd")
+      pattern_norm=$(normalize_rule_field "$pattern")
+      [ "$cmd_norm" = "$pattern_norm" ]
       return $?
       ;;
     regex)
