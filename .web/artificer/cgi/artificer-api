@@ -489,7 +489,7 @@ ensure_command_policy_layout() {
   policy_dir=$(command_policy_dir_for "$workspace_id")
   mkdir -p "$policy_dir"
   mode_file=$(command_policy_mode_file_for "$workspace_id")
-  [ -f "$mode_file" ] || printf '%s\n' "ask" > "$mode_file"
+  [ -f "$mode_file" ] || printf '%s\n' "ask-some" > "$mode_file"
   rules_file=$(command_policy_rules_file_for "$workspace_id")
   [ -f "$rules_file" ] || : > "$rules_file"
   once_rules_file=$(command_policy_once_rules_file_for "$workspace_id")
@@ -499,13 +499,16 @@ ensure_command_policy_layout() {
 command_policy_mode_for_workspace() {
   workspace_id=$1
   ensure_command_policy_layout "$workspace_id"
-  mode=$(read_file_line "$(command_policy_mode_file_for "$workspace_id")" "ask")
+  mode=$(read_file_line "$(command_policy_mode_file_for "$workspace_id")" "ask-some")
   case "$(printf '%s' "$mode" | tr '[:upper:]' '[:lower:]')" in
-    none|ask|all)
+    ask)
+      printf '%s' "ask-some"
+      ;;
+    none|ask-all|ask-some|all)
       printf '%s' "$(printf '%s' "$mode" | tr '[:upper:]' '[:lower:]')"
       ;;
     *)
-      printf '%s' "ask"
+      printf '%s' "ask-some"
       ;;
   esac
 }
@@ -514,8 +517,9 @@ set_command_policy_mode_for_workspace() {
   workspace_id=$1
   mode=$2
   case "$mode" in
-    none|ask|all) ;;
-    *) mode="ask" ;;
+    ask) mode="ask-some" ;;
+    none|ask-all|ask-some|all) ;;
+    *) mode="ask-some" ;;
   esac
   ensure_command_policy_layout "$workspace_id"
   printf '%s\n' "$mode" > "$(command_policy_mode_file_for "$workspace_id")"
@@ -533,6 +537,50 @@ command_text_to_rule_pattern_default() {
 
 normalize_rule_field() {
   printf '%s' "$1" | tr '\n' ' ' | tr '\t' ' ' | sed 's/[[:space:]]\+/ /g;s/^ //;s/ $//'
+}
+
+command_first_token() {
+  cmd=$(normalize_rule_field "$1")
+  printf '%s\n' "$cmd" | awk '{print $1}'
+}
+
+command_has_shell_meta() {
+  cmd=$1
+  case "$cmd" in
+    *';'*|*'&&'*|*'||'*|*'|'*|*'>'*|*'<'*|*'`'*|*'$('*)
+      return 0
+      ;;
+  esac
+  return 1
+}
+
+global_safe_default_rules_json() {
+  printf '['
+  printf '{"id":"g1","label":"ls","match_mode":"regex","pattern":"^ls([[:space:]].*)?$"}'
+  printf ',{"id":"g2","label":"pwd","match_mode":"regex","pattern":"^pwd([[:space:]].*)?$"}'
+  printf ',{"id":"g3","label":"whoami","match_mode":"regex","pattern":"^whoami([[:space:]].*)?$"}'
+  printf ',{"id":"g4","label":"uname","match_mode":"regex","pattern":"^uname([[:space:]].*)?$"}'
+  printf ',{"id":"g5","label":"cat/head/tail/wc","match_mode":"regex","pattern":"^(cat|head|tail|wc)([[:space:]].*)?$"}'
+  printf ',{"id":"g6","label":"grep/find/stat/file/realpath","match_mode":"regex","pattern":"^(grep|find|stat|file|realpath)([[:space:]].*)?$"}'
+  printf ',{"id":"g7","label":"git read-only","match_mode":"regex","pattern":"^git[[:space:]]+(status|diff|log|show|branch|rev-parse)([[:space:]].*)?$"}'
+  printf ']'
+}
+
+command_matches_global_safe_default() {
+  cmd=$(normalize_rule_field "$1")
+  [ -n "$cmd" ] || return 1
+  if command_has_shell_meta "$cmd"; then
+    return 1
+  fi
+  case "$cmd" in
+    ls|ls\ *|pwd|pwd\ *|whoami|whoami\ *|uname|uname\ *|cat\ *|head\ *|tail\ *|wc\ *|grep\ *|find\ *|stat\ *|file\ *|realpath\ *)
+      return 0
+      ;;
+    git\ status|git\ status\ *|git\ diff|git\ diff\ *|git\ log|git\ log\ *|git\ show|git\ show\ *|git\ branch|git\ branch\ *|git\ rev-parse|git\ rev-parse\ *)
+      return 0
+      ;;
+  esac
+  return 1
 }
 
 rule_matches_command() {
@@ -575,7 +623,108 @@ append_command_rule() {
       rules_file=$(command_policy_rules_file_for "$workspace_id")
       ;;
   esac
+  existing_match=$(awk -F'\t' -v d="$decision" -v m="$match_mode" -v p="$pattern" '
+    NF >= 3 && $1 == d && $2 == m && $3 == p { found = 1; exit }
+    END { if (found) print "1"; else print "0" }
+  ' "$rules_file" 2>/dev/null || printf '0')
+  if [ "$existing_match" = "1" ]; then
+    return 0
+  fi
   printf '%s\t%s\t%s\n' "$decision" "$match_mode" "$pattern" >> "$rules_file"
+}
+
+command_rules_json_for_workspace() {
+  workspace_id=$1
+  ensure_command_policy_layout "$workspace_id"
+  remember_file=$(command_policy_rules_file_for "$workspace_id")
+  once_file=$(command_policy_once_rules_file_for "$workspace_id")
+
+  printf '{"success":true,"workspace_id":"%s","global_defaults":' "$(json_escape "$workspace_id")"
+  global_safe_default_rules_json
+
+  printf ',"remembered":['
+  first=1
+  idx=0
+  if [ -f "$remember_file" ]; then
+    while IFS= read -r line; do
+      [ -n "$line" ] || continue
+      idx=$((idx + 1))
+      decision=$(printf '%s' "$line" | awk -F'\t' '{print $1}')
+      match_mode=$(printf '%s' "$line" | awk -F'\t' '{print $2}')
+      pattern=$(printf '%s' "$line" | awk -F'\t' '{print $3}')
+      [ -n "$decision" ] || continue
+      [ -n "$match_mode" ] || match_mode="exact"
+      if [ "$first" -eq 0 ]; then
+        printf ','
+      fi
+      first=0
+      printf '{"index":"%s","decision":"%s","match_mode":"%s","pattern":"%s"}' \
+        "$(json_escape "$idx")" "$(json_escape "$decision")" "$(json_escape "$match_mode")" "$(json_escape "$pattern")"
+    done < "$remember_file"
+  fi
+  printf ']'
+
+  printf ',"once":['
+  first=1
+  idx=0
+  if [ -f "$once_file" ]; then
+    while IFS= read -r line; do
+      [ -n "$line" ] || continue
+      idx=$((idx + 1))
+      decision=$(printf '%s' "$line" | awk -F'\t' '{print $1}')
+      match_mode=$(printf '%s' "$line" | awk -F'\t' '{print $2}')
+      pattern=$(printf '%s' "$line" | awk -F'\t' '{print $3}')
+      [ -n "$decision" ] || continue
+      [ -n "$match_mode" ] || match_mode="exact"
+      if [ "$first" -eq 0 ]; then
+        printf ','
+      fi
+      first=0
+      printf '{"index":"%s","decision":"%s","match_mode":"%s","pattern":"%s"}' \
+        "$(json_escape "$idx")" "$(json_escape "$decision")" "$(json_escape "$match_mode")" "$(json_escape "$pattern")"
+    done < "$once_file"
+  fi
+  printf ']'
+  printf '}\n'
+}
+
+delete_command_rule_by_index() {
+  workspace_id=$1
+  scope=$2
+  index_raw=$3
+  index_num=$(printf '%s' "$index_raw" | awk '{print int($1)}')
+  if [ "$index_num" -lt 1 ] 2>/dev/null; then
+    return 1
+  fi
+  ensure_command_policy_layout "$workspace_id"
+  case "$scope" in
+    once)
+      rules_file=$(command_policy_once_rules_file_for "$workspace_id")
+      ;;
+    remember)
+      rules_file=$(command_policy_rules_file_for "$workspace_id")
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+  tmp_file=$(mktemp)
+  found=0
+  i=0
+  if [ -f "$rules_file" ]; then
+    while IFS= read -r line; do
+      if [ -n "$line" ]; then
+        i=$((i + 1))
+      fi
+      if [ "$i" -eq "$index_num" ] && [ "$found" -eq 0 ]; then
+        found=1
+        continue
+      fi
+      printf '%s\n' "$line" >> "$tmp_file"
+    done < "$rules_file"
+  fi
+  mv "$tmp_file" "$rules_file"
+  [ "$found" -eq 1 ]
 }
 
 command_policy_decision() {
@@ -591,6 +740,17 @@ command_policy_decision() {
   printf '%s' "" > "$source_file"
   printf '%s' "" > "$matched_pattern_file"
   printf '%s' "" > "$matched_scope_file"
+
+  case "$mode" in
+    ask)
+      mode="ask-some"
+      ;;
+    none|ask-all|ask-some|all)
+      ;;
+    *)
+      mode="ask-some"
+      ;;
+  esac
 
   case "$mode" in
     none)
@@ -652,6 +812,14 @@ command_policy_decision() {
         return 0
       fi
     done < "$rules_file"
+  fi
+
+  if [ "$mode" = "ask-some" ] && command_matches_global_safe_default "$cmd"; then
+    printf '%s' "allow" > "$decision_file"
+    printf '%s' "global-safe-default" > "$source_file"
+    printf '%s' "$(command_first_token "$cmd")" > "$matched_pattern_file"
+    printf '%s' "global" > "$matched_scope_file"
+    return 0
   fi
 
   printf '%s' "prompt" > "$decision_file"
@@ -1658,18 +1826,66 @@ emit_model_installs_json() {
       fi
     fi
 
+    log_tail=$(tail -n 120 "$job_dir/log" 2>/dev/null || true)
+    install_phase="running"
+    install_progress=""
+    if [ "$status" = "done" ]; then
+      install_phase="done"
+      install_progress="100"
+    elif [ "$status" = "failed" ]; then
+      install_phase="failed"
+      install_progress=""
+    else
+      parse_result=$(infer_model_install_phase_progress "$log_tail")
+      install_phase=$(printf '%s\n' "$parse_result" | cut -d'|' -f1)
+      install_progress=$(printf '%s\n' "$parse_result" | cut -d'|' -f2)
+      [ -n "$install_phase" ] || install_phase="running"
+    fi
+
     if [ "$first" -eq 0 ]; then
       printf ','
     fi
     first=0
-    printf '{"id":"%s","model":"%s","status":"%s","started":"%s","finished":"%s"}' \
+    printf '{"id":"%s","model":"%s","status":"%s","phase":"%s","progress_pct":"%s","started":"%s","finished":"%s"}' \
       "$(json_escape "$job_id")" \
       "$(json_escape "$model_name")" \
       "$(json_escape "$status")" \
+      "$(json_escape "$install_phase")" \
+      "$(json_escape "$install_progress")" \
       "$(json_escape "$started")" \
       "$(json_escape "$finished")"
   done
   printf ']'
+}
+
+infer_model_install_phase_progress() {
+  log_text=$1
+  phase="running"
+  progress=""
+  if [ -n "$log_text" ]; then
+    if printf '%s\n' "$log_text" | grep -Eiq 'verifying sha256|writing manifest|extracting|finalizing|installed'; then
+      phase="installing"
+    fi
+    if printf '%s\n' "$log_text" | grep -Eiq 'pulling manifest|pulling |downloading '; then
+      phase="downloading"
+    fi
+    raw_progress=$(printf '%s\n' "$log_text" | grep -Eo '([0-9]{1,3})(\.[0-9]+)?%' | tail -n 1 | tr -d '%' || true)
+    if [ -n "$raw_progress" ]; then
+      progress=$(printf '%s\n' "$raw_progress" | awk '
+        {
+          v=$1 + 0
+          if (v < 0) v = 0
+          if (v > 100) v = 100
+          printf "%d", v
+        }
+      ')
+      phase="downloading"
+      if [ "$progress" -ge 100 ] 2>/dev/null; then
+        phase="installing"
+      fi
+    fi
+  fi
+  printf '%s|%s\n' "$phase" "$progress"
 }
 
 OLLAMA_BIN=""
@@ -2558,8 +2774,9 @@ execute_mediated_command() {
   tool_command=$3
   output_file=$4
   status_file=$5
-  command_mode=${6:-ask}
+  command_mode=${6:-ask-some}
   blocked_file=${7:-}
+  decision_hint_file=${8:-}
   first_word=$(printf '%s\n' "$tool_command" | awk '{print $1}')
 
   decision_file=$(mktemp)
@@ -2569,6 +2786,17 @@ execute_mediated_command() {
   command_policy_decision "$workspace_id" "$tool_command" "$command_mode" "$decision_file" "$source_file" "$matched_pattern_file" "$matched_scope_file"
   decision=$(cat "$decision_file" 2>/dev/null || printf '%s' "prompt")
   source=$(cat "$source_file" 2>/dev/null || printf '%s' "")
+  decision_hint=""
+  case "$source" in
+    global-safe-default) decision_hint="global default" ;;
+    rule) decision_hint="workspace rule" ;;
+    once-rule) decision_hint="workspace one-time rule" ;;
+    mode-all) decision_hint="workspace mode all" ;;
+    mode-none) decision_hint="workspace mode none" ;;
+  esac
+  if [ -n "$decision_hint_file" ]; then
+    printf '%s' "$decision_hint" > "$decision_hint_file"
+  fi
   rm -f "$decision_file" "$source_file" "$matched_pattern_file" "$matched_scope_file"
 
   if [ "$decision" = "deny" ]; then
@@ -3405,6 +3633,79 @@ case "$action" in
     exit 0
     ;;
 
+  command_rules_list)
+    workspace_id=$(trim "$(param "workspace_id")")
+    if ! valid_id "$workspace_id"; then
+      emit_error "invalid workspace_id"
+      exit 0
+    fi
+    ws_dir=$(workspace_dir_for "$workspace_id")
+    if [ ! -d "$ws_dir" ]; then
+      emit_error "workspace not found"
+      exit 0
+    fi
+    command_rules_json_for_workspace "$workspace_id"
+    exit 0
+    ;;
+
+  command_rule_delete)
+    workspace_id=$(trim "$(param "workspace_id")")
+    scope=$(trim "$(param "scope")")
+    index_raw=$(trim "$(param "index")")
+    if ! valid_id "$workspace_id"; then
+      emit_error "invalid workspace_id"
+      exit 0
+    fi
+    ws_dir=$(workspace_dir_for "$workspace_id")
+    if [ ! -d "$ws_dir" ]; then
+      emit_error "workspace not found"
+      exit 0
+    fi
+    case "$scope" in
+      remember|once) ;;
+      *) emit_error "invalid scope"; exit 0 ;;
+    esac
+    if ! delete_command_rule_by_index "$workspace_id" "$scope" "$index_raw"; then
+      emit_error "rule not found"
+      exit 0
+    fi
+    printf '{"success":true,"deleted":true}\n'
+    exit 0
+    ;;
+
+  command_rules_clear)
+    workspace_id=$(trim "$(param "workspace_id")")
+    scope=$(trim "$(param "scope")")
+    if ! valid_id "$workspace_id"; then
+      emit_error "invalid workspace_id"
+      exit 0
+    fi
+    ws_dir=$(workspace_dir_for "$workspace_id")
+    if [ ! -d "$ws_dir" ]; then
+      emit_error "workspace not found"
+      exit 0
+    fi
+    ensure_command_policy_layout "$workspace_id"
+    case "$scope" in
+      remember)
+        : > "$(command_policy_rules_file_for "$workspace_id")"
+        ;;
+      once)
+        : > "$(command_policy_once_rules_file_for "$workspace_id")"
+        ;;
+      all)
+        : > "$(command_policy_rules_file_for "$workspace_id")"
+        : > "$(command_policy_once_rules_file_for "$workspace_id")"
+        ;;
+      *)
+        emit_error "invalid scope"
+        exit 0
+        ;;
+    esac
+    printf '{"success":true,"cleared":true}\n'
+    exit 0
+    ;;
+
   command_policy_set)
     workspace_id=$(trim "$(param "workspace_id")")
     mode=$(trim "$(param "mode")")
@@ -3418,7 +3719,7 @@ case "$action" in
       exit 0
     fi
     case "$(printf '%s' "$mode" | tr '[:upper:]' '[:lower:]')" in
-      none|ask|all)
+      none|ask|ask-all|ask-some|all)
         mode=$(printf '%s' "$mode" | tr '[:upper:]' '[:lower:]')
         ;;
       *)
@@ -3427,6 +3728,7 @@ case "$action" in
         ;;
     esac
     set_command_policy_mode_for_workspace "$workspace_id" "$mode"
+    mode=$(command_policy_mode_for_workspace "$workspace_id")
     printf '{"success":true,"mode":"%s"}\n' "$(json_escape "$mode")"
     exit 0
     ;;
@@ -3618,19 +3920,50 @@ case "$action" in
     printf '%s\n' "running" > "$job_dir/status"
     date +%s > "$job_dir/started"
 
-    (
-      set +e
-      run_ai_dev_script install-llm "$model_name" >"$log_file" 2>&1
-      install_rc=$?
-      set -e
-      printf '%s\n' "$install_rc" > "$job_dir/exit_code"
-      if [ "$install_rc" -eq 0 ]; then
-        printf '%s\n' "done" > "$job_dir/status"
-      else
-        printf '%s\n' "failed" > "$job_dir/status"
-      fi
-      date +%s > "$job_dir/finished"
-    ) &
+    runner_script="$job_dir/run-install.sh"
+    cat >"$runner_script" <<'EOF_RUNNER'
+#!/bin/sh
+set -eu
+job_dir=$1
+model_name=$2
+log_file=$3
+
+run_ai_dev_script_path=$4
+
+set +e
+"$run_ai_dev_script_path" install-llm "$model_name" >"$log_file" 2>&1
+install_rc=$?
+set -e
+printf '%s\n' "$install_rc" > "$job_dir/exit_code"
+if [ "$install_rc" -eq 0 ]; then
+  printf '%s\n' "done" > "$job_dir/status"
+else
+  printf '%s\n' "failed" > "$job_dir/status"
+fi
+date +%s > "$job_dir/finished"
+EOF_RUNNER
+    chmod +x "$runner_script"
+
+    run_ai_dev_wrapper="$job_dir/run-ai-dev-wrapper"
+    cat >"$run_ai_dev_wrapper" <<EOF_WRAPPER
+#!/bin/sh
+set -eu
+AI_DEV_DIR=$(printf '%s\n' "$AI_DEV_DIR")
+script_name=\$1
+shift
+script_path="\$AI_DEV_DIR/\$script_name"
+if [ ! -x "\$script_path" ]; then
+  exit 1
+fi
+"\$script_path" "\$@"
+EOF_WRAPPER
+    chmod +x "$run_ai_dev_wrapper"
+
+    if command -v setsid >/dev/null 2>&1; then
+      setsid "$runner_script" "$job_dir" "$model_name" "$log_file" "$run_ai_dev_wrapper" >/dev/null 2>&1 &
+    else
+      nohup "$runner_script" "$job_dir" "$model_name" "$log_file" "$run_ai_dev_wrapper" >/dev/null 2>&1 &
+    fi
     install_pid=$!
     printf '%s\n' "$install_pid" > "$job_dir/pid"
 
@@ -3667,12 +4000,28 @@ case "$action" in
         esac
       fi
     fi
-    log_tail=$(tail -n 80 "$job_dir/log" 2>/dev/null || true)
+    log_tail=$(tail -n 160 "$job_dir/log" 2>/dev/null || true)
+    install_phase="running"
+    install_progress=""
+    if [ "$status" = "done" ]; then
+      install_phase="done"
+      install_progress="100"
+    elif [ "$status" = "failed" ]; then
+      install_phase="failed"
+      install_progress=""
+    else
+      parse_result=$(infer_model_install_phase_progress "$log_tail")
+      install_phase=$(printf '%s\n' "$parse_result" | cut -d'|' -f1)
+      install_progress=$(printf '%s\n' "$parse_result" | cut -d'|' -f2)
+      [ -n "$install_phase" ] || install_phase="running"
+    fi
 
-    printf '{"success":true,"job":{"id":"%s","model":"%s","status":"%s","started":"%s","finished":"%s","exit_code":"%s","log":"%s"}}\n' \
+    printf '{"success":true,"job":{"id":"%s","model":"%s","status":"%s","phase":"%s","progress_pct":"%s","started":"%s","finished":"%s","exit_code":"%s","log":"%s"}}\n' \
       "$(json_escape "$job_id")" \
       "$(json_escape "$model_name")" \
       "$(json_escape "$status")" \
+      "$(json_escape "$install_phase")" \
+      "$(json_escape "$install_progress")" \
       "$(json_escape "$started")" \
       "$(json_escape "$finished")" \
       "$(json_escape "$exit_code")" \
@@ -5386,7 +5735,7 @@ EOF
     max_iterations=2
     reasoning_effort="medium"
     append_user_message=1
-    command_mode="ask"
+    command_mode="ask-some"
     permission_mode="default"
     allow_workspace_writes=1
     decision_request_json="null"
@@ -5519,7 +5868,7 @@ EOF
     workspace_command_mode=$(command_policy_mode_for_workspace "$workspace_id")
     command_mode=$workspace_command_mode
     case "$(printf '%s' "$command_exec_mode_raw" | tr '[:upper:]' '[:lower:]')" in
-      none|ask|all)
+      none|ask|ask-all|ask-some|all)
         command_mode=$(printf '%s' "$command_exec_mode_raw" | tr '[:upper:]' '[:lower:]')
         ;;
     esac
@@ -5595,6 +5944,7 @@ EOF
       write_ok=1
       run_status="failed"
       run_output=""
+      run_decision_hint=""
       blocked_commands_json="[]"
       quick_plan=$(cat <<EOF
 Goal:
@@ -5637,11 +5987,13 @@ EOF
         stream_emit_line "$stream_output_file" "Marked hello.sh executable. Running ./hello.sh."
         tool_out=$(mktemp)
         tool_status_file=$(mktemp)
-        execute_mediated_command "$workspace_id" "$workspace_path" "./hello.sh" "$tool_out" "$tool_status_file" "$command_mode" "$blocked_commands_file"
+        tool_decision_hint_file=$(mktemp)
+        execute_mediated_command "$workspace_id" "$workspace_path" "./hello.sh" "$tool_out" "$tool_status_file" "$command_mode" "$blocked_commands_file" "$tool_decision_hint_file"
         run_status=$(cat "$tool_status_file" 2>/dev/null || printf '%s' "failed")
+        run_decision_hint=$(cat "$tool_decision_hint_file" 2>/dev/null || printf '%s' "")
         run_output=$(sed -n '1,220p' "$tool_out")
         stream_emit_line "$stream_output_file" "Command status: $run_status"
-        rm -f "$tool_out" "$tool_status_file"
+        rm -f "$tool_out" "$tool_status_file" "$tool_decision_hint_file"
       fi
 
       if [ "$write_ok" -ne 1 ]; then
@@ -5704,9 +6056,10 @@ EOF
 )
       session_json=$(json_escape "$session_log")
       state_json=$(json_escape "mode=DONE")
+      decision_hint_json=$(json_escape "$(trim "$run_decision_hint")")
 
-      printf '{"success":true,"model":"%s","plan":"%s","assistant":"%s","git_status":"%s","git_diff":"%s","commands":[],"blocked_commands":%s,"decision_request":null,"failures":"","session_log":"%s","state":"%s"}\n' \
-        "$model_json" "$plan_json" "$assistant_json" "$git_status_json" "$git_diff_json" "$blocked_commands_json" "$session_json" "$state_json"
+      printf '{"success":true,"model":"%s","plan":"%s","assistant":"%s","git_status":"%s","git_diff":"%s","commands":[],"blocked_commands":%s,"decision_request":null,"failures":"","session_log":"%s","state":"%s","decision_hint":"%s"}\n' \
+        "$model_json" "$plan_json" "$assistant_json" "$git_status_json" "$git_diff_json" "$blocked_commands_json" "$session_json" "$state_json" "$decision_hint_json"
       rm -f "$valid_attachment_ids" "$blocked_commands_file"
       exit 0
     fi
@@ -6165,6 +6518,21 @@ EOF
       if [ -n "$decision_question" ] && [ "$decision_question" != "NONE" ] && [ -s "$decision_options_file" ]; then
         decision_requested=1
       fi
+      if [ "$decision_requested" -eq 1 ]; then
+        allow_model_decision_request=0
+        case "$(printf '%s' "$augmented_user_prompt" | tr '[:upper:]' '[:lower:]')" in
+          *which*|*choose*|*choice*|*option*|*prefer*|*should\ i*|*do\ you\ want*|*pick\ one*)
+            allow_model_decision_request=1
+            ;;
+        esac
+        if [ "$allow_model_decision_request" -ne 1 ]; then
+          append_failure_entry "$failures_file" "decision-request-iteration-$iteration" \
+            "Ignored unsolicited decision request" \
+            "Model requested a user decision for a prompt that did not ask for a choice" \
+            "Proceed autonomously with implementation"
+          decision_requested=0
+        fi
+      fi
 
       target_update=$(printf '%s\n' "$mode_update" | sed -n 's/^target=//p' | sed -n '1p')
       blocking_update=$(printf '%s\n' "$mode_update" | sed -n 's/^blocking=//p' | sed -n '1p')
@@ -6223,6 +6591,27 @@ $decision_options_preview"
           printf '%s\n' "$commands_text" \
             | sed -n -e 's/^[[:space:]]*[0-9][0-9]*[.)][[:space:]]*//p' -e 's/^[[:space:]]*-[[:space:]]*//p' \
             > "$command_lines_file"
+
+          command_lines_sanitized=$(mktemp)
+          while IFS= read -r candidate_line; do
+            candidate_line=$(trim "$candidate_line")
+            [ -n "$candidate_line" ] || continue
+            case "$candidate_line" in
+              NONE|none)
+                continue
+                ;;
+              ls|ls\ *|pwd|find\ *|git\ status*|git\ diff*|git\ rev-parse*|git\ branch*|test\ -f\ *|chmod\ +x\ *|./*|sh\ *|bash\ *|cat\ *|head\ *|tail\ *|wc\ *|rg\ *|sed\ *)
+                printf '%s\n' "$candidate_line" >> "$command_lines_sanitized"
+                ;;
+              *)
+                append_failure_entry "$failures_file" "command-parse-iteration-$iteration" \
+                  "Discarded malformed command candidate: $candidate_line" \
+                  "Controller output included non-command text in COMMANDS section" \
+                  "Use strict shell commands only or fallback defaults"
+                ;;
+            esac
+          done < "$command_lines_file"
+          mv "$command_lines_sanitized" "$command_lines_file"
 
           if [ ! -s "$command_lines_file" ]; then
             case "$state_mode" in
@@ -6442,6 +6831,20 @@ You are in IMPLEMENT mode.
 Return ONLY a unified diff patch in a diff code fence, touching at most 3 files.
 No prose.
 
+Example format:
+\`\`\`diff
+--- /dev/null
++++ b/new_file.txt
+@@ -0,0 +1,2 @@
++line 1
++line 2
+\`\`\`
+
+Rules:
+- every changed file must have both --- and +++ headers
+- use relative workspace paths under a/ and b/
+- for new files, use --- /dev/null and +++ b/<path>
+
 Task:
 $augmented_user_prompt
 
@@ -6462,6 +6865,135 @@ EOF
             if [ -n "$patch_retry_trimmed" ] && [ "$patch_retry_trimmed" != "NONE" ]; then
               patch_text=$patch_retry_text
               patch_trimmed=$patch_retry_trimmed
+            fi
+          fi
+
+          if [ "$hello_script_task" -ne 1 ] && { [ -z "$patch_trimmed" ] || [ "$patch_trimmed" = "NONE" ]; }; then
+            implement_retry_prompt_2=$(cat <<EOF
+Return ONLY this format:
+BEGIN_PATCH
+<valid unified diff touching at most 3 files>
+END_PATCH
+
+Rules:
+- no prose
+- no markdown fences
+- include standard --- / +++ headers
+- do not emit commands, only patch text
+
+Task:
+$augmented_user_prompt
+
+Workspace snapshot:
+$snapshot_text
+EOF
+)
+            if [ -n "$stream_output_file" ]; then
+              ARTIFICER_STREAM_FILE="$stream_output_file"
+              export ARTIFICER_STREAM_FILE
+            fi
+            patch_retry_output_2=$(run_model "$model" "$implement_retry_prompt_2" || true)
+            unset ARTIFICER_STREAM_FILE 2>/dev/null || true
+            patch_retry_output_2=$(strip_terminal_noise "$patch_retry_output_2")
+            patch_retry_text_2=$(printf '%s\n' "$patch_retry_output_2" | sed -n '/^BEGIN_PATCH$/,/^END_PATCH$/p' | sed '1d;$d')
+            patch_retry_trimmed_2=$(trim "$patch_retry_text_2")
+            if [ -n "$patch_retry_trimmed_2" ] && [ "$patch_retry_trimmed_2" != "NONE" ]; then
+              patch_text=$patch_retry_text_2
+              patch_trimmed=$patch_retry_trimmed_2
+            fi
+          fi
+
+          if [ "$hello_script_task" -ne 1 ] && { [ -z "$patch_trimmed" ] || [ "$patch_trimmed" = "NONE" ]; }; then
+            implement_files_prompt=$(cat <<EOF
+Return ONLY file blocks in this format (up to 3 files):
+FILE: relative/path.ext
+\`\`\`
+full file content
+\`\`\`
+
+Rules:
+- no prose
+- relative workspace paths only
+- provide complete file contents for each file
+
+Task:
+$augmented_user_prompt
+
+Workspace snapshot:
+$snapshot_text
+EOF
+)
+            if [ -n "$stream_output_file" ]; then
+              ARTIFICER_STREAM_FILE="$stream_output_file"
+              export ARTIFICER_STREAM_FILE
+            fi
+            file_blocks_output=$(run_model "$model" "$implement_files_prompt" || true)
+            unset ARTIFICER_STREAM_FILE 2>/dev/null || true
+            file_blocks_output=$(strip_terminal_noise "$file_blocks_output")
+
+            file_blocks_dir=$(mktemp -d)
+            file_blocks_index=$(mktemp)
+            printf '%s' "$file_blocks_output" | FILE_BLOCKS_DIR="$file_blocks_dir" perl -e '
+              use strict;
+              use warnings;
+              local $/;
+              my $raw = <>;
+              my $dir = $ENV{"FILE_BLOCKS_DIR"} // "";
+              my $count = 0;
+              while ($raw =~ /FILE:\s*([^\r\n]+)\s*\r?\n```[^\n]*\n(.*?)\n```/sg) {
+                my $path = $1 // "";
+                my $content = $2 // "";
+                $path =~ s/^\s+//;
+                $path =~ s/\s+$//;
+                next if $path eq "";
+                next if $path =~ m{(?:^|/)\.\.(?:/|$)};
+                next if $path =~ m{^/};
+                $count += 1;
+                last if $count > 3;
+                my $tmp_path = "$dir/$count.content";
+                open my $fh, ">:encoding(UTF-8)", $tmp_path or next;
+                print {$fh} $content;
+                close $fh;
+                print "$path\t$tmp_path\n";
+              }
+            ' > "$file_blocks_index"
+
+            synthesized_patch=""
+            if [ -s "$file_blocks_index" ]; then
+              while IFS='	' read -r out_path out_tmp; do
+                out_path=$(trim "$out_path")
+                out_tmp=$(trim "$out_tmp")
+                [ -n "$out_path" ] || continue
+                [ -f "$out_tmp" ] || continue
+                if ! is_safe_relative_path "$out_path"; then
+                  continue
+                fi
+                mkdir -p "$(dirname "$workspace_path/$out_path")" 2>/dev/null || true
+                if [ -f "$workspace_path/$out_path" ]; then
+                  file_diff=$(diff -u "$workspace_path/$out_path" "$out_tmp" || true)
+                  if [ -n "$(trim "$file_diff")" ]; then
+                    file_diff=$(printf '%s\n' "$file_diff" | sed "1s|^--- .*|--- a/$out_path|;2s|^+++ .*|+++ b/$out_path|")
+                    synthesized_patch="${synthesized_patch}
+${file_diff}"
+                  fi
+                else
+                  file_diff=$(diff -u /dev/null "$out_tmp" || true)
+                  if [ -n "$(trim "$file_diff")" ]; then
+                    file_diff=$(printf '%s\n' "$file_diff" | sed "1s|^--- .*|--- /dev/null|;2s|^+++ .*|+++ b/$out_path|")
+                    synthesized_patch="${synthesized_patch}
+${file_diff}"
+                  fi
+                fi
+              done < "$file_blocks_index"
+            fi
+
+            rm -rf "$file_blocks_dir" 2>/dev/null || true
+            rm -f "$file_blocks_index"
+
+            synthesized_patch=$(trim "$synthesized_patch")
+            if [ -n "$synthesized_patch" ]; then
+              patch_text=$synthesized_patch
+              patch_trimmed=$synthesized_patch
             fi
           fi
 
@@ -6494,6 +7026,37 @@ EOF
           else
             patch_paths_file=$(mktemp)
             patch_paths_from_text "$patch_text" > "$patch_paths_file"
+
+            patch_paths_normalized_file=$(mktemp)
+            : > "$patch_paths_normalized_file"
+            while IFS= read -r raw_rel_path; do
+              rel_path=$(trim "$raw_rel_path")
+              [ -n "$rel_path" ] || continue
+              norm_rel_path=$rel_path
+              case "$norm_rel_path" in
+                "$workspace_path"/*)
+                  norm_rel_path=${norm_rel_path#"$workspace_path"/}
+                  ;;
+              esac
+              case "$norm_rel_path" in
+                res://*)
+                  norm_rel_path=${norm_rel_path#res://}
+                  ;;
+                file://*)
+                  norm_rel_path=${norm_rel_path#file://}
+                  ;;
+              esac
+              if [ "$norm_rel_path" != "$rel_path" ]; then
+                patch_text=$(printf '%s\n' "$patch_text" | PATCH_ORIG_PATH="$rel_path" PATCH_NORM_PATH="$norm_rel_path" perl -0pe '
+                  my $orig = quotemeta($ENV{"PATCH_ORIG_PATH"} // "");
+                  my $norm = $ENV{"PATCH_NORM_PATH"} // "";
+                  s/^--- a\/$orig$/--- a\/$norm/mg;
+                  s/^\+\+\+ b\/$orig$/+++ b\/$norm/mg;
+                ')
+              fi
+              printf '%s\n' "$norm_rel_path" >> "$patch_paths_normalized_file"
+            done < "$patch_paths_file"
+            mv "$patch_paths_normalized_file" "$patch_paths_file"
 
             if [ ! -s "$patch_paths_file" ]; then
               case "$(printf '%s' "$augmented_user_prompt" | tr '[:upper:]' '[:lower:]')" in
@@ -6545,6 +7108,19 @@ EOF
                 prepare_scratch_files "$workspace_path" "$iter_scratch" "$patch_paths_file"
                 patch_file="$iter_scratch/proposed.patch"
                 printf '%s\n' "$patch_text" > "$patch_file"
+                canonical_patch_file="$iter_scratch/proposed.canonical.patch"
+                cp "$patch_file" "$canonical_patch_file"
+                while IFS= read -r rel_path; do
+                  [ -n "$rel_path" ] || continue
+                  if [ ! -f "$workspace_path/$rel_path" ]; then
+                    PATCH_REL_PATH="$rel_path" perl -0pi -e '
+                      my $p = $ENV{"PATCH_REL_PATH"} // "";
+                      $p = quotemeta($p);
+                      s/^--- a\/$p$/--- \/dev\/null/mg;
+                    ' "$canonical_patch_file"
+                  fi
+                done < "$patch_paths_file"
+                patch_file="$canonical_patch_file"
 
                 apply_log=$(mktemp)
                 gate_log=$(mktemp)

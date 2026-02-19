@@ -42,12 +42,18 @@ while [ "$#" -gt 0 ]; do
 done
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+cleanup_helper="$script_dir/cleanup-artificer-test-workspaces"
 
 if [ ! -d "$HOME/sites/$site_name" ]; then
   die "deploy-artificer: site '$site_name' not found"
 fi
 
 step "Deploying Artificer to $site_name"
+
+if [ -x "$cleanup_helper" ]; then
+  step "Cleaning previous Artificer smoke projects"
+  "$cleanup_helper" "$site_name" >/dev/null 2>&1 || true
+fi
 
 step "Updating site from template"
 update-from-template "$site_name" --force
@@ -86,6 +92,11 @@ if [ "$skip_smoke" -eq 0 ]; then
   "$script_dir/test-artificer" "$site_name"
 else
   warn "Skipping smoke test (--skip-smoke)"
+fi
+
+if [ -x "$cleanup_helper" ]; then
+  step "Cleaning Artificer smoke projects"
+  "$cleanup_helper" "$site_name" >/dev/null 2>&1 || true
 fi
 
 success "Artificer deploy complete for $site_name"

@@ -212,7 +212,7 @@
     organizeMode: storageGet("artificer.organizeMode", "project"),
     organizeShow: storageGet("artificer.organizeShow", "all"),
     permissionMode: storageGet("artificer.permissionMode", "default"),
-    commandExecMode: storageGet("artificer.commandExecMode", "ask"),
+    commandExecMode: storageGet("artificer.commandExecMode", "ask-some"),
     githubUsername: storageGet("artificer.githubUsername", ""),
     networkAccess: storageGet("artificer.networkAccess", "0") === "1",
     webAccess: storageGet("artificer.webAccess", "0") === "1",
@@ -262,6 +262,11 @@
     modelInstalls: [],
     modelInstallJob: null,
     modelInstallLog: "",
+    commandRulesByWorkspace: {},
+    commandRulesWorkspaceId: "",
+    commandRulesLastRenderedWorkspaceId: "",
+    commandRulesLoading: false,
+    commandRulesError: "",
     contextWindowText: "Context window information will display here.",
     lastErrorText: "",
     lastErrorAt: 0,
@@ -271,6 +276,8 @@
     chatLastKey: "",
     chatMarkupCache: "",
     runDetailsOpenByEventId: {},
+    runStreamAutoFollowByEventId: {},
+    runStreamScrollTopByEventId: {},
     pendingOutgoingByKey: {},
     conversationCacheByKey: {},
     threadsPaneWidth: parseStoredPaneWidth("artificer.threadsPaneWidth", 308),
@@ -303,6 +310,7 @@
   var terminalPollBusy = false;
   var terminalSessionStartPromise = null;
   var paneDragState = null;
+  var suppressMenuCloseUntilMs = 0;
   var pathWidgetClickTimer = null;
   var tooltipEl = null;
   var tooltipTarget = null;
@@ -340,8 +348,17 @@
   if (!/^[a-z0-9_-]+$/.test(String(state.activeTheme || ""))) {
     state.activeTheme = "psionic";
   }
-  if (state.commandExecMode !== "none" && state.commandExecMode !== "ask" && state.commandExecMode !== "all") {
-    state.commandExecMode = "ask";
+  if (
+    state.commandExecMode !== "none" &&
+    state.commandExecMode !== "ask" &&
+    state.commandExecMode !== "ask-all" &&
+    state.commandExecMode !== "ask-some" &&
+    state.commandExecMode !== "all"
+  ) {
+    state.commandExecMode = "ask-some";
+  }
+  if (state.commandExecMode === "ask") {
+    state.commandExecMode = "ask-some";
   }
 
   var el = {
@@ -483,7 +500,11 @@
     chooseSshBtn: document.getElementById("choose-ssh-btn"),
     clearSshBtn: document.getElementById("clear-ssh-btn"),
     selectedSshPath: document.getElementById("selected-ssh-path"),
-    sshPubOutput: document.getElementById("ssh-pub-output")
+    sshPubOutput: document.getElementById("ssh-pub-output"),
+    commandRulesWorkspace: document.getElementById("command-rules-workspace"),
+    commandRulesStatus: document.getElementById("command-rules-status"),
+    commandRulesGlobalList: document.getElementById("command-rules-global-list"),
+    commandRulesList: document.getElementById("command-rules-list")
   };
 
   if (el.modelStatusBtn) {
@@ -1510,6 +1531,36 @@
     return !!state.awaitingApprovalByConversation[key];
   }
 
+  function updateAwaitingApprovalFromQueueSnapshot(workspaceId, conversationId, snapshot) {
+    var wsId = String(workspaceId || "");
+    var convId = String(conversationId || "");
+    if (!wsId || !convId) {
+      return;
+    }
+    var data = snapshot || {};
+    var lastStatus = String(data.lastStatus || "");
+    var hasApprovalRequest = !!normalizeApprovalRequest(data.approvalRequest);
+    var pending = queueNumber(data.pending);
+    var running = !!data.running;
+
+    if (lastStatus === "awaiting_approval" || hasApprovalRequest) {
+      setAwaitingApprovalState(wsId, convId, true);
+      return;
+    }
+
+    var explicitNotAwaiting = (
+      lastStatus === "done" ||
+      lastStatus === "error" ||
+      lastStatus === "cancelled" ||
+      lastStatus === "awaiting_decision" ||
+      running ||
+      pending > 0
+    );
+    if (explicitNotAwaiting) {
+      setAwaitingApprovalState(wsId, convId, false);
+    }
+  }
+
   function conversationUpdatedNumber(conversation) {
     var parsed = Number(conversation && conversation.updated || 0);
     if (!isFinite(parsed) || parsed < 0) {
@@ -1912,14 +1963,24 @@
     var isArchiveSubmitting = archiveKey === state.pendingArchiveSubmittingKey;
     var html = "<span class='conversation-meta' title='Workspace diff since last commit'>";
     if (hasDiff) {
-      html += "<span class='meta-add' title='Lines added since last commit'>+" + escHtml(String(add)) + "</span> ";
-      html += "<span class='meta-del' title='Lines removed since last commit'>-" + escHtml(String(del)) + "</span> ";
+      html += "<span class='meta-diff'>";
+      html += "<span class='meta-add' title='Lines added since last commit'>+" + escHtml(String(add)) + "</span>";
+      html += "<span class='meta-del' title='Lines removed since last commit'>-" + escHtml(String(del)) + "</span>";
+      html += "</span>";
     }
     html += "<span class='meta-age-slot'>";
     html += "<span class='meta-age' title='Thread age'>" + ((isArchiveArmed || isArchiveSubmitting) ? "" : escHtml(age)) + "</span>";
     html += archiveControlMarkup(workspaceId, conversationId);
     html += "</span></span>";
     return html;
+  }
+
+  function conversationDisplayTitle(title) {
+    var text = String(title || "Thread");
+    text = text.replace(/[.](?:[\s\u00a0]+[.]){2,}/g, "...");
+    text = text.replace(/…+/g, "...");
+    text = text.replace(/\s+/g, " ").trim();
+    return text || "Thread";
   }
 
   function archiveControlMarkup(workspaceId, conversationId) {
@@ -1997,10 +2058,16 @@
     if (mode === "none") {
       return "None";
     }
-    if (mode === "all") {
-      return "All";
+    if (mode === "ask-all") {
+      return "Ask all";
     }
-    return "Ask me";
+    if (mode === "ask-some" || mode === "ask") {
+      return "Ask some";
+    }
+    if (mode === "all") {
+      return "Ask none";
+    }
+    return "Ask some";
   }
 
   function gitDeltaMarkup(added, deleted) {
@@ -2760,11 +2827,12 @@
       decisionRequest: typeof entry.decision_request === "undefined" ? undefined : entry.decision_request,
       approvalRequest: typeof entry.approval_request === "undefined" ? undefined : entry.approval_request
     });
-    setAwaitingApprovalState(
-      wsId,
-      convId,
-      lastStatus === "awaiting_approval" || !!normalizeApprovalRequest(entry.approval_request)
-    );
+    updateAwaitingApprovalFromQueueSnapshot(wsId, convId, {
+      lastStatus: lastStatus,
+      approvalRequest: entry.approval_request,
+      pending: pending,
+      running: running
+    });
     finalizeStaleRunningEventsForConversation(wsId, entry);
   }
 
@@ -3173,9 +3241,12 @@
     }
 
     var status = event.status || "done";
-    var html = "<article class='msg run " + escHtml(status) + "'>";
+    var decisionHint = trim(String(event.decision_hint || ""));
+    var runClass = "msg run " + escHtml(status);
+    var html = "";
 
     if (status === "running") {
+      html = "<article class='" + runClass + "'>";
       var startedAt = Date.parse(event.started_at || "");
       var elapsed = 0;
       if (isFinite(startedAt) && startedAt > 0) {
@@ -3200,6 +3271,7 @@
     }
 
     if (status === "cancelled") {
+      html = "<article class='" + runClass + "'>";
       html += "<p class='run-line subtle'>Run stopped.</p>";
       html += formatRunTrace(event);
       html += "</article>";
@@ -3207,6 +3279,8 @@
     }
 
     if (status === "approval_granted") {
+      runClass += " run-narrative run-approval-note";
+      html = "<article class='" + runClass + "'>";
       var approvedScope = String(event.approved_scope || "once");
       var approvedCommand = trim(String(event.approved_command || ""));
       var approvalText = approvedScope === "remember"
@@ -3216,23 +3290,31 @@
         approvalText += " " + approvedCommand;
       }
       html += "<p class='run-line subtle'>" + escHtml(approvalText) + "</p>";
+      if (decisionHint && !/one-time rule/i.test(decisionHint)) {
+        html += "<p class='run-line subtle run-decision-hint'>Matched by: " + escHtml(decisionHint) + "</p>";
+      }
       html += "</article>";
       return html;
     }
 
     if (status === "error") {
+      html = "<article class='" + runClass + "'>";
       html += "<p class='run-line error'>" + escHtml(friendlyRunErrorText(event)) + "</p>";
       html += formatRunTrace(event);
       html += "</article>";
       return html;
     }
     if (status === "awaiting_approval") {
+      runClass += " run-narrative";
+      html = "<article class='" + runClass + "'>";
       html += "<p class='run-line subtle'>Awaiting command approval.</p>";
       html += formatRunTrace(event);
       html += "</article>";
       return html;
     }
     if (status === "awaiting_decision") {
+      runClass += " run-narrative";
+      html = "<article class='" + runClass + "'>";
       html += "<p class='run-line subtle'>Awaiting your decision.</p>";
       html += formatRunTrace(event);
       html += "</article>";
@@ -3260,12 +3342,15 @@
       !!conversationApprovalRequest(conversation)
     );
     var queueAwaitingDecision = queueLastStatus === "awaiting_decision" || !!normalizeDecisionRequest(conversation && conversation.decision_request);
-
+    html = "<article class='" + runClass + "'>";
     if (queueRunning || queuePending > 0) {
+      html = "<article class='" + runClass + " run-narrative'>";
       html += "<p class='run-line subtle'>Run step complete. Continuing...</p>";
     } else if (queueAwaitingApproval) {
+      html = "<article class='" + runClass + " run-narrative'>";
       html += "<p class='run-line subtle'>Run paused. Awaiting command approval.</p>";
     } else if (queueAwaitingDecision) {
+      html = "<article class='" + runClass + " run-narrative'>";
       html += "<p class='run-line subtle'>Run paused. Awaiting your decision.</p>";
     } else {
       html += "<p class='run-line success'>Run complete" + (runModelText ? " with " + escHtml(runModelText) : "") + "</p>";
@@ -3273,11 +3358,6 @@
     html += formatRunTrace(event);
     html += "</article>";
     return html;
-  }
-
-  function isTerminalInfoRunEventStatus(statusText) {
-    var status = String(statusText || "");
-    return status === "done" || status === "approval_granted";
   }
 
   function findLatestRunEventByStatus(conversationId, statuses) {
@@ -3353,8 +3433,67 @@
       }
       var preview = panel.querySelector(".run-stream-preview");
       if (preview) {
-        preview.scrollTop = preview.scrollHeight;
+        var eventId = String(panel.getAttribute("data-event-id") || "");
+        var autoFollow = true;
+        if (
+          eventId &&
+          Object.prototype.hasOwnProperty.call(state.runStreamAutoFollowByEventId, eventId)
+        ) {
+          autoFollow = !!state.runStreamAutoFollowByEventId[eventId];
+        }
+        if (autoFollow) {
+          preview.scrollTop = preview.scrollHeight;
+          if (eventId) {
+            state.runStreamScrollTopByEventId[eventId] = preview.scrollTop;
+          }
+          continue;
+        }
+        if (
+          eventId &&
+          Object.prototype.hasOwnProperty.call(state.runStreamScrollTopByEventId, eventId)
+        ) {
+          var savedTop = Number(state.runStreamScrollTopByEventId[eventId]);
+          if (isFinite(savedTop) && savedTop >= 0) {
+            var maxTop = Math.max(0, Number(preview.scrollHeight || 0) - Number(preview.clientHeight || 0));
+            preview.scrollTop = Math.min(maxTop, savedTop);
+          }
+        }
       }
+    }
+  }
+
+  function isElementScrollAtBottom(element, tolerancePx) {
+    if (!element) {
+      return true;
+    }
+    var tolerance = Number(tolerancePx || 0);
+    if (!isFinite(tolerance) || tolerance < 0) {
+      tolerance = 0;
+    }
+    var remaining = Number(element.scrollHeight || 0) - Number(element.scrollTop || 0) - Number(element.clientHeight || 0);
+    return remaining <= tolerance;
+  }
+
+  function snapshotRunThinkingPreviewScroll() {
+    if (!el.chatLog) {
+      return;
+    }
+    var previews = el.chatLog.querySelectorAll("details.run-details.run-thinking[data-event-id] .run-stream-preview");
+    if (!previews || !previews.length) {
+      return;
+    }
+    for (var i = 0; i < previews.length; i += 1) {
+      var preview = previews[i];
+      var panel = preview.closest("details.run-details.run-thinking[data-event-id]");
+      if (!panel) {
+        continue;
+      }
+      var eventId = String(panel.getAttribute("data-event-id") || "");
+      if (!eventId) {
+        continue;
+      }
+      state.runStreamScrollTopByEventId[eventId] = Number(preview.scrollTop || 0);
+      state.runStreamAutoFollowByEventId[eventId] = isElementScrollAtBottom(preview, 8);
     }
   }
 
@@ -3444,8 +3583,9 @@
 
           html += "<div class='conversation-row chrono-row" + chronoActive + "' role='button' tabindex='0' title='Open thread' data-action='select-conversation' data-workspace-id='" + escHtml(entry.workspaceId) + "' data-conversation-id='" + escHtml(entry.conversation.id) + "'>";
           html += "<span class='" + chronoIndicatorClass + "' aria-hidden='true'></span>";
-          html += "<span class='conversation-title' title='" + escAttr(entry.workspaceName) + "'>" + escHtml(entry.conversation.title || "Thread") + "</span>";
-          html += conversationStatusPillMarkup(entry.workspaceId, entry.conversation, chronoRunning);
+          var chronoStatusMarkup = conversationStatusPillMarkup(entry.workspaceId, entry.conversation, chronoRunning);
+          html += "<span class='conversation-title' title='" + escAttr(entry.workspaceName) + "'>" + escHtml(conversationDisplayTitle(entry.conversation.title)) + "</span>";
+          html += chronoStatusMarkup;
           if (chronoPending > 0) {
             html += "<span class='queue-count'>" + chronoPending + "</span>";
           }
@@ -3500,6 +3640,7 @@
           workspaceMenuClass += " hidden";
         }
         html += "<div class='" + workspaceMenuClass + "' data-workspace-menu='" + escHtml(workspaceId) + "' role='menu' aria-label='Project actions'>";
+        html += "<button type='button' data-action='open-workspace-approvals' data-workspace-id='" + escHtml(workspaceId) + "'>Command approvals</button>";
         html += "<button type='button' data-action='rename-workspace' data-workspace-id='" + escHtml(workspaceId) + "'>Rename</button>";
         html += "<button type='button' data-action='remove-workspace' data-workspace-id='" + escHtml(workspaceId) + "'>Remove</button>";
         html += "</div>";
@@ -3542,8 +3683,9 @@
 
           html += "<div class='conversation-row" + activeConv + "' role='button' tabindex='0' title='Open thread' data-action='select-conversation' data-workspace-id='" + escHtml(workspaceId) + "' data-conversation-id='" + escHtml(conversation.id) + "'>";
           html += "<span class='" + indicatorClass + "' aria-hidden='true'></span>";
-          html += "<span class='conversation-title'>" + escHtml(conversation.title || "Thread") + "</span>";
-          html += conversationStatusPillMarkup(workspaceId, conversation, queueRunning);
+          var statusMarkup = conversationStatusPillMarkup(workspaceId, conversation, queueRunning);
+          html += "<span class='conversation-title'>" + escHtml(conversationDisplayTitle(conversation.title)) + "</span>";
+          html += statusMarkup;
           if (queuePending > 0) {
             html += "<span class='queue-count'>" + queuePending + "</span>";
           }
@@ -3577,14 +3719,86 @@
       el.modelStatusBtn.title = "Could not read Ollama models";
       return;
     }
-    if (!state.models.length) {
+    var installedCount = Number(state.models.length || 0);
+    var downloadingCount = 0;
+    var installingCount = 0;
+    var runningOtherCount = 0;
+    var runningSeen = {};
+
+    for (var i = 0; i < state.modelInstalls.length; i += 1) {
+      var job = state.modelInstalls[i] || {};
+      if (String(job.status || "") !== "running") {
+        continue;
+      }
+      var jobId = String(job.id || "");
+      if (jobId && runningSeen[jobId]) {
+        continue;
+      }
+      if (jobId) {
+        runningSeen[jobId] = true;
+      }
+      var phase = String(job.phase || "").toLowerCase();
+      if (phase === "downloading") {
+        downloadingCount += 1;
+      } else if (phase === "installing") {
+        installingCount += 1;
+      } else {
+        runningOtherCount += 1;
+      }
+    }
+
+    var hasExtraRunning = false;
+    if (state.modelInstallJob && String(state.modelInstallJob.status || "") === "running") {
+      var activeJobId = String(state.modelInstallJob.id || "");
+      if (!activeJobId || !runningSeen[activeJobId]) {
+        hasExtraRunning = true;
+        var activePhase = String(state.modelInstallJob.phase || "").toLowerCase();
+        if (activePhase === "downloading") {
+          downloadingCount += 1;
+        } else if (activePhase === "installing") {
+          installingCount += 1;
+        } else {
+          runningOtherCount += 1;
+        }
+      }
+    }
+
+    if (!installedCount && !downloadingCount && !installingCount && !runningOtherCount) {
       el.modelStatusBtn.textContent = "No models";
       el.modelStatusBtn.title = "No Ollama models detected";
       return;
     }
-    var noun = state.models.length === 1 ? "model" : "models";
-    el.modelStatusBtn.textContent = state.models.length + " " + noun;
-    el.modelStatusBtn.title = state.models.length + " Ollama " + noun + " installed";
+
+    var noun = installedCount === 1 ? "model" : "models";
+    var parts = [installedCount + " " + noun];
+    if (downloadingCount > 0) {
+      parts.push(downloadingCount + " downloading");
+    }
+    if (installingCount > 0) {
+      parts.push(installingCount + " installing");
+    }
+    if (runningOtherCount > 0) {
+      parts.push(runningOtherCount + " preparing");
+    }
+    el.modelStatusBtn.textContent = parts.join(", ");
+
+    var title = installedCount + " Ollama " + noun + " installed";
+    if (downloadingCount > 0 || installingCount > 0 || runningOtherCount > 0 || hasExtraRunning) {
+      var tail = [];
+      if (downloadingCount > 0) {
+        tail.push(downloadingCount + " downloading");
+      }
+      if (installingCount > 0) {
+        tail.push(installingCount + " installing");
+      }
+      if (runningOtherCount > 0) {
+        tail.push(runningOtherCount + " preparing");
+      }
+      if (tail.length) {
+        title += ", " + tail.join(", ");
+      }
+    }
+    el.modelStatusBtn.title = title;
   }
 
   function isModelInstalled(modelName) {
@@ -3626,6 +3840,44 @@
       return "";
     }
     return parsed.toFixed(1) + "GB";
+  }
+
+  function numericProgressPercent(rawValue) {
+    var parsed = Number(rawValue);
+    if (!isFinite(parsed)) {
+      return -1;
+    }
+    var rounded = Math.round(parsed);
+    if (rounded < 0) {
+      rounded = 0;
+    }
+    if (rounded > 100) {
+      rounded = 100;
+    }
+    return rounded;
+  }
+
+  function modelInstallStatusLabel(job) {
+    var installJob = job || {};
+    var status = String(installJob.status || "");
+    var phase = String(installJob.phase || "");
+    var pct = numericProgressPercent(installJob.progress_pct);
+    if (status === "done") {
+      return "Installed";
+    }
+    if (status === "failed") {
+      return "Retry install";
+    }
+    if (phase === "downloading") {
+      if (pct >= 0) {
+        return "Downloading " + String(pct) + "%";
+      }
+      return "Downloading…";
+    }
+    if (phase === "installing") {
+      return "Installing…";
+    }
+    return "Installing…";
   }
 
   function renderModelsDialog() {
@@ -3671,8 +3923,12 @@
         var isInstalled = isModelInstalled(modelName);
         var installJob = currentModelInstallFor(modelName);
         var isInstalling = !!(installJob && String(installJob.status || "") === "running");
-        var installLabel = isInstalled ? "Installed" : (isInstalling ? "Installing…" : "Install");
+        var isFailedInstall = !!(installJob && String(installJob.status || "") === "failed");
+        var installLabel = isInstalled ? "Installed" : (installJob ? modelInstallStatusLabel(installJob) : "Install");
         var installDisabled = isInstalled || isInstalling;
+        if (isFailedInstall && !isInstalled) {
+          installDisabled = false;
+        }
         html += "<div class='catalog-item'>";
         html += "<div class='catalog-copy'><span class='model-primary'>" + escHtml(modelParts.primary) + "</span>";
         html += "<span class='model-meta'>" + escHtml(modelParts.meta || modelParts.raw) + "</span>";
@@ -3692,8 +3948,20 @@
     if (state.modelInstallJob && trim(state.modelInstallLog || "")) {
       var jobModel = String(state.modelInstallJob.model || "");
       var jobStatus = String(state.modelInstallJob.status || "running");
+      var jobPhase = String(state.modelInstallJob.phase || "");
+      var jobProgress = numericProgressPercent(state.modelInstallJob.progress_pct);
+      var phaseLabel = "";
+      if (jobStatus === "running") {
+        if (jobPhase === "downloading") {
+          phaseLabel = jobProgress >= 0
+            ? "downloading " + String(jobProgress) + "%"
+            : "downloading";
+        } else if (jobPhase === "installing") {
+          phaseLabel = "installing";
+        }
+      }
       html += "<div class='models-section install-log-section'>";
-      html += "<p class='models-section-title'>Install log: " + escHtml(jobModel) + " (" + escHtml(jobStatus) + ")</p>";
+      html += "<p class='models-section-title'>Install log: " + escHtml(jobModel) + " (" + escHtml(jobStatus + (phaseLabel ? ", " + phaseLabel : "")) + ")</p>";
       html += "<pre class='install-log'>" + escHtml(state.modelInstallLog) + "</pre>";
       html += "</div>";
     }
@@ -4303,10 +4571,21 @@
         approvalRequest: null
       });
       if (approvedDecision) {
+        var approvalAnchor = 0;
+        if (
+          state.activeConversation &&
+          state.activeWorkspaceId === info.workspaceId &&
+          state.activeConversationId === info.conversationId &&
+          Array.isArray(state.activeConversation.messages)
+        ) {
+          approvalAnchor = state.activeConversation.messages.length;
+        }
         pushRunEvent(info.conversationId, {
           status: "approval_granted",
           approved_scope: effectiveScope || "once",
           approved_command: commandText,
+          decision_hint: trim(String(response.decision_hint || "")),
+          message_anchor: approvalAnchor,
           started_at: new Date().toISOString(),
           finished_at: new Date().toISOString()
         });
@@ -4952,6 +5231,7 @@
     var prevScrollHeight = el.chatLog ? el.chatLog.scrollHeight : 0;
     var prevBottomOffset = Math.max(0, prevScrollHeight - prevScrollTop - prevClientHeight);
     var shouldAutoScroll = keyChanged || state.chatAutoScroll;
+    snapshotRunThinkingPreviewScroll();
 
     if (!state.activeWorkspaceId) {
       var emptyWorkspaceMarkup = "";
@@ -4974,7 +5254,6 @@
     var pendingOutgoing = pendingOutgoingList(outgoingKey);
 
     if (state.activeDraftWorkspaceId) {
-      var draftText = trim(state.draftTextByWorkspace[state.activeDraftWorkspaceId] || "");
       if (pendingOutgoing.length) {
         var draftPendingHtml = "";
         for (var d = 0; d < pendingOutgoing.length; d += 1) {
@@ -4985,17 +5264,11 @@
           el.chatLog.innerHTML = draftPendingHtml;
           state.chatMarkupCache = draftPendingHtml;
         }
-      } else if (draftText) {
-        var draftReadyMarkup = "<p class='empty-state'>Draft loaded. Send your first message to create the thread.</p>";
-        if (state.chatMarkupCache !== draftReadyMarkup) {
-          el.chatLog.innerHTML = draftReadyMarkup;
-          state.chatMarkupCache = draftReadyMarkup;
-        }
       } else {
-        var draftEmptyMarkup = "<p class='empty-state'>This is a draft. Start typing below; it autosaves to disk.</p>";
-        if (state.chatMarkupCache !== draftEmptyMarkup) {
-          el.chatLog.innerHTML = draftEmptyMarkup;
-          state.chatMarkupCache = draftEmptyMarkup;
+        var draftHintMarkup = "<p class='empty-state draft-create-hint'>Send a message to create the thread.</p>";
+        if (state.chatMarkupCache !== draftHintMarkup) {
+          el.chatLog.innerHTML = draftHintMarkup;
+          state.chatMarkupCache = draftHintMarkup;
         }
       }
       state.chatAutoScroll = true;
@@ -5038,6 +5311,32 @@
     }
 
     var html = "";
+    var anchoredEventsByIndex = {};
+    var tailEvents = [];
+    for (var e = 0; e < events.length; e += 1) {
+      var queuedEvent = events[e] || {};
+      var eventStatus = String(queuedEvent.status || "");
+      var anchorRaw = Number(queuedEvent.message_anchor);
+      if (eventStatus === "approval_granted" && isFinite(anchorRaw)) {
+        var anchorIndex = Math.max(0, Math.min(messages.length, Math.floor(anchorRaw)));
+        if (!anchoredEventsByIndex[anchorIndex]) {
+          anchoredEventsByIndex[anchorIndex] = [];
+        }
+        anchoredEventsByIndex[anchorIndex].push(queuedEvent);
+      } else {
+        tailEvents.push(queuedEvent);
+      }
+    }
+
+    function renderAnchoredEventsAt(index) {
+      var bucket = anchoredEventsByIndex[index];
+      if (!bucket || !bucket.length) {
+        return;
+      }
+      for (var bi = 0; bi < bucket.length; bi += 1) {
+        html += renderRunEvent(bucket[bi], state.activeWorkspaceId, state.activeConversationId);
+      }
+    }
 
     function renderMessageAt(index) {
       var msg = messages[index] || {};
@@ -5052,37 +5351,10 @@
       }
     }
 
-    var queuePending = queueNumber(state.activeConversation && state.activeConversation.queue_pending);
-    var queueRunning = !!(state.activeConversation && String(state.activeConversation.queue_running || "0") === "1");
-    var queueIdle = !queueRunning && queuePending === 0;
-    var lastAssistantIndex = -1;
-    for (var i = messages.length - 1; i >= 0; i -= 1) {
-      if (String(messages[i] && messages[i].role || "") === "assistant") {
-        lastAssistantIndex = i;
-        break;
-      }
-    }
-    var latestDoneEvent = findLatestRunEventByStatus(state.activeConversationId, ["done"]);
-    var latestApprovalEvent = findLatestRunEventByStatus(state.activeConversationId, ["approval_granted"]);
-    var inlineTerminalBeforeLastAssistant = queueIdle && lastAssistantIndex >= 0 && (!!latestDoneEvent || !!latestApprovalEvent);
-
-    if (inlineTerminalBeforeLastAssistant) {
-      for (var before = 0; before < lastAssistantIndex; before += 1) {
-        renderMessageAt(before);
-      }
-      if (latestApprovalEvent) {
-        html += renderRunEvent(latestApprovalEvent, state.activeWorkspaceId, state.activeConversationId);
-      }
-      if (latestDoneEvent) {
-        html += renderRunEvent(latestDoneEvent, state.activeWorkspaceId, state.activeConversationId);
-      }
-      for (var after = lastAssistantIndex; after < messages.length; after += 1) {
-        renderMessageAt(after);
-      }
-    } else {
-      for (var m = 0; m < messages.length; m += 1) {
-        renderMessageAt(m);
-      }
+    renderAnchoredEventsAt(0);
+    for (var m = 0; m < messages.length; m += 1) {
+      renderMessageAt(m);
+      renderAnchoredEventsAt(m + 1);
     }
 
     for (var p = 0; p < pendingOutgoing.length; p += 1) {
@@ -5090,17 +5362,28 @@
       html += "<article class='msg user pending'><div class='msg-body'>" + escHtml(pending.content || "") + "</div><p class='msg-pending-line'><span class='run-spinner' aria-hidden='true'></span>Sending...</p></article>";
     }
 
-    for (var j = 0; j < events.length; j += 1) {
-      var event = events[j] || {};
-      if (inlineTerminalBeforeLastAssistant && isTerminalInfoRunEventStatus(event.status)) {
-        continue;
-      }
+    for (var j = 0; j < tailEvents.length; j += 1) {
+      var event = tailEvents[j] || {};
       html += renderRunEvent(event, state.activeWorkspaceId, state.activeConversationId);
     }
 
     if (state.chatMarkupCache !== html) {
       el.chatLog.innerHTML = html;
       state.chatMarkupCache = html;
+    }
+    var approvalInlineVisible = !!(
+      el.commandApprovalInline &&
+      !el.commandApprovalInline.classList.contains("hidden")
+    );
+    if (approvalInlineVisible && el.commandApprovalInline && el.chatLog) {
+      if (el.commandApprovalInline.parentNode !== el.chatLog) {
+        el.chatLog.appendChild(el.commandApprovalInline);
+      }
+      el.commandApprovalInline.classList.add("in-chat");
+      shouldAutoScroll = true;
+      state.chatAutoScroll = true;
+    } else if (el.commandApprovalInline) {
+      el.commandApprovalInline.classList.remove("in-chat");
     }
     if (shouldAutoScroll) {
       el.chatLog.scrollTop = el.chatLog.scrollHeight;
@@ -5281,10 +5564,14 @@
     if (!paneDragState) {
       return;
     }
+    var draggedPaneType = String(paneDragState.type || "");
     paneDragState = null;
     if (document && document.body) {
       document.body.classList.remove("pane-resizing");
       document.body.classList.remove("pane-resizing-y");
+    }
+    if (draggedPaneType === "models") {
+      suppressMenuCloseUntilMs = Date.now() + 280;
     }
     persistPaneWidths();
   }
@@ -5400,6 +5687,7 @@
     safeStep("renderCommandApprovalInline", renderCommandApprovalInline);
     safeStep("renderChat", renderChat);
     safeStep("renderAttachmentStrip", renderAttachmentStrip);
+    safeStep("renderCommandRulesSettings", renderCommandRulesSettings);
     safeStep("renderPanels", renderPanels);
     safeStep("updateToolbarCompaction", updateToolbarCompaction);
     if (window && typeof window.requestAnimationFrame === "function") {
@@ -5459,8 +5747,10 @@
   }
 
   function saveCommandExecMode(mode) {
-    var next = "ask";
-    if (mode === "none" || mode === "ask" || mode === "all") {
+    var next = "ask-some";
+    if (mode === "ask") {
+      next = "ask-some";
+    } else if (mode === "none" || mode === "ask-all" || mode === "ask-some" || mode === "all") {
       next = mode;
     }
     state.commandExecMode = next;
@@ -5477,7 +5767,7 @@
         if (!response || !response.success) {
           return;
         }
-        saveCommandExecMode(response.mode || "ask");
+        saveCommandExecMode(response.mode || "ask-some");
       })
       .catch(function () {
         return null;
@@ -5486,11 +5776,14 @@
 
   function setCommandExecMode(mode) {
     var next = mode;
-    if (next !== "none" && next !== "ask" && next !== "all") {
-      next = "ask";
+    if (next === "ask") {
+      next = "ask-some";
+    }
+    if (next !== "none" && next !== "ask-all" && next !== "ask-some" && next !== "all") {
+      next = "ask-some";
     }
     if (next === "all") {
-      var ok = window.confirm("Allow all agent commands without asking? This can run any command the agent proposes.");
+      var ok = window.confirm("Ask none will allow all agent commands without asking. Continue?");
       if (!ok) {
         return Promise.resolve(false);
       }
@@ -7238,6 +7531,7 @@
           pendingEvent.failures = response.failures || "";
           pendingEvent.session_log = response.session_log || "";
           pendingEvent.finished_at = new Date().toISOString();
+          pendingEvent.decision_hint = trim(String(response.decision_hint || ""));
         }
         renderUi();
 
@@ -7329,17 +7623,17 @@
     });
 
     var queueLastStatus = String(response.queue_last_status || "");
-    var hasApprovalRequest = !!normalizeApprovalRequest(response.approval_request);
-    setAwaitingApprovalState(
-      workspaceId,
-      conversationId,
-      queueLastStatus === "awaiting_approval" || hasApprovalRequest
-    );
+    var responseRunning = Number(response.queue_running || 0) > 0;
+    updateAwaitingApprovalFromQueueSnapshot(workspaceId, conversationId, {
+      lastStatus: queueLastStatus,
+      approvalRequest: response.approval_request,
+      pending: pendingCount,
+      running: responseRunning
+    });
     releaseApprovalAnswerUiPendingIfAdvanced(workspaceId, conversationId, {
       queue_last_status: queueLastStatus,
       approval_request: response.approval_request
     });
-    var responseRunning = Number(response.queue_running || 0) > 0;
     var queueTerminal = !responseRunning && pendingCount === 0;
     if (queueTerminal) {
       var eventStatus = queueLastStatus;
@@ -7584,6 +7878,9 @@
 
     if (itemId && state.lastQueuedItemIdByConversation[conversationId] === itemId) {
       delete state.lastQueuedItemIdByConversation[conversationId];
+    }
+    if (trim(String(item.prompt || ""))) {
+      consumePendingOutgoingByText(outgoingKeyFor(workspaceId, conversationId, ""), String(item.prompt || ""));
     }
 
     setBusy(true, workspaceId, conversationId);
@@ -8449,7 +8746,282 @@
 
   function openSettingsModal() {
     openModal(el.settingsModal);
-    return loadAuthStatus();
+    var preferredWorkspace = String(state.commandRulesWorkspaceId || state.activeWorkspaceId || "");
+    if (!preferredWorkspace && state.workspaces.length) {
+      preferredWorkspace = String((state.workspaces[0] && state.workspaces[0].id) || "");
+    }
+    state.commandRulesWorkspaceId = preferredWorkspace;
+    renderCommandRulesSettings();
+    return Promise.all([
+      loadAuthStatus().catch(function () {
+        return null;
+      }),
+      loadCommandRules(preferredWorkspace).catch(function () {
+        return null;
+      })
+    ]);
+  }
+
+  function commandRuleDecisionLabel(decision) {
+    var value = String(decision || "");
+    if (value === "allow") {
+      return "Allow";
+    }
+    if (value === "deny") {
+      return "Deny";
+    }
+    return "Rule";
+  }
+
+  function commandRuleMatchModeLabel(matchMode) {
+    var value = String(matchMode || "").toLowerCase();
+    if (value === "regex") {
+      return "regex";
+    }
+    return "exact";
+  }
+
+  function renderCommandRulesSettings() {
+    if (!el.commandRulesWorkspace || !el.commandRulesList || !el.commandRulesGlobalList || !el.commandRulesStatus) {
+      return;
+    }
+    var workspaceOptions = "";
+    if (!state.workspaces.length) {
+      workspaceOptions = "<option value=''>No projects</option>";
+    } else {
+      for (var i = 0; i < state.workspaces.length; i += 1) {
+        var workspace = state.workspaces[i] || {};
+        var wsId = String(workspace.id || "");
+        if (!wsId) {
+          continue;
+        }
+        workspaceOptions += "<option value='" + escAttr(wsId) + "'>" + escHtml(workspace.name || wsId) + "</option>";
+      }
+    }
+    if (el.commandRulesWorkspace.innerHTML !== workspaceOptions) {
+      el.commandRulesWorkspace.innerHTML = workspaceOptions;
+    }
+    if (state.commandRulesWorkspaceId) {
+      el.commandRulesWorkspace.value = state.commandRulesWorkspaceId;
+      if (el.commandRulesWorkspace.value !== state.commandRulesWorkspaceId && el.commandRulesWorkspace.options.length) {
+        el.commandRulesWorkspace.value = el.commandRulesWorkspace.options[0].value;
+        state.commandRulesWorkspaceId = el.commandRulesWorkspace.value;
+      }
+    } else if (el.commandRulesWorkspace.options.length) {
+      el.commandRulesWorkspace.value = el.commandRulesWorkspace.options[0].value;
+      state.commandRulesWorkspaceId = el.commandRulesWorkspace.value;
+    }
+
+    var wsId = String(state.commandRulesWorkspaceId || "");
+    var rulesData = wsId ? (state.commandRulesByWorkspace[wsId] || null) : null;
+    if (!rulesData && state.commandRulesLoading) {
+      var fallbackWsId = String(state.commandRulesLastRenderedWorkspaceId || "");
+      if (fallbackWsId) {
+        rulesData = state.commandRulesByWorkspace[fallbackWsId] || null;
+      }
+    }
+    var statusText = "";
+    if (state.commandRulesLoading) {
+      statusText = "Loading command rules...";
+    } else if (state.commandRulesError) {
+      statusText = state.commandRulesError;
+    }
+    el.commandRulesStatus.textContent = statusText;
+
+    var globalHtml = "";
+    var html = "";
+    if (!rulesData) {
+      globalHtml = "<p class='empty-state'>No command rule data available.</p>";
+      html = "";
+      el.commandRulesGlobalList.innerHTML = globalHtml;
+      el.commandRulesList.innerHTML = html;
+      return;
+    }
+    if (wsId && state.commandRulesByWorkspace[wsId]) {
+      state.commandRulesLastRenderedWorkspaceId = wsId;
+    }
+
+    var globalDefaults = Array.isArray(rulesData.global_defaults) ? rulesData.global_defaults : [];
+    var remembered = Array.isArray(rulesData.remembered) ? rulesData.remembered : [];
+    var onceRules = Array.isArray(rulesData.once) ? rulesData.once : [];
+
+    globalHtml += "<section class='command-rules-group'><div class='command-rules-group-head'><p class='command-rules-group-title'>Global defaults</p></div><p class='settings-hint'>Global defaults apply to all projects.</p>";
+    if (!globalDefaults.length) {
+      globalHtml += "<p class='empty-state'>No global defaults configured.</p>";
+    } else {
+      globalHtml += "<div class='command-rule-table command-rule-table-global'>";
+      globalHtml += "<div class='command-rule-table-head'><span>Command</span><span>Regex</span></div>";
+      for (var g = 0; g < globalDefaults.length; g += 1) {
+        var globalRule = globalDefaults[g] || {};
+        globalHtml += "<div class='command-rule-row table global locked'>";
+        globalHtml += "<div class='command-rule-col command'><span class='command-rule-command-text'>" + escHtml(globalRule.label || "Safe command") + "</span></div>";
+        globalHtml += "<code class='command-rule-col regex'>" + escHtml(globalRule.pattern || "") + "</code>";
+        globalHtml += "</div>";
+      }
+      globalHtml += "</div>";
+    }
+    globalHtml += "</section>";
+
+    html += "<section class='command-rules-group'><div class='command-rules-group-head'><p class='command-rules-group-title'>Remembered project rules</p>";
+    if (remembered.length) {
+      html += "<button type='button' class='command-rule-clear ghost' data-action='clear-command-rules' data-rule-scope='remember'>Clear</button>";
+    }
+    html += "</div>";
+    if (!remembered.length) {
+      html += "<p class='empty-state'>No remembered project rules.</p>";
+    } else {
+      html += "<div class='command-rule-table command-rule-table-workspace'>";
+      html += "<div class='command-rule-table-head'><span>Rule</span><span>Match</span><span></span></div>";
+      for (var r = 0; r < remembered.length; r += 1) {
+        var rememberedRule = remembered[r] || {};
+        var ruleIndex = String(rememberedRule.index || "");
+        var rememberedMode = commandRuleMatchModeLabel(rememberedRule.match_mode);
+        var rememberedPattern = String(rememberedRule.pattern || "");
+        var rememberedRuleText = rememberedMode === "exact" ? rememberedPattern : "regex rule";
+        var rememberedMatchText = rememberedMode === "regex"
+          ? "<code class='command-rule-col regex'>" + escHtml(rememberedPattern) + "</code>"
+          : "<span class='command-rule-mode'><em>exact</em></span>";
+        html += "<div class='command-rule-row table workspace'>";
+        html += "<div class='command-rule-col command'><span class='command-rule-pill'>" + escHtml(commandRuleDecisionLabel(rememberedRule.decision)) + "</span><span class='command-rule-command-text'>" + escHtml(rememberedRuleText) + "</span></div>";
+        html += "<div class='command-rule-col match'>" + rememberedMatchText + "</div>";
+        html += "<button type='button' class='command-rule-delete' data-action='delete-command-rule' data-rule-scope='remember' data-rule-index='" + escAttr(ruleIndex) + "' aria-label='Delete rule' title='Delete rule'><svg viewBox='0 0 16 16' fill='none' stroke='currentColor' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M3.5 4.4h9'></path><path d='M6.1 4.4V3.2h3.8v1.2'></path><path d='M5.2 6.1v6'></path><path d='M8 6.1v6'></path><path d='M10.8 6.1v6'></path><path d='M4.4 4.4l.6 8.2h6l.6-8.2'></path></svg></button>";
+        html += "</div>";
+      }
+      html += "</div>";
+    }
+    html += "</section>";
+
+    html += "<section class='command-rules-group'><div class='command-rules-group-head'><p class='command-rules-group-title'>One-time project rules</p>";
+    if (onceRules.length) {
+      html += "<button type='button' class='command-rule-clear ghost' data-action='clear-command-rules' data-rule-scope='once'>Clear</button>";
+    }
+    html += "</div>";
+    if (!onceRules.length) {
+      html += "<p class='empty-state'>No one-time project rules.</p>";
+    } else {
+      html += "<div class='command-rule-table command-rule-table-workspace'>";
+      html += "<div class='command-rule-table-head'><span>Rule</span><span>Match</span><span></span></div>";
+      for (var o = 0; o < onceRules.length; o += 1) {
+        var onceRule = onceRules[o] || {};
+        var onceIndex = String(onceRule.index || "");
+        var onceMode = commandRuleMatchModeLabel(onceRule.match_mode);
+        var oncePattern = String(onceRule.pattern || "");
+        var onceRuleText = onceMode === "exact" ? oncePattern : "regex rule";
+        var onceMatchText = onceMode === "regex"
+          ? "<code class='command-rule-col regex'>" + escHtml(oncePattern) + "</code>"
+          : "<span class='command-rule-mode'><em>exact</em></span>";
+        html += "<div class='command-rule-row table workspace'>";
+        html += "<div class='command-rule-col command'><span class='command-rule-pill'>" + escHtml(commandRuleDecisionLabel(onceRule.decision)) + "</span><span class='command-rule-command-text'>" + escHtml(onceRuleText) + "</span></div>";
+        html += "<div class='command-rule-col match'>" + onceMatchText + "</div>";
+        html += "<button type='button' class='command-rule-delete' data-action='delete-command-rule' data-rule-scope='once' data-rule-index='" + escAttr(onceIndex) + "' aria-label='Delete rule' title='Delete rule'><svg viewBox='0 0 16 16' fill='none' stroke='currentColor' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><path d='M3.5 4.4h9'></path><path d='M6.1 4.4V3.2h3.8v1.2'></path><path d='M5.2 6.1v6'></path><path d='M8 6.1v6'></path><path d='M10.8 6.1v6'></path><path d='M4.4 4.4l.6 8.2h6l.6-8.2'></path></svg></button>";
+        html += "</div>";
+      }
+      html += "</div>";
+    }
+    html += "</section>";
+
+    el.commandRulesGlobalList.innerHTML = globalHtml;
+    el.commandRulesList.innerHTML = html;
+  }
+
+  function loadCommandRules(workspaceId) {
+    var wsId = trim(workspaceId || "");
+    var settingsCard = el.settingsModal && el.settingsModal.querySelector
+      ? el.settingsModal.querySelector(".modal-card")
+      : null;
+    var preservedScrollTop = settingsCard ? settingsCard.scrollTop : 0;
+    if (!wsId) {
+      state.commandRulesError = "";
+      renderCommandRulesSettings();
+      if (settingsCard) {
+        settingsCard.scrollTop = preservedScrollTop;
+      }
+      return Promise.resolve(null);
+    }
+    state.commandRulesWorkspaceId = wsId;
+    state.commandRulesLoading = true;
+    state.commandRulesError = "";
+    renderCommandRulesSettings();
+    if (settingsCard) {
+      settingsCard.scrollTop = preservedScrollTop;
+    }
+    return apiGet("command_rules_list", { workspace_id: wsId })
+      .then(function (response) {
+        if (!response || !response.success) {
+          throw new Error((response && response.error) || "Could not load command rules");
+        }
+        state.commandRulesByWorkspace[wsId] = response;
+        state.commandRulesError = "";
+        return response;
+      })
+      .catch(function (error) {
+        var message = error && error.message ? error.message : "Could not load command rules";
+        if (/workspace not found/i.test(message)) {
+          var nextWorkspaces = [];
+          for (var i = 0; i < state.workspaces.length; i += 1) {
+            var workspace = state.workspaces[i] || {};
+            if (String(workspace.id || "") !== wsId) {
+              nextWorkspaces.push(workspace);
+            }
+          }
+          state.workspaces = nextWorkspaces;
+          delete state.commandRulesByWorkspace[wsId];
+          if (String(state.commandRulesWorkspaceId || "") === wsId) {
+            state.commandRulesWorkspaceId = state.workspaces.length ? String((state.workspaces[0] && state.workspaces[0].id) || "") : "";
+          }
+          if (state.commandRulesWorkspaceId) {
+            state.commandRulesError = "Selected project was removed. Switched to another project.";
+            return loadCommandRules(state.commandRulesWorkspaceId);
+          }
+          state.commandRulesError = "Selected project was removed.";
+          return null;
+        }
+        state.commandRulesError = message;
+        return null;
+      })
+      .finally(function () {
+        state.commandRulesLoading = false;
+        renderCommandRulesSettings();
+        if (settingsCard) {
+          settingsCard.scrollTop = preservedScrollTop;
+        }
+      });
+  }
+
+  function deleteCommandRule(workspaceId, scope, indexValue) {
+    var wsId = trim(workspaceId || "");
+    var ruleScope = trim(scope || "");
+    var idx = trim(String(indexValue || ""));
+    if (!wsId || !ruleScope || !idx) {
+      return Promise.resolve(null);
+    }
+    return apiPost("command_rule_delete", {
+      workspace_id: wsId,
+      scope: ruleScope,
+      index: idx
+    }).then(function (response) {
+      if (!response || !response.success) {
+        throw new Error((response && response.error) || "Could not delete rule");
+      }
+      return loadCommandRules(wsId);
+    });
+  }
+
+  function clearCommandRules(workspaceId, scope) {
+    var wsId = trim(workspaceId || "");
+    var ruleScope = trim(scope || "");
+    if (!wsId || !ruleScope) {
+      return Promise.resolve(null);
+    }
+    return apiPost("command_rules_clear", {
+      workspace_id: wsId,
+      scope: ruleScope
+    }).then(function (response) {
+      if (!response || !response.success) {
+        throw new Error((response && response.error) || "Could not clear command rules");
+      }
+      return loadCommandRules(wsId);
+    });
   }
 
   function handleWorkspaceTreeClick(event) {
@@ -8508,6 +9080,20 @@
       }
       runWithControlPending(target, function () {
         return renameWorkspace(workspaceId, nextName);
+      }).catch(showError);
+      return;
+    }
+
+    if (action === "open-workspace-approvals") {
+      if (!workspaceId) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      state.commandRulesWorkspaceId = workspaceId;
+      state.openWorkspaceMenuWorkspaceId = "";
+      openSettingsModal().then(function () {
+        return loadCommandRules(workspaceId);
       }).catch(showError);
       return;
     }
@@ -9622,10 +10208,50 @@
     });
 
     on(el.settingsModal, "click", function (event) {
+      var deleteBtn = event.target && event.target.closest
+        ? event.target.closest("button[data-action='delete-command-rule'][data-rule-scope][data-rule-index]")
+        : null;
+      if (deleteBtn) {
+        var wsDeleteId = String(state.commandRulesWorkspaceId || "");
+        var deleteScope = deleteBtn.getAttribute("data-rule-scope") || "";
+        var deleteIndex = deleteBtn.getAttribute("data-rule-index") || "";
+        runWithControlPending(deleteBtn, function () {
+          return deleteCommandRule(wsDeleteId, deleteScope, deleteIndex);
+        }, { spinner: false }).catch(showError);
+        return;
+      }
+      var clearBtn = event.target && event.target.closest
+        ? event.target.closest("button[data-action='clear-command-rules'][data-rule-scope]")
+        : null;
+      if (clearBtn) {
+        var wsClearId = String(state.commandRulesWorkspaceId || "");
+        var clearScope = clearBtn.getAttribute("data-rule-scope") || "";
+        if (!wsClearId || !clearScope) {
+          return;
+        }
+        var confirmText = clearScope === "remember"
+          ? "Clear all remembered approval rules for this project?"
+          : "Clear all one-time approval rules for this project?";
+        if (!window.confirm(confirmText)) {
+          return;
+        }
+        runWithControlPending(clearBtn, function () {
+          return clearCommandRules(wsClearId, clearScope);
+        }, { spinner: false }).catch(showError);
+        return;
+      }
       if (event.target === el.settingsModal) {
         closeModal(el.settingsModal);
       }
     });
+
+    if (el.commandRulesWorkspace) {
+      on(el.commandRulesWorkspace, "change", function () {
+        var wsId = trim(el.commandRulesWorkspace.value || "");
+        state.commandRulesWorkspaceId = wsId;
+        loadCommandRules(wsId).catch(showError);
+      });
+    }
 
     on(el.refreshAuthBtn, "click", function () {
       runWithControlPending(el.refreshAuthBtn, function () {
@@ -9924,8 +10550,26 @@
           var preview = panel.querySelector(".run-stream-preview");
           if (preview) {
             preview.scrollTop = preview.scrollHeight;
+            state.runStreamAutoFollowByEventId[eventId] = true;
+            state.runStreamScrollTopByEventId[eventId] = preview.scrollTop;
           }
         }
+      }, true);
+      el.chatLog.addEventListener("scroll", function (event) {
+        var target = event && event.target;
+        if (!target || !target.classList || !target.classList.contains("run-stream-preview")) {
+          return;
+        }
+        var panel = target.closest("details.run-details.run-thinking[data-event-id]");
+        if (!panel) {
+          return;
+        }
+        var eventId = String(panel.getAttribute("data-event-id") || "");
+        if (!eventId) {
+          return;
+        }
+        state.runStreamScrollTopByEventId[eventId] = Number(target.scrollTop || 0);
+        state.runStreamAutoFollowByEventId[eventId] = isElementScrollAtBottom(target, 8);
       }, true);
     }
 
@@ -9995,6 +10639,9 @@
     });
 
     document.addEventListener("click", function (event) {
+      if (Date.now() < suppressMenuCloseUntilMs) {
+        return;
+      }
       if (!event.target || typeof event.target.closest !== "function") {
         closeAllMenus();
         return;

@@ -176,8 +176,9 @@ pagetitle: "Artificer"
 <p class="menu-title">Command execution</p>
 <div class="command-exec-control" role="group" aria-label="Command execution mode">
 <button type="button" data-command-exec="none">None</button>
-<button type="button" data-command-exec="ask">Ask me</button>
-<button type="button" data-command-exec="all">All</button>
+<button type="button" data-command-exec="ask-all">Ask all</button>
+<button type="button" data-command-exec="ask-some">Ask some</button>
+<button type="button" data-command-exec="all">Ask none</button>
 </div>
 <div class="menu-sep"></div>
 <div class="perm-toggle-row">
@@ -348,8 +349,19 @@ pagetitle: "Artificer"
 <textarea id="ssh-pub-output" rows="3" readonly placeholder="No SSH key detected yet."></textarea>
 <p class="settings-hint">Git over SSH uses your key. GitHub username/email is optional metadata.</p>
 <p class="settings-links"><a href="https://github.com/settings/keys" target="_blank" rel="noopener">GitHub SSH keys</a> <span aria-hidden="true">&middot;</span> <a href="https://cli.github.com/manual/gh_auth_login" target="_blank" rel="noopener">GitHub auth docs</a></p>
+<div class="settings-sep"></div>
+<div class="settings-rules">
+<div class="settings-rules-head">
+<strong>Command approvals</strong>
+</div>
+<div id="command-rules-global-list" class="command-rules-list"></div>
+<label for="command-rules-workspace">Project</label>
+<select id="command-rules-workspace"></select>
+<div id="command-rules-status" class="settings-hint"></div>
+<div id="command-rules-list" class="command-rules-list"></div>
+</div>
 </div>
 </div>
 </div>
 
-<script src="/static/artificer-app.js?v=20260219-approvalux04"></script>
+<script src="/static/artificer-app.js?v=20260219-approvalux25"></script>
