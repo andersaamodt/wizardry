@@ -42,10 +42,10 @@ display_priorities() {
   # Get directory
   dir="${PWD}"
 
-  # Build a list of all prioritized files in the directory
+  # Build a list of all prioritized files in the directory.
   # Format: "echelon priority checked filename"
-  # Read all attributes in one pass to minimize xattr calls
-  priority_list=""
+  priority_list_file=$(temp-file priorities-list)
+  priority_list_file="${priority_list_file?priorities: failed to create temp file}"
   item_count=0
   
   for f in "$dir"/*; do
@@ -84,25 +84,21 @@ display_priorities() {
     esac
     
     # Add to list with all data needed
-    if [ -z "$priority_list" ]; then
-      priority_list="$file_echelon $file_priority $checked_value $f"
-    else
-      priority_list="$priority_list
-$file_echelon $file_priority $checked_value $f"
-    fi
+    printf '%s %s %s %s\n' "$file_echelon" "$file_priority" "$checked_value" "$f" >> "$priority_list_file"
     
     item_count=$((item_count + 1))
   done
   
   # If there are no priorities, print an error message and exit
-  if [ -z "$priority_list" ]; then
+  if [ ! -s "$priority_list_file" ]; then
+    rm -f "$priority_list_file"
     printf '%s\n' "No priorities set in the current folder. Try 'prioritize <filename>'."
     return 1
   fi
 
   # Sort by echelon (descending), then priority (ascending), then filename
   # Using sort: -k1,1rn (first field reverse numeric), -k2,2n (second field numeric)
-  sorted_list=$(printf '%s\n' "$priority_list" | sort -k1,1rn -k2,2n -k4)
+  sort -k1,1rn -k2,2n -k4 "$priority_list_file" -o "$priority_list_file"
 
   # Initialize variables
   prev_echelon=""
@@ -132,7 +128,7 @@ $file_echelon $file_priority $checked_value $f"
     if [ $verbose -eq 1 ]; then
       menu_command="${menu_command}${file_echelon}.${file_priority} "
     fi
-    item_name=$(basename "$priority_file")
+    item_name=${priority_file##*/}
     # Add * after folder names
     if [ -d "$priority_file" ]; then
       item_name="${item_name}*"
@@ -141,9 +137,7 @@ $file_echelon $file_priority $checked_value $f"
 
     # Increment counts
     total_menu_items=$((total_menu_items + 1))
-  done <<EOF
-$sorted_list
-EOF
+  done < "$priority_list_file"
   
   # Store counts for next iteration comparison
   current_item_count=$item_count
@@ -164,6 +158,7 @@ EOF
 
   # Execute the constructed menu command
   eval "${menu_command}" || priorities_menu_status=$?
+  rm -f "$priority_list_file"
   return "${priorities_menu_status:-0}"
 }
 
