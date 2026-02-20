@@ -8950,14 +8950,14 @@ emit_state() {
     ws_bg_residents=0
     ws_residents_json='[]'
     ws_unratified_json='[]'
-    ws_toggles_json='{"dilemma_surfacing":1,"amendments":1,"interpretation_log":1,"commitments":1,"attention_policies":1}'
+    ws_toggles_json='{"context_sharing":1,"dilemma_surfacing":1,"amendments":1,"interpretation_log":1,"commitments":1,"attention_policies":1}'
     if command -v ma_workspace_init >/dev/null 2>&1; then
       ma_workspace_init "$ws_id"
       ws_bg_residents=$(ma_workspace_background_resident_count "$ws_id")
       ws_residents_json=$(ma_residents_json_for_workspace "$ws_id")
       ws_unratified_json=$(ma_workspace_unratified_amendments_json "$ws_id")
       ws_toggles_json=$(cat <<EOF_TOG
-{"dilemma_surfacing":$(ma_toggle_value "$ws_id" "dilemma_surfacing" 1),"amendments":$(ma_toggle_value "$ws_id" "amendments" 1),"interpretation_log":$(ma_toggle_value "$ws_id" "interpretation_log" 1),"commitments":$(ma_toggle_value "$ws_id" "commitments" 1),"attention_policies":$(ma_toggle_value "$ws_id" "attention_policies" 1)}
+{"context_sharing":$(ma_toggle_value "$ws_id" "context_sharing" 1),"dilemma_surfacing":$(ma_toggle_value "$ws_id" "dilemma_surfacing" 1),"amendments":$(ma_toggle_value "$ws_id" "amendments" 1),"interpretation_log":$(ma_toggle_value "$ws_id" "interpretation_log" 1),"commitments":$(ma_toggle_value "$ws_id" "commitments" 1),"attention_policies":$(ma_toggle_value "$ws_id" "attention_policies" 1)}
 EOF_TOG
 )
     fi
@@ -9407,7 +9407,7 @@ case "$action" in
       ma_meta_set "$meta_file" "shared_context_workspace_ids" "$shared_context_workspace_ids"
     fi
 
-    for toggle_key in dilemma_surfacing amendments interpretation_log commitments attention_policies; do
+    for toggle_key in context_sharing dilemma_surfacing amendments interpretation_log commitments attention_policies; do
       toggle_value=$(trim "$(param "$toggle_key")")
       case "$toggle_value" in
         0|1)
@@ -9469,6 +9469,22 @@ case "$action" in
       emit_error "workspace not found"
       exit 0
     fi
+    ma_workspace_init "$workspace_id"
+    resident_meta_path="$(ma_workspace_residents_dir "$workspace_id")/$resident_id/meta"
+    if [ ! -f "$resident_meta_path" ]; then
+      seed_enabled=$(trim "$(param "enabled")")
+      seed_visible=$(trim "$(param "visible")")
+      seed_background=$(trim "$(param "background")")
+      seed_reserve_compute=$(trim "$(param "reserve_compute")")
+      seed_model=$(trim "$(param "model")")
+      [ "$seed_visible" = "1" ] || seed_visible=0
+      [ "$seed_background" = "0" ] || seed_background=1
+      [ "$seed_reserve_compute" = "1" ] || seed_reserve_compute=0
+      ma_spawn_resident "$workspace_id" "$resident_id" "$seed_visible" "$seed_background" "$seed_reserve_compute" "$seed_model"
+      if [ "$seed_enabled" = "0" ]; then
+        ma_update_resident_field "$workspace_id" "$resident_id" "enabled" "0" >/dev/null 2>&1 || true
+      fi
+    fi
     for resident_key in enabled visible background reserve_compute; do
       resident_value=$(trim "$(param "$resident_key")")
       case "$resident_value" in
@@ -9477,8 +9493,9 @@ case "$action" in
           ;;
       esac
     done
+    resident_model_present=$(trim "$(param "model_present")")
     resident_model=$(trim "$(param "model")")
-    if [ -n "$resident_model" ]; then
+    if [ "$resident_model_present" = "1" ] || [ -n "$resident_model" ]; then
       ma_update_resident_field "$workspace_id" "$resident_id" "model" "$resident_model" >/dev/null 2>&1 || true
     fi
     printf '{"success":true,"workspace_multi_agent":%s}\n' "$(ma_workspace_state_json "$workspace_id")"
@@ -9940,6 +9957,49 @@ case "$action" in
 
   model_catalog)
     emit_model_catalog
+    exit 0
+    ;;
+
+  model_uninstall)
+    model_name=$(trim "$(param "model")")
+    if ! safe_model_name "$model_name"; then
+      emit_error "invalid model name"
+      exit 0
+    fi
+
+    uninstall_output=""
+    uninstall_rc=1
+
+    run_ai_dev_uninstall_script="$AI_DEV_DIR/uninstall-llm"
+    if [ -x "$run_ai_dev_uninstall_script" ]; then
+      set +e
+      uninstall_output=$(run_ai_dev_script uninstall-llm "$model_name" 2>&1)
+      uninstall_rc=$?
+      set -e
+    fi
+
+    if [ "$uninstall_rc" -ne 0 ]; then
+      ollama_bin=$(resolve_ollama_bin || true)
+      if [ -z "$ollama_bin" ]; then
+        emit_error "Ollama is not available for uninstall"
+        exit 0
+      fi
+      set +e
+      uninstall_output=$("$ollama_bin" rm "$model_name" 2>&1)
+      uninstall_rc=$?
+      set -e
+    fi
+
+    if [ "$uninstall_rc" -ne 0 ]; then
+      error_message=$(trim "$(strip_terminal_noise "$uninstall_output")")
+      [ -n "$error_message" ] || error_message="Failed to uninstall model"
+      emit_error "$error_message"
+      exit 0
+    fi
+
+    printf '{"success":true,"model":"%s","output":"%s"}\n' \
+      "$(json_escape "$model_name")" \
+      "$(json_escape "$uninstall_output")"
     exit 0
     ;;
 

@@ -484,10 +484,12 @@
     workspaceMultiAgentById: {},
     workspaceMultiAgentLoadingById: {},
     workspaceMultiAgentErrorById: {},
+    multiAgentGovernanceSavingByWorkspace: {},
+    multiAgentResidentBulkSavingByWorkspace: {},
     multiAgentSelectedResidentIdByWorkspace: {},
     multiAgentOpenResidentOptionsByWorkspace: {},
     multiAgentCharterAutosaveTimerByWorkspace: {},
-    openTriageSuppressProposalId: "",
+    triageOtherInputProposalId: "",
     activeTriage: false,
     modeRuntimeLoading: false,
     modeRuntimeError: "",
@@ -500,6 +502,7 @@
     chatLastKey: "",
     chatMarkupCache: "",
     runDetailsOpenByEventId: {},
+    runDigestOpenByEventId: {},
     runStreamAutoFollowByEventId: {},
     runStreamScrollTopByEventId: {},
     runTodoMonitorOpenByConversation: {},
@@ -647,6 +650,10 @@
     commitMainBtn: document.getElementById("commit-main-btn"),
     commitMenuBtn: document.getElementById("commit-menu-btn"),
     commitMenu: document.getElementById("commit-menu"),
+    triageToolbarActions: document.getElementById("triage-toolbar-actions"),
+    triageCleanupMainBtn: document.getElementById("triage-cleanup-main-btn"),
+    triageCleanupMenuBtn: document.getElementById("triage-cleanup-menu-btn"),
+    triageCleanupMenu: document.getElementById("triage-cleanup-menu"),
     branchMenuBtn: document.getElementById("branch-menu-btn"),
     branchMenu: document.getElementById("branch-menu"),
     branchMenuList: document.getElementById("branch-menu-list"),
@@ -812,10 +819,12 @@
     multi_agentStatus: document.getElementById("multi_agent-status"),
     multi_agentCharter: document.getElementById("multi_agent-charter"),
     multi_agentRolesHint: document.getElementById("multi_agent-roles-hint"),
+    multi_agentToggleAllResidents: document.getElementById("multi_agent-toggle-all-residents"),
     multi_agentSectionDilemma: document.getElementById("multi_agent-section-dilemma"),
     multi_agentSectionAmendments: document.getElementById("multi_agent-section-amendments"),
     multi_agentSectionCommitments: document.getElementById("multi_agent-section-commitments"),
     multi_agentSectionPolicies: document.getElementById("multi_agent-section-policies"),
+    multi_agentToggleContextSharing: document.getElementById("multi_agent-toggle-context-sharing"),
     multi_agentToggleAmendments: document.getElementById("multi_agent-toggle-amendments"),
     multi_agentToggleCommitments: document.getElementById("multi_agent-toggle-commitments"),
     multi_agentTogglePolicies: document.getElementById("multi_agent-toggle-policies"),
@@ -841,6 +850,7 @@
     "organize-menu": el.organizeMenu,
     "open-menu": el.openMenu,
     "commit-menu": el.commitMenu,
+    "triage-cleanup-menu": el.triageCleanupMenu,
     "theme-picker-menu": el.themePickerMenu,
     "branch-menu": el.branchMenu,
     "permissions-menu": el.permissionsMenu,
@@ -2824,6 +2834,9 @@
     if (el.commitMenuBtn) {
       el.commitMenuBtn.setAttribute("aria-expanded", "false");
     }
+    if (el.triageCleanupMenuBtn) {
+      el.triageCleanupMenuBtn.setAttribute("aria-expanded", "false");
+    }
     if (el.branchMenuBtn) {
       el.branchMenuBtn.setAttribute("aria-expanded", "false");
     }
@@ -2859,8 +2872,8 @@
     if (!exceptId || exceptId !== "run-mode-menu") {
       state.runModeMoreExpanded = false;
     }
-    if (!exceptId && state.openTriageSuppressProposalId) {
-      state.openTriageSuppressProposalId = "";
+    if (!exceptId && state.triageOtherInputProposalId) {
+      state.triageOtherInputProposalId = "";
     }
   }
 
@@ -4005,6 +4018,18 @@
     return formatDurationLabel(totalSeconds);
   }
 
+  function runDurationSeconds(startedAt, finishedAt) {
+    var startedMs = Date.parse(startedAt || "");
+    var endedMs = Date.parse(finishedAt || "");
+    if (!isFinite(startedMs) || startedMs <= 0) {
+      return 0;
+    }
+    if (!isFinite(endedMs) || endedMs <= 0 || endedMs < startedMs) {
+      endedMs = Date.now();
+    }
+    return Math.max(0, Math.floor((endedMs - startedMs) / 1000));
+  }
+
   function runTraceSummaryLabel(event, isRunning) {
     var duration = thoughtDurationLabel(event && event.started_at, isRunning ? "" : (event && event.finished_at));
     if (isRunning) {
@@ -4185,6 +4210,127 @@
       return "progress";
     }
     return "info";
+  }
+
+  function classifyRunCommandActivity(commandText) {
+    var cmd = trim(String(commandText || "")).toLowerCase();
+    if (!cmd) {
+      return "";
+    }
+    if (/^rg\b|^grep\b|^find\b/.test(cmd)) {
+      return "searches";
+    }
+    if (/^ls\b|^tree\b/.test(cmd)) {
+      return "lists";
+    }
+    if (/^cat\b|^sed\b|^awk\b|^head\b|^tail\b/.test(cmd)) {
+      return "reads";
+    }
+    if (/apply_patch|^git\s+diff\b|^git\s+status\b/.test(cmd)) {
+      return "edits";
+    }
+    if (/npm\s+test|pytest|cargo\s+test|go\s+test|vitest|jest|headless|smoke|lint/.test(cmd)) {
+      return "checks";
+    }
+    return "actions";
+  }
+
+  function humanizeRunCommand(commandText) {
+    var cmd = trim(String(commandText || ""));
+    if (!cmd) {
+      return "";
+    }
+    var lowered = cmd.toLowerCase();
+    if (/^cat\s+/.test(lowered)) {
+      return "Read " + cmd.replace(/^cat\s+/i, "");
+    }
+    if (/^ls\s+/.test(lowered)) {
+      return "Listed " + cmd.replace(/^ls\s+/i, "");
+    }
+    if (/^rg\s+/.test(lowered) || /^grep\s+/.test(lowered) || /^find\s+/.test(lowered)) {
+      return "Searched " + cmd;
+    }
+    if (/apply_patch/i.test(cmd)) {
+      return "Applied patch";
+    }
+    if (/^git\s+status\b/i.test(cmd)) {
+      return "Checked git status";
+    }
+    if (/^git\s+diff\b/i.test(cmd)) {
+      return "Inspected git diff";
+    }
+    return cmd;
+  }
+
+  function formatRunActivityDigest(event, isRunning) {
+    var commands = Array.isArray(event && event.commands) ? event.commands : [];
+    var streamEntries = splitRunStreamEntries(event && event.stream_text);
+    var durationSeconds = runDurationSeconds(event && event.started_at, isRunning ? "" : (event && event.finished_at));
+    var counts = {
+      reads: 0,
+      searches: 0,
+      lists: 0,
+      edits: 0,
+      checks: 0,
+      actions: 0
+    };
+    var recentLines = [];
+
+    for (var i = 0; i < commands.length; i += 1) {
+      var cmdText = trim(String((commands[i] && commands[i].command) || ""));
+      if (!cmdText) {
+        continue;
+      }
+      var bucket = classifyRunCommandActivity(cmdText);
+      if (bucket && Object.prototype.hasOwnProperty.call(counts, bucket)) {
+        counts[bucket] += 1;
+      } else {
+        counts.actions += 1;
+      }
+      if (recentLines.length < 5) {
+        recentLines.push(humanizeRunCommand(cmdText));
+      }
+    }
+
+    if (!recentLines.length) {
+      for (var e = 0; e < streamEntries.length && recentLines.length < 5; e += 1) {
+        var line = trim(String((streamEntries[e] && streamEntries[e].text) || ""));
+        if (!line) {
+          continue;
+        }
+        if (/iteration|mode_update|plan_update|commands:|contract|checkpoint/i.test(line)) {
+          continue;
+        }
+        recentLines.push(line);
+      }
+    }
+
+    var summaryParts = [];
+    if (counts.reads > 0) summaryParts.push(String(counts.reads) + " read" + (counts.reads === 1 ? "" : "s"));
+    if (counts.searches > 0) summaryParts.push(String(counts.searches) + " search" + (counts.searches === 1 ? "" : "es"));
+    if (counts.lists > 0) summaryParts.push(String(counts.lists) + " list" + (counts.lists === 1 ? "" : "s"));
+    if (counts.edits > 0) summaryParts.push(String(counts.edits) + " edit" + (counts.edits === 1 ? "" : "s"));
+    if (counts.checks > 0) summaryParts.push(String(counts.checks) + " check" + (counts.checks === 1 ? "" : "s"));
+    if (!summaryParts.length && counts.actions > 0) {
+      summaryParts.push(String(counts.actions) + " action" + (counts.actions === 1 ? "" : "s"));
+    }
+    if (!summaryParts.length || !recentLines.length) {
+      return "";
+    }
+
+    var eventId = String((event && event.id) || "");
+    var longRun = durationSeconds >= 240 || commands.length >= 36 || streamEntries.length >= 220;
+    var hasSeen = !!(eventId && Object.prototype.hasOwnProperty.call(state.runDigestOpenByEventId, eventId));
+    var openByDefault = !longRun;
+    var isOpen = hasSeen ? !!state.runDigestOpenByEventId[eventId] : openByDefault;
+    var html = "<details class='run-activity-card run-activity-digest' data-digest-event-id='" + escAttr(eventId) + "'" + (isOpen ? " open" : "") + ">";
+    html += "<summary class='run-activity-summary'>" + escHtml((isRunning ? "Exploring " : "Explored ") + summaryParts.join(", ")) + "</summary>";
+    html += "<div class='run-activity-lines'>";
+    for (var r = 0; r < recentLines.length; r += 1) {
+      html += "<p>" + escHtml(recentLines[r] || "") + "</p>";
+    }
+    html += "</div></details>";
+    return html;
   }
 
   function formatRunStreamFeed(event, isRunning) {
@@ -4380,6 +4526,7 @@
     var opts = options || {};
     var isRunning = !!opts.isRunning;
     var sections = "";
+    sections += formatRunActivityDigest(event, isRunning);
     sections += "<div class='run-trace-block run-trace-stream'><p class='run-trace-title'>" + (isRunning ? "Live steps" : "Step timeline") + "</p>" + formatRunStreamFeed(event, isRunning) + "</div>";
     sections += formatRunNarrativeSection("Plan", event.plan || "");
     if (event.commands && event.commands.length) {
@@ -4706,12 +4853,25 @@
   }
 
   function renderWorkspaceTree() {
+    var triageCards = Array.isArray(state.triage && state.triage.cards) ? state.triage.cards : [];
+    var triageRowHtml = "";
+    if (triageCards.length) {
+      triageRowHtml += "<div class='workspace-tree-triage-row" + (state.activeTriage ? " active" : "") + "' role='button' tabindex='0' title='Open triage' data-action='select-triage'>";
+      triageRowHtml += "<span class='workspace-tree-triage-icon' aria-hidden='true'><svg viewBox='0 0 16 16' fill='none' stroke='currentColor' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'><path d='M2.4 4.1h11.2'/><path d='M2.4 8h11.2'/><path d='M2.4 11.9h7.4'/><circle cx='12.3' cy='11.9' r='1.2'></circle></svg></span>";
+      triageRowHtml += "<span class='workspace-tree-triage-title'>Triage</span>";
+      triageRowHtml += "<span class='workspace-tree-triage-count'>" + escHtml(String(triageCards.length)) + "</span>";
+      triageRowHtml += "</div>";
+    }
+
     if (!state.workspaces.length) {
       var emptyMarkup = "";
       if (!state.initialLoadComplete) {
         emptyMarkup = "<p class='empty-state'><span class='run-spinner' aria-hidden='true'></span> Loading projects...</p>";
       } else {
         emptyMarkup = "<p class='empty-state'>Drop a folder here or click + to add a project.</p>";
+      }
+      if (triageRowHtml) {
+        emptyMarkup = triageRowHtml + emptyMarkup;
       }
       if (state.workspaceTreeMarkupCache === emptyMarkup) {
         return;
@@ -4843,7 +5003,7 @@
         var bgResidentsCount = Number(workspace.multi_agent_background_residents || 0);
         var workspaceLabel = escHtml(workspace.name || "Project");
         if (isFinite(bgResidentsCount) && bgResidentsCount > 0) {
-          workspaceLabel += " <span class='workspace-brain-badge' title='Background agents active' aria-label='Background agents active'>🧠</span>";
+          workspaceLabel += " <span class='workspace-brain-badge' title='Background agents active' aria-label='Background agents active'>" + reasoningIconMarkup() + "</span>";
         }
         html += "<div class='workspace-meta' title='" + escAttr(workspace.path || "") + "'>" + workspaceLabel + "</div>";
         html += "<button type='button' class='workspace-menu-trigger' data-action='toggle-workspace-menu' data-workspace-id='" + escHtml(workspaceId) + "' aria-label='Project menu' title='Project actions' aria-expanded='" + (state.openWorkspaceMenuWorkspaceId === workspaceId ? "true" : "false") + "'>&hellip;</button>";
@@ -4853,7 +5013,7 @@
           workspaceMenuClass += " hidden";
         }
         html += "<div class='" + workspaceMenuClass + "' data-workspace-menu='" + escHtml(workspaceId) + "' role='menu' aria-label='Project actions'>";
-        html += "<button type='button' data-action='open-workspace-multi_agent' data-workspace-id='" + escHtml(workspaceId) + "'>Manage agents</button>";
+        html += "<button type='button' data-action='open-workspace-multi_agent' data-workspace-id='" + escHtml(workspaceId) + "'>Manage agents...</button>";
         html += "<button type='button' data-action='open-workspace-approvals' data-workspace-id='" + escHtml(workspaceId) + "'>Command approvals...</button>";
         html += "<button type='button' data-action='rename-workspace' data-workspace-id='" + escHtml(workspaceId) + "'>Rename</button>";
         html += "<button type='button' data-action='remove-workspace' data-workspace-id='" + escHtml(workspaceId) + "'>Remove</button>";
@@ -4916,54 +5076,8 @@
       html = "<p class='empty-state'>No threads match current organize filters.</p>";
     }
 
-    var triageCards = Array.isArray(state.triage && state.triage.cards) ? state.triage.cards : [];
-    if (triageCards.length) {
-      var triageHtml = "";
-      triageHtml += "<section class='triage-inbox-section" + (state.activeTriage ? " active" : "") + "'>";
-      triageHtml += "<div class='triage-inbox-head' data-action='select-triage'>";
-      triageHtml += "<span class='triage-inbox-title'>Triage Inbox</span>";
-      triageHtml += "<span class='triage-inbox-count'>" + escHtml(String(triageCards.length)) + "</span>";
-      triageHtml += "</div>";
-      triageHtml += "<div class='triage-inbox-actions'>";
-      triageHtml += "<button type='button' class='ghost' data-action='triage-cleanup'>Cleanup...</button>";
-      triageHtml += "<button type='button' class='ghost' data-action='triage-cleanup-directed'>Cleanup w/ prompt...</button>";
-      triageHtml += "</div>";
-      triageHtml += "<div class='triage-inbox-list'>";
-      for (var tc = 0; tc < triageCards.length && tc < 14; tc += 1) {
-        var card = triageCards[tc] || {};
-        var cardId = String(card.id || "");
-        if (!cardId) {
-          continue;
-        }
-        var scopeLabel = multiAgentEscalationLabel(card.escalation_class || "");
-        var targetLabel = multiAgentTargetTypeLabel(card.target_type || "");
-        triageHtml += "<article class='triage-card'>";
-        triageHtml += "<p class='triage-card-summary'>" + escHtml(card.summary || "Proposal") + "</p>";
-        triageHtml += "<p class='triage-card-meta'>" + escHtml(scopeLabel || "Policy tradeoff");
-        if (targetLabel) {
-          triageHtml += " • " + escHtml(targetLabel);
-        }
-        triageHtml += "</p>";
-        var suppressMenuOpen = String(state.openTriageSuppressProposalId || "") === cardId;
-        triageHtml += "<div class='triage-card-actions'>";
-        triageHtml += "<button type='button' data-action='triage-open-context' data-workspace-id='" + escAttr(card.workspace_id || "") + "' data-conversation-id='" + escAttr(card.conversation_id || "") + "' data-proposal-id='" + escAttr(cardId) + "'>Open</button>";
-        triageHtml += "<button type='button' data-action='triage-decide' data-proposal-id='" + escAttr(cardId) + "'>Decide</button>";
-        triageHtml += "<span class='menu-anchor triage-scope-anchor'>";
-        triageHtml += "<button type='button' data-action='triage-suppress-open' data-proposal-id='" + escAttr(cardId) + "' aria-expanded='" + (suppressMenuOpen ? "true" : "false") + "'>Create filter...</button>";
-        triageHtml += "<div class='floating-menu triage-scope-menu" + (suppressMenuOpen ? "" : " hidden") + "' data-triage-scope-menu='" + escAttr(cardId) + "'>";
-        triageHtml += "<button type='button' data-action='triage-suppress-scope' data-proposal-id='" + escAttr(cardId) + "' data-scope='workspace'>This project</button>";
-        triageHtml += "<button type='button' data-action='triage-suppress-scope' data-proposal-id='" + escAttr(cardId) + "' data-scope='global'>All projects</button>";
-        triageHtml += "</div>";
-        triageHtml += "</span>";
-        triageHtml += "</div>";
-        triageHtml += "</article>";
-      }
-      if (triageCards.length > 14) {
-        triageHtml += "<p class='settings-hint'>+" + escHtml(String(triageCards.length - 14)) + " more proposals in Triage.</p>";
-      }
-      triageHtml += "</div>";
-      triageHtml += "</section>";
-      html = triageHtml + "<div class='workspace-tree-section-head'>Threads</div>" + html;
+    if (triageRowHtml) {
+      html = triageRowHtml + html;
     }
 
     if (state.workspaceTreeMarkupCache === html) {
@@ -4972,6 +5086,111 @@
 
     el.workspaceTree.innerHTML = html;
     state.workspaceTreeMarkupCache = html;
+  }
+
+  function findWorkspaceGroupElement(workspaceId) {
+    if (!el.workspaceTree || !workspaceId) {
+      return null;
+    }
+    var groups = el.workspaceTree.querySelectorAll(".workspace-group[data-workspace-id]");
+    for (var i = 0; i < groups.length; i += 1) {
+      if (String(groups[i].dataset.workspaceId || "") === String(workspaceId || "")) {
+        return groups[i];
+      }
+    }
+    return null;
+  }
+
+  function animateWorkspaceGroupToggle(workspaceId, expand) {
+    var group = findWorkspaceGroupElement(workspaceId);
+    if (!group) {
+      return false;
+    }
+    var shell = group.querySelector(".conversation-shell");
+    if (!shell) {
+      group.classList.toggle("expanded", !!expand);
+      return true;
+    }
+
+    var shouldExpand = !!expand;
+    var currentlyExpanded = group.classList.contains("expanded");
+    if (currentlyExpanded === shouldExpand && !shell.classList.contains("is-animating")) {
+      return true;
+    }
+
+    if (shell._workspaceAnimEndHandler) {
+      shell.removeEventListener("transitionend", shell._workspaceAnimEndHandler);
+      shell._workspaceAnimEndHandler = null;
+    }
+    if (shell._workspaceAnimTimer) {
+      window.clearTimeout(shell._workspaceAnimTimer);
+      shell._workspaceAnimTimer = 0;
+    }
+
+    shell.classList.add("is-animating");
+    shell.style.willChange = "max-height, opacity";
+
+    var done = function () {
+      shell.classList.remove("is-animating");
+      shell.style.willChange = "";
+      shell.style.opacity = "";
+      shell.style.maxHeight = shouldExpand ? "none" : "0px";
+    };
+
+    var onEnd = function (event) {
+      if (event && event.target !== shell) {
+        return;
+      }
+      if (event && event.propertyName && event.propertyName !== "max-height") {
+        return;
+      }
+      if (shell._workspaceAnimEndHandler) {
+        shell.removeEventListener("transitionend", shell._workspaceAnimEndHandler);
+        shell._workspaceAnimEndHandler = null;
+      }
+      if (shell._workspaceAnimTimer) {
+        window.clearTimeout(shell._workspaceAnimTimer);
+        shell._workspaceAnimTimer = 0;
+      }
+      done();
+    };
+
+    shell._workspaceAnimEndHandler = onEnd;
+    shell.addEventListener("transitionend", onEnd);
+    shell._workspaceAnimTimer = window.setTimeout(onEnd, 380);
+
+    if (shouldExpand) {
+      group.classList.add("expanded");
+      shell.style.maxHeight = "0px";
+      shell.style.opacity = "0.02";
+      window.requestAnimationFrame(function () {
+        var targetHeight = shell.scrollHeight;
+        shell.style.maxHeight = Math.max(1, targetHeight) + "px";
+        shell.style.opacity = "1";
+      });
+      return true;
+    }
+
+    var startHeight = shell.scrollHeight;
+    shell.style.maxHeight = Math.max(1, startHeight) + "px";
+    shell.style.opacity = "1";
+    window.requestAnimationFrame(function () {
+      group.classList.remove("expanded");
+      shell.style.maxHeight = "0px";
+      shell.style.opacity = "0.02";
+    });
+    return true;
+  }
+
+  function setWorkspaceExpanded(workspaceId, expanded, options) {
+    if (!workspaceId) {
+      return;
+    }
+    state.expandedWorkspaceIds[workspaceId] = !!expanded;
+    if (options && options.animate && animateWorkspaceGroupToggle(workspaceId, expanded)) {
+      return;
+    }
+    renderUi();
   }
 
   function renderModelStatus() {
@@ -5098,6 +5317,20 @@
     return null;
   }
 
+  function catalogEntryForModel(modelName) {
+    var target = trim(String(modelName || ""));
+    if (!target || !Array.isArray(state.modelCatalog)) {
+      return null;
+    }
+    for (var i = 0; i < state.modelCatalog.length; i += 1) {
+      var entry = state.modelCatalog[i] || {};
+      if (String(entry.name || "") === target) {
+        return entry;
+      }
+    }
+    return null;
+  }
+
   function formatCatalogSizeLabel(sizeRaw) {
     var parsed = Number(sizeRaw);
     if (!isFinite(parsed) || parsed <= 0) {
@@ -5163,10 +5396,27 @@
         var model = state.models[i];
         var parts = parseModelDisplay(model);
         var activeClass = model === activeModel ? " active" : "";
-        html += "<button type='button' class='model-item" + activeClass + "' data-model-name='" + escHtml(model) + "'>";
-        html += "<span class='model-primary'>" + escHtml(parts.primary) + "</span>";
-        html += "<span class='model-meta'>" + escHtml(parts.meta || parts.raw) + "</span>";
+        var installedEntry = catalogEntryForModel(model);
+        var installedDescription = trim(installedEntry && installedEntry.description ? installedEntry.description : "");
+        var installedSizeLabel = formatCatalogSizeLabel(installedEntry && installedEntry.size_gb ? installedEntry.size_gb : "");
+        html += "<div class='catalog-item catalog-item-installed" + activeClass + "'>";
+        html += "<button type='button' class='catalog-model-select' data-model-name='" + escAttr(model) + "' title='Use this model'>";
+        html += "<span class='model-heading'><span class='model-primary'>" + escHtml(parts.primary) + "</span>";
+        if (parts.meta) {
+          html += "<span class='model-meta-inline'>" + escHtml(parts.meta) + "</span>";
+        }
+        html += "</span>";
+        if (installedDescription) {
+          html += "<span class='catalog-description'>" + escHtml(installedDescription) + "</span>";
+        }
         html += "</button>";
+        html += "<div class='catalog-actions'>";
+        html += "<button type='button' class='catalog-install-btn catalog-uninstall-btn' data-action='uninstall-model' data-model-name='" + escAttr(model) + "'>Uninstall</button>";
+        if (installedSizeLabel) {
+          html += "<span class='catalog-size catalog-size-right'>" + escHtml(installedSizeLabel) + "</span>";
+        }
+        html += "</div>";
+        html += "</div>";
       }
     }
     html += "</div>";
@@ -5188,22 +5438,30 @@
         var installJob = currentModelInstallFor(modelName);
         var isInstalling = !!(installJob && String(installJob.status || "") === "running");
         var isFailedInstall = !!(installJob && String(installJob.status || "") === "failed");
-        var installLabel = isInstalled ? "Installed" : (installJob ? modelInstallStatusLabel(installJob) : "Install");
-        var installDisabled = isInstalled || isInstalling;
+        var installLabel = installJob ? modelInstallStatusLabel(installJob) : "Install";
+        var installDisabled = isInstalling;
         if (isFailedInstall && !isInstalled) {
           installDisabled = false;
         }
-        html += "<div class='catalog-item'>";
-        html += "<div class='catalog-copy'><span class='model-primary'>" + escHtml(modelParts.primary) + "</span>";
-        html += "<span class='model-meta'>" + escHtml(modelParts.meta || modelParts.raw) + "</span>";
-        if (sizeLabel) {
-          html += "<span class='catalog-size'>" + escHtml(sizeLabel) + "</span>";
+        if (isInstalled) {
+          continue;
         }
+        html += "<div class='catalog-item'>";
+        html += "<div class='catalog-copy'><span class='model-heading'><span class='model-primary'>" + escHtml(modelParts.primary) + "</span>";
+        if (modelParts.meta) {
+          html += "<span class='model-meta-inline'>" + escHtml(modelParts.meta) + "</span>";
+        }
+        html += "</span>";
         if (description) {
           html += "<span class='catalog-description'>" + escHtml(description) + "</span>";
         }
         html += "</div>";
-        html += "<button type='button' class='catalog-install-btn" + (installDisabled ? " disabled" : "") + "' data-action='install-model' data-model-name='" + escHtml(modelName) + "'" + (installDisabled ? " disabled" : "") + ">" + escHtml(installLabel) + "</button>";
+        html += "<div class='catalog-actions'>";
+        html += "<button type='button' class='catalog-install-btn" + (installDisabled ? " disabled" : "") + "' data-action='install-model' data-model-name='" + escAttr(modelName) + "'" + (installDisabled ? " disabled" : "") + ">" + escHtml(installLabel) + "</button>";
+        if (sizeLabel) {
+          html += "<span class='catalog-size catalog-size-right'>" + escHtml(sizeLabel) + "</span>";
+        }
+        html += "</div>";
         html += "</div>";
       }
     }
@@ -5494,6 +5752,17 @@
         var budget = normalizeComputeBudget(computeButtons[ci].getAttribute("data-compute-budget"));
         computeButtons[ci].classList.toggle("active", budget === normalizeComputeBudget(state.computeBudget));
       }
+    }
+
+    var triageMode = !!state.activeTriage;
+    if (el.toolbar) {
+      el.toolbar.classList.toggle("triage-toolbar-mode", triageMode);
+    }
+    if (el.triageToolbarActions) {
+      el.triageToolbarActions.classList.toggle("hidden", !triageMode);
+    }
+    if (!triageMode && el.triageCleanupMenu && !el.triageCleanupMenu.classList.contains("hidden")) {
+      el.triageCleanupMenu.classList.add("hidden");
     }
   }
 
@@ -6178,7 +6447,7 @@
 
   function renderChatHeader() {
     if (state.activeTriage) {
-      el.chatTitle.textContent = "Triage Inbox";
+      el.chatTitle.textContent = "Triage";
       return;
     }
     if (!state.activeWorkspaceId) {
@@ -6862,10 +7131,11 @@
       el.workspacePathWidget.disabled = true;
       return;
     }
+    var folderName = basename(ws.path) || ws.path;
     el.workspacePathWidget.classList.remove("hidden");
     el.workspacePathWidget.innerHTML =
       "<span class='path-widget-icon' aria-hidden='true'><svg viewBox='0 0 16 16' fill='none' stroke='currentColor' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'><path d='M1.8 4.4h4.1l1.2 1.3h7.1v6.1c0 .9-.7 1.6-1.6 1.6H3.4c-.9 0-1.6-.7-1.6-1.6z'></path></svg></span>" +
-      "<span class='path-widget-label'>" + escHtml(ws.path) + "</span>";
+      "<span class='path-widget-label'>" + escHtml(folderName) + "</span>";
     el.workspacePathWidget.title = "Click to copy path. Double-click to open folder.";
     el.workspacePathWidget.setAttribute("data-tooltip", "Click to copy path. Double-click to open folder.");
     el.workspacePathWidget.setAttribute("aria-label", "Project path: " + ws.path);
@@ -6888,10 +7158,19 @@
     function fitsWithinToolbar() {
       return el.toolbar.scrollWidth <= el.toolbar.clientWidth + 1 && commitControlVisible();
     }
+    function titleIsTruncated() {
+      if (!el.chatTitle) {
+        return false;
+      }
+      return el.chatTitle.scrollWidth > el.chatTitle.clientWidth + 1;
+    }
     var compactClasses = ["path-icon-only", "open-icon-only", "commit-icon-only"];
     var i = 0;
     for (i = 0; i < compactClasses.length; i += 1) {
       el.toolbar.classList.remove(compactClasses[i]);
+    }
+    if (!fitsWithinToolbar() || titleIsTruncated()) {
+      el.toolbar.classList.add("path-icon-only");
     }
     for (i = 0; i < compactClasses.length; i += 1) {
       if (fitsWithinToolbar()) {
@@ -7030,30 +7309,34 @@
 
     if (state.activeTriage) {
       var triageCards = Array.isArray(state.triage && state.triage.cards) ? state.triage.cards : [];
-      var triageViewHtml = "<section class='triage-main-view'><h3>Triage Inbox</h3>";
-      triageViewHtml += "<p class='settings-hint'>Agent proposals awaiting decision. Cleanup is ephemeral and creates no persistent policy.</p>";
+      var triageViewHtml = "<section class='triage-main-view'><h3>Triage</h3>";
       if (!triageCards.length) {
         triageViewHtml += "<p class='empty-state'>No triage items right now.</p>";
       } else {
-        triageViewHtml += "<div class='triage-main-actions'><button type='button' data-action='triage-cleanup'>Cleanup...</button><button type='button' data-action='triage-cleanup-directed'>Cleanup w/ prompt...</button></div>";
         for (var t = 0; t < triageCards.length; t += 1) {
           var triageCard = triageCards[t] || {};
           var triageCardId = String(triageCard.id || "");
-          var triageSuppressOpen = triageCardId && String(state.openTriageSuppressProposalId || "") === triageCardId;
+          var triageOtherOpen = triageCardId && String(state.triageOtherInputProposalId || "") === triageCardId;
           triageViewHtml += "<article class='triage-main-card'>";
-          triageViewHtml += "<p><strong>" + escHtml(triageCard.summary || "Proposal") + "</strong></p>";
+          triageViewHtml += "<div class='triage-main-card-head'>";
+          triageViewHtml += "<p class='triage-main-title'><strong>" + escHtml(triageCard.summary || "Proposal") + "</strong></p>";
+          triageViewHtml += "<button type='button' class='icon-btn triage-goto-btn' data-action='triage-open-context' data-workspace-id='" + escAttr(triageCard.workspace_id || "") + "' data-conversation-id='" + escAttr(triageCard.conversation_id || "") + "' data-proposal-id='" + escAttr(triageCardId) + "' title='Go to source thread' aria-label='Go to source thread'><span aria-hidden='true'>&#8599;</span></button>";
+          triageViewHtml += "</div>";
           triageViewHtml += "<p class='settings-hint'>" + escHtml(multiAgentEscalationLabel(triageCard.escalation_class || "")) + " • " + escHtml(multiAgentTargetTypeLabel(triageCard.target_type || "")) + " • agent " + escHtml(triageCard.resident || "") + "</p>";
           triageViewHtml += "<p class='settings-hint'>" + escHtml(triageCard.rationale || "") + "</p>";
-          triageViewHtml += "<div class='modal-actions'>";
-          triageViewHtml += "<button type='button' data-action='triage-open-context' data-workspace-id='" + escAttr(triageCard.workspace_id || "") + "' data-conversation-id='" + escAttr(triageCard.conversation_id || "") + "' data-proposal-id='" + escAttr(triageCardId) + "'>Open thread</button>";
-          triageViewHtml += "<button type='button' data-action='triage-decide' data-proposal-id='" + escAttr(triageCardId) + "'>Decide</button>";
-          triageViewHtml += "<span class='menu-anchor triage-scope-anchor'>";
-          triageViewHtml += "<button type='button' data-action='triage-suppress-open' data-proposal-id='" + escAttr(triageCardId) + "' aria-expanded='" + (triageSuppressOpen ? "true" : "false") + "'>Create filter...</button>";
-          triageViewHtml += "<div class='floating-menu triage-scope-menu" + (triageSuppressOpen ? "" : " hidden") + "' data-triage-scope-menu='" + escAttr(triageCardId) + "'>";
-          triageViewHtml += "<button type='button' data-action='triage-suppress-scope' data-proposal-id='" + escAttr(triageCardId) + "' data-scope='workspace'>This project</button>";
-          triageViewHtml += "<button type='button' data-action='triage-suppress-scope' data-proposal-id='" + escAttr(triageCardId) + "' data-scope='global'>All projects</button>";
+          triageViewHtml += "<div class='triage-question'>What should we do?</div>";
+          triageViewHtml += "<div class='triage-choice-row'>";
+          triageViewHtml += "<button type='button' data-action='triage-decide' data-proposal-id='" + escAttr(triageCardId) + "' data-decision='accepted'>Accept</button>";
+          triageViewHtml += "<button type='button' data-action='triage-decide' data-proposal-id='" + escAttr(triageCardId) + "' data-decision='deferred'>Defer</button>";
+          triageViewHtml += "<button type='button' data-action='triage-decide' data-proposal-id='" + escAttr(triageCardId) + "' data-decision='dismissed'>Dismiss</button>";
+          triageViewHtml += "<button type='button' class='ghost' data-action='triage-decision-other-toggle' data-proposal-id='" + escAttr(triageCardId) + "'>" + (triageOtherOpen ? "Cancel" : "Other...") + "</button>";
           triageViewHtml += "</div>";
-          triageViewHtml += "</span>";
+          triageViewHtml += "<div class='triage-other-row" + (triageOtherOpen ? "" : " hidden") + "' data-triage-other-row='" + escAttr(triageCardId) + "'>";
+          triageViewHtml += "<input type='text' class='triage-other-input' data-triage-other-input='" + escAttr(triageCardId) + "' placeholder='Enter a custom decision' />";
+          triageViewHtml += "<button type='button' data-action='triage-decision-other-submit' data-proposal-id='" + escAttr(triageCardId) + "'>Apply</button>";
+          triageViewHtml += "</div>";
+          triageViewHtml += "<div class='triage-card-footer'>";
+          triageViewHtml += "<button type='button' class='ghost' data-action='triage-suppress-workspace' data-proposal-id='" + escAttr(triageCardId) + "'>Don't ask about this</button>";
           triageViewHtml += "</div>";
           triageViewHtml += "</article>";
         }
@@ -7501,6 +7784,10 @@
     } else {
       el.terminalPanel.classList.add("hidden");
       el.shell.classList.remove("terminal-open");
+    }
+    if (el.terminalToggleBtn) {
+      el.terminalToggleBtn.classList.toggle("on", !!state.terminalOpen);
+      el.terminalToggleBtn.setAttribute("aria-pressed", state.terminalOpen ? "true" : "false");
     }
 
     renderDiffView();
@@ -8605,6 +8892,21 @@
       renderUi();
       return pollModelInstallStatus(String(response.job.id || "")).catch(function () {
         return null;
+      });
+    });
+  }
+
+  function startModelUninstall(modelName) {
+    var target = trim(modelName);
+    if (!target) {
+      return Promise.resolve();
+    }
+    return apiPost("model_uninstall", { model: target }, { timeoutMs: 30000 }).then(function (response) {
+      if (!response.success) {
+        throw new Error(response.error || "Model uninstall failed");
+      }
+      return refreshModelData({ force: true, silent: false }).then(function () {
+        renderUi();
       });
     });
   }
@@ -12052,13 +12354,20 @@
     if (!wsId) {
       return Promise.resolve(null);
     }
+    var contextSharingEnabled = el.multi_agentToggleContextSharing && el.multi_agentToggleContextSharing.checked ? "1" : "0";
     var policyAmendmentsEnabled = el.multi_agentToggleAmendments && el.multi_agentToggleAmendments.checked ? "1" : "0";
+    var attentionPoliciesEnabled = el.multi_agentTogglePolicies && el.multi_agentTogglePolicies.checked ? "1" : "0";
+    if (contextSharingEnabled !== "1") {
+      policyAmendmentsEnabled = "0";
+      attentionPoliciesEnabled = "0";
+    }
     return saveWorkspaceMultiAgent(wsId, {
+      context_sharing: contextSharingEnabled,
       dilemma_surfacing: "1",
       amendments: policyAmendmentsEnabled,
       interpretation_log: policyAmendmentsEnabled,
       commitments: el.multi_agentToggleCommitments && el.multi_agentToggleCommitments.checked ? "1" : "0",
-      attention_policies: el.multi_agentTogglePolicies && el.multi_agentTogglePolicies.checked ? "1" : "0"
+      attention_policies: attentionPoliciesEnabled
     });
   }
 
@@ -12119,7 +12428,7 @@
           count: String(response.count || "0"),
           cards: Array.isArray(response.cards) ? response.cards : []
         };
-        state.openTriageSuppressProposalId = "";
+        state.triageOtherInputProposalId = "";
         if (state.activeTriage && Number(state.triage.count || 0) < 1) {
           state.activeTriage = false;
         }
@@ -12137,7 +12446,7 @@
       }
       state.triage.cards = Array.isArray(response.cards) ? response.cards : [];
       state.triage.count = String(state.triage.cards.length);
-      state.openTriageSuppressProposalId = "";
+      state.triageOtherInputProposalId = "";
     });
   }
 
@@ -12151,7 +12460,7 @@
       }
       state.triage.cards = Array.isArray(response.cards) ? response.cards : [];
       state.triage.count = String(state.triage.cards.length);
-      state.openTriageSuppressProposalId = "";
+      state.triageOtherInputProposalId = "";
     });
   }
 
@@ -12176,17 +12485,45 @@
       return Promise.resolve(null);
     }
     state.commandRulesWorkspaceId = wsId;
-    openModal(el.multi_agentModal);
-    renderMultiAgentModal();
-    return loadWorkspaceMultiAgent(wsId).catch(function () {
-      return null;
-    });
+    return loadWorkspaceMultiAgent(wsId)
+      .catch(function () {
+        return null;
+      })
+      .then(function () {
+        openModal(el.multi_agentModal);
+        renderMultiAgentModal();
+        return null;
+      });
   }
 
   function multiAgentPreferredModelForResident(residentId, resident) {
     var explicit = trim(String(resident && resident.preferred_model || ""));
     if (explicit) {
       return explicit;
+    }
+    var mapped = {
+      "credibility-manager": "llama3.1:8b",
+      "continuity-steward": "llama3.1:8b",
+      "semantic-watchtower": "deepseek-r1:8b",
+      "compliance-guardian": "llama3.1:8b",
+      "failure-simulator": "deepseek-r1:8b",
+      "epistemic-calibrator": "deepseek-r1:8b",
+      "red-team-twin": "deepseek-r1:8b",
+      "narrative-coherence": "llama3.1:8b",
+      "reputation-thermostat": "llama3.1:8b",
+      "chrono-budgeter": "llama3.1:8b"
+    };
+    var rid = trim(String(residentId || ""));
+    return mapped[rid] || "";
+  }
+
+  function multiAgentCurrentAutoModel(preferredModel) {
+    var preferred = trim(String(preferredModel || ""));
+    if (preferred && isModelInstalled(preferred)) {
+      return preferred;
+    }
+    if (Array.isArray(state.models) && state.models.length) {
+      return trim(String(state.models[0] || ""));
     }
     return "";
   }
@@ -12205,14 +12542,33 @@
   }
 
   function multiAgentSectionVisibilitySync() {
+    var contextSharingEnabled = !(el.multi_agentToggleContextSharing && !el.multi_agentToggleContextSharing.checked);
+    if (el.multi_agentCharter) {
+      el.multi_agentCharter.disabled = !contextSharingEnabled;
+    }
+    if (el.multi_agentToggleAmendments) {
+      if (!contextSharingEnabled) {
+        el.multi_agentToggleAmendments.checked = false;
+      }
+      el.multi_agentToggleAmendments.disabled = !contextSharingEnabled;
+    }
+    if (el.multi_agentTogglePolicies) {
+      if (!contextSharingEnabled) {
+        el.multi_agentTogglePolicies.checked = false;
+      }
+      el.multi_agentTogglePolicies.disabled = !contextSharingEnabled;
+    }
     if (el.multi_agentSectionAmendments && el.multi_agentToggleAmendments) {
-      el.multi_agentSectionAmendments.classList.toggle("hidden", !el.multi_agentToggleAmendments.checked);
+      el.multi_agentSectionAmendments.classList.remove("hidden");
+      el.multi_agentSectionAmendments.classList.toggle("collapsed", !el.multi_agentToggleAmendments.checked);
     }
     if (el.multi_agentSectionCommitments && el.multi_agentToggleCommitments) {
-      el.multi_agentSectionCommitments.classList.toggle("hidden", !el.multi_agentToggleCommitments.checked);
+      el.multi_agentSectionCommitments.classList.remove("hidden");
+      el.multi_agentSectionCommitments.classList.toggle("collapsed", !el.multi_agentToggleCommitments.checked);
     }
     if (el.multi_agentSectionPolicies && el.multi_agentTogglePolicies) {
-      el.multi_agentSectionPolicies.classList.toggle("hidden", !el.multi_agentTogglePolicies.checked);
+      el.multi_agentSectionPolicies.classList.remove("hidden");
+      el.multi_agentSectionPolicies.classList.toggle("collapsed", !el.multi_agentTogglePolicies.checked);
     }
   }
 
@@ -12317,6 +12673,92 @@
     return multiAgentHumanizeEnum(value);
   }
 
+  function multiAgentSetAllResidentsEnabled(workspaceId, enabled) {
+    var wsId = trim(String(workspaceId || ""));
+    if (!wsId) {
+      return Promise.resolve(null);
+    }
+    var data = state.workspaceMultiAgentById[wsId] || {};
+    var catalog = Array.isArray(state.multi_agentCatalog && state.multi_agentCatalog.curated_residents)
+      ? state.multi_agentCatalog.curated_residents
+      : [];
+    if (!catalog.length) {
+      return Promise.resolve(null);
+    }
+    var residentMap = {};
+    var activeResidents = Array.isArray(data && data.residents) ? data.residents : [];
+    for (var i = 0; i < activeResidents.length; i += 1) {
+      var entry = activeResidents[i] || {};
+      var entryId = trim(String(entry.id || ""));
+      if (entryId) {
+        residentMap[entryId] = entry;
+      }
+    }
+
+    var requests = [];
+    for (var j = 0; j < catalog.length; j += 1) {
+      var curated = catalog[j] || {};
+      var rid = trim(String(curated.id || ""));
+      if (!rid) {
+        continue;
+      }
+      var existing = residentMap[rid] || null;
+      var modelValue = trim(String(existing && existing.model || ""));
+      if (enabled) {
+        if (!existing) {
+          requests.push(apiPost("multi_agent_resident_spawn", {
+            workspace_id: wsId,
+            resident_id: rid,
+            visible: "0",
+            background: "1",
+            reserve_compute: "0",
+            model: modelValue
+          }));
+        } else {
+          requests.push(apiPost("multi_agent_resident_update", {
+            workspace_id: wsId,
+            resident_id: rid,
+            enabled: "1",
+            visible: existing.visible ? "1" : "0",
+            background: existing.background ? "1" : "0",
+            model_present: "1",
+            model: modelValue
+          }));
+        }
+      } else if (existing) {
+        requests.push(apiPost("multi_agent_resident_update", {
+          workspace_id: wsId,
+          resident_id: rid,
+          enabled: "0",
+          visible: existing.visible ? "1" : "0",
+          background: existing.background ? "1" : "0",
+          model_present: "1",
+          model: modelValue
+        }));
+      }
+    }
+
+    if (!requests.length) {
+      return Promise.resolve(null);
+    }
+
+    state.multiAgentResidentBulkSavingByWorkspace[wsId] = true;
+    renderMultiAgentModal();
+    return Promise.all(requests).then(function () {
+      return loadWorkspaceMultiAgent(wsId).catch(function () {
+        return null;
+      });
+    }).then(function () {
+      return loadState();
+    }).then(function () {
+      renderUi();
+      return null;
+    }).finally(function () {
+      state.multiAgentResidentBulkSavingByWorkspace[wsId] = false;
+      renderMultiAgentModal();
+    });
+  }
+
   function renderMultiAgentModal() {
     if (!el.multi_agentModal) {
       return;
@@ -12325,6 +12767,8 @@
     var ws = wsId ? getWorkspaceById(wsId) : null;
     var data = wsId ? (state.workspaceMultiAgentById[wsId] || null) : null;
     var loading = !!state.workspaceMultiAgentLoadingById[wsId];
+    var governanceSaving = !!state.multiAgentGovernanceSavingByWorkspace[wsId];
+    var bulkResidentSaving = !!state.multiAgentResidentBulkSavingByWorkspace[wsId];
     var errorText = trim(String(state.workspaceMultiAgentErrorById[wsId] || ""));
     var catalog = Array.isArray(state.multi_agentCatalog && state.multi_agentCatalog.curated_residents)
       ? state.multi_agentCatalog.curated_residents
@@ -12344,10 +12788,16 @@
       el.multi_agentProjectLabel.textContent = ws ? (ws.name || ws.id) : "No project selected";
     }
     if (el.multi_agentStatus) {
-      if (loading) {
-        el.multi_agentStatus.textContent = "Loading agent settings...";
-      } else if (errorText) {
+      el.multi_agentStatus.classList.remove("show", "error");
+      if (errorText) {
         el.multi_agentStatus.textContent = errorText;
+        el.multi_agentStatus.classList.add("show", "error");
+      } else if (bulkResidentSaving) {
+        el.multi_agentStatus.textContent = "Updating agent team...";
+        el.multi_agentStatus.classList.add("show");
+      } else if (governanceSaving) {
+        el.multi_agentStatus.textContent = "Saving...";
+        el.multi_agentStatus.classList.add("show");
       } else {
         el.multi_agentStatus.textContent = "";
       }
@@ -12358,13 +12808,13 @@
         el.multi_agentResidentsList.innerHTML = "<p class='empty-state subtle-empty'>No agent settings loaded.</p>";
       }
       if (el.multi_agentPoliciesList) {
-        el.multi_agentPoliciesList.innerHTML = "<p class='empty-state subtle-empty'>Decision filters created from suppress actions appear here.</p>";
+        el.multi_agentPoliciesList.innerHTML = "<p class='empty-state subtle-empty'>No decision filters yet. In Triage, use Don't ask about this to mute recurring low-priority decisions.</p>";
       }
       if (el.multi_agentAmendmentsList) {
         el.multi_agentAmendmentsList.innerHTML = "<p class='empty-state subtle-empty'>No pending instruction updates.</p>";
       }
       if (el.multi_agentCommitmentsList) {
-        el.multi_agentCommitmentsList.innerHTML = "<p class='empty-state subtle-empty'>No commitments logged.</p>";
+        el.multi_agentCommitmentsList.innerHTML = "<p class='empty-state subtle-empty'>No commitments yet. Agent commitments will appear here with status updates over time.</p>";
       }
       if (el.multi_agentInterpretationList) {
         el.multi_agentInterpretationList.innerHTML = "<p class='empty-state subtle-empty'>No interpretation notes.</p>";
@@ -12384,6 +12834,14 @@
       if (el.multi_agentPoliciesSummary) {
         el.multi_agentPoliciesSummary.textContent = "Decision filters";
       }
+      if (el.multi_agentToggleContextSharing) {
+        el.multi_agentToggleContextSharing.checked = true;
+      }
+      if (el.multi_agentToggleAllResidents) {
+        el.multi_agentToggleAllResidents.checked = false;
+        el.multi_agentToggleAllResidents.indeterminate = false;
+        el.multi_agentToggleAllResidents.disabled = true;
+      }
       multiAgentSectionVisibilitySync();
       return;
     }
@@ -12397,6 +12855,9 @@
     }
     if (el.multi_agentToggleCommitments) {
       el.multi_agentToggleCommitments.checked = !!Number(toggles.commitments || 0);
+    }
+    if (el.multi_agentToggleContextSharing) {
+      el.multi_agentToggleContextSharing.checked = !Object.prototype.hasOwnProperty.call(toggles, "context_sharing") || !!Number(toggles.context_sharing || 0);
     }
     if (el.multi_agentTogglePolicies) {
       el.multi_agentTogglePolicies.checked = !!Number(toggles.attention_policies || 0);
@@ -12439,6 +12900,11 @@
       } else {
         el.multi_agentRolesHint.textContent = "Turn built-in specialist agents on or off. Use each row menu for model and visibility.";
       }
+      if (el.multi_agentToggleAllResidents) {
+        el.multi_agentToggleAllResidents.disabled = loading || bulkResidentSaving || roleTotal < 1;
+        el.multi_agentToggleAllResidents.checked = roleTotal > 0 && activeRoleCount === roleTotal;
+        el.multi_agentToggleAllResidents.indeterminate = activeRoleCount > 0 && activeRoleCount < roleTotal;
+      }
     }
 
     if (el.multi_agentResidentsList) {
@@ -12460,13 +12926,23 @@
           var selectedModel = trim(String(existing && existing.model || ""));
           var preferredModel = multiAgentPreferredModelForResident(rid, curated);
           var preferredInstalled = !preferredModel || isModelInstalled(preferredModel);
+          var currentAutoModel = multiAgentCurrentAutoModel(preferredModel);
           var selectedInstalled = !selectedModel || isModelInstalled(selectedModel);
-          var canEnable = preferredInstalled || !!selectedModel;
-          var disableEnable = !canEnable;
+          var disableEnable = false;
           var selectedRow = selectedResidentId && selectedResidentId === rid;
           var roleStatusLabel = isEnabled ? "On" : "Off";
           var roleStatusClass = isEnabled ? "on" : "off";
-          var roleModelLabel = selectedModel || "Auto";
+          var roleModelLabel = selectedModel || ("Auto: " + (currentAutoModel || "none"));
+          var preferredDisplay = "";
+          if (preferredModel) {
+            preferredDisplay = "preferred: " + preferredModel + (preferredInstalled ? "" : " (not installed)");
+          }
+          var autoOptionLabel = "Auto";
+          if (currentAutoModel) {
+            autoOptionLabel = "Auto (current: " + currentAutoModel + ")";
+          } else {
+            autoOptionLabel = "Auto (no model available)";
+          }
           if (selectedModel && !selectedInstalled) {
             roleModelLabel += " (not installed)";
           }
@@ -12476,16 +12952,23 @@
           residentsHtml += "<div class='resident-row-head'>";
           residentsHtml += "<label class='resident-enable-row' title='Enable or disable this agent role.'>";
           residentsHtml += "<input type='checkbox' data-action='multi_agent-resident-enable' data-workspace-id='" + escAttr(wsId) + "' data-resident-id='" + escAttr(rid) + "'" + (isEnabled ? " checked" : "") + (disableEnable ? " disabled" : "") + " />";
+          residentsHtml += "<span class='resident-title-wrap'>";
           residentsHtml += "<span class='resident-title'>" + escHtml(curated.name || rid) + "</span>";
+          if (preferredDisplay) {
+            residentsHtml += "<span class='resident-title-preferred' title='" + escAttr(preferredDisplay) + "'>" + escHtml(preferredDisplay) + "</span>";
+          }
+          residentsHtml += "</span>";
           residentsHtml += "</label>";
           residentsHtml += "<div class='resident-head-actions'>";
           residentsHtml += "<span class='resident-inline-chips'>";
-          residentsHtml += "<span class='resident-chip status-" + escAttr(roleStatusClass) + "'>" + escHtml(roleStatusLabel) + "</span>";
           if (isEnabled) {
-            residentsHtml += "<span class='resident-chip'>" + escHtml(roleModelLabel) + "</span>";
+            residentsHtml += "<button type='button' class='resident-chip resident-chip-btn status-" + escAttr(roleStatusClass) + "' data-action='multi_agent-resident-quick-toggle' data-workspace-id='" + escAttr(wsId) + "' data-resident-id='" + escAttr(rid) + "' title='Turn this agent off'>" + escHtml(roleStatusLabel) + "</button>";
+          }
+          if (isEnabled) {
+            residentsHtml += "<button type='button' class='resident-chip resident-chip-btn' data-action='multi_agent-resident-open-model' data-workspace-id='" + escAttr(wsId) + "' data-resident-id='" + escAttr(rid) + "' title='" + escAttr("Model: " + roleModelLabel + ". Open model options for this agent") + "'>" + escHtml(roleModelLabel) + "</button>";
           }
           residentsHtml += "</span>";
-          residentsHtml += "<button type='button' class='resident-menu-trigger' data-action='multi_agent-resident-options-toggle' data-resident-id='" + escAttr(rid) + "' title='Role options' aria-label='Role options'>&hellip;</button>";
+          residentsHtml += "<button type='button' class='resident-menu-trigger' data-action='multi_agent-resident-options-toggle' data-resident-id='" + escAttr(rid) + "' title='" + escAttr(optionsOpen ? "Collapse options" : "Expand options") + "' aria-label='Toggle options'>" + (optionsOpen ? "▾" : "▸") + "</button>";
           residentsHtml += "</div>";
           residentsHtml += "</div>";
           residentsHtml += "<p class='resident-description'>" + escHtml(curated.mandate || "") + "</p>";
@@ -12496,7 +12979,7 @@
           residentsHtml += "<label class='toggle-row' title='When enabled, also show this agent in the threads list.'><input type='checkbox' data-action='multi_agent-resident-visible' data-workspace-id='" + escAttr(wsId) + "' data-resident-id='" + escAttr(rid) + "'" + (showThreads ? " checked" : "") + (isEnabled ? "" : " disabled") + " /> Show in threads list</label>";
           residentsHtml += "<label title='Override model selection for this agent role.'>Model override</label>";
           residentsHtml += "<select data-action='multi_agent-resident-model' data-workspace-id='" + escAttr(wsId) + "' data-resident-id='" + escAttr(rid) + "'>";
-          residentsHtml += "<option value=''" + (!selectedModel ? " selected" : "") + ">Auto</option>";
+          residentsHtml += "<option value=''" + (!selectedModel ? " selected" : "") + ">" + escHtml(autoOptionLabel) + "</option>";
           for (var mi = 0; mi < state.models.length; mi += 1) {
             var modelName = String(state.models[mi] || "");
             residentsHtml += "<option value='" + escAttr(modelName) + "'" + (selectedModel === modelName ? " selected" : "") + ">" + escHtml(modelName) + "</option>";
@@ -12511,8 +12994,11 @@
 
     if (el.multi_agentPoliciesList) {
       var policiesHtml = "";
-      if (!workspacePolicies.length && !globalPolicies.length) {
-        policiesHtml = "<p class='empty-state subtle-empty'>No decision filters yet. Use Suppress in Triage to create one.</p>";
+      var contextSharingActive = !(el.multi_agentToggleContextSharing && !el.multi_agentToggleContextSharing.checked);
+      if (!contextSharingActive) {
+        policiesHtml = "<p class='empty-state subtle-empty'>Enable agent context sharing to use decision filters.</p>";
+      } else if (!workspacePolicies.length && !globalPolicies.length) {
+        policiesHtml = "<p class='empty-state subtle-empty'>No decision filters yet. In Triage, use Don't ask about this to mute recurring low-priority decisions.</p>";
       } else {
         for (var p = 0; p < workspacePolicies.length; p += 1) {
           var wp = workspacePolicies[p] || {};
@@ -12601,7 +13087,7 @@
     if (el.multi_agentCommitmentsList) {
       var commitmentsHtml = "";
       if (!commitments.length) {
-        commitmentsHtml = "<p class='empty-state subtle-empty'>No commitments logged.</p>";
+        commitmentsHtml = "<p class='empty-state subtle-empty'>No commitments yet. Agent commitments will appear here with status updates over time.</p>";
       } else {
         for (var c = 0; c < commitments.length; c += 1) {
           var commitment = commitments[c] || {};
@@ -12677,6 +13163,7 @@
     var proposalId = target.getAttribute("data-proposal-id");
 
     if (action === "select-triage") {
+      state.triageOtherInputProposalId = "";
       state.activeTriage = true;
       state.activeWorkspaceId = "";
       state.activeConversationId = "";
@@ -12688,6 +13175,7 @@
 
     if (action === "triage-open-context") {
       if (workspaceId && conversationId) {
+        state.triageOtherInputProposalId = "";
         state.activeTriage = false;
         state.activeWorkspaceId = workspaceId;
         state.activeConversationId = conversationId;
@@ -12706,13 +13194,8 @@
         return;
       }
       var fixedDecision = trim(String(target.getAttribute("data-decision") || ""));
-      var decisionAnswer = fixedDecision;
-      if (!decisionAnswer) {
-        decisionAnswer = window.prompt("Decision for this proposal", "accepted");
-        if (decisionAnswer === null) {
-          return;
-        }
-      }
+      var decisionAnswer = fixedDecision || "accepted";
+      state.triageOtherInputProposalId = "";
       runWithControlPending(target, function () {
         return triageDecide(proposalId, decisionAnswer).then(function () {
           return loadState();
@@ -12721,37 +13204,59 @@
       return;
     }
 
-    if (action === "triage-suppress-open") {
+    if (action === "triage-decision-other-toggle") {
       if (!proposalId) {
         return;
       }
-      if (String(state.openTriageSuppressProposalId || "") === String(proposalId)) {
-        state.openTriageSuppressProposalId = "";
+      if (String(state.triageOtherInputProposalId || "") === String(proposalId)) {
+        state.triageOtherInputProposalId = "";
       } else {
-        state.openTriageSuppressProposalId = String(proposalId || "");
+        state.triageOtherInputProposalId = String(proposalId || "");
       }
       renderUi();
       return;
     }
 
-    if (action === "triage-suppress-scope") {
+    if (action === "triage-decision-other-submit") {
       if (!proposalId) {
         return;
       }
-      var scopePrompt = String(target.getAttribute("data-scope") || "") === "global" ? "global" : "workspace";
-      state.openTriageSuppressProposalId = "";
+      var otherRow = target.closest("[data-triage-other-row]");
+      var otherInput = otherRow ? otherRow.querySelector("[data-triage-other-input]") : null;
+      var otherDecision = trim(otherInput ? otherInput.value : "");
+      if (!otherDecision) {
+        if (otherInput) {
+          otherInput.focus();
+        }
+        return;
+      }
+      state.triageOtherInputProposalId = "";
       runWithControlPending(target, function () {
-        return triageSuppress(proposalId, scopePrompt).then(function () {
+        return triageDecide(proposalId, otherDecision).then(function () {
           return loadState();
         }).then(renderUi);
       }).catch(showError);
       return;
     }
 
-    if (action === "triage-cleanup" || action === "triage-cleanup-directed") {
+    if (action === "triage-suppress-workspace") {
+      if (!proposalId) {
+        return;
+      }
+      state.triageOtherInputProposalId = "";
+      runWithControlPending(target, function () {
+        return triageSuppress(proposalId, "workspace").then(function () {
+          return loadState();
+        }).then(renderUi);
+      }).catch(showError);
+      return;
+    }
+
+    if (action === "triage-cleanup" || action === "triage-cleanup-guided") {
+      closeAllMenus();
       var directive = "";
-      if (action === "triage-cleanup-directed") {
-        var directivePrompt = window.prompt("Optional cleanup directive for Triage recompression", "Merge repeats and defer reversible low-impact items.");
+      if (action === "triage-cleanup-guided") {
+        var directivePrompt = window.prompt("Guidance for triage cleanup", "Merge repeats and defer reversible low-impact items.");
         if (directivePrompt === null) {
           return;
         }
@@ -12775,8 +13280,7 @@
 
     if (action === "toggle-workspace") {
       if (workspaceId) {
-        state.expandedWorkspaceIds[workspaceId] = !state.expandedWorkspaceIds[workspaceId];
-        renderUi();
+        setWorkspaceExpanded(workspaceId, !state.expandedWorkspaceIds[workspaceId], { animate: true });
       }
       return;
     }
@@ -12905,8 +13409,7 @@
         state.pendingArchiveKey = "";
         state.pendingArchiveReadyAt = 0;
         state.pendingArchiveSubmittingKey = "";
-        state.expandedWorkspaceIds[workspaceId] = !state.expandedWorkspaceIds[workspaceId];
-        renderUi();
+        setWorkspaceExpanded(workspaceId, !state.expandedWorkspaceIds[workspaceId], { animate: true });
       }
       return;
     }
@@ -13306,6 +13809,17 @@
     }
   }
 
+  function focusElementNoScroll(node) {
+    if (!node || typeof node.focus !== "function") {
+      return;
+    }
+    try {
+      node.focus({ preventScroll: true });
+    } catch (_focusError) {
+      node.focus();
+    }
+  }
+
   function openTerminal() {
     state.terminalOpen = true;
     if (state.activeWorkspaceId) {
@@ -13317,13 +13831,22 @@
       return pollTerminalSessionOnce();
     }).catch(showError);
     setTimeout(function () {
-      if (el.terminalOutput) {
-        el.terminalOutput.focus();
+      if (state.terminalOpen && el.terminalOutput) {
+        focusElementNoScroll(el.terminalOutput);
       }
-    }, 0);
+    }, 210);
   }
 
   function closeTerminal() {
+    if (
+      document &&
+      document.activeElement &&
+      el.terminalPanel &&
+      el.terminalPanel.contains(document.activeElement) &&
+      typeof document.activeElement.blur === "function"
+    ) {
+      document.activeElement.blur();
+    }
     var wsId = String(state.terminalSessionWorkspaceId || state.activeWorkspaceId || "");
     var sessionId = String(state.terminalSessionId || "");
     stopTerminalPolling();
@@ -13453,6 +13976,17 @@
     });
 
     on(el.modelsBoxList, "click", function (event) {
+      var uninstallBtn = event.target.closest("button[data-action='uninstall-model'][data-model-name]");
+      if (uninstallBtn) {
+        var uninstallModel = uninstallBtn.getAttribute("data-model-name");
+        if (!window.confirm("Are you sure you want to uninstall " + uninstallModel + "?")) {
+          return;
+        }
+        runWithControlPending(uninstallBtn, function () {
+          return startModelUninstall(uninstallModel);
+        }).catch(showError);
+        return;
+      }
       var installBtn = event.target.closest("button[data-action='install-model'][data-model-name]");
       if (installBtn) {
         var installModel = installBtn.getAttribute("data-model-name");
@@ -13797,6 +14331,30 @@
         return performOpenTarget(target);
       }).catch(showError);
     });
+
+    if (el.triageCleanupMainBtn) {
+      on(el.triageCleanupMainBtn, "click", function (event) {
+        handleWorkspaceTreeClick(event);
+      });
+    }
+
+    if (el.triageCleanupMenuBtn) {
+      on(el.triageCleanupMenuBtn, "click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        toggleMenu("triage-cleanup-menu", el.triageCleanupMenuBtn);
+      });
+    }
+
+    if (el.triageCleanupMenu) {
+      on(el.triageCleanupMenu, "click", function (event) {
+        var cleanupItem = event.target.closest("button[data-action^='triage-cleanup']");
+        if (!cleanupItem) {
+          return;
+        }
+        handleWorkspaceTreeClick(event);
+      });
+    }
 
     on(el.branchMenuBtn, "click", function (event) {
       event.preventDefault();
@@ -14188,6 +14746,55 @@
           renderMultiAgentModal();
           return;
         }
+        var residentQuickToggleBtn = event.target && event.target.closest
+          ? event.target.closest("button[data-action='multi_agent-resident-quick-toggle'][data-workspace-id][data-resident-id]")
+          : null;
+        if (residentQuickToggleBtn) {
+          var quickWsId = residentQuickToggleBtn.getAttribute("data-workspace-id") || "";
+          var quickResidentId = residentQuickToggleBtn.getAttribute("data-resident-id") || "";
+          if (!quickWsId || !quickResidentId || !el.multi_agentModal) {
+            return;
+          }
+          var quickEnableInputs = el.multi_agentModal.querySelectorAll("input[data-action='multi_agent-resident-enable'][data-workspace-id][data-resident-id]");
+          for (var qei = 0; qei < quickEnableInputs.length; qei += 1) {
+            if (
+              String(quickEnableInputs[qei].getAttribute("data-workspace-id") || "") === String(quickWsId) &&
+              String(quickEnableInputs[qei].getAttribute("data-resident-id") || "") === String(quickResidentId)
+            ) {
+              quickEnableInputs[qei].click();
+              break;
+            }
+          }
+          return;
+        }
+        var residentOpenModelBtn = event.target && event.target.closest
+          ? event.target.closest("button[data-action='multi_agent-resident-open-model'][data-workspace-id][data-resident-id]")
+          : null;
+        if (residentOpenModelBtn) {
+          var modelWsId = residentOpenModelBtn.getAttribute("data-workspace-id") || "";
+          var modelResidentId = residentOpenModelBtn.getAttribute("data-resident-id") || "";
+          if (!modelWsId || !modelResidentId) {
+            return;
+          }
+          state.multiAgentOpenResidentOptionsByWorkspace[modelWsId] = modelResidentId;
+          renderMultiAgentModal();
+          setTimeout(function () {
+            if (!el.multi_agentModal) {
+              return;
+            }
+            var modelSelects = el.multi_agentModal.querySelectorAll("select[data-action='multi_agent-resident-model'][data-workspace-id][data-resident-id]");
+            for (var msi = 0; msi < modelSelects.length; msi += 1) {
+              if (
+                String(modelSelects[msi].getAttribute("data-workspace-id") || "") === String(modelWsId) &&
+                String(modelSelects[msi].getAttribute("data-resident-id") || "") === String(modelResidentId)
+              ) {
+                modelSelects[msi].focus();
+                break;
+              }
+            }
+          }, 0);
+          return;
+        }
 
         var residentRow = event.target && event.target.closest
           ? event.target.closest("[data-action='multi_agent-resident-select'][data-workspace-id][data-resident-id]")
@@ -14257,19 +14864,63 @@
       });
 
       on(el.multi_agentModal, "change", function (event) {
+        var allResidentsToggleInput = event.target && event.target.closest
+          ? event.target.closest("#multi_agent-toggle-all-residents")
+          : null;
+        if (allResidentsToggleInput) {
+          var wsAll = trim(String(state.commandRulesWorkspaceId || state.activeWorkspaceId || ""));
+          if (!wsAll) {
+            return;
+          }
+          var nextEnabled = !!allResidentsToggleInput.checked;
+          multiAgentSetAllResidentsEnabled(wsAll, nextEnabled).catch(showError);
+          return;
+        }
+
         var toggleInput = event.target && event.target.closest
-          ? event.target.closest("#multi_agent-toggle-amendments, #multi_agent-toggle-commitments, #multi_agent-toggle-policies")
+          ? event.target.closest("#multi_agent-toggle-context-sharing, #multi_agent-toggle-amendments, #multi_agent-toggle-commitments, #multi_agent-toggle-policies")
           : null;
         if (toggleInput) {
           var wsId = trim(String(state.commandRulesWorkspaceId || state.activeWorkspaceId || ""));
           if (!wsId) {
             return;
           }
+          if (!state.workspaceMultiAgentById[wsId] || typeof state.workspaceMultiAgentById[wsId] !== "object") {
+            state.workspaceMultiAgentById[wsId] = {};
+          }
+          if (!state.workspaceMultiAgentById[wsId].toggles || typeof state.workspaceMultiAgentById[wsId].toggles !== "object") {
+            state.workspaceMultiAgentById[wsId].toggles = {};
+          }
+          var contextSharingOn = el.multi_agentToggleContextSharing && el.multi_agentToggleContextSharing.checked ? 1 : 0;
+          var amendmentsOn = el.multi_agentToggleAmendments && el.multi_agentToggleAmendments.checked ? 1 : 0;
+          var attentionOn = el.multi_agentTogglePolicies && el.multi_agentTogglePolicies.checked ? 1 : 0;
+          if (!contextSharingOn) {
+            amendmentsOn = 0;
+            attentionOn = 0;
+          }
+          state.workspaceMultiAgentById[wsId].toggles.context_sharing = contextSharingOn;
+          state.workspaceMultiAgentById[wsId].toggles.amendments = amendmentsOn;
+          state.workspaceMultiAgentById[wsId].toggles.interpretation_log = state.workspaceMultiAgentById[wsId].toggles.amendments;
+          state.workspaceMultiAgentById[wsId].toggles.commitments = el.multi_agentToggleCommitments && el.multi_agentToggleCommitments.checked ? 1 : 0;
+          state.workspaceMultiAgentById[wsId].toggles.attention_policies = attentionOn;
+          state.multiAgentGovernanceSavingByWorkspace[wsId] = true;
           multiAgentSectionVisibilitySync();
+          renderMultiAgentModal();
           saveMultiAgentGovernanceFromControls(wsId)
-            .then(function () { return loadState(); })
-            .then(renderUi)
-            .catch(showError);
+            .then(function (updated) {
+              if (updated && typeof updated === "object") {
+                state.workspaceMultiAgentById[wsId] = updated;
+              }
+              state.multiAgentGovernanceSavingByWorkspace[wsId] = false;
+              renderUi();
+            })
+            .catch(function (error) {
+              state.multiAgentGovernanceSavingByWorkspace[wsId] = false;
+              loadWorkspaceMultiAgent(wsId).finally(function () {
+                renderUi();
+                showError(error);
+              });
+            });
           return;
         }
 
@@ -14361,6 +15012,18 @@
             state.multiAgentSelectedResidentIdByWorkspace[wsVisible] = residentVisibleId;
           }
           var showThreads = residentVisibleInput.checked ? "1" : "0";
+          var localWorkspace = state.workspaceMultiAgentById[wsVisible];
+          if (localWorkspace && Array.isArray(localWorkspace.residents)) {
+            for (var lri = 0; lri < localWorkspace.residents.length; lri += 1) {
+              if (String(localWorkspace.residents[lri] && localWorkspace.residents[lri].id || "") === String(residentVisibleId)) {
+                localWorkspace.residents[lri].visible = showThreads === "1";
+                localWorkspace.residents[lri].background = showThreads !== "1";
+                break;
+              }
+            }
+            state.workspaceMultiAgentById[wsVisible] = localWorkspace;
+            renderUi();
+          }
           apiPost("multi_agent_resident_update", {
             workspace_id: wsVisible,
             resident_id: residentVisibleId,
@@ -14372,7 +15035,12 @@
             }
             state.workspaceMultiAgentById[wsVisible] = response.workspace_multi_agent || state.workspaceMultiAgentById[wsVisible] || null;
             return loadState();
-          }).then(renderUi).catch(showError);
+          }).then(renderUi).catch(function (error) {
+            loadWorkspaceMultiAgent(wsVisible).finally(function () {
+              renderUi();
+              showError(error);
+            });
+          });
           return;
         }
 
@@ -14386,12 +15054,10 @@
             state.multiAgentSelectedResidentIdByWorkspace[wsModel] = residentModelId;
           }
           var modelValue = trim(String(residentModelSelect.value || ""));
-          if (!modelValue) {
-            return;
-          }
           apiPost("multi_agent_resident_update", {
             workspace_id: wsModel,
             resident_id: residentModelId,
+            model_present: "1",
             model: modelValue
           }).then(function (response) {
             if (!response || !response.success) {
@@ -14578,7 +15244,7 @@
     if (el.terminalPanel) {
       on(el.terminalPanel, "click", function () {
         if (el.terminalOutput) {
-          el.terminalOutput.focus();
+          focusElementNoScroll(el.terminalOutput);
         }
       });
     }
@@ -14792,9 +15458,35 @@
       });
     });
 
+    on(el.chatLog, "keydown", function (event) {
+      if ((event && event.key) !== "Enter") {
+        return;
+      }
+      var otherInput = event.target && event.target.closest ? event.target.closest("[data-triage-other-input]") : null;
+      if (!otherInput) {
+        return;
+      }
+      event.preventDefault();
+      var proposalId = String(otherInput.getAttribute("data-triage-other-input") || "");
+      if (!proposalId) {
+        return;
+      }
+      var submitBtn = el.chatLog.querySelector("button[data-action='triage-decision-other-submit'][data-proposal-id='" + proposalId + "']");
+      if (submitBtn) {
+        submitBtn.click();
+      }
+    });
+
     if (el.chatLog) {
       el.chatLog.addEventListener("toggle", function (event) {
         var panel = event.target;
+        if (panel && panel.matches && panel.matches("details.run-activity-digest[data-digest-event-id]")) {
+          var digestEventId = String(panel.getAttribute("data-digest-event-id") || "");
+          if (digestEventId) {
+            state.runDigestOpenByEventId[digestEventId] = panel.open ? 1 : 0;
+          }
+          return;
+        }
         if (!panel || !panel.matches || !panel.matches("details.run-details[data-event-id]")) {
           return;
         }
@@ -15106,6 +15798,9 @@
         closeAllMenus();
         return;
       }
+      if (event.target.closest(".modal-card")) {
+        return;
+      }
       if (
         event.target.closest("#model-status-btn") ||
         event.target.closest(".menu-anchor") ||
@@ -15115,13 +15810,12 @@
         event.target.closest("#organize-btn") ||
         event.target.closest(".workspace-menu-trigger") ||
         event.target.closest("[data-workspace-menu]") ||
-        event.target.closest("[data-triage-scope-menu]") ||
-        event.target.closest("[data-action='triage-suppress-open']")
+        event.target.closest("[data-triage-other-row]")
       ) {
         return;
       }
-      if (state.openTriageSuppressProposalId) {
-        state.openTriageSuppressProposalId = "";
+      if (state.triageOtherInputProposalId) {
+        state.triageOtherInputProposalId = "";
       }
       state.openWorkspaceMenuWorkspaceId = "";
       closeAllMenus();

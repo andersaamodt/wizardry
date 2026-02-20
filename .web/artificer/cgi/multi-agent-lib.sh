@@ -32,16 +32,16 @@ ma_escalation_class_enum_json() {
 
 ma_curated_residents_tsv() {
   cat <<'TSV'
-credibility-manager|Credibility Manager|Monitors Commitments and surfaces credibility-related decisions.
-continuity-steward|Continuity Steward|Maintains cross-session intention and flags drift.
-semantic-watchtower|Semantic Watchtower|Detects semantic drift and conceptual bifurcation risk.
-compliance-guardian|Compliance Guardian|Surfaces legal/platform constraint dilemmas before action.
-failure-simulator|Failure-Mode Simulator|Stress-tests plans and proposes resilience interventions.
-epistemic-calibrator|Epistemic Calibrator|Tracks forecast error and proposes calibration updates.
-red-team-twin|Adversarial Red-Team Twin|Generates falsification and exploit hypotheses.
-narrative-coherence|Narrative Coherence Engine|Flags terminology drift and coherence breaks.
-reputation-thermostat|Reputation Thermostat|Surfaces signal-dilution and trust-risk decisions.
-chrono-budgeter|Chrono-Budgeter|Proposes effort allocation changes from lagged ROI.
+credibility-manager|Credibility manager|Tracks commitments and surfaces trust-sensitive decisions
+continuity-steward|Intention continuity|Protects cross-thread intent and flags drift
+semantic-watchtower|Meaning drift|Flags semantic shifts and conceptual splits
+compliance-guardian|Compliance guard|Surfaces legal, platform, and ethical dilemmas before risky actions
+failure-simulator|Failure simulation|Runs collapse drills and proposes resilience fixes
+epistemic-calibrator|Forecast tuner|Tracks forecast accuracy and recalibrates confidence over time
+red-team-twin|Adversarial audit|Stress-tests plans, code, and workflows to expose exploit paths
+narrative-coherence|Language coherence|Keeps terminology and framing consistent across outputs
+reputation-thermostat|Trust signaling|Tracks trust dilution and suggests stronger credibility signals
+chrono-budgeter|Time budgeting|Shifts effort toward higher-ROI work
 TSV
 }
 
@@ -159,6 +159,7 @@ ma_workspace_init() {
 
   if [ ! -f "$toggles_file" ]; then
     cat > "$toggles_file" <<'EOF_TOGGLES'
+context_sharing=1
 dilemma_surfacing=1
 amendments=0
 interpretation_log=0
@@ -503,6 +504,7 @@ ma_workspace_state_json() {
   meta_file=$(ma_workspace_meta_file "$workspace_id")
 
   dilemma=$(ma_toggle_value "$workspace_id" "dilemma_surfacing" 1)
+  context_sharing=$(ma_toggle_value "$workspace_id" "context_sharing" 1)
   amendments=$(ma_toggle_value "$workspace_id" "amendments" 1)
   interpretation=$(ma_toggle_value "$workspace_id" "interpretation_log" 1)
   commitments=$(ma_toggle_value "$workspace_id" "commitments" 1)
@@ -511,12 +513,12 @@ ma_workspace_state_json() {
   ontology_link=$(ma_meta_get "$meta_file" "ontology_link")
   shared_context_ids=$(ma_meta_get "$meta_file" "shared_context_workspace_ids")
 
-  printf '{"workspace_id":"%s","charter":"%s","ontology_link":"%s","shared_context_workspace_ids":"%s","toggles":{"dilemma_surfacing":%s,"amendments":%s,"interpretation_log":%s,"commitments":%s,"attention_policies":%s},"residents":%s,"background_resident_count":%s,"unratified_amendments":%s,"interpretation_log":%s,"commitments_log":%s,"attention_policies":%s,"global_attention_policies":%s}' \
+  printf '{"workspace_id":"%s","charter":"%s","ontology_link":"%s","shared_context_workspace_ids":"%s","toggles":{"context_sharing":%s,"dilemma_surfacing":%s,"amendments":%s,"interpretation_log":%s,"commitments":%s,"attention_policies":%s},"residents":%s,"background_resident_count":%s,"unratified_amendments":%s,"interpretation_log":%s,"commitments_log":%s,"attention_policies":%s,"global_attention_policies":%s}' \
     "$(json_escape "$workspace_id")" \
     "$(json_escape "$charter_text")" \
     "$(json_escape "$ontology_link")" \
     "$(json_escape "$shared_context_ids")" \
-    "$dilemma" "$amendments" "$interpretation" "$commitments" "$attention" \
+    "$context_sharing" "$dilemma" "$amendments" "$interpretation" "$commitments" "$attention" \
     "$(ma_residents_json_for_workspace "$workspace_id")" \
     "$(ma_workspace_background_resident_count "$workspace_id")" \
     "$(ma_workspace_unratified_amendments_json "$workspace_id")" \

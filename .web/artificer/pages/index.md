@@ -5,13 +5,6 @@ pagetitle: "Artificer"
 <link id="artificer-theme-stylesheet" rel="stylesheet" href="/static/themes/psionic.css" />
 <div class="forge-shell" id="forge-shell">
 <aside class="workspace-sidebar" id="workspace-dropzone" tabindex="0">
-<div class="workspace-sidebar-head">
-<h2>Threads</h2>
-<div class="workspace-head-actions">
-<button id="add-workspace-btn" class="icon-btn" type="button" aria-label="New project" title="New project"><span aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.7 5.2h4l1.3 1.6h7.3v6.2H1.7z"/><path d="M11.8 2.8v2.4"/><path d="M10.6 4h2.4"/></svg></span></button>
-<button id="organize-btn" class="icon-btn" type="button" aria-label="Organize projects" title="Organize threads"><span aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2.5 4h11"/><path d="M3.8 8h8.4"/><path d="M5.1 12h5.8"/></svg></span></button>
-</div>
-</div>
 <div id="organize-menu" class="floating-menu organize-menu hidden" role="menu" aria-label="Organize menu">
 <p class="organize-title">Organize</p>
 <button type="button" data-organize-mode="project"><span>By project</span><span class="check" aria-hidden="true">&check;</span></button>
@@ -25,6 +18,13 @@ pagetitle: "Artificer"
 <button type="button" data-organize-show="all"><span>All threads</span><span class="check" aria-hidden="true">&check;</span></button>
 <button type="button" data-organize-show="relevant"><span>Relevant</span><span class="check" aria-hidden="true">&check;</span></button>
 <button type="button" data-organize-show="running"><span>Running</span><span class="check" aria-hidden="true">&check;</span></button>
+</div>
+<div class="workspace-tree-section-head workspace-tree-main-head">
+<span>Threads</span>
+<div class="workspace-head-actions">
+<button id="add-workspace-btn" class="icon-btn" type="button" aria-label="New project" title="New project"><span aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.7 5.2h4l1.3 1.6h7.3v6.2H1.7z"/><path d="M11.8 2.8v2.4"/><path d="M10.6 4h2.4"/></svg></span></button>
+<button id="organize-btn" class="icon-btn" type="button" aria-label="Organize projects" title="Organize threads"><span aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2.5 4h11"/><path d="M3.8 8h8.4"/><path d="M5.1 12h5.8"/></svg></span></button>
+</div>
 </div>
 <div id="workspace-tree" class="workspace-tree"></div>
 <div id="models-pane" class="models-pane hidden">
@@ -54,6 +54,15 @@ pagetitle: "Artificer"
 <button id="workspace-path-widget" class="path-widget" type="button" title="No project selected" aria-label="Project path"></button>
 </div>
 <div class="toolbar-right">
+<div id="triage-toolbar-actions" class="menu-anchor split-anchor triage-toolbar-actions hidden">
+<div class="split-btn">
+<button id="triage-cleanup-main-btn" class="toolbar-btn split-main" type="button" data-action="triage-cleanup" title="Recompress current triage decisions">Cleanup...</button>
+<button id="triage-cleanup-menu-btn" class="toolbar-btn split-caret" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Cleanup menu" title="Cleanup options"><span aria-hidden="true">&#9662;</span></button>
+</div>
+<div id="triage-cleanup-menu" class="floating-menu hidden" role="menu" aria-label="Cleanup options">
+<button type="button" data-action="triage-cleanup-guided">Cleanup with guidance...</button>
+</div>
+</div>
 <button id="run-action-btn" class="toolbar-btn run-play-btn" type="button" aria-label="Run action" title="Run action">
 <span aria-hidden="true">&#9654;</span>
 </button>
@@ -472,22 +481,23 @@ pagetitle: "Artificer"
 <h3 id="multi_agent-title">Manage agents</h3>
 <span id="multi_agent-project-label" class="multi-agent-project-label">No project selected</span>
 </div>
+<p id="multi_agent-status" class="multi-agent-status-badge" aria-live="polite"></p>
 <button id="multi_agent-modal-close" class="icon-btn ghost" type="button" aria-label="Close agent settings">&times;</button>
 </div>
 <div class="stack">
-<p id="multi_agent-status" class="settings-hint"></p>
-
+<label class="toggle-row" title="Share project instructions and context across agent roles"><input id="multi_agent-toggle-context-sharing" type="checkbox" checked /> Agent context sharing</label>
 <label for="multi_agent-charter" title="Shared instructions that guide all agents in this project.">Project instructions</label>
 <textarea id="multi_agent-charter" rows="5" placeholder="Instructions for all agents in this project"></textarea>
 
 <div class="settings-rules">
 <div class="settings-rules-head"><strong>Agent team</strong></div>
 <p id="multi_agent-roles-hint" class="settings-hint">Turn built-in specialist agents on or off. Use each row menu for model and visibility.</p>
-<div id="multi_agent-residents-list" class="command-rules-list resident-listbox" role="listbox" aria-label="Agent team"></div>
+<label class="toggle-row" title="Enable or disable all agent team roles in this project"><input id="multi_agent-toggle-all-residents" type="checkbox" /> Enable all agents</label>
+<div id="multi_agent-residents-list" class="command-rules-list resident-listbox" role="listbox"></div>
 </div>
 
 <div class="settings-rules">
-<label class="toggle-row" title="Allow agent-proposed updates to project instructions and interpretation notes."><input id="multi_agent-toggle-amendments" type="checkbox" checked /> Instruction updates</label>
+<label class="toggle-row" title="Lets agents propose updates to project instructions and interpretation notes"><input id="multi_agent-toggle-amendments" type="checkbox" checked /> Instruction updates</label>
 <div id="multi_agent-section-amendments" class="multi-agent-section">
 <details class="multi-agent-collapse" open>
 <summary><span id="multi_agent-amendments-summary">Instruction updates</span></summary>
@@ -503,7 +513,7 @@ pagetitle: "Artificer"
 </details>
 </div>
 
-<label class="toggle-row" title="Track agent commitments and their lifecycle over time."><input id="multi_agent-toggle-commitments" type="checkbox" checked /> Commitment tracking</label>
+<label class="toggle-row" title="Tracks commitments agents make in this project"><input id="multi_agent-toggle-commitments" type="checkbox" checked /> Commitment tracking</label>
 <div id="multi_agent-section-commitments" class="multi-agent-section">
 <details class="multi-agent-collapse" open>
 <summary><span id="multi_agent-commitments-summary">Commitments</span></summary>
@@ -513,7 +523,7 @@ pagetitle: "Artificer"
 </details>
 </div>
 
-<label class="toggle-row" title="Suppress recurring low-value decision types while keeping important decisions visible."><input id="multi_agent-toggle-policies" type="checkbox" checked /> Decision filters</label>
+<label class="toggle-row" title="Tracks recurring don't-ask choices"><input id="multi_agent-toggle-policies" type="checkbox" checked /> Decision filters</label>
 <div id="multi_agent-section-policies" class="multi-agent-section">
 <details class="multi-agent-collapse" open>
 <summary><span id="multi_agent-policies-summary">Decision filters</span></summary>
@@ -526,4 +536,4 @@ pagetitle: "Artificer"
 </div>
 </div>
 
-<script src="/static/artificer-app.js?v=20260220-agent-governance-tune02"></script>
+<script src="/static/artificer-app.js?v=20260220-multi-agent-status-overlay1"></script>
