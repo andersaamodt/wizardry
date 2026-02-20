@@ -53,17 +53,42 @@ fi
 # Stop nginx gracefully
 step "Stopping nginx for $site_name..."
 if kill -QUIT "$pid" 2>/dev/null; then
-  # Wait for graceful shutdown
-  for _ in 1 2 3 4 5; do
+  # Wait for graceful shutdown.
+  # Defaults are tuned for fast local deploy loops while allowing override.
+  shutdown_grace_seconds=${WEB_STOP_SITE_GRACE_SECONDS:-2}
+  shutdown_poll_seconds=${WEB_STOP_SITE_POLL_SECONDS:-0.2}
+
+  # Validate numeric-looking inputs and fall back to safe defaults if invalid.
+  case "$shutdown_grace_seconds" in
+    ''|*[!0-9.]*)
+      shutdown_grace_seconds=2
+      ;;
+  esac
+  case "$shutdown_poll_seconds" in
+    ''|*[!0-9.]*)
+      shutdown_poll_seconds=0.2
+      ;;
+  esac
+
+  max_checks=$(awk -v grace="$shutdown_grace_seconds" -v poll="$shutdown_poll_seconds" 'BEGIN {
+    if (poll <= 0) poll = 0.2;
+    checks = int((grace / poll) + 0.999);
+    if (checks < 1) checks = 1;
+    print checks;
+  }')
+
+  i=1
+  while [ "$i" -le "$max_checks" ]; do
     if ! kill -0 "$pid" 2>/dev/null; then
       break
     fi
-    sleep 1
+    sleep "$shutdown_poll_seconds"
+    i=$((i + 1))
   done
   
   # If still running, force kill
   if kill -0 "$pid" 2>/dev/null; then
-    warn "stop-site: graceful shutdown timed out, forcing..."
+    warn "stop-site: graceful shutdown timed out after ${shutdown_grace_seconds}s, forcing..."
     kill -KILL "$pid" 2>/dev/null || true
   fi
 else

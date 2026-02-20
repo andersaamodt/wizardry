@@ -7,6 +7,7 @@
 
   var seenConversationStorageKey = "artificer.conversationSeenUpdated";
   var workspaceStateCacheKey = "artificer.workspaceStateCache.v1";
+  var runEventsStorageKey = "artificer.runEventsByConversation.v1";
 
   function storageGet(key, fallback) {
     try {
@@ -68,6 +69,189 @@
     }
 
     return { map: clean, hasSaved: true };
+  }
+
+  function clipTextForStorage(value, maxChars) {
+    var text = String(value || "");
+    var limit = Number(maxChars || 0);
+    if (!isFinite(limit) || limit < 1) {
+      return "";
+    }
+    if (text.length <= limit) {
+      return text;
+    }
+    if (limit <= 16) {
+      return text.slice(0, limit);
+    }
+    return text.slice(0, limit - 16) + " [truncated]";
+  }
+
+  function normalizeRunChecklistStatus(value) {
+    var status = String(value || "").toLowerCase();
+    if (status === "completed" || status === "complete" || status === "finished") {
+      return "done";
+    }
+    if (status === "in-progress" || status === "in_progress" || status === "working") {
+      return "active";
+    }
+    if (status === "todo" || status === "open" || status === "queued") {
+      return "pending";
+    }
+    if (status !== "done" && status !== "active" && status !== "pending") {
+      return "pending";
+    }
+    return status;
+  }
+
+  function normalizeRunTaskStatusSnapshot(snapshot) {
+    if (!snapshot || typeof snapshot !== "object") {
+      return null;
+    }
+    var source = String(snapshot.source || "backend");
+    var inputTasks = Array.isArray(snapshot.tasks) ? snapshot.tasks : [];
+    var tasks = [];
+    var completed = 0;
+    for (var i = 0; i < inputTasks.length && tasks.length < 40; i += 1) {
+      var item = inputTasks[i] || {};
+      var id = clipTextForStorage(item.id || "", 160);
+      var text = clipTextForStorage(item.text || item.title || item.label || "", 520);
+      if (!text) {
+        continue;
+      }
+      var status = normalizeRunChecklistStatus(item.status || "");
+      var done = status === "done" || item.done === true;
+      if (done) {
+        status = "done";
+        completed += 1;
+      }
+      tasks.push({
+        id: id,
+        text: text,
+        status: status,
+        done: done
+      });
+    }
+    if (!tasks.length) {
+      return null;
+    }
+    return {
+      tasks: tasks,
+      completed: completed,
+      total: tasks.length,
+      source: clipTextForStorage(source, 64) || "backend"
+    };
+  }
+
+  function sanitizeRunEventForStorage(event) {
+    if (!event || typeof event !== "object") {
+      return null;
+    }
+    var status = String(event.status || "done");
+    if (
+      status !== "running" &&
+      status !== "done" &&
+      status !== "error" &&
+      status !== "cancelled" &&
+      status !== "awaiting_approval" &&
+      status !== "awaiting_decision" &&
+      status !== "approval_granted"
+    ) {
+      status = "done";
+    }
+    var cleaned = {
+      id: clipTextForStorage(event.id || "", 120),
+      status: status,
+      started_at: clipTextForStorage(event.started_at || "", 80),
+      finished_at: clipTextForStorage(event.finished_at || "", 80),
+      model: clipTextForStorage(event.model || "", 200),
+      error: clipTextForStorage(event.error || "", 2400),
+      decision_hint: clipTextForStorage(event.decision_hint || "", 1400),
+      stream_text: clipTextForStorage(event.stream_text || "", 7000),
+      plan: clipTextForStorage(event.plan || "", 5000),
+      git_status: clipTextForStorage(event.git_status || "", 5000),
+      git_diff: clipTextForStorage(event.git_diff || "", 7000),
+      state: clipTextForStorage(event.state || "", 4000),
+      failures: clipTextForStorage(event.failures || "", 7000),
+      session_log: clipTextForStorage(event.session_log || "", 7000)
+    };
+    var taskStatus = normalizeRunTaskStatusSnapshot(event.task_status);
+    if (taskStatus && taskStatus.total > 0) {
+      cleaned.task_status = taskStatus;
+    }
+    var commands = Array.isArray(event.commands) ? event.commands : [];
+    if (commands.length) {
+      cleaned.commands = [];
+      for (var i = 0; i < commands.length && cleaned.commands.length < 12; i += 1) {
+        var item = commands[i] || {};
+        cleaned.commands.push({
+          command: clipTextForStorage(item.command || "", 800),
+          status: clipTextForStorage(item.status || "", 40),
+          output: clipTextForStorage(item.output || "", 1800)
+        });
+      }
+    } else {
+      cleaned.commands = [];
+    }
+    if (!cleaned.id) {
+      cleaned.id = String(Date.now()) + "-" + String(Math.floor(Math.random() * 999999));
+    }
+    return cleaned;
+  }
+
+  function compactRunEventsForStorage(source) {
+    var map = source && typeof source === "object" ? source : {};
+    var result = {};
+    var keys = Object.keys(map);
+    for (var i = 0; i < keys.length; i += 1) {
+      var conversationId = String(keys[i] || "");
+      if (!conversationId) {
+        continue;
+      }
+      var list = Array.isArray(map[conversationId]) ? map[conversationId] : [];
+      if (!list.length) {
+        continue;
+      }
+      var start = Math.max(0, list.length - 12);
+      var cleanedList = [];
+      for (var j = start; j < list.length; j += 1) {
+        var sanitized = sanitizeRunEventForStorage(list[j]);
+        if (sanitized) {
+          cleanedList.push(sanitized);
+        }
+      }
+      if (cleanedList.length) {
+        result[conversationId] = cleanedList;
+      }
+    }
+    return result;
+  }
+
+  function loadRunEventsState() {
+    var raw = "";
+    try {
+      raw = window.localStorage.getItem(runEventsStorageKey) || "";
+    } catch (_err) {
+      return {};
+    }
+    if (!raw) {
+      return {};
+    }
+    var parsed = null;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (_err2) {
+      return {};
+    }
+    return compactRunEventsForStorage(parsed);
+  }
+
+  function saveRunEventsState(eventsMap) {
+    try {
+      var compacted = compactRunEventsForStorage(eventsMap);
+      window.localStorage.setItem(runEventsStorageKey, JSON.stringify(compacted));
+    } catch (_err) {
+      return;
+    }
   }
 
   function parseStoredPaneWidth(key, fallback) {
@@ -194,6 +378,7 @@
   }
 
   var initialSeenConversationState = loadSeenConversationState();
+  var initialRunEventsState = loadRunEventsState();
 
   var state = {
     models: [],
@@ -204,7 +389,7 @@
     activeDraftWorkspaceId: "",
     draftTextByWorkspace: {},
     draftModelByWorkspace: {},
-    runEventsByConversation: {},
+    runEventsByConversation: initialRunEventsState,
     expandedWorkspaceIds: {},
     busy: false,
     pickingWorkspace: false,
@@ -217,7 +402,11 @@
     networkAccess: storageGet("artificer.networkAccess", "0") === "1",
     webAccess: storageGet("artificer.webAccess", "0") === "1",
     agentLoopEnabled: storageGet("artificer.agentLoopEnabled", "1") !== "0",
+    runMode: storageGet("artificer.runMode", "auto"),
+    assistantModeId: storageGet("artificer.assistantModeId", ""),
+    runModeMoreExpanded: false,
     reasoningEffort: storageGet("artificer.reasoningEffort", "medium"),
+    computeBudget: storageGet("artificer.computeBudget", "auto"),
     gitByWorkspace: {},
     branchesByWorkspace: {},
     diffOpen: false,
@@ -238,6 +427,16 @@
     activeTheme: storageGet("artificer.activeTheme", "psionic"),
     themes: [],
     queueWorkerActive: false,
+    queueItemsByConversation: {},
+    queueItemsLoadingByConversation: {},
+    queueItemsFetchedAtByConversation: {},
+    queueEdit: {
+      workspaceId: "",
+      conversationId: "",
+      itemId: "",
+      draftText: "",
+      saving: false
+    },
     runningWorkspaceId: "",
     runningConversationId: "",
     awaitingApprovalByConversation: {},
@@ -267,6 +466,31 @@
     commandRulesLastRenderedWorkspaceId: "",
     commandRulesLoading: false,
     commandRulesError: "",
+    modeRuntime: {
+      scheduler: {},
+      modes: [],
+      skills: [],
+      panels: []
+    },
+    triage: {
+      count: "0",
+      cards: []
+    },
+    multi_agentCatalog: {
+      curated_residents: [],
+      target_types: [],
+      escalation_classes: []
+    },
+    workspaceMultiAgentById: {},
+    workspaceMultiAgentLoadingById: {},
+    workspaceMultiAgentErrorById: {},
+    multiAgentSelectedResidentIdByWorkspace: {},
+    multiAgentOpenResidentOptionsByWorkspace: {},
+    multiAgentCharterAutosaveTimerByWorkspace: {},
+    openTriageSuppressProposalId: "",
+    activeTriage: false,
+    modeRuntimeLoading: false,
+    modeRuntimeError: "",
     contextWindowText: "Context window information will display here.",
     lastErrorText: "",
     lastErrorAt: 0,
@@ -278,6 +502,8 @@
     runDetailsOpenByEventId: {},
     runStreamAutoFollowByEventId: {},
     runStreamScrollTopByEventId: {},
+    runTodoMonitorOpenByConversation: {},
+    runTerminalMonitorOpenByConversation: {},
     pendingOutgoingByKey: {},
     conversationCacheByKey: {},
     threadsPaneWidth: parseStoredPaneWidth("artificer.threadsPaneWidth", 308),
@@ -296,6 +522,7 @@
   var modelAutoRefreshLastAt = 0;
   var runReconcileTimer = null;
   var runReconcileBusy = false;
+  var runEventsSaveTimer = null;
   var runEventHealTimer = null;
   var runEventHealBusy = false;
   var runEventHealBusySince = 0;
@@ -345,6 +572,15 @@
   ) {
     state.reasoningEffort = "medium";
   }
+  if (
+    state.computeBudget !== "auto" &&
+    state.computeBudget !== "quick" &&
+    state.computeBudget !== "standard" &&
+    state.computeBudget !== "long" &&
+    state.computeBudget !== "until-complete"
+  ) {
+    state.computeBudget = "auto";
+  }
   if (!/^[a-z0-9_-]+$/.test(String(state.activeTheme || ""))) {
     state.activeTheme = "psionic";
   }
@@ -359,6 +595,30 @@
   }
   if (state.commandExecMode === "ask") {
     state.commandExecMode = "ask-some";
+  }
+  state.runMode = normalizeRunMode(state.runMode);
+  state.assistantModeId = normalizeAssistantModeId(state.assistantModeId);
+  if (state.runMode === "instant") {
+    state.agentLoopEnabled = false;
+    state.reasoningEffort = "low";
+  } else if (state.runMode === "chat") {
+    state.agentLoopEnabled = false;
+    if (state.reasoningEffort === "low") {
+      state.reasoningEffort = "medium";
+    }
+  } else if (state.runMode === "programming") {
+    state.agentLoopEnabled = true;
+    if (state.reasoningEffort === "low" || state.reasoningEffort === "medium") {
+      state.reasoningEffort = "high";
+    }
+  } else if (state.runMode === "report") {
+    state.agentLoopEnabled = true;
+    if (state.reasoningEffort === "low" || state.reasoningEffort === "medium") {
+      state.reasoningEffort = "high";
+    }
+  } else if (state.runMode === "assistant") {
+    state.agentLoopEnabled = true;
+    state.reasoningEffort = "extra-high";
   }
 
   var el = {
@@ -416,9 +676,24 @@
     modelPickerBtn: document.getElementById("model-picker-btn"),
     modelPickerMenu: document.getElementById("model-picker-menu"),
     modelPickerList: document.getElementById("model-picker-list"),
+    runModeBtn: document.getElementById("run-mode-btn"),
+    runModeMenu: document.getElementById("run-mode-menu"),
+    runModeMoreToggle: document.getElementById("run-mode-more-toggle"),
+    runModeMoreList: document.getElementById("run-mode-more-list"),
     agentLoopToggle: document.getElementById("agent-loop-toggle"),
     reasoningMenuBtn: document.getElementById("reasoning-menu-btn"),
     reasoningMenu: document.getElementById("reasoning-menu"),
+    computeMenuBtn: document.getElementById("compute-menu-btn"),
+    computeMenu: document.getElementById("compute-menu"),
+    runTodoMonitor: document.getElementById("run-todo-monitor"),
+    runTodoMonitorLabel: document.getElementById("run-todo-monitor-label"),
+    runTodoMonitorList: document.getElementById("run-todo-monitor-list"),
+    queueTray: document.getElementById("queue-tray"),
+    queueTrayList: document.getElementById("queue-tray-list"),
+    runTerminalMonitor: document.getElementById("run-terminal-monitor"),
+    runTerminalMonitorLabel: document.getElementById("run-terminal-monitor-label"),
+    runTerminalMonitorOutput: document.getElementById("run-terminal-monitor-output"),
+    runTerminalMonitorStop: document.getElementById("run-terminal-monitor-stop"),
     queueControls: document.getElementById("queue-controls"),
     queueSteerBtn: document.getElementById("queue-steer-btn"),
     queueCancelBtn: document.getElementById("queue-cancel-btn"),
@@ -504,7 +779,55 @@
     commandRulesWorkspace: document.getElementById("command-rules-workspace"),
     commandRulesStatus: document.getElementById("command-rules-status"),
     commandRulesGlobalList: document.getElementById("command-rules-global-list"),
-    commandRulesList: document.getElementById("command-rules-list")
+    commandRulesList: document.getElementById("command-rules-list"),
+    modeRuntimeTickBtn: document.getElementById("mode-runtime-tick-btn"),
+    modeRuntimeSummary: document.getElementById("mode-runtime-summary"),
+    modeRuntimePanels: document.getElementById("mode-runtime-panels"),
+    modeRuntimeModes: document.getElementById("mode-runtime-modes"),
+    modeRuntimeSkills: document.getElementById("mode-runtime-skills"),
+    assistantModeSelect: document.getElementById("assistant-mode-select"),
+    assistantModeApplyBtn: document.getElementById("assistant-mode-apply-btn"),
+    modeRuntimeSkillInvokeForm: document.getElementById("mode-runtime-skill-invoke-form"),
+    modeRuntimeSkillSelect: document.getElementById("mode-runtime-skill-select"),
+    modeRuntimeSkillMode: document.getElementById("mode-runtime-skill-mode"),
+    modeRuntimeSkillCapabilities: document.getElementById("mode-runtime-skill-capabilities"),
+    modeRuntimeSkillInput: document.getElementById("mode-runtime-skill-input"),
+    modeRuntimeSkillInvokeBtn: document.getElementById("mode-runtime-skill-invoke-btn"),
+    modeRuntimeSkillResult: document.getElementById("mode-runtime-skill-result"),
+    modeRuntimeSkillCreateForm: document.getElementById("mode-runtime-skill-create-form"),
+    modeRuntimeSkillCreateId: document.getElementById("mode-runtime-skill-create-id"),
+    modeRuntimeSkillCreateName: document.getElementById("mode-runtime-skill-create-name"),
+    modeRuntimeSkillCreateTrigger: document.getElementById("mode-runtime-skill-create-trigger"),
+    modeRuntimeSkillCreateCapabilities: document.getElementById("mode-runtime-skill-create-capabilities"),
+    modeRuntimeSkillCreateDescription: document.getElementById("mode-runtime-skill-create-description"),
+    modeRuntimeSkillCreateBtn: document.getElementById("mode-runtime-skill-create-btn"),
+    modeRuntimeSkillInstallForm: document.getElementById("mode-runtime-skill-install-form"),
+    modeRuntimeSkillInstallSource: document.getElementById("mode-runtime-skill-install-source"),
+    modeRuntimeSkillInstallId: document.getElementById("mode-runtime-skill-install-id"),
+    modeRuntimeSkillInstallReplace: document.getElementById("mode-runtime-skill-install-replace"),
+    modeRuntimeSkillInstallBtn: document.getElementById("mode-runtime-skill-install-btn"),
+    multi_agentModal: document.getElementById("multi_agent-modal"),
+    multi_agentModalClose: document.getElementById("multi_agent-modal-close"),
+    multi_agentProjectLabel: document.getElementById("multi_agent-project-label"),
+    multi_agentStatus: document.getElementById("multi_agent-status"),
+    multi_agentCharter: document.getElementById("multi_agent-charter"),
+    multi_agentRolesHint: document.getElementById("multi_agent-roles-hint"),
+    multi_agentSectionDilemma: document.getElementById("multi_agent-section-dilemma"),
+    multi_agentSectionAmendments: document.getElementById("multi_agent-section-amendments"),
+    multi_agentSectionCommitments: document.getElementById("multi_agent-section-commitments"),
+    multi_agentSectionPolicies: document.getElementById("multi_agent-section-policies"),
+    multi_agentToggleAmendments: document.getElementById("multi_agent-toggle-amendments"),
+    multi_agentToggleCommitments: document.getElementById("multi_agent-toggle-commitments"),
+    multi_agentTogglePolicies: document.getElementById("multi_agent-toggle-policies"),
+    multi_agentAmendmentsSummary: document.getElementById("multi_agent-amendments-summary"),
+    multi_agentInterpretationSummary: document.getElementById("multi_agent-interpretation-summary"),
+    multi_agentCommitmentsSummary: document.getElementById("multi_agent-commitments-summary"),
+    multi_agentPoliciesSummary: document.getElementById("multi_agent-policies-summary"),
+    multi_agentAmendmentsList: document.getElementById("multi_agent-amendments-list"),
+    multi_agentResidentsList: document.getElementById("multi_agent-residents-list"),
+    multi_agentPoliciesList: document.getElementById("multi_agent-policies-list"),
+    multi_agentCommitmentsList: document.getElementById("multi_agent-commitments-list"),
+    multi_agentInterpretationList: document.getElementById("multi_agent-interpretation-list")
   };
 
   if (el.modelStatusBtn) {
@@ -522,7 +845,9 @@
     "branch-menu": el.branchMenu,
     "permissions-menu": el.permissionsMenu,
     "model-picker-menu": el.modelPickerMenu,
+    "run-mode-menu": el.runModeMenu,
     "reasoning-menu": el.reasoningMenu,
+    "compute-menu": el.computeMenu,
     "context-window-menu": el.contextWindowMenu,
     "models-pane": el.modelsPane
   };
@@ -1279,7 +1604,11 @@
   function apiPost(action, data, options) {
     var timeoutMs = 30000;
     if (action === "run") {
-      timeoutMs = 240000;
+      var computeBudget = normalizeComputeBudget(data && data.compute_budget ? data.compute_budget : state.computeBudget);
+      timeoutMs = computeBudgetRequestTimeoutMs(computeBudget, data || {});
+      if (!isFinite(timeoutMs) || timeoutMs < 30000) {
+        timeoutMs = 30000;
+      }
     } else if (options && Number(options.timeoutMs) > 0) {
       timeoutMs = Number(options.timeoutMs);
     }
@@ -1446,6 +1775,38 @@
     }
   }
 
+  function cacheConversationSnapshot(workspaceId, conversationId, conversation) {
+    var wsId = String(workspaceId || "");
+    var convId = String(conversationId || "");
+    if (!wsId || !convId || !conversation || typeof conversation !== "object") {
+      return;
+    }
+    var cloned = cloneConversationData(conversation);
+    if (!cloned) {
+      return;
+    }
+    if (!cloned.id) {
+      cloned.id = convId;
+    }
+    state.conversationCacheByKey[conversationReadKey(wsId, convId)] = cloned;
+  }
+
+  function cacheActiveConversationSnapshot(workspaceId, conversationId) {
+    var wsId = String(workspaceId || "");
+    var convId = String(conversationId || "");
+    if (!wsId || !convId || !state.activeConversation) {
+      return;
+    }
+    if (
+      String(state.activeWorkspaceId || "") !== wsId ||
+      String(state.activeConversationId || "") !== convId ||
+      String(state.activeConversation.id || "") !== convId
+    ) {
+      return;
+    }
+    cacheConversationSnapshot(wsId, convId, state.activeConversation);
+  }
+
   function normalizeDecisionRequest(request) {
     var source = request && typeof request === "object" ? request : null;
     if (!source) {
@@ -1491,6 +1852,147 @@
     return {
       command: command,
       reason: trim(String(source.reason || ""))
+    };
+  }
+
+  function asArrayCopy(value) {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+    return value.slice(0);
+  }
+
+  function normalizeModeRuntime(payload) {
+    var source = payload && typeof payload === "object" ? payload : {};
+    var scheduler = source.scheduler && typeof source.scheduler === "object" ? source.scheduler : {};
+    var cooperation = source.cooperation && typeof source.cooperation === "object" ? source.cooperation : {};
+    var modesRaw = asArrayCopy(source.modes);
+    var skillsRaw = asArrayCopy(source.skills);
+    var panelsRaw = asArrayCopy(source.panels);
+    var directivesRaw = asArrayCopy(cooperation.recent);
+    var modes = [];
+    var skills = [];
+    var panels = [];
+    var directives = [];
+
+    for (var i = 0; i < modesRaw.length; i += 1) {
+      var mode = modesRaw[i];
+      if (!mode || typeof mode !== "object") {
+        continue;
+      }
+      var modeId = trim(String(mode.id || ""));
+      if (!modeId) {
+        continue;
+      }
+      modes.push({
+        id: modeId,
+        name: trim(String(mode.name || modeId)),
+        description: trim(String(mode.description || "")),
+        enabled: Number(mode.enabled || 0) > 0,
+        priority: queueNumber(mode.priority || 0),
+        cadence_sec: queueNumber(mode.cadence_sec || 0),
+        interrupt_rights: Number(mode.interrupt_rights || 0) > 0,
+        allow_queue_injection: Number(mode.allow_queue_injection || 0) > 0,
+        status: trim(String(mode.status || "idle")),
+        drift_score: trim(String(mode.drift_score || "0.00")),
+        last_tick: trim(String(mode.last_tick || "")),
+        next_tick: trim(String(mode.next_tick || "")),
+        goal_state: trim(String(mode.goal_state || "")),
+        last_skill_plan: asArrayCopy(mode.last_skill_plan),
+        last_directive_count: trim(String(mode.last_directive_count || "0")),
+        last_directive_emits: trim(String(mode.last_directive_emits || "0")),
+        last_directive_summary: trim(String(mode.last_directive_summary || "none")),
+        telemetry_subscriptions: asArrayCopy(mode.telemetry_subscriptions),
+        allowed_capabilities: asArrayCopy(mode.allowed_capabilities)
+      });
+    }
+
+    for (var j = 0; j < skillsRaw.length; j += 1) {
+      var skill = skillsRaw[j];
+      if (!skill || typeof skill !== "object") {
+        continue;
+      }
+      var skillId = trim(String(skill.id || ""));
+      if (!skillId) {
+        continue;
+      }
+      skills.push({
+        id: skillId,
+        name: trim(String(skill.name || skillId)),
+        description: trim(String(skill.description || "")),
+        trigger: trim(String(skill.trigger || "")),
+        capabilities: asArrayCopy(skill.capabilities),
+        stateless: skill.stateless !== false,
+        interrupt_authority: skill.interrupt_authority === true,
+        files: skill.files && typeof skill.files === "object" ? skill.files : {}
+      });
+    }
+
+    for (var k = 0; k < panelsRaw.length; k += 1) {
+      var panel = panelsRaw[k];
+      if (!panel || typeof panel !== "object") {
+        continue;
+      }
+      var panelId = trim(String(panel.id || ""));
+      if (!panelId) {
+        continue;
+      }
+      panels.push({
+        id: panelId,
+        title: trim(String(panel.title || panelId)),
+        summary: trim(String(panel.summary || "")),
+        stream: trim(String(panel.stream || "")),
+        metrics: asArrayCopy(panel.metrics)
+      });
+    }
+
+    for (var d = 0; d < directivesRaw.length; d += 1) {
+      var directive = directivesRaw[d];
+      if (!directive || typeof directive !== "object") {
+        continue;
+      }
+      directives.push({
+        timestamp: trim(String(directive.timestamp || "")),
+        from_mode: trim(String(directive.from_mode || "")),
+        to_mode: trim(String(directive.to_mode || "")),
+        kind: trim(String(directive.kind || "")),
+        priority: trim(String(directive.priority || "")),
+        payload: trim(String(directive.payload || "")),
+        expires_epoch: trim(String(directive.expires_epoch || "")),
+        expired: Number(directive.expired || 0) > 0 || directive.expired === true
+      });
+    }
+
+    modes.sort(function (a, b) {
+      var priorityDiff = Number(b.priority || 0) - Number(a.priority || 0);
+      if (priorityDiff !== 0) {
+        return priorityDiff;
+      }
+      return String(a.name || a.id || "").localeCompare(String(b.name || b.id || ""));
+    });
+    skills.sort(function (a, b) {
+      return String(a.name || a.id || "").localeCompare(String(b.name || b.id || ""));
+    });
+
+    return {
+      scheduler: {
+        last_tick: trim(String(scheduler.last_tick || "")),
+        last_tick_iso: trim(String(scheduler.last_tick_iso || "")),
+        ticks: trim(String(scheduler.ticks || "0")),
+        last_due_modes: trim(String(scheduler.last_due_modes || "0")),
+        last_injections: trim(String(scheduler.last_injections || "0")),
+        last_directives_received: trim(String(scheduler.last_directives_received || "0")),
+        last_directives_emitted: trim(String(scheduler.last_directives_emitted || "0")),
+        summary: trim(String(scheduler.summary || ""))
+      },
+      modes: modes,
+      skills: skills,
+      panels: panels,
+      cooperation: {
+        pending_total: trim(String(cooperation.pending_total || "0")),
+        modes_with_pending: trim(String(cooperation.modes_with_pending || "0")),
+        recent: directives
+      }
     };
   }
 
@@ -1753,6 +2255,193 @@
     return queueStatsForConversation(state.activeWorkspaceId, state.activeConversationId);
   }
 
+  function queueConversationKey(workspaceId, conversationId) {
+    var wsId = String(workspaceId || "");
+    var convId = String(conversationId || "");
+    if (!wsId || !convId) {
+      return "";
+    }
+    return conversationReadKey(wsId, convId);
+  }
+
+  function normalizeQueueListItem(source) {
+    var item = source && typeof source === "object" ? source : {};
+    return {
+      id: String(item.id || ""),
+      order: String(item.order || ""),
+      prompt: String(item.prompt || ""),
+      run_mode: normalizeRunMode(item.run_mode || "auto"),
+      assistant_mode_id: normalizeAssistantModeId(item.assistant_mode_id || ""),
+      compute_budget: normalizeComputeBudget(item.compute_budget || "auto"),
+      command_exec_mode: normalizeCommandExecModeValue(item.command_exec_mode || ""),
+      permission_mode: normalizePermissionModeValue(item.permission_mode || ""),
+      explicit_skill_ids: Array.isArray(item.explicit_skill_ids) ? item.explicit_skill_ids : []
+    };
+  }
+
+  function queueItemsForConversation(workspaceId, conversationId) {
+    var key = queueConversationKey(workspaceId, conversationId);
+    if (!key) {
+      return [];
+    }
+    var list = state.queueItemsByConversation[key];
+    return Array.isArray(list) ? list : [];
+  }
+
+  function setQueueItemsForConversation(workspaceId, conversationId, items) {
+    var key = queueConversationKey(workspaceId, conversationId);
+    if (!key) {
+      return;
+    }
+    if (!Array.isArray(items) || !items.length) {
+      delete state.queueItemsByConversation[key];
+      return;
+    }
+    state.queueItemsByConversation[key] = items;
+  }
+
+  function clearQueueItemsForConversation(workspaceId, conversationId) {
+    var key = queueConversationKey(workspaceId, conversationId);
+    if (!key) {
+      return;
+    }
+    delete state.queueItemsByConversation[key];
+    delete state.queueItemsLoadingByConversation[key];
+    delete state.queueItemsFetchedAtByConversation[key];
+  }
+
+  function clearQueueEditState() {
+    state.queueEdit.workspaceId = "";
+    state.queueEdit.conversationId = "";
+    state.queueEdit.itemId = "";
+    state.queueEdit.draftText = "";
+    state.queueEdit.saving = false;
+  }
+
+  function beginQueueItemEdit(workspaceId, conversationId, itemId, initialText) {
+    state.queueEdit.workspaceId = String(workspaceId || "");
+    state.queueEdit.conversationId = String(conversationId || "");
+    state.queueEdit.itemId = String(itemId || "");
+    state.queueEdit.draftText = String(initialText || "");
+    state.queueEdit.saving = false;
+  }
+
+  function isQueueEditForConversation(workspaceId, conversationId) {
+    return (
+      !!state.queueEdit.itemId &&
+      String(state.queueEdit.workspaceId || "") === String(workspaceId || "") &&
+      String(state.queueEdit.conversationId || "") === String(conversationId || "")
+    );
+  }
+
+  function queueItemPreview(promptText, maxLength) {
+    var raw = trim(String(promptText || "").replace(/\s+/g, " "));
+    var limit = Number(maxLength || 0);
+    if (!isFinite(limit) || limit < 32) {
+      limit = 220;
+    }
+    if (raw.length <= limit) {
+      return raw;
+    }
+    return raw.slice(0, limit - 1) + "…";
+  }
+
+  function isConversationQueueBlockedByEdit(workspaceId, conversationId) {
+    if (!isQueueEditForConversation(workspaceId, conversationId)) {
+      return false;
+    }
+    var editingItemId = String(state.queueEdit.itemId || "");
+    if (!editingItemId) {
+      return false;
+    }
+    var stats = queueStatsForConversation(workspaceId, conversationId);
+    if (stats.firstId && stats.firstId === editingItemId) {
+      return true;
+    }
+    var items = queueItemsForConversation(workspaceId, conversationId);
+    if (items.length && String(items[0].id || "") === editingItemId) {
+      return true;
+    }
+    return false;
+  }
+
+  function loadQueueItems(workspaceId, conversationId, options) {
+    var wsId = String(workspaceId || "");
+    var convId = String(conversationId || "");
+    if (!wsId || !convId) {
+      return Promise.resolve([]);
+    }
+    var opts = options || {};
+    var force = !!opts.force;
+    var key = queueConversationKey(wsId, convId);
+    if (!key) {
+      return Promise.resolve([]);
+    }
+    if (!force && state.queueItemsLoadingByConversation[key]) {
+      return Promise.resolve(queueItemsForConversation(wsId, convId));
+    }
+    var minIntervalMs = Number(opts.minIntervalMs || 0);
+    if (!isFinite(minIntervalMs) || minIntervalMs < 0) {
+      minIntervalMs = 0;
+    }
+    if (!force && minIntervalMs > 0) {
+      var fetchedAt = Number(state.queueItemsFetchedAtByConversation[key] || 0);
+      if (fetchedAt > 0 && Date.now() - fetchedAt < minIntervalMs) {
+        return Promise.resolve(queueItemsForConversation(wsId, convId));
+      }
+    }
+
+    state.queueItemsLoadingByConversation[key] = true;
+    var limit = Number(opts.limit || 24);
+    if (!isFinite(limit) || limit < 1) {
+      limit = 24;
+    }
+    if (limit > 80) {
+      limit = 80;
+    }
+
+    return apiGet("queue_list", {
+      workspace_id: wsId,
+      conversation_id: convId,
+      limit: String(limit)
+    }, { timeoutMs: 12000 })
+      .then(function (response) {
+        if (!response || !response.success) {
+          throw new Error((response && response.error) || "Could not load queued messages");
+        }
+        var rawItems = Array.isArray(response.items) ? response.items : [];
+        var normalizedItems = [];
+        for (var i = 0; i < rawItems.length; i += 1) {
+          var normalized = normalizeQueueListItem(rawItems[i]);
+          if (!normalized.id) {
+            continue;
+          }
+          normalizedItems.push(normalized);
+        }
+        setQueueItemsForConversation(wsId, convId, normalizedItems);
+        state.queueItemsFetchedAtByConversation[key] = Date.now();
+        applyQueueStateFromResponse(wsId, convId, response);
+
+        if (isQueueEditForConversation(wsId, convId)) {
+          var editingItemId = String(state.queueEdit.itemId || "");
+          var stillExists = false;
+          for (var j = 0; j < normalizedItems.length; j += 1) {
+            if (String(normalizedItems[j].id || "") === editingItemId) {
+              stillExists = true;
+              break;
+            }
+          }
+          if (!stillExists) {
+            clearQueueEditState();
+          }
+        }
+        return normalizedItems;
+      })
+      .finally(function () {
+        delete state.queueItemsLoadingByConversation[key];
+      });
+  }
+
   function workspaceUpdatedScore(workspace) {
     if (!workspace || !workspace.conversations || workspace.conversations.length === 0) {
       return 0;
@@ -1810,7 +2499,7 @@
   function findNextQueuedConversation() {
     if (state.activeWorkspaceId && state.activeConversationId) {
       var activeStats = queueStatsForConversation(state.activeWorkspaceId, state.activeConversationId);
-      if (activeStats.pending > 0) {
+      if (activeStats.pending > 0 && !isConversationQueueBlockedByEdit(state.activeWorkspaceId, state.activeConversationId)) {
         return {
           workspaceId: state.activeWorkspaceId,
           conversationId: state.activeConversationId
@@ -1822,7 +2511,10 @@
     for (var i = 0; i < workspaces.length; i += 1) {
       var conversations = getSortedConversations(workspaces[i]);
       for (var j = 0; j < conversations.length; j += 1) {
-        if (queueNumber(conversations[j].queue_pending) > 0) {
+        if (
+          queueNumber(conversations[j].queue_pending) > 0 &&
+          !isConversationQueueBlockedByEdit(workspaces[i].id, conversations[j].id)
+        ) {
           return {
             workspaceId: workspaces[i].id,
             conversationId: conversations[j].id
@@ -1961,7 +2653,7 @@
     var archiveKey = conversationReadKey(workspaceId, conversationId);
     var isArchiveArmed = archiveKey === state.pendingArchiveKey;
     var isArchiveSubmitting = archiveKey === state.pendingArchiveSubmittingKey;
-    var html = "<span class='conversation-meta' title='Workspace diff since last commit'>";
+    var html = "<span class='conversation-meta' title='Project diff since last commit'>";
     if (hasDiff) {
       html += "<span class='meta-diff'>";
       html += "<span class='meta-add' title='Lines added since last commit'>+" + escHtml(String(add)) + "</span>";
@@ -2070,6 +2762,25 @@
     return "Ask some";
   }
 
+  function normalizeCommandExecModeValue(mode) {
+    var value = trim(String(mode || "")).toLowerCase();
+    if (value === "ask") {
+      return "ask-some";
+    }
+    if (value === "none" || value === "ask-all" || value === "ask-some" || value === "all") {
+      return value;
+    }
+    return "";
+  }
+
+  function normalizePermissionModeValue(mode) {
+    var value = trim(String(mode || "")).toLowerCase();
+    if (value === "workspace-write" || value === "read-only" || value === "default" || value === "full-access") {
+      return value;
+    }
+    return "";
+  }
+
   function gitDeltaMarkup(added, deleted) {
     var addCount = Number(added || 0);
     var delCount = Number(deleted || 0);
@@ -2122,11 +2833,17 @@
     if (el.modelPickerBtn) {
       el.modelPickerBtn.setAttribute("aria-expanded", "false");
     }
+    if (el.runModeBtn) {
+      el.runModeBtn.setAttribute("aria-expanded", "false");
+    }
     if (el.themePickerBtn) {
       el.themePickerBtn.setAttribute("aria-expanded", "false");
     }
     if (el.reasoningMenuBtn) {
       el.reasoningMenuBtn.setAttribute("aria-expanded", "false");
+    }
+    if (el.computeMenuBtn) {
+      el.computeMenuBtn.setAttribute("aria-expanded", "false");
     }
     if (el.organizeBtn) {
       el.organizeBtn.setAttribute("aria-expanded", "false");
@@ -2138,6 +2855,12 @@
     if (!exceptId && state.openWorkspaceMenuWorkspaceId) {
       state.openWorkspaceMenuWorkspaceId = "";
       renderWorkspaceTree();
+    }
+    if (!exceptId || exceptId !== "run-mode-menu") {
+      state.runModeMoreExpanded = false;
+    }
+    if (!exceptId && state.openTriageSuppressProposalId) {
+      state.openTriageSuppressProposalId = "";
     }
   }
 
@@ -2180,6 +2903,7 @@
     closeModal(el.runActionModal);
     closeModal(el.settingsModal);
     closeModal(el.commandApprovalModal);
+    closeModal(el.multi_agentModal);
   }
 
   function setWorkspaceDropActive(active) {
@@ -2224,6 +2948,13 @@
   }
 
   function ensureSelection() {
+    if (state.activeTriage) {
+      state.activeWorkspaceId = "";
+      state.activeConversationId = "";
+      state.activeConversation = null;
+      state.activeDraftWorkspaceId = "";
+      return;
+    }
     if (!state.workspaces.length) {
       state.activeWorkspaceId = "";
       state.activeConversationId = "";
@@ -2445,6 +3176,76 @@
     }, 270);
   }
 
+  function normalizedRunEventsList(list) {
+    var items = Array.isArray(list) ? list : [];
+    var normalized = [];
+    for (var i = 0; i < items.length; i += 1) {
+      var event = sanitizeRunEventForStorage(items[i]);
+      if (event) {
+        normalized.push(event);
+      }
+    }
+    if (normalized.length > 22) {
+      normalized = normalized.slice(normalized.length - 22);
+    }
+    return normalized;
+  }
+
+  function mergeConversationRunEvents(conversationId, remoteEvents) {
+    var convId = String(conversationId || "");
+    if (!convId) {
+      return;
+    }
+    var remoteList = normalizedRunEventsList(remoteEvents);
+    if (!remoteList.length) {
+      return;
+    }
+    var hasRemoteRunning = false;
+    for (var r = 0; r < remoteList.length; r += 1) {
+      if (String((remoteList[r] && remoteList[r].status) || "") === "running") {
+        hasRemoteRunning = true;
+        break;
+      }
+    }
+    var localList = normalizedRunEventsList(state.runEventsByConversation[convId]);
+    var merged = [];
+    var seen = {};
+
+    function pushEvent(event) {
+      if (!event) {
+        return;
+      }
+      var key = String(event.id || "");
+      if (key && seen[key]) {
+        return;
+      }
+      if (key) {
+        seen[key] = 1;
+      }
+      merged.push(event);
+    }
+
+    for (var i = 0; i < remoteList.length; i += 1) {
+      pushEvent(remoteList[i]);
+    }
+    for (var j = 0; j < localList.length; j += 1) {
+      var localEvent = localList[j] || {};
+      var localStatus = String(localEvent.status || "");
+      if (localStatus === "running" && hasRemoteRunning) {
+        continue;
+      }
+      if (localStatus === "running" || localStatus === "approval_granted") {
+        pushEvent(localEvent);
+      }
+    }
+
+    if (merged.length > 22) {
+      merged = merged.slice(merged.length - 22);
+    }
+    state.runEventsByConversation[convId] = merged;
+    persistRunEventsSoon();
+  }
+
   function runEventsForConversation(conversationId) {
     if (!conversationId) {
       return [];
@@ -2612,6 +3413,7 @@
       return false;
     }
     messages.push({ role: "assistant", content: content });
+    cacheActiveConversationSnapshot(wsId, convId);
     return true;
   }
 
@@ -2672,6 +3474,7 @@
       event.status = "done";
     }
     event.finished_at = finishedAt || new Date().toISOString();
+    persistRunEventsSoon();
   }
 
   function finalizeLatestRunningEvent(conversationId, status, errorText) {
@@ -3078,6 +3881,42 @@
     }
   }
 
+  function persistRunEventsSoon() {
+    if (runEventsSaveTimer) {
+      return;
+    }
+    runEventsSaveTimer = setTimeout(function () {
+      runEventsSaveTimer = null;
+      saveRunEventsState(state.runEventsByConversation);
+    }, 240);
+  }
+
+  function pruneRunEventsByKnownConversations() {
+    var known = {};
+    for (var i = 0; i < state.workspaces.length; i += 1) {
+      var workspace = state.workspaces[i];
+      var conversations = workspace && Array.isArray(workspace.conversations) ? workspace.conversations : [];
+      for (var j = 0; j < conversations.length; j += 1) {
+        var conversation = conversations[j] || {};
+        if (conversation.id) {
+          known[String(conversation.id)] = true;
+        }
+      }
+    }
+    var changed = false;
+    var keys = Object.keys(state.runEventsByConversation || {});
+    for (var k = 0; k < keys.length; k += 1) {
+      var key = String(keys[k] || "");
+      if (!known[key]) {
+        delete state.runEventsByConversation[key];
+        changed = true;
+      }
+    }
+    if (changed) {
+      persistRunEventsSoon();
+    }
+  }
+
   function pushRunEvent(conversationId, eventData) {
     if (!conversationId) {
       return null;
@@ -3096,6 +3935,7 @@
     if (state.runEventsByConversation[conversationId].length > 22) {
       state.runEventsByConversation[conversationId].shift();
     }
+    persistRunEventsSoon();
 
     return event;
   }
@@ -3111,7 +3951,7 @@
       var status = item.status || "unknown";
       html += "<div class='run-command'>";
       html += "<div class='run-command-head'><code>" + escHtml(item.command || "") + "</code><span class='badge " + escHtml(status) + "'>" + escHtml(status) + "</span></div>";
-      html += "<pre>" + escHtml(item.output || "") + "</pre>";
+      html += "<pre class='run-code-block run-command-output'>" + escHtml(item.output || "") + "</pre>";
       html += "</div>";
     }
     return html;
@@ -3134,6 +3974,24 @@
     return !!state.runDetailsOpenByEventId[key];
   }
 
+  function formatDurationLabel(totalSeconds) {
+    var seconds = Number(totalSeconds || 0);
+    if (!isFinite(seconds) || seconds < 0) {
+      seconds = 0;
+    }
+    seconds = Math.floor(seconds);
+    var hours = Math.floor(seconds / 3600);
+    var minutes = Math.floor((seconds % 3600) / 60);
+    var remaining = seconds % 60;
+    if (hours > 0) {
+      return String(hours) + "h " + String(minutes) + "m " + String(remaining) + "s";
+    }
+    if (minutes > 0) {
+      return String(minutes) + "m " + String(remaining) + "s";
+    }
+    return String(remaining) + "s";
+  }
+
   function thoughtDurationLabel(startedAt, finishedAt) {
     var startedMs = Date.parse(startedAt || "");
     var endedMs = Date.parse(finishedAt || "");
@@ -3144,62 +4002,410 @@
       endedMs = Date.now();
     }
     var totalSeconds = Math.max(0, Math.floor((endedMs - startedMs) / 1000));
-    if (totalSeconds < 60) {
-      return String(totalSeconds) + "s";
-    }
-    if (totalSeconds < 3600) {
-      return String(Math.floor(totalSeconds / 60)) + "m";
-    }
-    return String(Math.floor(totalSeconds / 3600)) + "h";
+    return formatDurationLabel(totalSeconds);
   }
 
   function runTraceSummaryLabel(event, isRunning) {
+    var duration = thoughtDurationLabel(event && event.started_at, isRunning ? "" : (event && event.finished_at));
     if (isRunning) {
-      var runningDuration = thoughtDurationLabel(event && event.started_at, "");
-      return "Thinking... " + (runningDuration || "0s");
+      return "Working for " + (duration || "0s");
     }
-    var completedDuration = thoughtDurationLabel(event && event.started_at, event && event.finished_at);
-    if (!completedDuration) {
-      return "Thought process";
+    if (duration) {
+      return "Worked for " + duration;
     }
-    return "Thought for " + completedDuration;
+    return "Worked";
   }
 
-  function formatRunTrace(event) {
-    if (!event) {
+  function decodeMaybeUriText(rawText) {
+    var raw = String(rawText || "");
+    if (!/%[0-9a-fA-F]{2}/.test(raw)) {
+      return raw;
+    }
+    var plusEscaped = raw.replace(/\+/g, "%20");
+    try {
+      return decodeURIComponent(plusEscaped);
+    } catch (_err) {
+      return plusEscaped
+        .replace(/%0D%0A/gi, "\n")
+        .replace(/%0A/gi, "\n")
+        .replace(/%09/gi, "\t")
+        .replace(/%20/gi, " ")
+        .replace(/%3A/gi, ":")
+        .replace(/%2F/gi, "/")
+        .replace(/%2D/gi, "-")
+        .replace(/%5B/gi, "[")
+        .replace(/%5D/gi, "]");
+    }
+  }
+
+  function normalizeRunNarrativeText(rawText) {
+    var text = String(decodeMaybeUriText(rawText) || "");
+    if (!trim(text)) {
       return "";
     }
+    text = text.replace(/\r\n?/g, "\n");
+    text = text.replace(/\u0000/g, "");
+    text = text.replace(/(\])(?=\[\d{2}:\d{2}:\d{2}\])/g, "$1\n");
+    text = text.replace(/([.?!])\s*(\[\d{2}:\d{2}:\d{2}\])/g, "$1\n$2");
+    text = text.replace(/\s*(MODE_UPDATE|COMMANDS|CONTRACT|PATCH|DONE_CLAIM|PLAN_UPDATE|CHECKPOINT|DECISION_REQUEST|FINAL):\s*/g, "\n$1: ");
+    text = text.replace(/\s*(\*\*[^*\n]{3,}\*\*)\s*/g, "\n$1 ");
+    text = text.replace(/\s*(###\s+[^\n]+)\s*/g, "\n$1\n");
+    text = text.replace(/\s*(User request:|Latest user request:|Conversation context:|Workspace snapshot:|Failure ledger \(tail\):|Session log \(tail\):|Assumptions ledger \(tail\):|Previous iteration feedback:|Mode objective:|Mode constraints:|Current plan:|Rules:|Return ONLY these sections exactly:|Typed state:|Current mode:)\s*/g, "\n$1 ");
+    text = text.replace(/\n{3,}/g, "\n\n");
+    return trim(text);
+  }
+
+  function splitLongNarrativePart(text, maxLength) {
+    var part = trim(text || "");
+    var limit = Number(maxLength || 220);
+    if (!part) {
+      return [];
+    }
+    if (!isFinite(limit) || limit < 80) {
+      limit = 220;
+    }
+    var pieces = [];
+    var remaining = part;
+    while (remaining.length > limit) {
+      var breakAt = remaining.lastIndexOf(" ", limit);
+      if (breakAt < Math.floor(limit * 0.5)) {
+        breakAt = limit;
+      }
+      pieces.push(trim(remaining.slice(0, breakAt)));
+      remaining = trim(remaining.slice(breakAt));
+    }
+    if (remaining) {
+      pieces.push(remaining);
+    }
+    return pieces;
+  }
+
+  function splitNarrativeFragments(lineText) {
+    var line = String(lineText || "");
+    if (!trim(line)) {
+      return [];
+    }
+    line = line.replace(/([.!?])\s+(?=[A-Z0-9\[])/g, "$1\n");
+    line = line.replace(/\s*(Goal:|Subgoals:|Constraints:|Unknowns:|Next Action:|Completion Criteria:|Transition:|Reason:|Checkpoint:|Command:|Status:|Output:|Question:|Options:|Input:|Assumption:|Action:|Error:|Hypothesis:|Current mode:)\s*/g, "\n$1 ");
+    line = line.replace(/\n{2,}/g, "\n");
+    var coarseParts = line.split(/\n+/);
+    var parts = [];
+    for (var i = 0; i < coarseParts.length; i += 1) {
+      var coarse = trim(coarseParts[i] || "");
+      if (!coarse) {
+        continue;
+      }
+      var longParts = splitLongNarrativePart(coarse, 220);
+      for (var j = 0; j < longParts.length; j += 1) {
+        var item = trim(longParts[j] || "");
+        if (item) {
+          parts.push(item);
+        }
+      }
+    }
+    return parts;
+  }
+
+  function splitRunStreamEntries(streamText) {
+    var normalized = normalizeRunNarrativeText(streamText);
+    if (!normalized) {
+      return [];
+    }
+    var entries = [];
+    var stampRegex = /\[(\d{2}:\d{2}:\d{2})\]\s*/g;
+    var match = null;
+    var foundStamp = false;
+    var activeStamp = "";
+    var activeStart = 0;
+
+    function pushChunk(stamp, chunkText) {
+      var chunk = trim(String(chunkText || ""));
+      if (!chunk) {
+        return;
+      }
+      var lines = chunk.split(/\n+/);
+      for (var i = 0; i < lines.length; i += 1) {
+        var lineParts = splitNarrativeFragments(lines[i] || "");
+        for (var j = 0; j < lineParts.length; j += 1) {
+          entries.push({
+            time: stamp,
+            text: lineParts[j]
+          });
+        }
+      }
+    }
+
+    while ((match = stampRegex.exec(normalized)) !== null) {
+      foundStamp = true;
+      if (activeStamp) {
+        pushChunk(activeStamp, normalized.slice(activeStart, match.index));
+      } else {
+        pushChunk("", normalized.slice(0, match.index));
+      }
+      activeStamp = String(match[1] || "");
+      activeStart = stampRegex.lastIndex;
+    }
+
+    if (foundStamp) {
+      pushChunk(activeStamp, normalized.slice(activeStart));
+      return entries;
+    }
+
+    var fallbackLines = normalized.split(/\n+/);
+    for (var k = 0; k < fallbackLines.length; k += 1) {
+      var fallbackParts = splitNarrativeFragments(fallbackLines[k] || "");
+      for (var n = 0; n < fallbackParts.length; n += 1) {
+        entries.push({
+          time: "",
+          text: fallbackParts[n]
+        });
+      }
+    }
+    return entries;
+  }
+
+  function runStepTone(text) {
+    var lower = String(text || "").toLowerCase();
+    if (!lower) {
+      return "info";
+    }
+    if (/(fatal|failed|error|denied|blocked|mismatch)/.test(lower)) {
+      return "error";
+    }
+    if (/(warning|retry|fallback|recovered)/.test(lower)) {
+      return "warn";
+    }
+    if (/(run finalized|done|completed|success|verified|pass)/.test(lower)) {
+      return "success";
+    }
+    if (/(current mode|mode_update|transition)/.test(lower)) {
+      return "mode";
+    }
+    if (/(iteration\s+\d+\s+started|requesting model output|starting|compacted)/.test(lower)) {
+      return "progress";
+    }
+    return "info";
+  }
+
+  function formatRunStreamFeed(event, isRunning) {
+    var entries = splitRunStreamEntries(event && event.stream_text);
+    var maxEntries = isRunning ? 220 : 320;
+    var clippedCount = 0;
+    if (entries.length > maxEntries) {
+      clippedCount = entries.length - maxEntries;
+      entries = entries.slice(clippedCount);
+    }
+    var html = "<div class='run-live-feed'>";
+    if (!entries.length) {
+      html += "<p class='run-line subtle'>" + (isRunning ? "Waiting for trace output..." : "No step timeline captured for this run.") + "</p>";
+      html += "</div>";
+      return html;
+    }
+    if (clippedCount > 0) {
+      html += "<p class='run-feed-clip'>Showing latest " + escHtml(String(entries.length)) + " steps (" + escHtml(String(clippedCount)) + " earlier steps hidden).</p>";
+    }
+    for (var i = 0; i < entries.length; i += 1) {
+      var entry = entries[i] || {};
+      var tone = runStepTone(entry.text);
+      html += "<div class='run-step " + escHtml(tone) + "'>";
+      html += "<span class='run-step-time'>" + escHtml(entry.time || "step") + "</span>";
+      html += "<span class='run-step-text'>" + escHtml(entry.text || "") + "</span>";
+      html += "</div>";
+    }
+    html += "</div>";
+    return html;
+  }
+
+  function formatRunNarrativeSection(title, rawText) {
+    var text = normalizeRunNarrativeText(rawText);
+    if (!text) {
+      return "";
+    }
+    var paragraphs = text.split(/\n{2,}/);
+    var body = "";
+    for (var i = 0; i < paragraphs.length; i += 1) {
+      var paragraph = trim(paragraphs[i] || "");
+      if (!paragraph) {
+        continue;
+      }
+      body += "<p>" + escHtml(paragraph).replace(/\n/g, "<br>") + "</p>";
+    }
+    if (!body) {
+      return "";
+    }
+    return "<div class='run-trace-block'><p class='run-trace-title'>" + escHtml(title) + "</p><div class='run-prose'>" + body + "</div></div>";
+  }
+
+  function summarizeRunChanges(event) {
+    var summary = {
+      added: 0,
+      deleted: 0,
+      files: [],
+      hasDiff: false
+    };
+    var fileMap = {};
+    var diffText = String((event && event.git_diff) || "");
+    var statusText = String((event && event.git_status) || "");
+    if (trim(diffText)) {
+      summary.hasDiff = true;
+      var diffLines = diffText.split(/\r?\n/);
+      for (var i = 0; i < diffLines.length; i += 1) {
+        var line = diffLines[i] || "";
+        var diffMatch = line.match(/^diff --git a\/(.+?) b\/(.+)$/);
+        if (diffMatch) {
+          var diffPath = trim(diffMatch[2] || diffMatch[1] || "");
+          if (diffPath && !fileMap[diffPath]) {
+            fileMap[diffPath] = true;
+            summary.files.push(diffPath);
+          }
+          continue;
+        }
+        if (/^\+/.test(line) && !/^\+\+\+/.test(line)) {
+          summary.added += 1;
+        } else if (/^-/.test(line) && !/^---/.test(line)) {
+          summary.deleted += 1;
+        }
+      }
+    }
+    if (!summary.files.length && trim(statusText)) {
+      var statusLines = statusText.split(/\r?\n/);
+      for (var j = 0; j < statusLines.length; j += 1) {
+        var statusLine = trim(statusLines[j] || "");
+        if (!statusLine) {
+          continue;
+        }
+        var statusMatch = statusLine.match(/^[ MARCUD\?]{1,2}\s+(.+)$/);
+        if (!statusMatch) {
+          continue;
+        }
+        var statusPath = trim(statusMatch[1] || "");
+        var arrow = statusPath.indexOf("->");
+        if (arrow >= 0) {
+          statusPath = trim(statusPath.slice(arrow + 2));
+        }
+        if (statusPath.charAt(0) === '"' && statusPath.charAt(statusPath.length - 1) === '"') {
+          statusPath = statusPath.slice(1, -1);
+        }
+        if (!statusPath || fileMap[statusPath]) {
+          continue;
+        }
+        fileMap[statusPath] = true;
+        summary.files.push(statusPath);
+      }
+    }
+    return summary;
+  }
+
+  function formatRunChangesCard(event) {
+    var summary = summarizeRunChanges(event);
+    if (!summary.files.length && summary.added === 0 && summary.deleted === 0) {
+      return "";
+    }
+    var fileCount = summary.files.length;
+    var html = "<div class='run-changes-card'>";
+    html += "<p class='run-changes-head'>" + escHtml(String(fileCount)) + " file" + (fileCount === 1 ? "" : "s") + " changed";
+    html += " <span class='run-delta add'>+" + escHtml(String(summary.added)) + "</span>";
+    html += " <span class='run-delta del'>-" + escHtml(String(summary.deleted)) + "</span>";
+    html += "</p>";
+    if (fileCount > 0) {
+      html += "<div class='run-changes-list'>";
+      var shown = Math.min(6, fileCount);
+      for (var i = 0; i < shown; i += 1) {
+        html += "<code>" + escHtml(summary.files[i] || "") + "</code>";
+      }
+      if (fileCount > shown) {
+        html += "<p class='run-line subtle'>+" + escHtml(String(fileCount - shown)) + " more files</p>";
+      }
+      html += "</div>";
+    }
+    html += "</div>";
+    return html;
+  }
+
+  function formatRunAdvancedTrace(event) {
     var sections = "";
-    if (trim(event.stream_text || "")) {
-      sections += "<div class='run-trace-block'><p class='run-trace-title'>Stream Transcript</p><pre>" + escHtml(event.stream_text || "") + "</pre></div>";
+    if (trim(event && event.state)) {
+      sections += "<div class='run-trace-block'><p class='run-trace-title'>Mode State</p><pre class='run-code-block'>" + escHtml(event.state || "") + "</pre></div>";
     }
-    if (trim(event.plan)) {
-      sections += "<div class='run-trace-block'><p class='run-trace-title'>Plan</p><pre>" + escHtml(event.plan) + "</pre></div>";
+    if (trim(event && event.failures)) {
+      sections += "<div class='run-trace-block'><p class='run-trace-title'>Failure Ledger</p><pre class='run-code-block'>" + escHtml(event.failures || "") + "</pre></div>";
     }
-    if (event.commands && event.commands.length) {
-      sections += "<div class='run-trace-block'><p class='run-trace-title'>Command Runs</p>" + formatRunCommands(event.commands || []) + "</div>";
+    if (trim(event && event.session_log)) {
+      sections += "<div class='run-trace-block'><p class='run-trace-title'>Session Log</p><pre class='run-code-block'>" + escHtml(event.session_log || "") + "</pre></div>";
     }
-    if (trim(event.git_status || "")) {
-      sections += "<div class='run-trace-block'><p class='run-trace-title'>Git Status</p><pre>" + escHtml(event.git_status || "") + "</pre></div>";
+    if (trim(event && event.git_status)) {
+      sections += "<div class='run-trace-block'><p class='run-trace-title'>Git Status</p><pre class='run-code-block'>" + escHtml(event.git_status || "") + "</pre></div>";
     }
-    if (trim(event.git_diff || "")) {
+    if (trim(event && event.git_diff)) {
       sections += "<div class='run-trace-block'><p class='run-trace-title'>Git Diff</p><div class='diff-view run-diff-view'>" + formatDiff(event.git_diff || "") + "</div></div>";
-    }
-    if (trim(event.state)) {
-      sections += "<div class='run-trace-block'><p class='run-trace-title'>Mode State</p><pre>" + escHtml(event.state) + "</pre></div>";
-    }
-    if (trim(event.failures)) {
-      sections += "<div class='run-trace-block'><p class='run-trace-title'>Failure Ledger</p><pre>" + escHtml(event.failures) + "</pre></div>";
-    }
-    if (trim(event.session_log)) {
-      sections += "<div class='run-trace-block'><p class='run-trace-title'>Session Log</p><pre>" + escHtml(event.session_log) + "</pre></div>";
     }
     if (!sections) {
       return "";
     }
+    return "<details class='run-details run-advanced'><summary><span class='run-summary-label'>Advanced run diagnostics</span></summary>" + sections + "</details>";
+  }
+
+  function runEventHasTraceData(event) {
+    if (!event) {
+      return false;
+    }
+    if (trim(event.stream_text || "")) {
+      return true;
+    }
+    if (trim(event.plan || "")) {
+      return true;
+    }
+    if (event.commands && event.commands.length) {
+      return true;
+    }
+    if (trim(event.state || "")) {
+      return true;
+    }
+    if (trim(event.failures || "")) {
+      return true;
+    }
+    if (trim(event.session_log || "")) {
+      return true;
+    }
+    if (trim(event.git_status || "")) {
+      return true;
+    }
+    return trim(event.git_diff || "") !== "";
+  }
+
+  function formatRunTrace(event, options) {
+    if (!event) {
+      return "";
+    }
+    var opts = options || {};
+    var isRunning = !!opts.isRunning;
+    var sections = "";
+    sections += "<div class='run-trace-block run-trace-stream'><p class='run-trace-title'>" + (isRunning ? "Live steps" : "Step timeline") + "</p>" + formatRunStreamFeed(event, isRunning) + "</div>";
+    sections += formatRunNarrativeSection("Plan", event.plan || "");
+    if (event.commands && event.commands.length) {
+      sections += "<div class='run-trace-block'><p class='run-trace-title'>Command runs</p>" + formatRunCommands(event.commands || []) + "</div>";
+    }
+    var advanced = formatRunAdvancedTrace(event);
+    if (advanced) {
+      sections += advanced;
+    }
+    if (!sections || (!isRunning && !runEventHasTraceData(event) && !thoughtDurationLabel(event && event.started_at, event && event.finished_at))) {
+      return "";
+    }
     var eventId = String(event.id || "");
-    var openAttr = runDetailsShouldBeOpen(eventId) ? " open" : "";
-    return "<details class='run-details run-thinking' data-event-id='" + escAttr(eventId) + "'" + openAttr + "><summary>" + escHtml(runTraceSummaryLabel(event, false)) + "</summary>" + sections + "</details>";
+    var hasSeenToggle = Object.prototype.hasOwnProperty.call(state.runDetailsOpenByEventId, eventId);
+    var isOpen = hasSeenToggle ? runDetailsShouldBeOpen(eventId) : !!opts.defaultOpen;
+    var openAttr = isOpen ? " open" : "";
+    var startedAttr = isRunning ? " data-started-at='" + escAttr(event.started_at || "") + "'" : "";
+    var detailsClass = "run-details " + (isRunning ? "run-thinking" : "run-rollup");
+    var summaryLabel = runTraceSummaryLabel(event, isRunning);
+    var summaryInner = "";
+    if (isRunning) {
+      summaryInner = "<span class='run-summary-label meta-glimmer'>" + escHtml(summaryLabel) + "</span>";
+    } else {
+      summaryInner = "<span class='run-rollup-line' aria-hidden='true'></span><span class='run-summary-label'>" + escHtml(summaryLabel) + "</span><span class='run-rollup-line' aria-hidden='true'></span>";
+    }
+    return "<details class='" + detailsClass + "' data-event-id='" + escAttr(eventId) + "'" + openAttr + startedAttr + "><summary>" + summaryInner + "</summary>" + sections + "</details>";
   }
 
   function friendlyRunErrorText(event) {
@@ -3252,20 +4458,13 @@
       if (isFinite(startedAt) && startedAt > 0) {
         elapsed = Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
       }
-      html += "<p class='run-line running' data-started-at='" + escAttr(event.started_at || "") + "'><span class='run-spinner' aria-hidden='true'></span> Thinking";
+      html += "<p class='run-line running' data-started-at='" + escAttr(event.started_at || "") + "'><span class='run-spinner' aria-hidden='true'></span> <span class='meta-glimmer'>Thinking</span>";
       html += " <span class='run-elapsed'>" + (elapsed > 0 ? elapsed + "s" : "") + "</span>";
       if (workspaceId && conversationId) {
         html += "<button type='button' class='run-stop-btn' aria-label='Stop run' title='Stop run' data-action='stop-run' data-workspace-id='" + escAttr(workspaceId) + "' data-conversation-id='" + escAttr(conversationId) + "'><span class='run-stop-square' aria-hidden='true'>&#9632;</span></button>";
       }
       html += "</p>";
-      var runningEventId = String(event.id || "");
-      var streamText = String(event.stream_text || "");
-      if (trim(streamText)) {
-        var hasSeenToggle = Object.prototype.hasOwnProperty.call(state.runDetailsOpenByEventId, runningEventId);
-        var runningOpen = hasSeenToggle ? runDetailsShouldBeOpen(runningEventId) : true;
-        var runningOpenAttr = runningOpen ? " open" : "";
-        html += "<details class='run-details run-thinking' data-event-id='" + escAttr(runningEventId) + "'" + runningOpenAttr + " data-started-at='" + escAttr(event.started_at || "") + "'><summary>" + escHtml(runTraceSummaryLabel(event, true)) + "</summary><pre class='run-stream-preview'>" + escHtml(streamText) + "</pre></details>";
-      }
+      html += formatRunTrace(event, { isRunning: true, defaultOpen: true });
       html += "</article>";
       return html;
     }
@@ -3273,7 +4472,7 @@
     if (status === "cancelled") {
       html = "<article class='" + runClass + "'>";
       html += "<p class='run-line subtle'>Run stopped.</p>";
-      html += formatRunTrace(event);
+      html += formatRunTrace(event, { defaultOpen: false });
       html += "</article>";
       return html;
     }
@@ -3300,7 +4499,8 @@
     if (status === "error") {
       html = "<article class='" + runClass + "'>";
       html += "<p class='run-line error'>" + escHtml(friendlyRunErrorText(event)) + "</p>";
-      html += formatRunTrace(event);
+      html += formatRunTrace(event, { defaultOpen: true });
+      html += formatRunChangesCard(event);
       html += "</article>";
       return html;
     }
@@ -3308,7 +4508,7 @@
       runClass += " run-narrative";
       html = "<article class='" + runClass + "'>";
       html += "<p class='run-line subtle'>Awaiting command approval.</p>";
-      html += formatRunTrace(event);
+      html += formatRunTrace(event, { defaultOpen: true });
       html += "</article>";
       return html;
     }
@@ -3316,7 +4516,7 @@
       runClass += " run-narrative";
       html = "<article class='" + runClass + "'>";
       html += "<p class='run-line subtle'>Awaiting your decision.</p>";
-      html += formatRunTrace(event);
+      html += formatRunTrace(event, { defaultOpen: true });
       html += "</article>";
       return html;
     }
@@ -3352,10 +4552,13 @@
     } else if (queueAwaitingDecision) {
       html = "<article class='" + runClass + " run-narrative'>";
       html += "<p class='run-line subtle'>Run paused. Awaiting your decision.</p>";
-    } else {
-      html += "<p class='run-line success'>Run complete" + (runModelText ? " with " + escHtml(runModelText) : "") + "</p>";
+    } else if (runModelText) {
+      html += "<p class='run-line subtle'>Model: " + escHtml(runModelText) + "</p>";
     }
-    html += formatRunTrace(event);
+    html += formatRunTrace(event, { defaultOpen: false });
+    if (!queueRunning && queuePending < 1 && !queueAwaitingApproval && !queueAwaitingDecision) {
+      html += formatRunChangesCard(event);
+    }
     html += "</article>";
     return html;
   }
@@ -3414,7 +4617,12 @@
         continue;
       }
       var duration = thoughtDurationLabel(started, "");
-      summary.textContent = "Thinking... " + (duration || "0s");
+      var summaryLabel = summary.querySelector(".run-summary-label");
+      if (summaryLabel) {
+        summaryLabel.textContent = "Working for " + (duration || "0s");
+      } else {
+        summary.textContent = "Working for " + (duration || "0s");
+      }
     }
   }
 
@@ -3431,7 +4639,7 @@
       if (!panel.open) {
         continue;
       }
-      var preview = panel.querySelector(".run-stream-preview");
+      var preview = panel.querySelector(".run-live-feed");
       if (preview) {
         var eventId = String(panel.getAttribute("data-event-id") || "");
         var autoFollow = true;
@@ -3478,7 +4686,7 @@
     if (!el.chatLog) {
       return;
     }
-    var previews = el.chatLog.querySelectorAll("details.run-details.run-thinking[data-event-id] .run-stream-preview");
+    var previews = el.chatLog.querySelectorAll("details.run-details.run-thinking[data-event-id] .run-live-feed");
     if (!previews || !previews.length) {
       return;
     }
@@ -3632,7 +4840,12 @@
         html += "<div class='workspace-row' data-action='select-workspace' data-workspace-id='" + escHtml(workspaceId) + "'>";
         html += folderIcon;
         html += "<button type='button' class='workspace-caret' data-action='toggle-workspace' data-workspace-id='" + escHtml(workspaceId) + "' aria-label='Toggle' title='Expand or collapse project'><span aria-hidden='true'>&rsaquo;</span></button>";
-        html += "<div class='workspace-meta' title='" + escAttr(workspace.path || "") + "'>" + escHtml(workspace.name || "Project") + "</div>";
+        var bgResidentsCount = Number(workspace.multi_agent_background_residents || 0);
+        var workspaceLabel = escHtml(workspace.name || "Project");
+        if (isFinite(bgResidentsCount) && bgResidentsCount > 0) {
+          workspaceLabel += " <span class='workspace-brain-badge' title='Background agents active' aria-label='Background agents active'>🧠</span>";
+        }
+        html += "<div class='workspace-meta' title='" + escAttr(workspace.path || "") + "'>" + workspaceLabel + "</div>";
         html += "<button type='button' class='workspace-menu-trigger' data-action='toggle-workspace-menu' data-workspace-id='" + escHtml(workspaceId) + "' aria-label='Project menu' title='Project actions' aria-expanded='" + (state.openWorkspaceMenuWorkspaceId === workspaceId ? "true" : "false") + "'>&hellip;</button>";
         html += "<button type='button' class='workspace-new' data-action='new-conversation' data-workspace-id='" + escHtml(workspaceId) + "' aria-label='New thread' title='New thread'><span aria-hidden='true'><svg viewBox='0 0 16 16' fill='none' stroke='currentColor' stroke-width='1.35' stroke-linecap='round' stroke-linejoin='round'><rect x='2.2' y='2.1' width='11.6' height='11.8' rx='1.6'></rect><path d='M6.1 9.8l-.5 2 2-.5 3.8-3.8-1.5-1.5z'></path><path d='M9.8 6.1l1.5 1.5'></path></svg></span></button>";
         var workspaceMenuClass = "workspace-actions-pop floating-menu";
@@ -3640,7 +4853,8 @@
           workspaceMenuClass += " hidden";
         }
         html += "<div class='" + workspaceMenuClass + "' data-workspace-menu='" + escHtml(workspaceId) + "' role='menu' aria-label='Project actions'>";
-        html += "<button type='button' data-action='open-workspace-approvals' data-workspace-id='" + escHtml(workspaceId) + "'>Command approvals</button>";
+        html += "<button type='button' data-action='open-workspace-multi_agent' data-workspace-id='" + escHtml(workspaceId) + "'>Manage agents</button>";
+        html += "<button type='button' data-action='open-workspace-approvals' data-workspace-id='" + escHtml(workspaceId) + "'>Command approvals...</button>";
         html += "<button type='button' data-action='rename-workspace' data-workspace-id='" + escHtml(workspaceId) + "'>Rename</button>";
         html += "<button type='button' data-action='remove-workspace' data-workspace-id='" + escHtml(workspaceId) + "'>Remove</button>";
         html += "</div>";
@@ -3700,6 +4914,56 @@
 
     if (!trim(html)) {
       html = "<p class='empty-state'>No threads match current organize filters.</p>";
+    }
+
+    var triageCards = Array.isArray(state.triage && state.triage.cards) ? state.triage.cards : [];
+    if (triageCards.length) {
+      var triageHtml = "";
+      triageHtml += "<section class='triage-inbox-section" + (state.activeTriage ? " active" : "") + "'>";
+      triageHtml += "<div class='triage-inbox-head' data-action='select-triage'>";
+      triageHtml += "<span class='triage-inbox-title'>Triage Inbox</span>";
+      triageHtml += "<span class='triage-inbox-count'>" + escHtml(String(triageCards.length)) + "</span>";
+      triageHtml += "</div>";
+      triageHtml += "<div class='triage-inbox-actions'>";
+      triageHtml += "<button type='button' class='ghost' data-action='triage-cleanup'>Cleanup...</button>";
+      triageHtml += "<button type='button' class='ghost' data-action='triage-cleanup-directed'>Cleanup w/ prompt...</button>";
+      triageHtml += "</div>";
+      triageHtml += "<div class='triage-inbox-list'>";
+      for (var tc = 0; tc < triageCards.length && tc < 14; tc += 1) {
+        var card = triageCards[tc] || {};
+        var cardId = String(card.id || "");
+        if (!cardId) {
+          continue;
+        }
+        var scopeLabel = multiAgentEscalationLabel(card.escalation_class || "");
+        var targetLabel = multiAgentTargetTypeLabel(card.target_type || "");
+        triageHtml += "<article class='triage-card'>";
+        triageHtml += "<p class='triage-card-summary'>" + escHtml(card.summary || "Proposal") + "</p>";
+        triageHtml += "<p class='triage-card-meta'>" + escHtml(scopeLabel || "Policy tradeoff");
+        if (targetLabel) {
+          triageHtml += " • " + escHtml(targetLabel);
+        }
+        triageHtml += "</p>";
+        var suppressMenuOpen = String(state.openTriageSuppressProposalId || "") === cardId;
+        triageHtml += "<div class='triage-card-actions'>";
+        triageHtml += "<button type='button' data-action='triage-open-context' data-workspace-id='" + escAttr(card.workspace_id || "") + "' data-conversation-id='" + escAttr(card.conversation_id || "") + "' data-proposal-id='" + escAttr(cardId) + "'>Open</button>";
+        triageHtml += "<button type='button' data-action='triage-decide' data-proposal-id='" + escAttr(cardId) + "'>Decide</button>";
+        triageHtml += "<span class='menu-anchor triage-scope-anchor'>";
+        triageHtml += "<button type='button' data-action='triage-suppress-open' data-proposal-id='" + escAttr(cardId) + "' aria-expanded='" + (suppressMenuOpen ? "true" : "false") + "'>Create filter...</button>";
+        triageHtml += "<div class='floating-menu triage-scope-menu" + (suppressMenuOpen ? "" : " hidden") + "' data-triage-scope-menu='" + escAttr(cardId) + "'>";
+        triageHtml += "<button type='button' data-action='triage-suppress-scope' data-proposal-id='" + escAttr(cardId) + "' data-scope='workspace'>This project</button>";
+        triageHtml += "<button type='button' data-action='triage-suppress-scope' data-proposal-id='" + escAttr(cardId) + "' data-scope='global'>All projects</button>";
+        triageHtml += "</div>";
+        triageHtml += "</span>";
+        triageHtml += "</div>";
+        triageHtml += "</article>";
+      }
+      if (triageCards.length > 14) {
+        triageHtml += "<p class='settings-hint'>+" + escHtml(String(triageCards.length - 14)) + " more proposals in Triage.</p>";
+      }
+      triageHtml += "</div>";
+      triageHtml += "</section>";
+      html = triageHtml + "<div class='workspace-tree-section-head'>Threads</div>" + html;
     }
 
     if (state.workspaceTreeMarkupCache === html) {
@@ -4133,7 +5397,70 @@
     el.modelPickerBtn.innerHTML = "<span class='model-primary'>" + escHtml(parts.primary) + "</span><span class='model-meta'>" + escHtml(parts.meta || parts.raw) + "</span>";
   }
 
+  function renderRunModeMoreList() {
+    if (!el.runModeMoreList) {
+      return;
+    }
+    var runtime = normalizeModeRuntime(state.modeRuntime);
+    var modes = Array.isArray(runtime.modes) ? runtime.modes.slice(0) : [];
+    var html = "";
+    html += "<button type='button' class='run-mode-advanced-item' data-assistant-mode-id=''>";
+    html += "<span class='run-mode-row'><span class='run-mode-name'>Assistant (General)</span><span class='check' aria-hidden='true'>&check;</span></span>";
+    html += "<span class='run-mode-blurb'>General assistant behavior.</span>";
+    html += "</button>";
+    for (var i = 0; i < modes.length; i += 1) {
+      var mode = modes[i] || {};
+      var modeId = trim(String(mode.id || ""));
+      if (!modeId) {
+        continue;
+      }
+      var blurb = trim(String(mode.description || ""));
+      var details = blurb || "Specialized governance mode.";
+      html += "<button type='button' class='run-mode-advanced-item' data-assistant-mode-id='" + escAttr(modeId) + "'>";
+      html += "<span class='run-mode-row'><span class='run-mode-name'>" + escHtml(mode.name || modeId) + "</span><span class='check' aria-hidden='true'>&check;</span></span>";
+      html += "<span class='run-mode-blurb'>" + escHtml(details) + "</span>";
+      html += "</button>";
+    }
+    if (!modes.length) {
+      html += "<p class='settings-hint' style='margin:0;padding:8px 10px;'>Mode Runtime unavailable. Open Settings to initialize modes.</p>";
+    }
+    el.runModeMoreList.innerHTML = html;
+  }
+
   function renderRunControls() {
+    if (el.runModeBtn) {
+      var mode = normalizeRunMode(state.runMode);
+      el.runModeBtn.textContent = runModeLabel(mode);
+      el.runModeBtn.title = runModeDescription(mode);
+      el.runModeBtn.setAttribute("aria-label", "Run mode: " + runModeLabel(mode) + ". " + runModeDescription(mode));
+    }
+
+    if (el.runModeMenu) {
+      renderRunModeMoreList();
+      var modeItems = el.runModeMenu.querySelectorAll("button[data-run-mode]");
+      for (var mi = 0; mi < modeItems.length; mi += 1) {
+        var modeValue = normalizeRunMode(modeItems[mi].getAttribute("data-run-mode"));
+        modeItems[mi].classList.toggle("active", modeValue === normalizeRunMode(state.runMode));
+        var modeBlurb = modeItems[mi].querySelector(".run-mode-blurb");
+        if (modeBlurb) {
+          modeBlurb.classList.toggle("hidden", !state.runModeMoreExpanded);
+        }
+      }
+      var advancedItems = el.runModeMenu.querySelectorAll("button[data-assistant-mode-id]");
+      for (var ai = 0; ai < advancedItems.length; ai += 1) {
+        var profileId = trim(String(advancedItems[ai].getAttribute("data-assistant-mode-id") || ""));
+        var active = normalizeRunMode(state.runMode) === "assistant" && profileId === normalizeAssistantModeId(state.assistantModeId);
+        advancedItems[ai].classList.toggle("active", active);
+      }
+    }
+
+    if (el.runModeMoreToggle) {
+      el.runModeMoreToggle.setAttribute("aria-expanded", state.runModeMoreExpanded ? "true" : "false");
+    }
+    if (el.runModeMoreList) {
+      el.runModeMoreList.classList.toggle("hidden", !state.runModeMoreExpanded);
+    }
+
     if (el.agentLoopToggle) {
       el.agentLoopToggle.classList.toggle("on", !!state.agentLoopEnabled);
       el.agentLoopToggle.setAttribute("aria-pressed", state.agentLoopEnabled ? "true" : "false");
@@ -4151,6 +5478,21 @@
       for (var i = 0; i < buttons.length; i += 1) {
         var level = buttons[i].getAttribute("data-reasoning");
         buttons[i].classList.toggle("active", level === state.reasoningEffort);
+      }
+    }
+
+    if (el.computeMenuBtn) {
+      el.computeMenuBtn.innerHTML =
+        "<span class='menu-icon compute-clock-icon' aria-hidden='true'><svg viewBox='0 0 16 16' fill='none' stroke='currentColor' stroke-width='1.35' stroke-linecap='round' stroke-linejoin='round'><circle cx='8' cy='8' r='5.6'></circle><path d='M8 4.9v3.4l2.2 1.4'></path></svg></span>" +
+        "<span>" + escHtml(computeBudgetLabel(state.computeBudget)) + "</span>";
+      el.computeMenuBtn.setAttribute("aria-label", "Compute budget: " + computeBudgetLabel(state.computeBudget));
+    }
+
+    if (el.computeMenu) {
+      var computeButtons = el.computeMenu.querySelectorAll("button[data-compute-budget]");
+      for (var ci = 0; ci < computeButtons.length; ci += 1) {
+        var budget = normalizeComputeBudget(computeButtons[ci].getAttribute("data-compute-budget"));
+        computeButtons[ci].classList.toggle("active", budget === normalizeComputeBudget(state.computeBudget));
       }
     }
   }
@@ -4179,11 +5521,10 @@
   }
 
   function renderQueueControls() {
-    if (!el.queueControls || !el.queueSteerBtn || !el.queueCancelBtn) {
+    if (!el.queueControls) {
       return;
     }
-
-    if (!state.activeWorkspaceId || !state.activeConversationId) {
+    if (!state.activeWorkspaceId || !state.activeConversationId || !el.queueSteerBtn || !el.queueCancelBtn) {
       el.queueControls.classList.add("hidden");
       return;
     }
@@ -4209,6 +5550,456 @@
     el.queueSteerBtn.disabled = !queueItemId;
     el.queueCancelBtn.disabled = !queueItemId;
     el.queueControls.classList.remove("hidden");
+  }
+
+  function queueItemMetaLabel(item, index) {
+    var parts = [];
+    parts.push("Queued #" + String(index + 1));
+    if (item && item.run_mode) {
+      parts.push(runModeLabel(item.run_mode));
+    }
+    if (item && item.compute_budget) {
+      parts.push(computeBudgetLabel(item.compute_budget));
+    }
+    if (item && Array.isArray(item.explicit_skill_ids) && item.explicit_skill_ids.length) {
+      parts.push(String(item.explicit_skill_ids.length) + " skill" + (item.explicit_skill_ids.length === 1 ? "" : "s"));
+    }
+    return parts.join(" • ");
+  }
+
+  function runChecklistTaskKey(rawText) {
+    var text = trim(String(rawText || "")).toLowerCase();
+    if (!text) {
+      return "";
+    }
+    text = text.replace(/[^a-z0-9 ]+/g, " ");
+    text = text.replace(/\s+/g, " ");
+    return trim(text);
+  }
+
+  function runChecklistTokens(rawText) {
+    var words = runChecklistTaskKey(rawText).split(/\s+/);
+    var tokens = [];
+    var stop = {
+      a: 1, an: 1, and: 1, are: 1, as: 1, at: 1, be: 1, by: 1, for: 1, from: 1, in: 1, into: 1, is: 1, it: 1, of: 1, on: 1, or: 1, that: 1, the: 1, to: 1, with: 1
+    };
+    for (var i = 0; i < words.length; i += 1) {
+      var token = trim(words[i] || "");
+      if (token.length < 3 || stop[token]) {
+        continue;
+      }
+      tokens.push(token);
+    }
+    return tokens;
+  }
+
+  function runChecklistTasksFromText(rawText) {
+    var text = normalizeRunNarrativeText(rawText);
+    if (!text) {
+      return [];
+    }
+    text = text.replace(/\r\n?/g, "\n");
+    text = text.replace(/\s*(Goal:|Subgoals:|Constraints:|Unknowns:|Next Action:|Completion Criteria:|Plan:|PLAN_UPDATE:)\s*/g, "\n$1\n");
+    text = text.replace(/\s*(\d+[\.\)])\s+/g, "\n$1 ");
+    text = text.replace(/\s*([\-*•])\s+/g, "\n$1 ");
+    text = text.replace(/\n{3,}/g, "\n\n");
+
+    var lines = text.split(/\n+/);
+    var tasks = [];
+    var seen = {};
+    var capturingSubgoals = false;
+    var sawSubgoalsHeader = false;
+
+    function pushTask(lineText) {
+      var line = trim(String(lineText || ""));
+      if (!line) {
+        return;
+      }
+      var done = false;
+      if (/^(?:\[[xX]\]|[\-*•]\s+\[[xX]\]|\d+[\.\)]\s+\[[xX]\])\s+/.test(line)) {
+        done = true;
+      }
+      line = line.replace(/^[\-*•]\s+\[[ xX]\]\s+/, "");
+      line = line.replace(/^\[[ xX]\]\s+/, "");
+      line = line.replace(/^\d+[\.\)]\s+\[[ xX]\]\s+/, "");
+      line = line.replace(/^[\-*•]\s+/, "");
+      line = line.replace(/^\d+[\.\)]\s+/, "");
+      line = trim(line);
+      if (!line) {
+        return;
+      }
+      var key = runChecklistTaskKey(line);
+      if (!key || seen[key]) {
+        return;
+      }
+      seen[key] = 1;
+      tasks.push({
+        text: line,
+        done: done
+      });
+    }
+
+    for (var i = 0; i < lines.length; i += 1) {
+      var line = trim(lines[i] || "");
+      if (!line) {
+        continue;
+      }
+      if (/^Subgoals:/i.test(line)) {
+        capturingSubgoals = true;
+        sawSubgoalsHeader = true;
+        continue;
+      }
+      if (
+        capturingSubgoals &&
+        /^(Constraints|Unknowns|Next Action|Completion Criteria|Goal|Plan|PLAN_UPDATE|Current mode|Mode State|Transition|Checkpoint):/i.test(line)
+      ) {
+        capturingSubgoals = false;
+      }
+      var isTaskLine = /^(\[[ xX]\]|\d+[\.\)]|[\-*•])\s+/.test(line);
+      if (capturingSubgoals) {
+        if (isTaskLine) {
+          pushTask(line);
+        } else if (tasks.length && !/^[A-Za-z][A-Za-z0-9 _-]{1,40}:$/.test(line)) {
+          tasks[tasks.length - 1].text = trim(tasks[tasks.length - 1].text + " " + line);
+        }
+        continue;
+      }
+      if (!sawSubgoalsHeader && isTaskLine) {
+        pushTask(line);
+      }
+    }
+
+    if (tasks.length > 18) {
+      tasks = tasks.slice(0, 18);
+    }
+    return tasks;
+  }
+
+  function runChecklistCompletionEvidence(event) {
+    var evidence = [];
+    var entries = splitRunStreamEntries(event && event.stream_text);
+    for (var i = 0; i < entries.length; i += 1) {
+      var text = trim(String((entries[i] && entries[i].text) || ""));
+      if (!text) {
+        continue;
+      }
+      var lower = text.toLowerCase();
+      if (!/(done|completed|finished|implemented|verified|passed|resolved|validated)/.test(lower)) {
+        continue;
+      }
+      if (/(not done|not completed|not finished|failed|failure|error|blocked|mismatch)/.test(lower)) {
+        continue;
+      }
+      evidence.push({
+        text: text,
+        lower: lower
+      });
+    }
+    if (evidence.length > 120) {
+      evidence = evidence.slice(evidence.length - 120);
+    }
+    return evidence;
+  }
+
+  function runChecklistMarkCompletions(tasks, event) {
+    var list = Array.isArray(tasks) ? tasks.slice() : [];
+    if (!list.length) {
+      return [];
+    }
+
+    var evidence = runChecklistCompletionEvidence(event);
+    if (!evidence.length) {
+      return list;
+    }
+
+    var taskTokens = [];
+    for (var i = 0; i < list.length; i += 1) {
+      taskTokens.push(runChecklistTokens(list[i] && list[i].text));
+    }
+
+    for (var j = 0; j < evidence.length; j += 1) {
+      var line = evidence[j] || {};
+      var indexMatch = String(line.lower || "").match(/\b(?:task|step)\s*#?\s*(\d{1,2})\b/);
+      if (indexMatch) {
+        var explicitIndex = Number(indexMatch[1] || 0) - 1;
+        if (explicitIndex >= 0 && explicitIndex < list.length) {
+          list[explicitIndex].done = true;
+        }
+      }
+    }
+
+    for (var k = 0; k < list.length; k += 1) {
+      if (list[k].done) {
+        continue;
+      }
+      var tokens = taskTokens[k] || [];
+      if (!tokens.length) {
+        continue;
+      }
+      for (var n = 0; n < evidence.length; n += 1) {
+        var ev = evidence[n] || {};
+        var evTokens = runChecklistTokens(ev.text || "");
+        if (!evTokens.length) {
+          continue;
+        }
+        var overlap = 0;
+        for (var t = 0; t < tokens.length; t += 1) {
+          for (var u = 0; u < evTokens.length; u += 1) {
+            if (tokens[t] === evTokens[u]) {
+              overlap += 1;
+              break;
+            }
+          }
+        }
+        var required = tokens.length >= 5 ? 3 : 2;
+        if (overlap >= required) {
+          list[k].done = true;
+          break;
+        }
+      }
+    }
+
+    return list;
+  }
+
+  function buildRunChecklistForEvent(event) {
+    var structured = normalizeRunTaskStatusSnapshot(event && event.task_status);
+    if (!structured || structured.total < 1) {
+      return {
+        tasks: [],
+        completed: 0,
+        total: 0,
+        source: "backend"
+      };
+    }
+    return {
+      tasks: structured.tasks,
+      completed: structured.completed,
+      total: structured.total,
+      source: structured.source || "backend"
+    };
+  }
+
+  function findLatestRunChecklist(conversationId) {
+    var convId = String(conversationId || "");
+    if (!convId) {
+      return null;
+    }
+    var activeEvent = findLatestRunEventByStatus(convId, ["running"]);
+    if (activeEvent) {
+      var activeChecklist = buildRunChecklistForEvent(activeEvent);
+      if (activeChecklist.total > 0) {
+        activeChecklist.event = activeEvent;
+        return activeChecklist;
+      }
+      return null;
+    }
+    var events = runEventsForConversation(convId);
+    if (!events.length) {
+      return null;
+    }
+    var minIndex = events.length - 6;
+    if (minIndex < 0) {
+      minIndex = 0;
+    }
+    for (var i = events.length - 1; i >= minIndex; i -= 1) {
+      var event = events[i] || {};
+      var checklist = buildRunChecklistForEvent(event);
+      if (checklist.total > 0) {
+        checklist.event = event;
+        return checklist;
+      }
+    }
+    return null;
+  }
+
+  function renderRunTodoMonitor() {
+    if (!el.runTodoMonitor || !el.runTodoMonitorLabel || !el.runTodoMonitorList) {
+      return;
+    }
+    if (!state.activeWorkspaceId || !state.activeConversationId || state.activeDraftWorkspaceId) {
+      el.runTodoMonitor.classList.add("hidden");
+      return;
+    }
+
+    var checklist = findLatestRunChecklist(state.activeConversationId);
+    if (!checklist || checklist.total < 1) {
+      el.runTodoMonitor.classList.add("hidden");
+      return;
+    }
+
+    var conversationKey = queueConversationKey(state.activeWorkspaceId, state.activeConversationId);
+    var hasPreference = Object.prototype.hasOwnProperty.call(state.runTodoMonitorOpenByConversation, conversationKey);
+    var shouldOpen = hasPreference ? !!state.runTodoMonitorOpenByConversation[conversationKey] : true;
+    el.runTodoMonitor.open = shouldOpen;
+    var checklistIsRunning = !!(checklist.event && String(checklist.event.status || "") === "running");
+    el.runTodoMonitorLabel.classList.toggle("meta-glimmer", checklistIsRunning);
+    el.runTodoMonitorLabel.textContent =
+      String(checklist.completed) + " out of " + String(checklist.total) + " task" + (checklist.total === 1 ? "" : "s") + " completed";
+
+    var html = "";
+    for (var i = 0; i < checklist.tasks.length; i += 1) {
+      var task = checklist.tasks[i] || {};
+      html += "<li class='run-todo-item" + (task.done ? " done" : "") + "'>";
+      html += "<span class='run-todo-check' aria-hidden='true'></span>";
+      html += "<span class='run-todo-text'>" + escHtml(task.text || "") + "</span>";
+      html += "</li>";
+    }
+    el.runTodoMonitorList.innerHTML = html;
+    el.runTodoMonitor.classList.remove("hidden");
+  }
+
+  function runEventTerminalPreview(event) {
+    var lines = [];
+    var entries = splitRunStreamEntries(event && event.stream_text);
+    var commandRegex = /(^|\b)(COMMANDS?:|COMMAND:|\/bin\/|apply_patch|git |rg |ls |cat |sed |awk |npm |pnpm |yarn |python |node |go |cargo |make |godot |sh |bash |zsh )/i;
+    for (var i = 0; i < entries.length; i += 1) {
+      var entry = entries[i] || {};
+      var text = trim(String(entry.text || ""));
+      if (!text) {
+        continue;
+      }
+      if (commandRegex.test(text)) {
+        lines.push((entry.time ? "[" + entry.time + "] " : "") + text);
+      }
+    }
+    if (!lines.length) {
+      for (var j = Math.max(0, entries.length - 20); j < entries.length; j += 1) {
+        var fallback = entries[j] || {};
+        var fallbackText = trim(String(fallback.text || ""));
+        if (!fallbackText) {
+          continue;
+        }
+        lines.push((fallback.time ? "[" + fallback.time + "] " : "") + fallbackText);
+      }
+    }
+    if (!lines.length && event && Array.isArray(event.commands) && event.commands.length) {
+      for (var c = 0; c < event.commands.length; c += 1) {
+        var cmd = trim(String((event.commands[c] && event.commands[c].command) || ""));
+        if (!cmd) {
+          continue;
+        }
+        lines.push("$ " + cmd);
+      }
+    }
+    if (!lines.length) {
+      return "";
+    }
+    if (lines.length > 40) {
+      lines = lines.slice(lines.length - 40);
+    }
+    return lines.join("\n");
+  }
+
+  function renderRunTerminalMonitor() {
+    if (!el.runTerminalMonitor || !el.runTerminalMonitorLabel || !el.runTerminalMonitorOutput) {
+      return;
+    }
+    if (!state.activeWorkspaceId || !state.activeConversationId) {
+      el.runTerminalMonitor.classList.add("hidden");
+      return;
+    }
+    var stats = activeConversationQueueStats();
+    var event = findLatestRunEventByStatus(state.activeConversationId, ["running"]);
+    var activeRunMatch = !!(
+      state.busy &&
+      String(state.runningWorkspaceId || "") === String(state.activeWorkspaceId || "") &&
+      String(state.runningConversationId || "") === String(state.activeConversationId || "")
+    );
+    if (!event && !stats.running && !activeRunMatch) {
+      el.runTerminalMonitor.classList.add("hidden");
+      return;
+    }
+
+    var conversationKey = queueConversationKey(state.activeWorkspaceId, state.activeConversationId);
+    var shouldOpen = !!state.runTerminalMonitorOpenByConversation[conversationKey];
+    el.runTerminalMonitor.open = shouldOpen;
+    el.runTerminalMonitor.classList.remove("hidden");
+    var terminalIsRunning = !!(event || stats.running || activeRunMatch);
+    el.runTerminalMonitorLabel.classList.toggle("meta-glimmer", terminalIsRunning);
+    el.runTerminalMonitorLabel.textContent = "Running 1 terminal";
+    el.runTerminalMonitorOutput.textContent = runEventTerminalPreview(event) || "Waiting for terminal activity...";
+    if (el.runTerminalMonitorStop) {
+      el.runTerminalMonitorStop.dataset.workspaceId = state.activeWorkspaceId;
+      el.runTerminalMonitorStop.dataset.conversationId = state.activeConversationId;
+    }
+  }
+
+  function renderQueueTray() {
+    if (!el.queueTray || !el.queueTrayList) {
+      return;
+    }
+    if (!state.activeWorkspaceId || !state.activeConversationId || state.activeDraftWorkspaceId) {
+      el.queueTray.classList.add("hidden");
+      return;
+    }
+
+    var wsId = state.activeWorkspaceId;
+    var convId = state.activeConversationId;
+    var stats = activeConversationQueueStats();
+    var isEditingHere = isQueueEditForConversation(wsId, convId);
+    var showTray = stats.pending > 0 || isEditingHere;
+    if (!showTray) {
+      el.queueTray.classList.add("hidden");
+      return;
+    }
+
+    var queueKey = queueConversationKey(wsId, convId);
+    var isLoading = !!state.queueItemsLoadingByConversation[queueKey];
+    var fetchedAt = Number(state.queueItemsFetchedAtByConversation[queueKey] || 0);
+    var staleMs = stats.running ? 900 : 1600;
+    if (!isLoading && (!fetchedAt || Date.now() - fetchedAt > staleMs)) {
+      loadQueueItems(wsId, convId, { minIntervalMs: staleMs }).then(function () {
+        renderUi();
+      }).catch(function () {
+        return null;
+      });
+    }
+
+    var queueItems = queueItemsForConversation(wsId, convId);
+    var html = "";
+    if (!queueItems.length && stats.pending > 0) {
+      html += "<div class='queue-item'><div class='queue-item-main'><p class='queue-item-text'>Loading queued messages…</p></div></div>";
+    }
+    for (var i = 0; i < queueItems.length; i += 1) {
+      var queueItem = queueItems[i] || {};
+      var itemId = String(queueItem.id || "");
+      if (!itemId) {
+        continue;
+      }
+      var editingThis = isEditingHere && String(state.queueEdit.itemId || "") === itemId;
+      if (editingThis) {
+        var savingAttr = state.queueEdit.saving ? " disabled" : "";
+        html += "<div class='queue-item'>";
+        html += "<div class='queue-edit-wrap'>";
+        html += "<p class='queue-item-meta'>" + escHtml(queueItemMetaLabel(queueItem, i)) + "</p>";
+        html += "<textarea class='queue-edit-input' data-action='queue-edit-input' data-queue-item-id='" + escAttr(itemId) + "'>" + escHtml(state.queueEdit.draftText || "") + "</textarea>";
+        html += "<div class='queue-edit-actions'>";
+        html += "<button type='button' class='queue-btn' data-action='queue-edit-save' data-queue-item-id='" + escAttr(itemId) + "'" + savingAttr + ">Save</button>";
+        html += "<button type='button' class='queue-btn' data-action='queue-edit-cancel' data-queue-item-id='" + escAttr(itemId) + "'" + savingAttr + ">Cancel</button>";
+        html += "</div>";
+        html += "</div>";
+        html += "</div>";
+      } else {
+        html += "<div class='queue-item'>";
+        html += "<div class='queue-item-main'>";
+        html += "<p class='queue-item-text'>" + escHtml(queueItemPreview(queueItem.prompt || "", 240)) + "</p>";
+        html += "<p class='queue-item-meta'>" + escHtml(queueItemMetaLabel(queueItem, i)) + "</p>";
+        html += "</div>";
+        html += "<div class='queue-item-actions'>";
+        html += "<button type='button' class='queue-btn' data-action='queue-steer-item' data-queue-item-id='" + escAttr(itemId) + "'>Steer</button>";
+        html += "<button type='button' class='queue-btn' data-action='queue-edit-item' data-queue-item-id='" + escAttr(itemId) + "'>Edit</button>";
+        html += "<button type='button' class='queue-btn queue-trash' data-action='queue-trash-item' data-queue-item-id='" + escAttr(itemId) + "' aria-label='Delete queued message' title='Delete queued message'>&times;</button>";
+        html += "</div>";
+        html += "</div>";
+      }
+    }
+
+    if (isConversationQueueBlockedByEdit(wsId, convId)) {
+      html += "<p class='queue-paused-note'>Queue paused while editing the next queued message.</p>";
+    }
+    el.queueTrayList.innerHTML = html;
+    el.queueTray.classList.remove("hidden");
   }
 
   function renderBranchMenu() {
@@ -4386,6 +6177,10 @@
   }
 
   function renderChatHeader() {
+    if (state.activeTriage) {
+      el.chatTitle.textContent = "Triage Inbox";
+      return;
+    }
     if (!state.activeWorkspaceId) {
       el.chatTitle.textContent = "No thread";
       return;
@@ -5233,6 +7028,47 @@
     var shouldAutoScroll = keyChanged || state.chatAutoScroll;
     snapshotRunThinkingPreviewScroll();
 
+    if (state.activeTriage) {
+      var triageCards = Array.isArray(state.triage && state.triage.cards) ? state.triage.cards : [];
+      var triageViewHtml = "<section class='triage-main-view'><h3>Triage Inbox</h3>";
+      triageViewHtml += "<p class='settings-hint'>Agent proposals awaiting decision. Cleanup is ephemeral and creates no persistent policy.</p>";
+      if (!triageCards.length) {
+        triageViewHtml += "<p class='empty-state'>No triage items right now.</p>";
+      } else {
+        triageViewHtml += "<div class='triage-main-actions'><button type='button' data-action='triage-cleanup'>Cleanup...</button><button type='button' data-action='triage-cleanup-directed'>Cleanup w/ prompt...</button></div>";
+        for (var t = 0; t < triageCards.length; t += 1) {
+          var triageCard = triageCards[t] || {};
+          var triageCardId = String(triageCard.id || "");
+          var triageSuppressOpen = triageCardId && String(state.openTriageSuppressProposalId || "") === triageCardId;
+          triageViewHtml += "<article class='triage-main-card'>";
+          triageViewHtml += "<p><strong>" + escHtml(triageCard.summary || "Proposal") + "</strong></p>";
+          triageViewHtml += "<p class='settings-hint'>" + escHtml(multiAgentEscalationLabel(triageCard.escalation_class || "")) + " • " + escHtml(multiAgentTargetTypeLabel(triageCard.target_type || "")) + " • agent " + escHtml(triageCard.resident || "") + "</p>";
+          triageViewHtml += "<p class='settings-hint'>" + escHtml(triageCard.rationale || "") + "</p>";
+          triageViewHtml += "<div class='modal-actions'>";
+          triageViewHtml += "<button type='button' data-action='triage-open-context' data-workspace-id='" + escAttr(triageCard.workspace_id || "") + "' data-conversation-id='" + escAttr(triageCard.conversation_id || "") + "' data-proposal-id='" + escAttr(triageCardId) + "'>Open thread</button>";
+          triageViewHtml += "<button type='button' data-action='triage-decide' data-proposal-id='" + escAttr(triageCardId) + "'>Decide</button>";
+          triageViewHtml += "<span class='menu-anchor triage-scope-anchor'>";
+          triageViewHtml += "<button type='button' data-action='triage-suppress-open' data-proposal-id='" + escAttr(triageCardId) + "' aria-expanded='" + (triageSuppressOpen ? "true" : "false") + "'>Create filter...</button>";
+          triageViewHtml += "<div class='floating-menu triage-scope-menu" + (triageSuppressOpen ? "" : " hidden") + "' data-triage-scope-menu='" + escAttr(triageCardId) + "'>";
+          triageViewHtml += "<button type='button' data-action='triage-suppress-scope' data-proposal-id='" + escAttr(triageCardId) + "' data-scope='workspace'>This project</button>";
+          triageViewHtml += "<button type='button' data-action='triage-suppress-scope' data-proposal-id='" + escAttr(triageCardId) + "' data-scope='global'>All projects</button>";
+          triageViewHtml += "</div>";
+          triageViewHtml += "</span>";
+          triageViewHtml += "</div>";
+          triageViewHtml += "</article>";
+        }
+      }
+      triageViewHtml += "</section>";
+      if (state.chatMarkupCache !== triageViewHtml) {
+        el.chatLog.innerHTML = triageViewHtml;
+        state.chatMarkupCache = triageViewHtml;
+      }
+      state.chatAutoScroll = true;
+      state.chatLastKey = conversationKey;
+      updateChatJumpButton();
+      return;
+    }
+
     if (!state.activeWorkspaceId) {
       var emptyWorkspaceMarkup = "";
       if (!state.initialLoadComplete) {
@@ -5294,10 +7130,32 @@
     var events = runEventsForConversation(state.activeConversationId);
 
     if (!messages.length && !events.length && !pendingOutgoing.length) {
-      var noMessagesMarkup = "<p class='empty-state'>No messages yet in this thread.</p>";
-      if (state.chatMarkupCache !== noMessagesMarkup) {
-        el.chatLog.innerHTML = noMessagesMarkup;
-        state.chatMarkupCache = noMessagesMarkup;
+      var queueStats = activeConversationQueueStats();
+      var runIsActiveHere = !!(
+        queueStats.running ||
+        queueStats.pending > 0 ||
+        (
+          state.busy &&
+          String(state.runningWorkspaceId || "") === String(state.activeWorkspaceId || "") &&
+          String(state.runningConversationId || "") === String(state.activeConversationId || "")
+        )
+      );
+      if (runIsActiveHere) {
+        var runningOnlyMarkup = "<article class='run-line-only'><p class='run-line running'><span class='run-spinner' aria-hidden='true'></span> <span class='meta-glimmer'>Thinking</span></p>";
+        if (state.activeWorkspaceId && state.activeConversationId) {
+          runningOnlyMarkup += "<p class='run-line subtle'>Working in this thread. Stream details will appear as events arrive.</p>";
+        }
+        runningOnlyMarkup += "</article>";
+        if (state.chatMarkupCache !== runningOnlyMarkup) {
+          el.chatLog.innerHTML = runningOnlyMarkup;
+          state.chatMarkupCache = runningOnlyMarkup;
+        }
+      } else {
+        var noMessagesMarkup = "<p class='empty-state'>No messages yet in this thread.</p>";
+        if (state.chatMarkupCache !== noMessagesMarkup) {
+          el.chatLog.innerHTML = noMessagesMarkup;
+          state.chatMarkupCache = noMessagesMarkup;
+        }
       }
       state.chatAutoScroll = true;
       state.chatLastKey = conversationKey;
@@ -5687,7 +7545,12 @@
     safeStep("renderCommandApprovalInline", renderCommandApprovalInline);
     safeStep("renderChat", renderChat);
     safeStep("renderAttachmentStrip", renderAttachmentStrip);
+    safeStep("renderRunTodoMonitor", renderRunTodoMonitor);
+    safeStep("renderQueueTray", renderQueueTray);
+    safeStep("renderRunTerminalMonitor", renderRunTerminalMonitor);
     safeStep("renderCommandRulesSettings", renderCommandRulesSettings);
+    safeStep("renderModeRuntimeSettings", renderModeRuntimeSettings);
+    safeStep("renderMultiAgentModal", renderMultiAgentModal);
     safeStep("renderPanels", renderPanels);
     safeStep("updateToolbarCompaction", updateToolbarCompaction);
     if (window && typeof window.requestAnimationFrame === "function") {
@@ -5810,6 +7673,303 @@
     storageSet("artificer.agentLoopEnabled", state.agentLoopEnabled ? "1" : "0");
   }
 
+  function modeFromSlashCommand(commandText) {
+    var value = String(commandText || "").toLowerCase().replace(/^\/+/, "");
+    if (value === "chat") {
+      return "chat";
+    }
+    if (value === "teacher" || value === "teach" || value === "learn" || value === "study" || value === "tutor") {
+      return "teacher";
+    }
+    if (value === "task" || value === "programming" || value === "program" || value === "code" || value === "dev") {
+      return "programming";
+    }
+    if (value === "report") {
+      return "report";
+    }
+    if (
+      value === "assistant" ||
+      value === "autonomous" ||
+      value === "autonomy" ||
+      value === "endeavor" ||
+      value === "endeavour"
+    ) {
+      return "assistant";
+    }
+    if (value === "auto" || value === "thinking" || value === "loop") {
+      return "auto";
+    }
+    if (value === "instant" || value === "quick") {
+      return "instant";
+    }
+    return "";
+  }
+
+  function normalizeDirectiveSkillId(skillId) {
+    var value = trim(String(skillId || "")).toLowerCase();
+    if (!value) {
+      return "";
+    }
+    if (!/^[a-z][a-z0-9_-]*$/.test(value)) {
+      return "";
+    }
+    return value;
+  }
+
+  function parsePromptExplicitSkillTags(promptText) {
+    var text = String(promptText || "");
+    if (!text) {
+      return [];
+    }
+    var pattern = /\$([a-z][a-z0-9_-]*)\b/ig;
+    var seen = {};
+    var skills = [];
+    var match = null;
+    while ((match = pattern.exec(text))) {
+      var normalized = normalizeDirectiveSkillId(match[1] || "");
+      if (!normalized || seen[normalized]) {
+        continue;
+      }
+      seen[normalized] = 1;
+      skills.push(normalized);
+      if (skills.length >= 12) {
+        break;
+      }
+    }
+    return skills;
+  }
+
+  function mergeSkillIdLists(firstList, secondList) {
+    var merged = [];
+    var seen = {};
+
+    function append(list) {
+      var source = Array.isArray(list) ? list : [];
+      for (var i = 0; i < source.length; i += 1) {
+        var normalized = normalizeDirectiveSkillId(source[i]);
+        if (!normalized || seen[normalized]) {
+          continue;
+        }
+        seen[normalized] = 1;
+        merged.push(normalized);
+        if (merged.length >= 18) {
+          return;
+        }
+      }
+    }
+
+    append(firstList);
+    append(secondList);
+    return merged;
+  }
+
+  function parsePromptModeDirective(promptText) {
+    var raw = String(promptText || "");
+    var working = raw;
+    var matchedMode = "";
+    var matchedTag = "";
+    var guard = 0;
+    while (guard < 3) {
+      var match = working.match(/^\s*\/([a-z][a-z0-9_-]*)\b[ \t]*/i);
+      if (!match) {
+        break;
+      }
+      var tag = "/" + String(match[1] || "").toLowerCase();
+      var mappedMode = modeFromSlashCommand(tag);
+      if (!mappedMode) {
+        break;
+      }
+      matchedMode = mappedMode;
+      matchedTag = tag;
+      working = working.slice(match[0].length);
+      guard += 1;
+      if (!/^\s*\/[a-z]/i.test(working)) {
+        break;
+      }
+    }
+    return {
+      mode: matchedMode,
+      tag: matchedTag,
+      skillIds: parsePromptExplicitSkillTags(working),
+      prompt: trim(working),
+      raw: raw
+    };
+  }
+
+  function runtimeModeById(modeId) {
+    var target = trim(String(modeId || ""));
+    if (!target) {
+      return null;
+    }
+    var runtime = normalizeModeRuntime(state.modeRuntime);
+    var modes = Array.isArray(runtime.modes) ? runtime.modes : [];
+    for (var i = 0; i < modes.length; i += 1) {
+      var mode = modes[i] || {};
+      if (String(mode.id || "") === target) {
+        return mode;
+      }
+    }
+    return null;
+  }
+
+  function normalizeAssistantModeId(modeId) {
+    var value = trim(String(modeId || "")).toLowerCase();
+    if (!value) {
+      return "";
+    }
+    if (!/^[a-z0-9._-]+$/.test(value)) {
+      return "";
+    }
+    var runtime = normalizeModeRuntime(state.modeRuntime);
+    var modes = Array.isArray(runtime.modes) ? runtime.modes : [];
+    if (!modes.length) {
+      return value;
+    }
+    var mode = runtimeModeById(value);
+    if (!mode) {
+      return "";
+    }
+    return value;
+  }
+
+  function saveAssistantModeId(modeId) {
+    var next = normalizeAssistantModeId(modeId);
+    state.assistantModeId = next;
+    storageSet("artificer.assistantModeId", next);
+  }
+
+  function reconcileAssistantModeId() {
+    var next = normalizeAssistantModeId(state.assistantModeId);
+    if (next === state.assistantModeId) {
+      return;
+    }
+    state.assistantModeId = next;
+    storageSet("artificer.assistantModeId", next);
+  }
+
+  function assistantModeLabel(modeId) {
+    var mode = runtimeModeById(modeId);
+    if (!mode) {
+      return "";
+    }
+    return trim(String(mode.name || mode.id || ""));
+  }
+
+  function normalizeRunMode(mode) {
+    var value = String(mode || "").toLowerCase();
+    if (
+      value !== "instant" &&
+      value !== "auto" &&
+      value !== "programming" &&
+      value !== "chat" &&
+      value !== "teacher" &&
+      value !== "report" &&
+      value !== "assistant"
+    ) {
+      value = "auto";
+    }
+    return value;
+  }
+
+  function runModeLabel(mode) {
+    var value = normalizeRunMode(mode);
+    if (value === "instant") {
+      return "Instant";
+    }
+    if (value === "programming") {
+      return "Programming";
+    }
+    if (value === "chat") {
+      return "Chat";
+    }
+    if (value === "teacher") {
+      return "Teacher";
+    }
+    if (value === "report") {
+      return "Report";
+    }
+    if (value === "assistant") {
+      var focusLabel = assistantModeLabel(state.assistantModeId);
+      if (focusLabel) {
+        return "Assistant - " + focusLabel;
+      }
+      return "Assistant";
+    }
+    return "Auto/Thinking";
+  }
+
+  function runModeDescription(mode) {
+    var value = normalizeRunMode(mode);
+    if (value === "instant") {
+      return "Single-pass quick reply. Fastest turnaround.";
+    }
+    if (value === "programming") {
+      return "Code-specialized loop with stronger execution and verification defaults. Inline tag: /task";
+    }
+    if (value === "chat") {
+      return "Human conversation mode. Direct assistant-style responses. Inline tag: /chat";
+    }
+    if (value === "teacher") {
+      return "Personalized teaching mode with learner modeling, curriculum sequencing, and spaced review prompts. Inline tag: /teacher";
+    }
+    if (value === "report") {
+      return "Extended investigation mode that prioritizes evidence gathering and report-quality output. Inline tag: /report";
+    }
+    if (value === "assistant") {
+      var focusMode = runtimeModeById(state.assistantModeId);
+      if (focusMode) {
+        return "Highest-autonomy mode with long-loop initiative. Focus mode: " + (focusMode.name || focusMode.id) + ". " + (focusMode.description || "");
+      }
+      return "Highest-autonomy mode with long-loop initiative within safety and approval constraints. Inline tag: /assistant";
+    }
+    return "Adaptive default. Balanced thinking loop for mixed tasks.";
+  }
+
+  function runModeDefaultProfile(mode) {
+    var value = normalizeRunMode(mode);
+    if (value === "instant") {
+      return { advancedLoop: false, reasoning: "low", minIterations: 1, maxIterations: 2 };
+    }
+    if (value === "programming") {
+      return { advancedLoop: true, reasoning: "high", minIterations: 6, maxIterations: 12 };
+    }
+    if (value === "chat") {
+      return { advancedLoop: false, reasoning: "medium", minIterations: 1, maxIterations: 2 };
+    }
+    if (value === "teacher") {
+      return { advancedLoop: true, reasoning: "high", minIterations: 6, maxIterations: 12 };
+    }
+    if (value === "report") {
+      return { advancedLoop: true, reasoning: "high", minIterations: 8, maxIterations: 12 };
+    }
+    if (value === "assistant") {
+      return { advancedLoop: true, reasoning: "extra-high", minIterations: 10, maxIterations: 12 };
+    }
+    return { advancedLoop: true, reasoning: "medium", minIterations: 2, maxIterations: 12 };
+  }
+
+  function reasoningRank(level) {
+    if (level === "low") {
+      return 1;
+    }
+    if (level === "high") {
+      return 3;
+    }
+    if (level === "extra-high") {
+      return 4;
+    }
+    return 2;
+  }
+
+  function saveRunMode(mode) {
+    var next = normalizeRunMode(mode);
+    var profile = runModeDefaultProfile(next);
+    state.runMode = next;
+    storageSet("artificer.runMode", next);
+    saveAgentLoopEnabled(!!profile.advancedLoop);
+    saveReasoningEffort(profile.reasoning);
+  }
+
   function saveReasoningEffort(level) {
     var next = "medium";
     if (level === "low" || level === "medium" || level === "high" || level === "extra-high") {
@@ -5817,6 +7977,104 @@
     }
     state.reasoningEffort = next;
     storageSet("artificer.reasoningEffort", next);
+  }
+
+  function normalizeComputeBudget(value) {
+    var next = String(value || "").toLowerCase();
+    if (
+      next !== "auto" &&
+      next !== "quick" &&
+      next !== "standard" &&
+      next !== "long" &&
+      next !== "until-complete"
+    ) {
+      next = "auto";
+    }
+    return next;
+  }
+
+  function saveComputeBudget(value) {
+    var next = normalizeComputeBudget(value);
+    state.computeBudget = next;
+    storageSet("artificer.computeBudget", next);
+  }
+
+  function computeBudgetLabel(value) {
+    var next = normalizeComputeBudget(value);
+    if (next === "quick") {
+      return "Instant";
+    }
+    if (next === "standard") {
+      return "Standard";
+    }
+    if (next === "long") {
+      return "Long-term";
+    }
+    if (next === "until-complete") {
+      return "Until Complete";
+    }
+    return "Auto";
+  }
+
+  function computeBudgetRequestTimeoutMs(value, runPayload) {
+    var budget = normalizeComputeBudget(value);
+    if (budget === "quick") {
+      return 10 * 60 * 1000;
+    }
+    if (budget === "standard") {
+      return 25 * 60 * 1000;
+    }
+    if (budget === "long") {
+      return 90 * 60 * 1000;
+    }
+    if (budget === "until-complete") {
+      return 8 * 60 * 60 * 1000;
+    }
+
+    var timeoutMs = 20 * 60 * 1000;
+    var maxIterations = Number(runPayload && runPayload.max_iterations ? runPayload.max_iterations : 0);
+    var advancedLoop = String(runPayload && runPayload.advanced_loop ? runPayload.advanced_loop : "") === "1";
+    var reasoning = String(runPayload && runPayload.reasoning_effort ? runPayload.reasoning_effort : "").toLowerCase();
+    var promptText = String(runPayload && runPayload.prompt ? runPayload.prompt : "");
+    var promptLower = promptText.toLowerCase();
+
+    if (advancedLoop) {
+      timeoutMs = Math.max(timeoutMs, 30 * 60 * 1000);
+    }
+    if (maxIterations >= 10) {
+      timeoutMs = Math.max(timeoutMs, 36 * 60 * 1000);
+    } else if (maxIterations >= 8) {
+      timeoutMs = Math.max(timeoutMs, 30 * 60 * 1000);
+    }
+    if (reasoning === "high" || reasoning === "extra-high") {
+      timeoutMs = Math.max(timeoutMs, 28 * 60 * 1000);
+    }
+    if (promptText.length > 900) {
+      timeoutMs = Math.max(timeoutMs, 28 * 60 * 1000);
+    }
+    if (
+      /godot|barnes[- ]?hut|checksum|deterministic replay|final[ -]?state|regression|self[- ]?tests?|gameplay|challenge|polish|interactiv|objective|score|combo|large[ -]?context|architecture|monorepo|migration|distributed|launch|business|compliance|operations|curriculum|lesson plan|spaced review|pedagog|learning model|tutor/.test(promptLower)
+    ) {
+      timeoutMs = Math.max(timeoutMs, 45 * 60 * 1000);
+    }
+    return timeoutMs;
+  }
+
+  function computeBudgetQueueWatchTimeoutMs(value) {
+    var budget = normalizeComputeBudget(value);
+    if (budget === "quick") {
+      return 12 * 60 * 1000;
+    }
+    if (budget === "standard") {
+      return 35 * 60 * 1000;
+    }
+    if (budget === "long") {
+      return 2 * 60 * 60 * 1000;
+    }
+    if (budget === "until-complete") {
+      return 10 * 60 * 60 * 1000;
+    }
+    return 45 * 60 * 1000;
   }
 
   function reasoningLabel(level) {
@@ -5834,6 +8092,44 @@
 
   function reasoningIconMarkup() {
     return "<svg viewBox='0 0 16 16' fill='none' stroke='currentColor' stroke-width='1.35' stroke-linecap='round' stroke-linejoin='round'><path d='M5.1 3.2c-.9 0-1.8.7-1.8 1.8 0 .4.1.8.4 1.1-.7.4-1.1 1-1.1 1.8 0 1.2.9 2.1 2.1 2.1.1 1.1 1 1.9 2.1 1.9 1 0 1.8-.6 2.1-1.5.2.9 1.1 1.5 2.1 1.5 1.1 0 2-.8 2.1-1.9 1.2 0 2.1-.9 2.1-2.1 0-.8-.4-1.4-1.1-1.8.2-.3.4-.7.4-1.1 0-1-.8-1.8-1.8-1.8-.4 0-.8.1-1.1.4-.4-.8-1.2-1.3-2.1-1.3-.9 0-1.7.5-2.1 1.3-.3-.2-.7-.4-1.1-.4z'></path><path d='M6.3 5.8c-.6.2-.9.6-.9 1.1'></path><path d='M8 5.4v4.3'></path><path d='M9.8 5.9c.6.2.9.6.9 1.1'></path><path d='M6.4 8.6c.4.4 1 .6 1.6.6'></path><path d='M9.6 8.6c-.4.4-1 .6-1.6.6'></path></svg>";
+  }
+
+  function effectiveRunProfileForMode(modeValue) {
+    var reasoningToIterations = {
+      low: 2,
+      medium: 4,
+      high: 6,
+      "extra-high": 8
+    };
+    var mode = normalizeRunMode(modeValue || state.runMode);
+    var defaults = runModeDefaultProfile(mode);
+    var reasoning = String(state.reasoningEffort || defaults.reasoning || "medium");
+    if (reasoningRank(reasoning) < reasoningRank(defaults.reasoning)) {
+      reasoning = defaults.reasoning;
+    }
+    var iterations = reasoningToIterations[reasoning] || 4;
+    if (Number(defaults.minIterations || 0) > iterations) {
+      iterations = Number(defaults.minIterations || iterations);
+    }
+    var maxIterations = Number(defaults.maxIterations || 0);
+    if (maxIterations > 0 && iterations > maxIterations) {
+      iterations = maxIterations;
+    }
+    var advancedLoop = !!defaults.advancedLoop;
+    if (mode === "auto") {
+      advancedLoop = !!state.agentLoopEnabled;
+    }
+    return {
+      mode: mode,
+      reasoning: reasoning,
+      maxIterations: iterations,
+      advancedLoop: advancedLoop,
+      computeBudget: normalizeComputeBudget(state.computeBudget)
+    };
+  }
+
+  function effectiveRunProfile() {
+    return effectiveRunProfileForMode(state.runMode);
   }
 
   function saveNetworkAccess(enabled) {
@@ -5856,7 +8152,9 @@
   }
 
   function titleFromPrompt(promptText) {
-    var first = trim(String(promptText || "").split(/\r?\n/)[0] || "");
+    var directive = parsePromptModeDirective(promptText);
+    var titleSource = trim(directive.prompt || promptText);
+    var first = trim(String(titleSource || "").split(/\r?\n/)[0] || "");
     if (!first) {
       return "New Thread";
     }
@@ -6048,7 +8346,31 @@
         throw new Error(response.error || "Failed to load state");
       }
       state.workspaces = response.workspaces || [];
+      state.modeRuntime = normalizeModeRuntime(response.mode_runtime);
+      state.triage = {
+        count: String((response.triage && response.triage.count) || "0"),
+        cards: Array.isArray(response.triage && response.triage.cards) ? response.triage.cards : []
+      };
+      state.multi_agentCatalog = response.multi_agent_catalog && typeof response.multi_agent_catalog === "object"
+        ? response.multi_agent_catalog
+        : { curated_residents: [], target_types: [], escalation_classes: [] };
+      reconcileAssistantModeId();
+      state.modeRuntimeError = "";
       for (var i = 0; i < state.workspaces.length; i += 1) {
+        if (typeof state.workspaces[i].multi_agent_background_residents === "undefined") {
+          state.workspaces[i].multi_agent_background_residents = "0";
+        } else {
+          state.workspaces[i].multi_agent_background_residents = String(state.workspaces[i].multi_agent_background_residents || "0");
+        }
+        if (!Array.isArray(state.workspaces[i].multi_agent_residents)) {
+          state.workspaces[i].multi_agent_residents = [];
+        }
+        if (!Array.isArray(state.workspaces[i].multi_agent_unratified_amendments)) {
+          state.workspaces[i].multi_agent_unratified_amendments = [];
+        }
+        if (!state.workspaces[i].multi_agent_toggles || typeof state.workspaces[i].multi_agent_toggles !== "object") {
+          state.workspaces[i].multi_agent_toggles = {};
+        }
         if (!Array.isArray(state.workspaces[i].conversations)) {
           state.workspaces[i].conversations = [];
         }
@@ -6087,9 +8409,13 @@
           conv.approval_request = normalizeApprovalRequest(conv.approval_request);
         }
       }
+      if (state.activeTriage && Number(state.triage.count || 0) < 1) {
+        state.activeTriage = false;
+      }
       saveWorkspaceStateCache(state.workspaces);
       bootstrapSeenConversationsIfNeeded();
       pruneSeenConversationState();
+      pruneRunEventsByKnownConversations();
       applyRouteSelectionIfPending();
       ensureSelection();
       reconcileRunEventsFromQueueState();
@@ -6299,16 +8625,28 @@
   }
 
   function loadConversation(options) {
-    if (!state.activeWorkspaceId || !state.activeConversationId) {
-      state.activeConversation = null;
+    var opts = options || {};
+    var explicitWorkspaceId = "";
+    var explicitConversationId = "";
+    if (opts && Object.prototype.hasOwnProperty.call(opts, "workspaceId")) {
+      explicitWorkspaceId = String(opts.workspaceId || "");
+    }
+    if (opts && Object.prototype.hasOwnProperty.call(opts, "conversationId")) {
+      explicitConversationId = String(opts.conversationId || "");
+    }
+    var workspaceId = explicitWorkspaceId || state.activeWorkspaceId;
+    var conversationId = explicitConversationId || state.activeConversationId;
+    var isExplicitTarget = !!(explicitWorkspaceId || explicitConversationId);
+    if (!workspaceId || !conversationId) {
+      if (!isExplicitTarget) {
+        state.activeConversation = null;
+      }
       return Promise.resolve();
     }
 
-    var workspaceId = state.activeWorkspaceId;
-    var conversationId = state.activeConversationId;
     var requestOptions = null;
-    if (options && Number(options.timeoutMs) > 0) {
-      requestOptions = { timeoutMs: Number(options.timeoutMs) };
+    if (opts && Number(opts.timeoutMs) > 0) {
+      requestOptions = { timeoutMs: Number(opts.timeoutMs) };
     }
 
     return apiGet("get_conversation", {
@@ -6318,18 +8656,40 @@
       if (!response.success) {
         throw new Error(response.error || "Failed to load thread");
       }
-      if (state.activeWorkspaceId !== workspaceId || state.activeConversationId !== conversationId) {
-        return;
+      if (!isExplicitTarget && (state.activeWorkspaceId !== workspaceId || state.activeConversationId !== conversationId)) {
+        return null;
       }
-      state.activeConversation = response.conversation;
-      state.conversationCacheByKey[conversationReadKey(workspaceId, conversationId)] = cloneConversationData(response.conversation) || response.conversation;
-      if (state.activeConversation) {
-        state.activeConversation.decision_request = normalizeDecisionRequest(state.activeConversation.decision_request);
-        state.activeConversation.approval_request = normalizeApprovalRequest(state.activeConversation.approval_request);
-        finalizeStaleRunningEventsForConversation(workspaceId, state.activeConversation);
-        reconcilePendingOutgoingFromConversation(workspaceId, conversationId, state.activeConversation);
+      var conversation = response.conversation || null;
+      if (conversation) {
+        conversation.decision_request = normalizeDecisionRequest(conversation.decision_request);
+        conversation.approval_request = normalizeApprovalRequest(conversation.approval_request);
+        if (Array.isArray(conversation.run_events)) {
+          mergeConversationRunEvents(conversationId, conversation.run_events);
+        }
+        cacheConversationSnapshot(workspaceId, conversationId, conversation);
       }
-      markConversationSeen(workspaceId, conversationId, response.conversation);
+      var isActiveTarget = state.activeWorkspaceId === workspaceId && state.activeConversationId === conversationId;
+      if (isActiveTarget) {
+        state.activeConversation = conversation;
+        if (state.activeConversation) {
+          finalizeStaleRunningEventsForConversation(workspaceId, state.activeConversation);
+          reconcilePendingOutgoingFromConversation(workspaceId, conversationId, state.activeConversation);
+          if (
+            queueNumber(state.activeConversation.queue_pending) > 0 ||
+            isQueueEditForConversation(workspaceId, conversationId)
+          ) {
+            loadQueueItems(workspaceId, conversationId, { minIntervalMs: 0 }).catch(function () {
+              return null;
+            });
+          } else {
+            clearQueueItemsForConversation(workspaceId, conversationId);
+          }
+        }
+        if (opts.markSeen !== false) {
+          markConversationSeen(workspaceId, conversationId, conversation);
+        }
+      }
+      return conversation;
     });
   }
 
@@ -6595,6 +8955,7 @@
     }
     bootstrapSeenConversationsIfNeeded();
     pruneSeenConversationState();
+    pruneRunEventsByKnownConversations();
     applyRouteSelectionIfPending();
     ensureSelection();
     reconcileRunEventsFromQueueState();
@@ -6611,7 +8972,8 @@
 
     return apiPost("add_workspace", {
       path: path,
-      name: name
+      name: name,
+      command_exec_mode: state.commandExecMode
     }).then(function (response) {
       if (!response.success) {
         throw new Error(response.error || "Could not add project");
@@ -6706,10 +9068,10 @@
   function renameWorkspace(workspaceId, newName) {
     var name = trim(newName);
     if (!workspaceId) {
-      return Promise.reject(new Error("Workspace is required."));
+      return Promise.reject(new Error("Project is required."));
     }
     if (!name) {
-      return Promise.reject(new Error("Workspace name is required."));
+      return Promise.reject(new Error("Project name is required."));
     }
 
     return apiPost("rename_workspace", {
@@ -6836,14 +9198,25 @@
 
   function selectConversation(workspaceId, conversationId) {
     var selectionVersion = newSelectionVersion();
+    if (!isQueueEditForConversation(workspaceId, conversationId) && state.queueEdit.itemId) {
+      clearQueueEditState();
+    }
     state.chatAutoScroll = true;
+    state.activeTriage = false;
     state.activeWorkspaceId = workspaceId;
     state.activeConversationId = conversationId;
+    var workspace = getWorkspaceById(workspaceId);
+    var summary = getConversationById(workspace, conversationId);
     var convKey = conversationReadKey(workspaceId, conversationId);
     var cachedConversation = cloneConversationData(state.conversationCacheByKey[convKey]);
+    if (cachedConversation && summary) {
+      var cachedUpdated = conversationUpdatedNumber(cachedConversation);
+      var summaryUpdated = conversationUpdatedNumber(summary);
+      if (summaryUpdated > 0 && cachedUpdated > 0 && summaryUpdated > cachedUpdated) {
+        cachedConversation = null;
+      }
+    }
     if (!cachedConversation) {
-      var workspace = getWorkspaceById(workspaceId);
-      var summary = getConversationById(workspace, conversationId);
       if (summary) {
         cachedConversation = {
           id: summary.id,
@@ -6922,7 +9295,11 @@
 
   function selectDraft(workspaceId) {
     var selectionVersion = newSelectionVersion();
+    if (state.queueEdit.itemId) {
+      clearQueueEditState();
+    }
     state.chatAutoScroll = true;
+    state.activeTriage = false;
     state.activeWorkspaceId = workspaceId;
     state.activeConversationId = "";
     state.activeConversation = null;
@@ -6966,6 +9343,7 @@
 
   function createDraftForWorkspace(workspaceId) {
     state.chatAutoScroll = true;
+    state.activeTriage = false;
     state.activeWorkspaceId = workspaceId;
     state.activeConversationId = "";
     state.activeConversation = null;
@@ -7311,12 +9689,35 @@
     var preserveSelection = runOptions.preserveSelection !== false;
     var approvalRetry = runOptions.approvalRetry === true;
     var queueItemId = String(runOptions.queueItemId || "");
+    var explicitModeOverride = trim(String(runOptions.runMode || ""));
+    var explicitAssistantModeOverride = trim(String(runOptions.assistantModeId || ""));
+    var explicitComputeBudgetOverride = trim(String(runOptions.computeBudget || ""));
+    var explicitPermissionModeOverride = normalizePermissionModeValue(runOptions.permissionMode || "");
+    var explicitCommandExecModeOverride = normalizeCommandExecModeValue(runOptions.commandExecMode || "");
+    var explicitSkillIdsOverride = Array.isArray(runOptions.explicitSkillIds) ? runOptions.explicitSkillIds : [];
+    if (explicitModeOverride) {
+      explicitModeOverride = normalizeRunMode(explicitModeOverride);
+    }
+    if (explicitAssistantModeOverride) {
+      explicitAssistantModeOverride = normalizeAssistantModeId(explicitAssistantModeOverride);
+    }
+    if (explicitComputeBudgetOverride) {
+      explicitComputeBudgetOverride = normalizeComputeBudget(explicitComputeBudgetOverride);
+    }
+    var directive = parsePromptModeDirective(promptText);
+    var promptForRun = trim(directive.prompt || promptText);
+    var modeOverride = explicitModeOverride || (directive.mode ? normalizeRunMode(directive.mode) : "");
+    var directiveSkillIds = Array.isArray(directive.skillIds) ? directive.skillIds : [];
+    var explicitSkillIdsForRun = mergeSkillIdLists(explicitSkillIdsOverride, directiveSkillIds);
     var attachmentList = Array.isArray(runOptions.attachments) ? runOptions.attachments : [];
     var attachmentIds = [];
     var attachmentNames = [];
 
     if (!workspaceId || !conversationId) {
       return Promise.reject(new Error("Choose a project thread first."));
+    }
+    if (!promptForRun) {
+      return Promise.reject(new Error("Prompt is empty."));
     }
 
     for (var i = 0; i < attachmentList.length; i += 1) {
@@ -7330,12 +9731,20 @@
     }
 
     var pendingEvent = runOptions.pendingEvent || null;
+    var preferredEventId = "";
+    if (queueItemId && /^[A-Za-z0-9._-]+$/.test(queueItemId)) {
+      preferredEventId = "run-" + queueItemId;
+    }
     if (!pendingEvent) {
       pendingEvent = pushRunEvent(conversationId, {
+        id: preferredEventId,
         status: "running",
         started_at: new Date().toISOString(),
         stream_text: ""
       });
+    } else if (preferredEventId && String(pendingEvent.id || "") !== preferredEventId) {
+      pendingEvent.id = preferredEventId;
+      persistRunEventsSoon();
     }
 
     if (
@@ -7349,22 +9758,30 @@
       if (!Array.isArray(state.activeConversation.messages)) {
         state.activeConversation.messages = [];
       }
-      var userContent = promptText;
+      var userContent = promptForRun;
       if (attachmentNames.length) {
         userContent += "\n\nAttached files:\n- " + attachmentNames.join("\n- ");
       }
       state.activeConversation.messages.push({ role: "user", content: userContent });
+      cacheActiveConversationSnapshot(workspaceId, conversationId);
     }
 
     renderUi();
 
-    var reasoningToIterations = {
-      low: 2,
-      medium: 4,
-      high: 6,
-      "extra-high": 8
-    };
-    var selectedIterations = reasoningToIterations[state.reasoningEffort] || 2;
+    var runProfile = modeOverride ? effectiveRunProfileForMode(modeOverride) : effectiveRunProfile();
+    var assistantModeForRun = "";
+    if (normalizeRunMode(runProfile.mode) === "assistant") {
+      assistantModeForRun = explicitAssistantModeOverride || normalizeAssistantModeId(state.assistantModeId);
+    }
+    var computeBudgetForRun = explicitComputeBudgetOverride || normalizeComputeBudget(runProfile.computeBudget || state.computeBudget);
+    var permissionModeForRun = explicitPermissionModeOverride || normalizePermissionModeValue(state.permissionMode) || "default";
+    var commandExecModeForRun = explicitCommandExecModeOverride || normalizeCommandExecModeValue(state.commandExecMode) || "ask-some";
+    var selectedIterations = Number(runProfile.maxIterations || 2);
+    if (computeBudgetForRun === "long" && selectedIterations < 10) {
+      selectedIterations += 2;
+    } else if (computeBudgetForRun === "until-complete" && selectedIterations < 12) {
+      selectedIterations += 4;
+    }
     var streamSession = String(Date.now()) + "-" + String(Math.floor(Math.random() * 1000000));
     var streamOffset = 0;
     var streamPollActive = true;
@@ -7415,9 +9832,16 @@
             return;
           }
           var delta = String(response.delta || "");
+          var taskStatus = normalizeRunTaskStatusSnapshot(response.task_status);
           streamOffset = Number(response.offset || streamOffset || 0);
           if (delta && pendingEvent) {
             pendingEvent.stream_text = String(pendingEvent.stream_text || "") + delta;
+            persistRunEventsSoon();
+            scheduleStreamRender();
+          }
+          if (taskStatus && pendingEvent) {
+            pendingEvent.task_status = taskStatus;
+            persistRunEventsSoon();
             scheduleStreamRender();
           }
         })
@@ -7435,16 +9859,20 @@
     return apiPost("run", {
       workspace_id: workspaceId,
       conversation_id: conversationId,
-      prompt: promptText,
-      permission_mode: state.permissionMode,
-      command_exec_mode: state.commandExecMode,
+      prompt: promptForRun,
+      permission_mode: permissionModeForRun,
+      command_exec_mode: commandExecModeForRun,
       approval_retry: approvalRetry ? "1" : "0",
       network_access: state.networkAccess ? "1" : "0",
       web_access: state.webAccess ? "1" : "0",
       attachment_ids: attachmentIds.join(","),
       queue_item_id: queueItemId,
-      advanced_loop: state.agentLoopEnabled ? "1" : "0",
-      reasoning_effort: state.reasoningEffort,
+      advanced_loop: runProfile.advancedLoop ? "1" : "0",
+      run_mode: runProfile.mode,
+      assistant_mode_id: assistantModeForRun,
+      compute_budget: computeBudgetForRun,
+      explicit_skill_ids: explicitSkillIdsForRun.join(","),
+      reasoning_effort: runProfile.reasoning,
       max_iterations: String(selectedIterations),
       stream_session: streamSession
     })
@@ -7512,6 +9940,10 @@
               preserveSelection: preserveSelection,
               attachments: attachmentList,
               queueItemId: queueItemId,
+              runMode: modeOverride,
+              assistantModeId: assistantModeForRun,
+              computeBudget: computeBudgetForRun,
+              explicitSkillIds: explicitSkillIdsForRun,
               approvalRetry: true,
               pendingEvent: pendingEvent
             });
@@ -7530,8 +9962,10 @@
           pendingEvent.state = response.state || "";
           pendingEvent.failures = response.failures || "";
           pendingEvent.session_log = response.session_log || "";
+          pendingEvent.task_status = normalizeRunTaskStatusSnapshot(response.task_status);
           pendingEvent.finished_at = new Date().toISOString();
           pendingEvent.decision_hint = trim(String(response.decision_hint || ""));
+          persistRunEventsSoon();
         }
         renderUi();
 
@@ -7542,27 +9976,30 @@
               state.activeConversationId = conversationId;
               state.activeDraftWorkspaceId = "";
             }
-
-            if (state.activeWorkspaceId && state.activeConversationId) {
-              return loadConversation({ timeoutMs: 6000 }).catch(function () {
-                if (
-                  assistantText &&
-                  state.activeConversation &&
-                  state.activeConversation.id === conversationId
-                ) {
-                  if (!Array.isArray(state.activeConversation.messages)) {
-                    state.activeConversation.messages = [];
-                  }
-                  var msgs = state.activeConversation.messages;
-                  var last = msgs.length ? msgs[msgs.length - 1] : null;
-                  if (!last || last.role !== "assistant" || String(last.content || "") !== assistantText) {
-                    msgs.push({ role: "assistant", content: assistantText });
-                  }
+            return loadConversation({
+              workspaceId: workspaceId,
+              conversationId: conversationId,
+              timeoutMs: 9000,
+              markSeen: false
+            }).catch(function () {
+              if (
+                assistantText &&
+                state.activeConversation &&
+                state.activeWorkspaceId === workspaceId &&
+                state.activeConversation.id === conversationId
+              ) {
+                if (!Array.isArray(state.activeConversation.messages)) {
+                  state.activeConversation.messages = [];
                 }
-                return null;
-              });
-            }
-            return null;
+                var msgs = state.activeConversation.messages;
+                var last = msgs.length ? msgs[msgs.length - 1] : null;
+                if (!last || last.role !== "assistant" || String(last.content || "") !== assistantText) {
+                  msgs.push({ role: "assistant", content: assistantText });
+                  cacheActiveConversationSnapshot(workspaceId, conversationId);
+                }
+              }
+              return null;
+            });
           })
           .then(function () {
             return refreshGitStatus().catch(function () {
@@ -7596,6 +10033,8 @@
         if (pendingEvent) {
           pendingEvent.status = "error";
           pendingEvent.error = err && err.message ? err.message : String(err);
+          pendingEvent.finished_at = new Date().toISOString();
+          persistRunEventsSoon();
         }
         renderUi();
         throw err;
@@ -7681,6 +10120,10 @@
 
     if (pendingCount === 0 && conversationId) {
       delete state.lastQueuedItemIdByConversation[conversationId];
+      clearQueueItemsForConversation(workspaceId, conversationId);
+      if (isQueueEditForConversation(workspaceId, conversationId)) {
+        clearQueueEditState();
+      }
     }
 
     var workspace = getWorkspaceById(workspaceId);
@@ -7690,14 +10133,26 @@
     }
   }
 
-  function enqueuePrompt(workspaceId, conversationId, promptText, position, attachmentIds) {
+  function enqueuePrompt(workspaceId, conversationId, promptText, position, attachmentIds, runMode, assistantModeId, computeBudget, explicitSkillIds, permissionMode, commandExecMode) {
     var attachmentList = Array.isArray(attachmentIds) ? attachmentIds : [];
+    var normalizedMode = normalizeRunMode(runMode || state.runMode);
+    var normalizedAssistantMode = normalizedMode === "assistant" ? normalizeAssistantModeId(assistantModeId || state.assistantModeId) : "";
+    var normalizedComputeBudget = normalizeComputeBudget(computeBudget || state.computeBudget);
+    var normalizedPermissionMode = normalizePermissionModeValue(permissionMode || state.permissionMode) || "default";
+    var normalizedCommandExecMode = normalizeCommandExecModeValue(commandExecMode || state.commandExecMode) || "ask-some";
+    var normalizedSkillIds = mergeSkillIdLists(explicitSkillIds, []);
     return apiPost("queue_enqueue", {
       workspace_id: workspaceId,
       conversation_id: conversationId,
       prompt: promptText,
       position: position || "tail",
-      attachments: attachmentList.join(",")
+      attachments: attachmentList.join(","),
+      run_mode: normalizedMode,
+      assistant_mode_id: normalizedAssistantMode,
+      compute_budget: normalizedComputeBudget,
+      permission_mode: normalizedPermissionMode,
+      command_exec_mode: normalizedCommandExecMode,
+      explicit_skill_ids: normalizedSkillIds.join(",")
     }).then(function (response) {
       if (!response.success) {
         throw new Error(response.error || "Could not queue message");
@@ -7706,7 +10161,11 @@
       if (response.item_id) {
         state.lastQueuedItemIdByConversation[conversationId] = String(response.item_id);
       }
-      return response;
+      return loadQueueItems(workspaceId, conversationId, { force: true, minIntervalMs: 0 }).catch(function () {
+        return null;
+      }).then(function () {
+        return response;
+      });
     });
   }
 
@@ -7722,7 +10181,11 @@
         throw new Error(response.error || "Could not finalize queue item");
       }
       applyQueueStateFromResponse(workspaceId, conversationId, response);
-      return response;
+      return loadQueueItems(workspaceId, conversationId, { force: true, minIntervalMs: 0 }).catch(function () {
+        return null;
+      }).then(function () {
+        return response;
+      });
     });
   }
 
@@ -7746,11 +10209,11 @@
     return null;
   }
 
-  function startQueueCompletionWatch(workspaceId, conversationId, queueItemId) {
+  function startQueueCompletionWatch(workspaceId, conversationId, queueItemId, computeBudget) {
     var active = true;
     var inFlight = false;
     var pollTimer = null;
-    var maxWaitMs = 180000;
+    var maxWaitMs = computeBudgetQueueWatchTimeoutMs(computeBudget || state.computeBudget);
     var pollFailures = 0;
     var missingConversationPolls = 0;
 
@@ -7898,11 +10361,12 @@
         if (!trim(String(resumedPendingEvent.started_at || ""))) {
           resumedPendingEvent.started_at = new Date().toISOString();
         }
+        persistRunEventsSoon();
       }
     }
     renderUi();
 
-    queueWatch = startQueueCompletionWatch(workspaceId, conversationId, itemId);
+    queueWatch = startQueueCompletionWatch(workspaceId, conversationId, itemId, item.compute_budget || state.computeBudget);
 
     function applyWatchInfo(watchInfo) {
       if (!watchInfo) {
@@ -7968,6 +10432,12 @@
         preserveSelection: true,
         attachments: Array.isArray(item.attachments) ? item.attachments : [],
         queueItemId: itemId,
+        runMode: normalizeRunMode(item.run_mode || "auto"),
+        assistantModeId: item.assistant_mode_id || "",
+        computeBudget: normalizeComputeBudget(item.compute_budget || "auto"),
+        permissionMode: normalizePermissionModeValue(item.permission_mode || ""),
+        commandExecMode: normalizeCommandExecModeValue(item.command_exec_mode || ""),
+        explicitSkillIds: Array.isArray(item.explicit_skill_ids) ? item.explicit_skill_ids : [],
         approvalRetry: options.approvalRetry === true,
         pendingEvent: resumedPendingEvent
       })
@@ -8312,56 +10782,109 @@
       });
   }
 
-  function steerQueuedMessage() {
-    if (!state.activeWorkspaceId || !state.activeConversationId) {
-      return Promise.resolve();
-    }
-    var queueItemId = trim((el.queueSteerBtn && el.queueSteerBtn.dataset.queueItemId) || "");
-    if (!queueItemId) {
+  function steerQueuedMessage(queueItemId, options) {
+    var opts = options || {};
+    var wsId = String(opts.workspaceId || state.activeWorkspaceId || "");
+    var convId = String(opts.conversationId || state.activeConversationId || "");
+    var itemId = trim(queueItemId || "");
+    if (!wsId || !convId || !itemId) {
       return Promise.resolve();
     }
 
     return apiPost("queue_steer", {
-      workspace_id: state.activeWorkspaceId,
-      conversation_id: state.activeConversationId,
-      item_id: queueItemId
+      workspace_id: wsId,
+      conversation_id: convId,
+      item_id: itemId
     }).then(function (response) {
       if (!response.success) {
         throw new Error(response.error || "Could not steer queued message");
       }
-      applyQueueStateFromResponse(state.activeWorkspaceId, state.activeConversationId, response);
-      renderUi();
-      kickQueueWorker();
+      applyQueueStateFromResponse(wsId, convId, response);
+      if (isQueueEditForConversation(wsId, convId) && String(state.queueEdit.itemId || "") === itemId) {
+        clearQueueEditState();
+      }
+      return loadQueueItems(wsId, convId, { force: true, minIntervalMs: 0 }).catch(function () {
+        return null;
+      }).then(function () {
+        if (opts.interruptRunning && queueStatsForConversation(wsId, convId).running) {
+          return stopConversationRun(wsId, convId, { suppressNotice: true }).then(function () {
+            showTransientNotice("Steered message injected");
+            kickQueueWorker();
+          });
+        }
+        renderUi();
+        kickQueueWorker();
+        return null;
+      });
     });
   }
 
-  function cancelQueuedMessage() {
-    if (!state.activeWorkspaceId || !state.activeConversationId) {
-      return Promise.resolve();
-    }
-    var queueItemId = trim((el.queueCancelBtn && el.queueCancelBtn.dataset.queueItemId) || "");
-    if (!queueItemId) {
+  function cancelQueuedMessage(queueItemId, options) {
+    var opts = options || {};
+    var wsId = String(opts.workspaceId || state.activeWorkspaceId || "");
+    var convId = String(opts.conversationId || state.activeConversationId || "");
+    var itemId = trim(queueItemId || "");
+    if (!wsId || !convId || !itemId) {
       return Promise.resolve();
     }
 
     return apiPost("queue_cancel", {
-      workspace_id: state.activeWorkspaceId,
-      conversation_id: state.activeConversationId,
-      item_id: queueItemId
+      workspace_id: wsId,
+      conversation_id: convId,
+      item_id: itemId
     }).then(function (response) {
       if (!response.success) {
         throw new Error(response.error || "Could not cancel queued message");
       }
-      if (response.item_id && state.lastQueuedItemIdByConversation[state.activeConversationId] === response.item_id) {
-        delete state.lastQueuedItemIdByConversation[state.activeConversationId];
+      if (response.item_id && state.lastQueuedItemIdByConversation[convId] === response.item_id) {
+        delete state.lastQueuedItemIdByConversation[convId];
       }
-      applyQueueStateFromResponse(state.activeWorkspaceId, state.activeConversationId, response);
-      renderUi();
-      kickQueueWorker();
+      applyQueueStateFromResponse(wsId, convId, response);
+      if (isQueueEditForConversation(wsId, convId) && String(state.queueEdit.itemId || "") === String(response.item_id || itemId)) {
+        clearQueueEditState();
+      }
+      return loadQueueItems(wsId, convId, { force: true, minIntervalMs: 0 }).catch(function () {
+        return null;
+      }).then(function () {
+        renderUi();
+        kickQueueWorker();
+        return null;
+      });
     });
   }
 
-  function stopConversationRun(workspaceId, conversationId) {
+  function updateQueuedMessage(queueItemId, promptText, options) {
+    var opts = options || {};
+    var wsId = String(opts.workspaceId || state.activeWorkspaceId || "");
+    var convId = String(opts.conversationId || state.activeConversationId || "");
+    var itemId = trim(queueItemId || "");
+    var nextPrompt = String(promptText || "");
+    if (!wsId || !convId || !itemId) {
+      return Promise.resolve();
+    }
+    if (!trim(nextPrompt)) {
+      return Promise.reject(new Error("Queued message cannot be empty."));
+    }
+    return apiPost("queue_update", {
+      workspace_id: wsId,
+      conversation_id: convId,
+      item_id: itemId,
+      prompt: nextPrompt
+    }).then(function (response) {
+      if (!response || !response.success) {
+        throw new Error((response && response.error) || "Could not update queued message");
+      }
+      applyQueueStateFromResponse(wsId, convId, response);
+      return loadQueueItems(wsId, convId, { force: true, minIntervalMs: 0 }).catch(function () {
+        return null;
+      }).then(function () {
+        return response;
+      });
+    });
+  }
+
+  function stopConversationRun(workspaceId, conversationId, options) {
+    var opts = options || {};
     var wsId = String(workspaceId || "");
     var convId = String(conversationId || "");
     if (!wsId || !convId) {
@@ -8396,7 +10919,9 @@
           return null;
         })
         .then(function () {
-          showTransientNotice("Run stopped");
+          if (!opts.suppressNotice) {
+            showTransientNotice("Run stopped");
+          }
           renderUi();
         });
     });
@@ -8744,6 +11269,444 @@
     });
   }
 
+  function loadModeRuntimeState() {
+    state.modeRuntimeLoading = true;
+    return apiGet("mode_runtime_state", {}, { timeoutMs: 12000 })
+      .then(function (response) {
+        if (!response || !response.success) {
+          throw new Error((response && response.error) || "Failed to load mode runtime state");
+        }
+        state.modeRuntime = normalizeModeRuntime(response.mode_runtime);
+        reconcileAssistantModeId();
+        state.modeRuntimeError = "";
+        return state.modeRuntime;
+      })
+      .catch(function (error) {
+        state.modeRuntimeError = error && error.message ? error.message : "Mode runtime unavailable";
+        return null;
+      })
+      .finally(function () {
+        state.modeRuntimeLoading = false;
+        renderModeRuntimeSettings();
+      });
+  }
+
+  function modeRuntimeUpdate(modeId, patch) {
+    var id = trim(String(modeId || ""));
+    if (!id) {
+      return Promise.resolve(null);
+    }
+    var payload = {
+      mode_id: id
+    };
+    var source = patch && typeof patch === "object" ? patch : {};
+    if (typeof source.enabled !== "undefined") {
+      payload.enabled = source.enabled ? "1" : "0";
+    }
+    if (typeof source.priority !== "undefined") {
+      payload.priority = String(source.priority);
+    }
+    if (typeof source.cadence_sec !== "undefined") {
+      payload.cadence_sec = String(source.cadence_sec);
+    }
+    if (typeof source.interrupt_rights !== "undefined") {
+      payload.interrupt_rights = source.interrupt_rights ? "1" : "0";
+    }
+    if (typeof source.allow_queue_injection !== "undefined") {
+      payload.allow_queue_injection = source.allow_queue_injection ? "1" : "0";
+    }
+    if (typeof source.goal_state !== "undefined") {
+      payload.goal_state = String(source.goal_state || "");
+    }
+    if (typeof source.subscriptions !== "undefined") {
+      payload.subscriptions = String(source.subscriptions || "");
+    }
+
+    state.modeRuntimeLoading = true;
+    renderModeRuntimeSettings();
+    return apiPost("mode_runtime_update", payload)
+      .then(function (response) {
+        if (!response || !response.success) {
+          throw new Error((response && response.error) || "Could not update mode runtime");
+        }
+        state.modeRuntime = normalizeModeRuntime(response.mode_runtime);
+        reconcileAssistantModeId();
+        state.modeRuntimeError = "";
+        return response;
+      })
+      .catch(function (error) {
+        state.modeRuntimeError = error && error.message ? error.message : "Could not update mode runtime";
+        throw error;
+      })
+      .finally(function () {
+        state.modeRuntimeLoading = false;
+        renderModeRuntimeSettings();
+      });
+  }
+
+  function modeRuntimeTickNow() {
+    state.modeRuntimeLoading = true;
+    renderModeRuntimeSettings();
+    return apiPost("mode_runtime_tick", {
+      workspace_id: state.activeWorkspaceId || "",
+      conversation_id: state.activeConversationId || ""
+    })
+      .then(function (response) {
+        if (!response || !response.success) {
+          throw new Error((response && response.error) || "Mode runtime tick failed");
+        }
+        state.modeRuntime = normalizeModeRuntime(response.mode_runtime);
+        reconcileAssistantModeId();
+        state.modeRuntimeError = "";
+        return response;
+      })
+      .catch(function (error) {
+        state.modeRuntimeError = error && error.message ? error.message : "Mode runtime tick failed";
+        throw error;
+      })
+      .finally(function () {
+        state.modeRuntimeLoading = false;
+        renderModeRuntimeSettings();
+      });
+  }
+
+  function setModeRuntimeSkillResult(text, isError) {
+    if (!el.modeRuntimeSkillResult) {
+      return;
+    }
+    var clean = trim(String(text || ""));
+    if (!clean) {
+      el.modeRuntimeSkillResult.textContent = "";
+      el.modeRuntimeSkillResult.classList.add("hidden");
+      el.modeRuntimeSkillResult.classList.remove("error");
+      return;
+    }
+    el.modeRuntimeSkillResult.textContent = clean;
+    el.modeRuntimeSkillResult.classList.remove("hidden");
+    el.modeRuntimeSkillResult.classList.toggle("error", !!isError);
+  }
+
+  function modeRuntimeSkillInvoke(modeId, skillId, inputText, capabilitiesCsv) {
+    return apiPost("mode_runtime_skill_invoke", {
+      mode_id: trim(String(modeId || "")),
+      skill_id: trim(String(skillId || "")),
+      input: String(inputText || ""),
+      capabilities: trim(String(capabilitiesCsv || ""))
+    }).then(function (response) {
+      if (!response || !response.success) {
+        throw new Error((response && response.error) || "Skill invocation failed");
+      }
+      var result = response.result && typeof response.result === "object" ? response.result : {};
+      var summary = trim(String(result.summary || ""));
+      var actions = Array.isArray(result.actions) ? result.actions : [];
+      var notes = trim(String(result.notes || ""));
+      var lines = [];
+      lines.push("skill_id: " + String(result.skill_id || skillId));
+      lines.push("status: " + String(result.status || "ok"));
+      if (summary) {
+        lines.push("summary: " + summary);
+      }
+      if (actions.length) {
+        lines.push("actions:");
+        for (var i = 0; i < actions.length; i += 1) {
+          lines.push("- " + String(actions[i] || ""));
+        }
+      }
+      if (notes) {
+        lines.push("notes: " + notes);
+      }
+      setModeRuntimeSkillResult(lines.join("\n"), false);
+      return response;
+    });
+  }
+
+  function modeRuntimeSkillCreate(payload) {
+    var source = payload && typeof payload === "object" ? payload : {};
+    return apiPost("mode_runtime_skill_create", {
+      skill_id: trim(String(source.skill_id || "")),
+      name: trim(String(source.name || "")),
+      trigger: trim(String(source.trigger || "")),
+      capabilities: trim(String(source.capabilities || "")),
+      description: trim(String(source.description || ""))
+    }).then(function (response) {
+      if (!response || !response.success) {
+        throw new Error((response && response.error) || "Could not create skill");
+      }
+      state.modeRuntime = normalizeModeRuntime(response.mode_runtime);
+      reconcileAssistantModeId();
+      state.modeRuntimeError = "";
+      renderModeRuntimeSettings();
+      return response;
+    });
+  }
+
+  function modeRuntimeSkillInstall(payload) {
+    var source = payload && typeof payload === "object" ? payload : {};
+    return apiPost("mode_runtime_skill_install", {
+      source_path: trim(String(source.source_path || "")),
+      skill_id: trim(String(source.skill_id || "")),
+      replace: source.replace ? "1" : "0"
+    }).then(function (response) {
+      if (!response || !response.success) {
+        throw new Error((response && response.error) || "Could not install skill");
+      }
+      state.modeRuntime = normalizeModeRuntime(response.mode_runtime);
+      reconcileAssistantModeId();
+      state.modeRuntimeError = "";
+      renderModeRuntimeSettings();
+      return response;
+    });
+  }
+
+  function renderModeRuntimeSettings() {
+    if (!el.modeRuntimeSummary || !el.modeRuntimePanels || !el.modeRuntimeModes || !el.modeRuntimeSkills) {
+      return;
+    }
+
+    var runtime = normalizeModeRuntime(state.modeRuntime);
+    var scheduler = runtime.scheduler || {};
+    var cooperation = runtime.cooperation || {};
+    var summary = "Scheduler ticks: " + (scheduler.ticks || "0");
+    if (scheduler.last_tick_iso) {
+      summary += " | last tick: " + scheduler.last_tick_iso;
+    }
+    summary += " | directives in/out: " + (scheduler.last_directives_received || "0") + "/" + (scheduler.last_directives_emitted || "0");
+    if (String(cooperation.pending_total || "0") !== "0") {
+      summary += " | pending directives: " + String(cooperation.pending_total || "0");
+    }
+    if (scheduler.summary) {
+      summary += " | " + scheduler.summary;
+    }
+    if (state.modeRuntimeLoading) {
+      summary = "Loading Mode Runtime...";
+    } else if (state.modeRuntimeError) {
+      summary = state.modeRuntimeError;
+    }
+    el.modeRuntimeSummary.textContent = summary;
+
+    var panelsHtml = "";
+    var panels = Array.isArray(runtime.panels) ? runtime.panels : [];
+    var recentDirectives = Array.isArray(cooperation.recent) ? cooperation.recent : [];
+    var cooperationPanelHtml = "<section class='mode-runtime-panel mode-runtime-cooperation-panel'>";
+    cooperationPanelHtml += "<div class='mode-runtime-panel-head'><strong>Mode Cooperation</strong></div>";
+    cooperationPanelHtml += "<p class='settings-hint'>Directive bus for mode-to-mode governance handoffs and coordination.</p>";
+    cooperationPanelHtml += "<div class='mode-runtime-metrics'>";
+    cooperationPanelHtml += "<span class='mode-runtime-metric'><em>Pending</em><strong>" + escHtml(String(cooperation.pending_total || "0")) + "</strong></span>";
+    cooperationPanelHtml += "<span class='mode-runtime-metric'><em>Modes waiting</em><strong>" + escHtml(String(cooperation.modes_with_pending || "0")) + "</strong></span>";
+    cooperationPanelHtml += "<span class='mode-runtime-metric'><em>In / Out</em><strong>" + escHtml(String(scheduler.last_directives_received || "0") + " / " + String(scheduler.last_directives_emitted || "0")) + "</strong></span>";
+    cooperationPanelHtml += "</div>";
+    if (!recentDirectives.length) {
+      cooperationPanelHtml += "<p class='settings-hint'>No recent cross-mode directives.</p>";
+    } else {
+      cooperationPanelHtml += "<div class='mode-runtime-directive-list'>";
+      for (var r = 0; r < recentDirectives.length && r < 10; r += 1) {
+        var directive = recentDirectives[r] || {};
+        var fromMode = trim(String(directive.from_mode || "mode"));
+        var toMode = trim(String(directive.to_mode || "mode"));
+        var kind = trim(String(directive.kind || "note"));
+        var payload = trim(String(directive.payload || ""));
+        var stamp = trim(String(directive.timestamp || ""));
+        var prefix = fromMode + " -> " + toMode + " [" + kind + "]";
+        if (directive.expired) {
+          prefix += " (expired)";
+        }
+        cooperationPanelHtml += "<p class='settings-hint mode-runtime-directive-item'><strong>" + escHtml(prefix) + "</strong>";
+        if (payload) {
+          cooperationPanelHtml += " " + escHtml(payload);
+        }
+        if (stamp) {
+          cooperationPanelHtml += " <span class='mode-runtime-directive-time'>" + escHtml(stamp) + "</span>";
+        }
+        cooperationPanelHtml += "</p>";
+      }
+      cooperationPanelHtml += "</div>";
+    }
+    cooperationPanelHtml += "</section>";
+    if (!panels.length) {
+      panelsHtml = cooperationPanelHtml + "<p class='empty-state'>No runtime panels available yet.</p>";
+    } else {
+      panelsHtml += cooperationPanelHtml;
+      for (var i = 0; i < panels.length; i += 1) {
+        var panel = panels[i] || {};
+        var metrics = Array.isArray(panel.metrics) ? panel.metrics : [];
+        panelsHtml += "<section class='mode-runtime-panel'>";
+        panelsHtml += "<div class='mode-runtime-panel-head'><strong>" + escHtml(panel.title || panel.id || "Panel") + "</strong></div>";
+        if (panel.summary) {
+          panelsHtml += "<p class='settings-hint'>" + escHtml(panel.summary) + "</p>";
+        }
+        if (metrics.length) {
+          panelsHtml += "<div class='mode-runtime-metrics'>";
+          for (var m = 0; m < metrics.length; m += 1) {
+            var metric = metrics[m] || {};
+            panelsHtml += "<span class='mode-runtime-metric'><em>" + escHtml(metric.label || "Metric") + "</em><strong>" + escHtml(metric.value || "") + "</strong></span>";
+          }
+          panelsHtml += "</div>";
+        }
+        if (panel.stream) {
+          panelsHtml += "<p class='settings-hint'>" + escHtml(panel.stream) + "</p>";
+        }
+        panelsHtml += "</section>";
+      }
+    }
+    el.modeRuntimePanels.innerHTML = panelsHtml;
+
+    var modes = Array.isArray(runtime.modes) ? runtime.modes : [];
+    var modesHtml = "";
+    if (!modes.length) {
+      modesHtml = "<p class='empty-state'>No Modes configured.</p>";
+    } else {
+      modesHtml += "<section class='mode-runtime-group'><div class='mode-runtime-group-head'><p class='command-rules-group-title'>Modes</p></div>";
+      for (var j = 0; j < modes.length; j += 1) {
+        var mode = modes[j] || {};
+        var modeId = String(mode.id || "");
+        if (!modeId) {
+          continue;
+        }
+        var enabledLabel = mode.enabled ? "Disable" : "Enable";
+        var enabledNext = mode.enabled ? "0" : "1";
+        var injectLabel = mode.allow_queue_injection ? "Queue injection: On" : "Queue injection: Off";
+        var injectNext = mode.allow_queue_injection ? "0" : "1";
+        var driftValue = trim(String(mode.drift_score || "0.00"));
+        var directiveInValue = trim(String(mode.last_directive_count || "0"));
+        var directiveOutValue = trim(String(mode.last_directive_emits || "0"));
+        var directiveSummaryValue = trim(String(mode.last_directive_summary || "none"));
+        var cadenceValue = queueNumber(mode.cadence_sec || 0);
+        var priorityValue = queueNumber(mode.priority || 0);
+        modesHtml += "<article class='mode-runtime-mode'>";
+        modesHtml += "<div class='mode-runtime-mode-head'><strong>" + escHtml(mode.name || modeId) + "</strong><span class='mode-runtime-chip'>" + escHtml(mode.status || "idle") + "</span></div>";
+        if (mode.description) {
+          modesHtml += "<p class='settings-hint'>" + escHtml(mode.description) + "</p>";
+        }
+        modesHtml += "<p class='settings-hint'>drift " + escHtml(driftValue) + " | cadence " + escHtml(String(cadenceValue || 0)) + "s | priority " + escHtml(String(priorityValue || 0)) + "</p>";
+        modesHtml += "<p class='settings-hint'>directives in " + escHtml(directiveInValue) + " | out " + escHtml(directiveOutValue) + "</p>";
+        if (directiveSummaryValue && directiveSummaryValue !== "none") {
+          modesHtml += "<p class='settings-hint'>latest directive context: " + escHtml(directiveSummaryValue) + "</p>";
+        }
+        modesHtml += "<div class='mode-runtime-actions'>";
+        modesHtml += "<button type='button' data-action='mode-runtime-use' data-mode-id='" + escAttr(modeId) + "'>Use in Assistant</button>";
+        modesHtml += "<button type='button' data-action='mode-runtime-toggle' data-mode-id='" + escAttr(modeId) + "' data-enabled='" + escAttr(enabledNext) + "'>" + escHtml(enabledLabel) + "</button>";
+        modesHtml += "<button type='button' data-action='mode-runtime-injection' data-mode-id='" + escAttr(modeId) + "' data-allow='" + escAttr(injectNext) + "'>" + escHtml(injectLabel) + "</button>";
+        modesHtml += "</div>";
+        modesHtml += "</article>";
+      }
+      modesHtml += "</section>";
+    }
+    el.modeRuntimeModes.innerHTML = modesHtml;
+
+    var skills = Array.isArray(runtime.skills) ? runtime.skills : [];
+    var skillsHtml = "";
+    if (!skills.length) {
+      skillsHtml = "<p class='empty-state'>No Skills configured.</p>";
+    } else {
+      skillsHtml += "<section class='mode-runtime-group'><div class='mode-runtime-group-head'><p class='command-rules-group-title'>Skills</p></div>";
+      for (var k = 0; k < skills.length; k += 1) {
+        var skill = skills[k] || {};
+        var caps = Array.isArray(skill.capabilities) ? skill.capabilities : [];
+        skillsHtml += "<article class='mode-runtime-skill'>";
+        skillsHtml += "<div class='mode-runtime-mode-head'><strong>" + escHtml(skill.name || skill.id || "Skill") + "</strong></div>";
+        if (skill.description) {
+          skillsHtml += "<p class='settings-hint'>" + escHtml(skill.description) + "</p>";
+        }
+        if (skill.trigger) {
+          skillsHtml += "<p class='settings-hint'>trigger: " + escHtml(skill.trigger) + "</p>";
+        }
+        var fileBadges = [];
+        if (skill.files && typeof skill.files === "object") {
+          if (skill.files.policy_md) {
+            fileBadges.push("policy.md");
+          }
+          if (skill.files.trigger_yaml) {
+            fileBadges.push("trigger.yaml");
+          }
+          if (skill.files.tools_json) {
+            fileBadges.push("tools.json");
+          }
+          if (skill.files.output_schema_json) {
+            fileBadges.push("output.schema.json");
+          }
+        }
+        skillsHtml += "<p class='settings-hint'>capabilities: " + escHtml(caps.join(", ") || "none") + " | stateless actuator | interrupt authority: " + (skill.interrupt_authority ? "yes" : "no") + "</p>";
+        if (fileBadges.length) {
+          skillsHtml += "<p class='settings-hint'>bundle files: " + escHtml(fileBadges.join(", ")) + "</p>";
+        }
+        skillsHtml += "<div class='mode-runtime-actions'><button type='button' data-action='mode-runtime-skill-quick' data-skill-id='" + escAttr(skill.id || "") + "'>Use skill</button></div>";
+        skillsHtml += "</article>";
+      }
+      skillsHtml += "</section>";
+    }
+    el.modeRuntimeSkills.innerHTML = skillsHtml;
+
+    if (el.assistantModeSelect) {
+      var assistantValue = normalizeAssistantModeId(state.assistantModeId);
+      var assistantOptions = "<option value=''>Assistant (General)</option>";
+      for (var a = 0; a < modes.length; a += 1) {
+        var modeOption = modes[a] || {};
+        var optionId = trim(String(modeOption.id || ""));
+        if (!optionId) {
+          continue;
+        }
+        assistantOptions += "<option value='" + escAttr(optionId) + "'>" + escHtml(modeOption.name || optionId) + "</option>";
+      }
+      if (el.assistantModeSelect.innerHTML !== assistantOptions) {
+        el.assistantModeSelect.innerHTML = assistantOptions;
+      }
+      el.assistantModeSelect.value = assistantValue;
+      if (el.assistantModeSelect.value !== assistantValue) {
+        el.assistantModeSelect.value = "";
+      }
+    }
+
+    if (el.modeRuntimeSkillMode) {
+      var modeSelectOptions = "<option value='assistant'>assistant (manual)</option>";
+      for (var b = 0; b < modes.length; b += 1) {
+        var modeEntry = modes[b] || {};
+        var modeEntryId = trim(String(modeEntry.id || ""));
+        if (!modeEntryId) {
+          continue;
+        }
+        modeSelectOptions += "<option value='" + escAttr(modeEntryId) + "'>" + escHtml(modeEntry.name || modeEntryId) + "</option>";
+      }
+      if (el.modeRuntimeSkillMode.innerHTML !== modeSelectOptions) {
+        el.modeRuntimeSkillMode.innerHTML = modeSelectOptions;
+      }
+      var hasModeSelection = false;
+      for (var bm = 0; bm < el.modeRuntimeSkillMode.options.length; bm += 1) {
+        if (String(el.modeRuntimeSkillMode.options[bm].value || "") === String(el.modeRuntimeSkillMode.value || "")) {
+          hasModeSelection = true;
+          break;
+        }
+      }
+      if (!hasModeSelection) {
+        el.modeRuntimeSkillMode.value = "assistant";
+      }
+    }
+
+    if (el.modeRuntimeSkillSelect) {
+      var skillOptions = "<option value=''>Select skill</option>";
+      for (var c = 0; c < skills.length; c += 1) {
+        var skillOption = skills[c] || {};
+        var skillOptionId = trim(String(skillOption.id || ""));
+        if (!skillOptionId) {
+          continue;
+        }
+        skillOptions += "<option value='" + escAttr(skillOptionId) + "'>" + escHtml(skillOption.name || skillOptionId) + "</option>";
+      }
+      if (el.modeRuntimeSkillSelect.innerHTML !== skillOptions) {
+        el.modeRuntimeSkillSelect.innerHTML = skillOptions;
+      }
+      var hasSkillSelection = false;
+      for (var cs = 0; cs < el.modeRuntimeSkillSelect.options.length; cs += 1) {
+        if (String(el.modeRuntimeSkillSelect.options[cs].value || "") === String(el.modeRuntimeSkillSelect.value || "")) {
+          hasSkillSelection = true;
+          break;
+        }
+      }
+      if (!hasSkillSelection && skills.length) {
+        el.modeRuntimeSkillSelect.value = String((skills[0] && skills[0].id) || "");
+      }
+    }
+  }
+
   function openSettingsModal() {
     openModal(el.settingsModal);
     var preferredWorkspace = String(state.commandRulesWorkspaceId || state.activeWorkspaceId || "");
@@ -8757,6 +11720,9 @@
         return null;
       }),
       loadCommandRules(preferredWorkspace).catch(function () {
+        return null;
+      }),
+      loadModeRuntimeState().catch(function () {
         return null;
       })
     ]);
@@ -9024,6 +11990,681 @@
     });
   }
 
+  function loadWorkspaceMultiAgent(workspaceId) {
+    var wsId = trim(String(workspaceId || ""));
+    if (!wsId) {
+      return Promise.resolve(null);
+    }
+    state.workspaceMultiAgentLoadingById[wsId] = true;
+    renderMultiAgentModal();
+    return apiGet("multi_agent_workspace_get", { workspace_id: wsId })
+      .then(function (response) {
+        if (!response || !response.success || !response.workspace_multi_agent) {
+          throw new Error((response && response.error) || "Could not load agent settings");
+        }
+        state.workspaceMultiAgentById[wsId] = response.workspace_multi_agent;
+        state.workspaceMultiAgentErrorById[wsId] = "";
+        return response.workspace_multi_agent;
+      })
+      .catch(function (error) {
+        state.workspaceMultiAgentErrorById[wsId] = error && error.message ? error.message : "Could not load agent settings";
+        throw error;
+      })
+      .finally(function () {
+        state.workspaceMultiAgentLoadingById[wsId] = false;
+        renderMultiAgentModal();
+      });
+  }
+
+  function saveWorkspaceMultiAgent(workspaceId, payload) {
+    var wsId = trim(String(workspaceId || ""));
+    if (!wsId) {
+      return Promise.resolve(null);
+    }
+    var body = payload && typeof payload === "object" ? payload : {};
+    if (Object.prototype.hasOwnProperty.call(body, "charter")) {
+      body.charter_present = "1";
+    }
+    body.workspace_id = wsId;
+    state.workspaceMultiAgentLoadingById[wsId] = true;
+    renderMultiAgentModal();
+    return apiPost("multi_agent_workspace_update", body)
+      .then(function (response) {
+        if (!response || !response.success || !response.workspace_multi_agent) {
+          throw new Error((response && response.error) || "Could not save agent settings");
+        }
+        state.workspaceMultiAgentById[wsId] = response.workspace_multi_agent;
+        state.workspaceMultiAgentErrorById[wsId] = "";
+        return response.workspace_multi_agent;
+      })
+      .catch(function (error) {
+        state.workspaceMultiAgentErrorById[wsId] = error && error.message ? error.message : "Could not save agent settings";
+        throw error;
+      })
+      .finally(function () {
+        state.workspaceMultiAgentLoadingById[wsId] = false;
+        renderMultiAgentModal();
+      });
+  }
+
+  function saveMultiAgentGovernanceFromControls(workspaceId) {
+    var wsId = trim(String(workspaceId || ""));
+    if (!wsId) {
+      return Promise.resolve(null);
+    }
+    var policyAmendmentsEnabled = el.multi_agentToggleAmendments && el.multi_agentToggleAmendments.checked ? "1" : "0";
+    return saveWorkspaceMultiAgent(wsId, {
+      dilemma_surfacing: "1",
+      amendments: policyAmendmentsEnabled,
+      interpretation_log: policyAmendmentsEnabled,
+      commitments: el.multi_agentToggleCommitments && el.multi_agentToggleCommitments.checked ? "1" : "0",
+      attention_policies: el.multi_agentTogglePolicies && el.multi_agentTogglePolicies.checked ? "1" : "0"
+    });
+  }
+
+  function normalizeSharedInstructionsText(rawText) {
+    var text = String(rawText || "");
+    var trimmedText = trim(text);
+    var legacyDefault = trim("# Workspace Charter\n\nState your intent, constraints, and governance priorities for this workspace.");
+    if (trimmedText === legacyDefault) {
+      return "";
+    }
+    return text;
+  }
+
+  function flushMultiAgentCharterSave(workspaceId) {
+    var wsId = trim(String(workspaceId || ""));
+    if (!wsId) {
+      return Promise.resolve(null);
+    }
+    var charterText = normalizeSharedInstructionsText((el.multi_agentCharter && el.multi_agentCharter.value) || "");
+    var current = normalizeSharedInstructionsText(state.workspaceMultiAgentById[wsId] && String(state.workspaceMultiAgentById[wsId].charter || ""));
+    if (charterText === current) {
+      return Promise.resolve(null);
+    }
+    return saveWorkspaceMultiAgent(wsId, {
+      charter: charterText
+    }).then(function () {
+      return loadState();
+    }).then(renderUi);
+  }
+
+  function scheduleMultiAgentCharterSave(workspaceId, delayMs) {
+    var wsId = trim(String(workspaceId || ""));
+    if (!wsId) {
+      return;
+    }
+    var timers = state.multiAgentCharterAutosaveTimerByWorkspace;
+    if (timers[wsId]) {
+      clearTimeout(timers[wsId]);
+      delete timers[wsId];
+    }
+    var waitMs = Number(delayMs || 0);
+    if (!isFinite(waitMs) || waitMs < 0) {
+      waitMs = 700;
+    }
+    timers[wsId] = setTimeout(function () {
+      delete timers[wsId];
+      flushMultiAgentCharterSave(wsId).catch(showError);
+    }, waitMs);
+  }
+
+  function triageRefresh() {
+    return apiGet("triage_list", {})
+      .then(function (response) {
+        if (!response || !response.success) {
+          throw new Error((response && response.error) || "Could not refresh triage");
+        }
+        state.triage = {
+          count: String(response.count || "0"),
+          cards: Array.isArray(response.cards) ? response.cards : []
+        };
+        state.openTriageSuppressProposalId = "";
+        if (state.activeTriage && Number(state.triage.count || 0) < 1) {
+          state.activeTriage = false;
+        }
+      });
+  }
+
+  function triageDecide(proposalId, decisionText) {
+    var decision = trim(String(decisionText || ""));
+    return apiPost("triage_decide", {
+      proposal_id: String(proposalId || ""),
+      decision: decision || "accepted"
+    }).then(function (response) {
+      if (!response || !response.success) {
+        throw new Error((response && response.error) || "Could not apply decision");
+      }
+      state.triage.cards = Array.isArray(response.cards) ? response.cards : [];
+      state.triage.count = String(state.triage.cards.length);
+      state.openTriageSuppressProposalId = "";
+    });
+  }
+
+  function triageSuppress(proposalId, scopeValue) {
+    return apiPost("triage_suppress", {
+      proposal_id: String(proposalId || ""),
+      scope: scopeValue === "global" ? "global" : "workspace"
+    }).then(function (response) {
+      if (!response || !response.success) {
+        throw new Error((response && response.error) || "Could not suppress proposal");
+      }
+      state.triage.cards = Array.isArray(response.cards) ? response.cards : [];
+      state.triage.count = String(state.triage.cards.length);
+      state.openTriageSuppressProposalId = "";
+    });
+  }
+
+  function triageCleanup(directiveText) {
+    return apiPost("triage_cleanup", {
+      directive: String(directiveText || "")
+    }).then(function (response) {
+      if (!response || !response.success || !response.result) {
+        throw new Error((response && response.error) || "Cleanup failed");
+      }
+      var result = response.result || {};
+      var beforeCount = Number(result.before || 0);
+      var afterCount = Number(result.after || 0);
+      showTransientNotice("Triage cleanup preview: " + String(beforeCount) + " -> " + String(afterCount));
+      return result;
+    });
+  }
+
+  function openMultiAgentModal(workspaceId) {
+    var wsId = trim(String(workspaceId || state.activeWorkspaceId || ""));
+    if (!wsId) {
+      return Promise.resolve(null);
+    }
+    state.commandRulesWorkspaceId = wsId;
+    openModal(el.multi_agentModal);
+    renderMultiAgentModal();
+    return loadWorkspaceMultiAgent(wsId).catch(function () {
+      return null;
+    });
+  }
+
+  function multiAgentPreferredModelForResident(residentId, resident) {
+    var explicit = trim(String(resident && resident.preferred_model || ""));
+    if (explicit) {
+      return explicit;
+    }
+    return "";
+  }
+
+  function isModelInstalled(modelName) {
+    var target = trim(String(modelName || ""));
+    if (!target) {
+      return false;
+    }
+    for (var i = 0; i < state.models.length; i += 1) {
+      if (String(state.models[i] || "") === target) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function multiAgentSectionVisibilitySync() {
+    if (el.multi_agentSectionAmendments && el.multi_agentToggleAmendments) {
+      el.multi_agentSectionAmendments.classList.toggle("hidden", !el.multi_agentToggleAmendments.checked);
+    }
+    if (el.multi_agentSectionCommitments && el.multi_agentToggleCommitments) {
+      el.multi_agentSectionCommitments.classList.toggle("hidden", !el.multi_agentToggleCommitments.checked);
+    }
+    if (el.multi_agentSectionPolicies && el.multi_agentTogglePolicies) {
+      el.multi_agentSectionPolicies.classList.toggle("hidden", !el.multi_agentTogglePolicies.checked);
+    }
+  }
+
+  function multiAgentParseEpoch(value) {
+    var n = Number(value || 0);
+    if (!isFinite(n) || n <= 0) {
+      return 0;
+    }
+    return Math.floor(n);
+  }
+
+  function multiAgentRelativeAge(epochValue) {
+    var epoch = multiAgentParseEpoch(epochValue);
+    if (!epoch) {
+      return "";
+    }
+    var nowEpoch = Math.floor(Date.now() / 1000);
+    var delta = nowEpoch - epoch;
+    if (!isFinite(delta) || delta < 0) {
+      delta = 0;
+    }
+    if (delta < 60) {
+      return "just now";
+    }
+    if (delta < 3600) {
+      var mins = Math.floor(delta / 60);
+      return String(mins) + "m ago";
+    }
+    if (delta < 86400) {
+      var hours = Math.floor(delta / 3600);
+      return String(hours) + "h ago";
+    }
+    var days = Math.floor(delta / 86400);
+    if (days < 30) {
+      return String(days) + "d ago";
+    }
+    var months = Math.floor(days / 30);
+    if (months < 12) {
+      return String(months) + "mo ago";
+    }
+    var years = Math.floor(months / 12);
+    return String(years) + "y ago";
+  }
+
+  function multiAgentSortByCreatedDesc(items) {
+    var list = Array.isArray(items) ? items.slice() : [];
+    list.sort(function (a, b) {
+      return multiAgentParseEpoch((b && b.created) || 0) - multiAgentParseEpoch((a && a.created) || 0);
+    });
+    return list;
+  }
+
+  function multiAgentCommitmentStatus(value) {
+    var status = trim(String(value || "")).toLowerCase();
+    if (status === "fulfilled" || status === "revoked") {
+      return status;
+    }
+    return "active";
+  }
+
+  function multiAgentCommitmentStatusLabel(status) {
+    if (status === "fulfilled") {
+      return "Fulfilled";
+    }
+    if (status === "revoked") {
+      return "Revoked";
+    }
+    return "Active";
+  }
+
+  function multiAgentSummaryLabel(baseText, count) {
+    var total = Number(count || 0);
+    if (!isFinite(total) || total < 1) {
+      return String(baseText || "");
+    }
+    return String(baseText || "") + " (" + String(total) + ")";
+  }
+
+  function multiAgentHumanizeEnum(value) {
+    var token = trim(String(value || ""));
+    if (!token) {
+      return "";
+    }
+    var spaced = token.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/[_-]+/g, " ");
+    return spaced.replace(/\s+/g, " ").replace(/^\w/, function (ch) {
+      return ch.toUpperCase();
+    });
+  }
+
+  function multiAgentTargetTypeLabel(value) {
+    var token = trim(String(value || ""));
+    if (token === "Resident") {
+      return "Agent role";
+    }
+    if (token === "Charter") {
+      return "Project instructions";
+    }
+    return multiAgentHumanizeEnum(token);
+  }
+
+  function multiAgentEscalationLabel(value) {
+    return multiAgentHumanizeEnum(value);
+  }
+
+  function renderMultiAgentModal() {
+    if (!el.multi_agentModal) {
+      return;
+    }
+    var wsId = trim(String(state.commandRulesWorkspaceId || state.activeWorkspaceId || ""));
+    var ws = wsId ? getWorkspaceById(wsId) : null;
+    var data = wsId ? (state.workspaceMultiAgentById[wsId] || null) : null;
+    var loading = !!state.workspaceMultiAgentLoadingById[wsId];
+    var errorText = trim(String(state.workspaceMultiAgentErrorById[wsId] || ""));
+    var catalog = Array.isArray(state.multi_agentCatalog && state.multi_agentCatalog.curated_residents)
+      ? state.multi_agentCatalog.curated_residents
+      : [];
+    var residentMap = {};
+    var activeResidents = Array.isArray(data && data.residents) ? data.residents : [];
+    for (var r = 0; r < activeResidents.length; r += 1) {
+      var activeResident = activeResidents[r] || {};
+      var activeId = trim(String(activeResident.id || ""));
+      if (!activeId) {
+        continue;
+      }
+      residentMap[activeId] = activeResident;
+    }
+
+    if (el.multi_agentProjectLabel) {
+      el.multi_agentProjectLabel.textContent = ws ? (ws.name || ws.id) : "No project selected";
+    }
+    if (el.multi_agentStatus) {
+      if (loading) {
+        el.multi_agentStatus.textContent = "Loading agent settings...";
+      } else if (errorText) {
+        el.multi_agentStatus.textContent = errorText;
+      } else {
+        el.multi_agentStatus.textContent = "";
+      }
+    }
+
+    if (!data) {
+      if (el.multi_agentResidentsList) {
+        el.multi_agentResidentsList.innerHTML = "<p class='empty-state subtle-empty'>No agent settings loaded.</p>";
+      }
+      if (el.multi_agentPoliciesList) {
+        el.multi_agentPoliciesList.innerHTML = "<p class='empty-state subtle-empty'>Decision filters created from suppress actions appear here.</p>";
+      }
+      if (el.multi_agentAmendmentsList) {
+        el.multi_agentAmendmentsList.innerHTML = "<p class='empty-state subtle-empty'>No pending instruction updates.</p>";
+      }
+      if (el.multi_agentCommitmentsList) {
+        el.multi_agentCommitmentsList.innerHTML = "<p class='empty-state subtle-empty'>No commitments logged.</p>";
+      }
+      if (el.multi_agentInterpretationList) {
+        el.multi_agentInterpretationList.innerHTML = "<p class='empty-state subtle-empty'>No interpretation notes.</p>";
+      }
+      if (el.multi_agentRolesHint) {
+        el.multi_agentRolesHint.textContent = "Turn built-in specialist agents on or off. Use each row menu for model and visibility.";
+      }
+      if (el.multi_agentAmendmentsSummary) {
+        el.multi_agentAmendmentsSummary.textContent = "Instruction updates";
+      }
+      if (el.multi_agentInterpretationSummary) {
+        el.multi_agentInterpretationSummary.textContent = "Interpretation notes";
+      }
+      if (el.multi_agentCommitmentsSummary) {
+        el.multi_agentCommitmentsSummary.textContent = "Commitments";
+      }
+      if (el.multi_agentPoliciesSummary) {
+        el.multi_agentPoliciesSummary.textContent = "Decision filters";
+      }
+      multiAgentSectionVisibilitySync();
+      return;
+    }
+
+    if (el.multi_agentCharter) {
+      el.multi_agentCharter.value = normalizeSharedInstructionsText(data.charter || "");
+    }
+    var toggles = data.toggles && typeof data.toggles === "object" ? data.toggles : {};
+    if (el.multi_agentToggleAmendments) {
+      el.multi_agentToggleAmendments.checked = !!Number(toggles.amendments || 0) || !!Number(toggles.interpretation_log || 0);
+    }
+    if (el.multi_agentToggleCommitments) {
+      el.multi_agentToggleCommitments.checked = !!Number(toggles.commitments || 0);
+    }
+    if (el.multi_agentTogglePolicies) {
+      el.multi_agentTogglePolicies.checked = !!Number(toggles.attention_policies || 0);
+    }
+    multiAgentSectionVisibilitySync();
+
+    var amendments = multiAgentSortByCreatedDesc(Array.isArray(data.unratified_amendments) ? data.unratified_amendments : []);
+    var commitments = multiAgentSortByCreatedDesc(Array.isArray(data.commitments_log) ? data.commitments_log : []);
+    var interpretations = multiAgentSortByCreatedDesc(Array.isArray(data.interpretation_log) ? data.interpretation_log : []);
+    var workspacePolicies = multiAgentSortByCreatedDesc(Array.isArray(data.attention_policies) ? data.attention_policies : []);
+    var globalPolicies = multiAgentSortByCreatedDesc(Array.isArray(data.global_attention_policies) ? data.global_attention_policies : []);
+
+    if (el.multi_agentAmendmentsSummary) {
+      el.multi_agentAmendmentsSummary.textContent = multiAgentSummaryLabel("Instruction updates", amendments.length);
+    }
+    if (el.multi_agentInterpretationSummary) {
+      el.multi_agentInterpretationSummary.textContent = multiAgentSummaryLabel("Interpretation notes", interpretations.length);
+    }
+    if (el.multi_agentCommitmentsSummary) {
+      el.multi_agentCommitmentsSummary.textContent = multiAgentSummaryLabel("Commitments", commitments.length);
+    }
+    if (el.multi_agentPoliciesSummary) {
+      el.multi_agentPoliciesSummary.textContent = multiAgentSummaryLabel("Decision filters", workspacePolicies.length + globalPolicies.length);
+    }
+    if (el.multi_agentRolesHint) {
+      var activeRoleCount = 0;
+      var visibleRoleCount = 0;
+      for (var ar = 0; ar < activeResidents.length; ar += 1) {
+        var roleEntry = activeResidents[ar] || {};
+        if (roleEntry.enabled) {
+          activeRoleCount += 1;
+        }
+        if (roleEntry.enabled && roleEntry.visible) {
+          visibleRoleCount += 1;
+        }
+      }
+      var roleTotal = catalog.length;
+      if (roleTotal > 0) {
+        el.multi_agentRolesHint.textContent = String(activeRoleCount) + " of " + String(roleTotal) + " active. " + String(visibleRoleCount) + " shown in Threads.";
+      } else {
+        el.multi_agentRolesHint.textContent = "Turn built-in specialist agents on or off. Use each row menu for model and visibility.";
+      }
+    }
+
+    if (el.multi_agentResidentsList) {
+      var residentsHtml = "";
+      if (!catalog.length) {
+        residentsHtml = "<p class='empty-state'>No built-in agent roles available.</p>";
+      } else {
+        var selectedResidentId = trim(String(state.multiAgentSelectedResidentIdByWorkspace[wsId] || ""));
+        var openOptionsResidentId = trim(String(state.multiAgentOpenResidentOptionsByWorkspace[wsId] || ""));
+        for (var cr = 0; cr < catalog.length; cr += 1) {
+          var curated = catalog[cr] || {};
+          var rid = trim(String(curated.id || ""));
+          if (!rid) {
+            continue;
+          }
+          var existing = residentMap[rid] || null;
+          var isEnabled = !!(existing && existing.enabled);
+          var showThreads = !!(existing && existing.visible);
+          var selectedModel = trim(String(existing && existing.model || ""));
+          var preferredModel = multiAgentPreferredModelForResident(rid, curated);
+          var preferredInstalled = !preferredModel || isModelInstalled(preferredModel);
+          var selectedInstalled = !selectedModel || isModelInstalled(selectedModel);
+          var canEnable = preferredInstalled || !!selectedModel;
+          var disableEnable = !canEnable;
+          var selectedRow = selectedResidentId && selectedResidentId === rid;
+          var roleStatusLabel = isEnabled ? "On" : "Off";
+          var roleStatusClass = isEnabled ? "on" : "off";
+          var roleModelLabel = selectedModel || "Auto";
+          if (selectedModel && !selectedInstalled) {
+            roleModelLabel += " (not installed)";
+          }
+          var optionsOpen = openOptionsResidentId && openOptionsResidentId === rid;
+
+          residentsHtml += "<article class='resident-row" + (selectedRow ? " selected" : "") + "' data-action='multi_agent-resident-select' data-workspace-id='" + escAttr(wsId) + "' data-resident-id='" + escAttr(rid) + "'>";
+          residentsHtml += "<div class='resident-row-head'>";
+          residentsHtml += "<label class='resident-enable-row' title='Enable or disable this agent role.'>";
+          residentsHtml += "<input type='checkbox' data-action='multi_agent-resident-enable' data-workspace-id='" + escAttr(wsId) + "' data-resident-id='" + escAttr(rid) + "'" + (isEnabled ? " checked" : "") + (disableEnable ? " disabled" : "") + " />";
+          residentsHtml += "<span class='resident-title'>" + escHtml(curated.name || rid) + "</span>";
+          residentsHtml += "</label>";
+          residentsHtml += "<div class='resident-head-actions'>";
+          residentsHtml += "<span class='resident-inline-chips'>";
+          residentsHtml += "<span class='resident-chip status-" + escAttr(roleStatusClass) + "'>" + escHtml(roleStatusLabel) + "</span>";
+          if (isEnabled) {
+            residentsHtml += "<span class='resident-chip'>" + escHtml(roleModelLabel) + "</span>";
+          }
+          residentsHtml += "</span>";
+          residentsHtml += "<button type='button' class='resident-menu-trigger' data-action='multi_agent-resident-options-toggle' data-resident-id='" + escAttr(rid) + "' title='Role options' aria-label='Role options'>&hellip;</button>";
+          residentsHtml += "</div>";
+          residentsHtml += "</div>";
+          residentsHtml += "<p class='resident-description'>" + escHtml(curated.mandate || "") + "</p>";
+          if (disableEnable) {
+            residentsHtml += "<p class='resident-meta'>Preferred model missing. Choose an alternate model in options to enable this role.</p>";
+          }
+          residentsHtml += "<div class='resident-options" + (optionsOpen ? "" : " hidden") + "' id='multi_agent-resident-options-" + escAttr(rid) + "'>";
+          residentsHtml += "<label class='toggle-row' title='When enabled, also show this agent in the threads list.'><input type='checkbox' data-action='multi_agent-resident-visible' data-workspace-id='" + escAttr(wsId) + "' data-resident-id='" + escAttr(rid) + "'" + (showThreads ? " checked" : "") + (isEnabled ? "" : " disabled") + " /> Show in threads list</label>";
+          residentsHtml += "<label title='Override model selection for this agent role.'>Model override</label>";
+          residentsHtml += "<select data-action='multi_agent-resident-model' data-workspace-id='" + escAttr(wsId) + "' data-resident-id='" + escAttr(rid) + "'>";
+          residentsHtml += "<option value=''" + (!selectedModel ? " selected" : "") + ">Auto</option>";
+          for (var mi = 0; mi < state.models.length; mi += 1) {
+            var modelName = String(state.models[mi] || "");
+            residentsHtml += "<option value='" + escAttr(modelName) + "'" + (selectedModel === modelName ? " selected" : "") + ">" + escHtml(modelName) + "</option>";
+          }
+          residentsHtml += "</select>";
+          residentsHtml += "</div>";
+          residentsHtml += "</article>";
+        }
+      }
+      el.multi_agentResidentsList.innerHTML = residentsHtml;
+    }
+
+    if (el.multi_agentPoliciesList) {
+      var policiesHtml = "";
+      if (!workspacePolicies.length && !globalPolicies.length) {
+        policiesHtml = "<p class='empty-state subtle-empty'>No decision filters yet. Use Suppress in Triage to create one.</p>";
+      } else {
+        for (var p = 0; p < workspacePolicies.length; p += 1) {
+          var wp = workspacePolicies[p] || {};
+          var wpId = trim(String(wp.id || ""));
+          if (!wpId) {
+            continue;
+          }
+          policiesHtml += "<article class='multi_agent-item multi-agent-card'>";
+          policiesHtml += "<p class='multi-agent-card-title'>Project filter</p>";
+          policiesHtml += "<div class='multi-agent-chip-row'>";
+          policiesHtml += "<span class='multi-agent-chip'>" + escHtml(multiAgentEscalationLabel(wp.escalation_class) || "Any class") + "</span>";
+          policiesHtml += "<span class='multi-agent-chip'>" + escHtml(multiAgentTargetTypeLabel(wp.target_type) || "Any target") + "</span>";
+          policiesHtml += "<span class='multi-agent-chip'>" + escHtml(wp.resident || "Any agent") + "</span>";
+          policiesHtml += "<span class='multi-agent-chip'>impact >= " + escHtml(String(wp.impact_threshold || "0")) + "</span>";
+          policiesHtml += "</div>";
+          var wpAge = multiAgentRelativeAge(wp.created);
+          if (wpAge) {
+            policiesHtml += "<p class='multi-agent-card-meta'>Created " + escHtml(wpAge) + "</p>";
+          }
+          policiesHtml += "<div class='multi-agent-card-actions'>";
+          policiesHtml += "<button type='button' class='ghost' data-action='multi_agent-log-delete' data-workspace-id='" + escAttr(wsId) + "' data-log-kind='policies' data-entry-id='" + escAttr(wpId) + "'>Delete</button>";
+          policiesHtml += "</div>";
+          policiesHtml += "</article>";
+        }
+        for (var g = 0; g < globalPolicies.length; g += 1) {
+          var gp = globalPolicies[g] || {};
+          var gpId = trim(String(gp.id || ""));
+          if (!gpId) {
+            continue;
+          }
+          policiesHtml += "<article class='multi_agent-item multi-agent-card'>";
+          policiesHtml += "<p class='multi-agent-card-title'>Global filter</p>";
+          policiesHtml += "<div class='multi-agent-chip-row'>";
+          policiesHtml += "<span class='multi-agent-chip'>" + escHtml(multiAgentEscalationLabel(gp.escalation_class) || "Any class") + "</span>";
+          policiesHtml += "<span class='multi-agent-chip'>" + escHtml(multiAgentTargetTypeLabel(gp.target_type) || "Any target") + "</span>";
+          policiesHtml += "<span class='multi-agent-chip'>" + escHtml(gp.resident || "Any agent") + "</span>";
+          policiesHtml += "<span class='multi-agent-chip'>impact >= " + escHtml(String(gp.impact_threshold || "0")) + "</span>";
+          policiesHtml += "</div>";
+          var gpAge = multiAgentRelativeAge(gp.created);
+          if (gpAge) {
+            policiesHtml += "<p class='multi-agent-card-meta'>Created " + escHtml(gpAge) + "</p>";
+          }
+          policiesHtml += "<div class='multi-agent-card-actions'>";
+          policiesHtml += "<button type='button' class='ghost' data-action='multi_agent-log-delete' data-workspace-id='" + escAttr(wsId) + "' data-log-kind='global-policies' data-entry-id='" + escAttr(gpId) + "'>Delete</button>";
+          policiesHtml += "</div>";
+          policiesHtml += "</article>";
+        }
+      }
+      el.multi_agentPoliciesList.innerHTML = policiesHtml;
+    }
+
+    if (el.multi_agentAmendmentsList) {
+      var amendmentsHtml = "";
+      if (!amendments.length) {
+        amendmentsHtml = "<p class='empty-state subtle-empty'>No pending instruction updates.</p>";
+      } else {
+        for (var a = 0; a < amendments.length; a += 1) {
+          var amendment = amendments[a] || {};
+          var amendmentId = trim(String(amendment.id || ""));
+          if (!amendmentId) {
+            continue;
+          }
+          amendmentsHtml += "<article class='multi_agent-item multi-agent-card'>";
+          amendmentsHtml += "<p class='multi-agent-card-title'>" + escHtml(amendment.summary || "Instruction update") + "</p>";
+          if (trim(String(amendment.rationale || ""))) {
+            amendmentsHtml += "<p class='multi-agent-card-body'>" + escHtml(amendment.rationale || "") + "</p>";
+          }
+          amendmentsHtml += "<div class='multi-agent-chip-row'>";
+          amendmentsHtml += "<span class='multi-agent-chip'>" + escHtml(amendment.resident || "agent") + "</span>";
+          amendmentsHtml += "<span class='multi-agent-chip'>" + escHtml(multiAgentEscalationLabel(amendment.escalation_class) || "Policy tradeoff") + "</span>";
+          var amendmentAge = multiAgentRelativeAge(amendment.created);
+          if (amendmentAge) {
+            amendmentsHtml += "<span class='multi-agent-chip'>" + escHtml(amendmentAge) + "</span>";
+          }
+          amendmentsHtml += "</div>";
+          amendmentsHtml += "<div class='multi-agent-card-actions'>";
+          amendmentsHtml += "<button type='button' data-action='triage-decide' data-proposal-id='" + escAttr(amendmentId) + "'>Accept</button>";
+          amendmentsHtml += "<button type='button' class='ghost' data-action='triage-decide' data-proposal-id='" + escAttr(amendmentId) + "' data-decision='dismissed'>Dismiss</button>";
+          amendmentsHtml += "</div>";
+          amendmentsHtml += "</article>";
+        }
+      }
+      el.multi_agentAmendmentsList.innerHTML = amendmentsHtml;
+    }
+
+    if (el.multi_agentCommitmentsList) {
+      var commitmentsHtml = "";
+      if (!commitments.length) {
+        commitmentsHtml = "<p class='empty-state subtle-empty'>No commitments logged.</p>";
+      } else {
+        for (var c = 0; c < commitments.length; c += 1) {
+          var commitment = commitments[c] || {};
+          var commitmentId = trim(String(commitment.id || ""));
+          if (!commitmentId) {
+            continue;
+          }
+          var commitmentStatus = multiAgentCommitmentStatus(commitment.status);
+          commitmentsHtml += "<article class='multi_agent-item multi-agent-card'>";
+          commitmentsHtml += "<p class='multi-agent-card-title'>" + escHtml(commitment.statement || "") + "</p>";
+          commitmentsHtml += "<div class='multi-agent-chip-row'>";
+          commitmentsHtml += "<span class='multi-agent-chip status-" + escAttr(commitmentStatus) + "'>" + escHtml(multiAgentCommitmentStatusLabel(commitmentStatus)) + "</span>";
+          commitmentsHtml += "<span class='multi-agent-chip'>scope: " + escHtml(commitment.scope || "project") + "</span>";
+          commitmentsHtml += "<span class='multi-agent-chip'>duration: " + escHtml(commitment.duration || "unspecified") + "</span>";
+          commitmentsHtml += "<span class='multi-agent-chip'>revocability: " + escHtml(commitment.revocability || "revocable") + "</span>";
+          commitmentsHtml += "<span class='multi-agent-chip'>audience: " + escHtml(commitment.audience || "internal") + "</span>";
+          commitmentsHtml += "</div>";
+          var commitmentAge = multiAgentRelativeAge(commitment.created);
+          if (commitmentAge) {
+            commitmentsHtml += "<p class='multi-agent-card-meta'>Created " + escHtml(commitmentAge) + "</p>";
+          }
+          commitmentsHtml += "<div class='multi-agent-card-actions'>";
+          if (commitmentStatus === "active") {
+            commitmentsHtml += "<button type='button' data-action='multi_agent-commitment-status' data-workspace-id='" + escAttr(wsId) + "' data-entry-id='" + escAttr(commitmentId) + "' data-status='fulfilled'>Fulfilled</button>";
+            commitmentsHtml += "<button type='button' class='ghost' data-action='multi_agent-commitment-status' data-workspace-id='" + escAttr(wsId) + "' data-entry-id='" + escAttr(commitmentId) + "' data-status='revoked'>Revoke</button>";
+          } else {
+            commitmentsHtml += "<button type='button' data-action='multi_agent-commitment-status' data-workspace-id='" + escAttr(wsId) + "' data-entry-id='" + escAttr(commitmentId) + "' data-status='active'>Reopen</button>";
+          }
+          commitmentsHtml += "<button type='button' class='ghost' data-action='multi_agent-log-delete' data-workspace-id='" + escAttr(wsId) + "' data-log-kind='commitments' data-entry-id='" + escAttr(commitmentId) + "'>Delete</button>";
+          commitmentsHtml += "</div>";
+          commitmentsHtml += "</article>";
+        }
+      }
+      el.multi_agentCommitmentsList.innerHTML = commitmentsHtml;
+    }
+
+    if (el.multi_agentInterpretationList) {
+      var interpretationHtml = "";
+      if (!interpretations.length) {
+        interpretationHtml = "<p class='empty-state subtle-empty'>No interpretation notes.</p>";
+      } else {
+        for (var it = 0; it < interpretations.length; it += 1) {
+          var entry = interpretations[it] || {};
+          var interpretationId = trim(String(entry.id || ""));
+          if (!interpretationId) {
+            continue;
+          }
+          interpretationHtml += "<article class='multi_agent-item multi-agent-card'>";
+          interpretationHtml += "<p class='multi-agent-card-body'>" + escHtml(entry.statement || "") + "</p>";
+          var interpretationAge = multiAgentRelativeAge(entry.created);
+          if (interpretationAge) {
+            interpretationHtml += "<p class='multi-agent-card-meta'>Added " + escHtml(interpretationAge) + "</p>";
+          }
+          interpretationHtml += "<div class='multi-agent-card-actions'>";
+          interpretationHtml += "<button type='button' class='ghost' data-action='multi_agent-log-delete' data-workspace-id='" + escAttr(wsId) + "' data-log-kind='interpretation' data-entry-id='" + escAttr(interpretationId) + "'>Delete</button>";
+          interpretationHtml += "</div>";
+          interpretationHtml += "</article>";
+        }
+      }
+      el.multi_agentInterpretationList.innerHTML = interpretationHtml;
+    }
+  }
+
   function handleWorkspaceTreeClick(event) {
     var target = event.target.closest("[data-action]");
     if (!target) {
@@ -9033,6 +12674,104 @@
     var action = target.getAttribute("data-action");
     var workspaceId = target.getAttribute("data-workspace-id");
     var conversationId = target.getAttribute("data-conversation-id");
+    var proposalId = target.getAttribute("data-proposal-id");
+
+    if (action === "select-triage") {
+      state.activeTriage = true;
+      state.activeWorkspaceId = "";
+      state.activeConversationId = "";
+      state.activeConversation = null;
+      state.activeDraftWorkspaceId = "";
+      renderUi();
+      return;
+    }
+
+    if (action === "triage-open-context") {
+      if (workspaceId && conversationId) {
+        state.activeTriage = false;
+        state.activeWorkspaceId = workspaceId;
+        state.activeConversationId = conversationId;
+        state.activeDraftWorkspaceId = "";
+        loadConversation({
+          workspaceId: workspaceId,
+          conversationId: conversationId
+        }).catch(showError);
+        renderUi();
+      }
+      return;
+    }
+
+    if (action === "triage-decide") {
+      if (!proposalId) {
+        return;
+      }
+      var fixedDecision = trim(String(target.getAttribute("data-decision") || ""));
+      var decisionAnswer = fixedDecision;
+      if (!decisionAnswer) {
+        decisionAnswer = window.prompt("Decision for this proposal", "accepted");
+        if (decisionAnswer === null) {
+          return;
+        }
+      }
+      runWithControlPending(target, function () {
+        return triageDecide(proposalId, decisionAnswer).then(function () {
+          return loadState();
+        }).then(renderUi);
+      }).catch(showError);
+      return;
+    }
+
+    if (action === "triage-suppress-open") {
+      if (!proposalId) {
+        return;
+      }
+      if (String(state.openTriageSuppressProposalId || "") === String(proposalId)) {
+        state.openTriageSuppressProposalId = "";
+      } else {
+        state.openTriageSuppressProposalId = String(proposalId || "");
+      }
+      renderUi();
+      return;
+    }
+
+    if (action === "triage-suppress-scope") {
+      if (!proposalId) {
+        return;
+      }
+      var scopePrompt = String(target.getAttribute("data-scope") || "") === "global" ? "global" : "workspace";
+      state.openTriageSuppressProposalId = "";
+      runWithControlPending(target, function () {
+        return triageSuppress(proposalId, scopePrompt).then(function () {
+          return loadState();
+        }).then(renderUi);
+      }).catch(showError);
+      return;
+    }
+
+    if (action === "triage-cleanup" || action === "triage-cleanup-directed") {
+      var directive = "";
+      if (action === "triage-cleanup-directed") {
+        var directivePrompt = window.prompt("Optional cleanup directive for Triage recompression", "Merge repeats and defer reversible low-impact items.");
+        if (directivePrompt === null) {
+          return;
+        }
+        directive = directivePrompt;
+      }
+      runWithControlPending(target, function () {
+        return triageCleanup(directive).then(function (result) {
+          var collapsed = Array.isArray(result && result.collapsed) ? result.collapsed : [];
+          if (collapsed.length) {
+            var lines = [];
+            for (var i = 0; i < collapsed.length && i < 6; i += 1) {
+              lines.push("- " + String(collapsed[i].summary || "Decision cluster") + " (" + String(collapsed[i].count || 0) + ")");
+            }
+            window.alert("Cleanup preview:\n" + lines.join("\n"));
+          }
+          return triageRefresh();
+        }).then(renderUi);
+      }).catch(showError);
+      return;
+    }
 
     if (action === "toggle-workspace") {
       if (workspaceId) {
@@ -9063,6 +12802,17 @@
           return createDraftForWorkspace(workspaceId);
         }).catch(showError);
       }
+      return;
+    }
+
+    if (action === "open-workspace-multi_agent") {
+      if (!workspaceId) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      state.openWorkspaceMenuWorkspaceId = "";
+      openMultiAgentModal(workspaceId).catch(showError);
       return;
     }
 
@@ -9151,6 +12901,7 @@
 
     if (action === "select-workspace") {
       if (workspaceId) {
+        state.activeTriage = false;
         state.pendingArchiveKey = "";
         state.pendingArchiveReadyAt = 0;
         state.pendingArchiveSubmittingKey = "";
@@ -9162,6 +12913,7 @@
 
     if (action === "select-conversation") {
       if (workspaceId && conversationId) {
+        state.activeTriage = false;
         state.pendingArchiveKey = "";
         state.pendingArchiveReadyAt = 0;
         state.pendingArchiveSubmittingKey = "";
@@ -9174,6 +12926,7 @@
 
     if (action === "select-draft") {
       if (workspaceId) {
+        state.activeTriage = false;
         state.pendingArchiveKey = "";
         state.pendingArchiveReadyAt = 0;
         state.pendingArchiveSubmittingKey = "";
@@ -9388,8 +13141,29 @@
   function onRunSubmit(event) {
     event.preventDefault();
 
-    var prompt = trim(el.runPrompt.value);
+    var rawPrompt = String(el.runPrompt.value || "");
+    var directive = parsePromptModeDirective(rawPrompt);
+    if (directive.mode) {
+      saveRunMode(directive.mode);
+      showTransientNotice("Run mode: " + runModeLabel(directive.mode));
+    }
+    var prompt = trim(directive.prompt || rawPrompt);
+    var queuedRunMode = normalizeRunMode(directive.mode || state.runMode);
+    var queuedAssistantMode = queuedRunMode === "assistant" ? normalizeAssistantModeId(state.assistantModeId) : "";
+    var queuedComputeBudget = normalizeComputeBudget(state.computeBudget);
+    var queuedExplicitSkillIds = Array.isArray(directive.skillIds) ? directive.skillIds : [];
+    if (queuedExplicitSkillIds.length) {
+      showTransientNotice("Skills: " + queuedExplicitSkillIds.join(", "));
+    }
     if (!prompt) {
+      if (directive.mode) {
+        el.runPrompt.value = "";
+        if (state.activeDraftWorkspaceId) {
+          state.draftTextByWorkspace[state.activeDraftWorkspaceId] = "";
+        }
+        clearDraftAutosaveTimer();
+        renderUi();
+      }
       return;
     }
 
@@ -9404,7 +13178,7 @@
       state.activeDraftWorkspaceId = state.activeWorkspaceId;
     }
 
-    var queuedPrompt = prompt;
+    var queuedPrompt = directive.mode ? trim(rawPrompt) : prompt;
     var pendingKey = activeOutgoingKey();
     var pendingId = addPendingOutgoing(pendingKey, queuedPrompt);
     el.runPrompt.value = "";
@@ -9431,7 +13205,19 @@
               attachmentIds.push(String(uploadedAttachments[i].id));
             }
           }
-          return enqueuePrompt(workspaceId, conversationId, queuedPrompt, "tail", attachmentIds).then(function () {
+          return enqueuePrompt(
+            workspaceId,
+            conversationId,
+            queuedPrompt,
+            "tail",
+            attachmentIds,
+            queuedRunMode,
+            queuedAssistantMode,
+            queuedComputeBudget,
+            queuedExplicitSkillIds,
+            state.permissionMode,
+            state.commandExecMode
+          ).then(function () {
             resetComposerAttachments();
           });
         }).then(function () {
@@ -9709,6 +13495,40 @@
       }).catch(showError);
     });
 
+    on(el.runModeBtn, "click", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      toggleMenu("run-mode-menu", el.runModeBtn);
+    });
+
+    on(el.runModeMenu, "click", function (event) {
+      var moreToggle = event.target.closest("button[data-action='run-mode-more-toggle']");
+      if (moreToggle) {
+        state.runModeMoreExpanded = !state.runModeMoreExpanded;
+        renderUi();
+        return;
+      }
+      var assistantModeItem = event.target.closest("button[data-assistant-mode-id]");
+      if (assistantModeItem) {
+        saveRunMode("assistant");
+        saveAssistantModeId(assistantModeItem.getAttribute("data-assistant-mode-id") || "");
+        state.runModeMoreExpanded = false;
+        closeAllMenus();
+        renderUi();
+        return;
+      }
+      var item = event.target.closest("button[data-run-mode]");
+      if (!item) {
+        return;
+      }
+      saveRunMode(item.getAttribute("data-run-mode"));
+      if (normalizeRunMode(item.getAttribute("data-run-mode")) !== "assistant") {
+        state.runModeMoreExpanded = false;
+      }
+      closeAllMenus();
+      renderUi();
+    });
+
     on(el.agentLoopToggle, "click", function () {
       saveAgentLoopEnabled(!state.agentLoopEnabled);
       renderUi();
@@ -9726,6 +13546,22 @@
         return;
       }
       saveReasoningEffort(item.getAttribute("data-reasoning"));
+      closeAllMenus();
+      renderUi();
+    });
+
+    on(el.computeMenuBtn, "click", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      toggleMenu("compute-menu", el.computeMenuBtn);
+    });
+
+    on(el.computeMenu, "click", function (event) {
+      var item = event.target.closest("button[data-compute-budget]");
+      if (!item) {
+        return;
+      }
+      saveComputeBudget(item.getAttribute("data-compute-budget"));
       closeAllMenus();
       renderUi();
     });
@@ -10207,6 +14043,29 @@
       closeModal(el.settingsModal);
     });
 
+    if (el.multi_agentModalClose) {
+      on(el.multi_agentModalClose, "click", function () {
+        closeModal(el.multi_agentModal);
+      });
+    }
+
+    if (el.multi_agentCharter) {
+      on(el.multi_agentCharter, "input", function () {
+        var wsId = trim(String(state.commandRulesWorkspaceId || state.activeWorkspaceId || ""));
+        if (!wsId) {
+          return;
+        }
+        scheduleMultiAgentCharterSave(wsId, 700);
+      });
+      on(el.multi_agentCharter, "blur", function () {
+        var wsId = trim(String(state.commandRulesWorkspaceId || state.activeWorkspaceId || ""));
+        if (!wsId) {
+          return;
+        }
+        scheduleMultiAgentCharterSave(wsId, 0);
+      });
+    }
+
     on(el.settingsModal, "click", function (event) {
       var deleteBtn = event.target && event.target.closest
         ? event.target.closest("button[data-action='delete-command-rule'][data-rule-scope][data-rule-index]")
@@ -10240,10 +14099,310 @@
         }, { spinner: false }).catch(showError);
         return;
       }
+      var modeToggleBtn = event.target && event.target.closest
+        ? event.target.closest("button[data-action='mode-runtime-toggle'][data-mode-id][data-enabled]")
+        : null;
+      if (modeToggleBtn) {
+        var modeToggleId = modeToggleBtn.getAttribute("data-mode-id") || "";
+        var modeToggleEnabled = modeToggleBtn.getAttribute("data-enabled") === "1";
+        runWithControlPending(modeToggleBtn, function () {
+          return modeRuntimeUpdate(modeToggleId, { enabled: modeToggleEnabled });
+        }, { spinner: false }).catch(showError);
+        return;
+      }
+      var modeInjectionBtn = event.target && event.target.closest
+        ? event.target.closest("button[data-action='mode-runtime-injection'][data-mode-id][data-allow]")
+        : null;
+      if (modeInjectionBtn) {
+        var modeInjectionId = modeInjectionBtn.getAttribute("data-mode-id") || "";
+        var modeInjectionAllow = modeInjectionBtn.getAttribute("data-allow") === "1";
+        runWithControlPending(modeInjectionBtn, function () {
+          return modeRuntimeUpdate(modeInjectionId, { allow_queue_injection: modeInjectionAllow });
+        }, { spinner: false }).catch(showError);
+        return;
+      }
+      var modeUseBtn = event.target && event.target.closest
+        ? event.target.closest("button[data-action='mode-runtime-use'][data-mode-id]")
+        : null;
+      if (modeUseBtn) {
+        saveRunMode("assistant");
+        saveAssistantModeId(modeUseBtn.getAttribute("data-mode-id") || "");
+        if (el.assistantModeSelect) {
+          el.assistantModeSelect.value = state.assistantModeId;
+        }
+        closeModal(el.settingsModal);
+        renderUi();
+        showTransientNotice("Assistant focus mode updated");
+        return;
+      }
+      var skillQuickBtn = event.target && event.target.closest
+        ? event.target.closest("button[data-action='mode-runtime-skill-quick'][data-skill-id]")
+        : null;
+      if (skillQuickBtn) {
+        var quickSkillId = trim(String(skillQuickBtn.getAttribute("data-skill-id") || ""));
+        if (el.modeRuntimeSkillSelect) {
+          el.modeRuntimeSkillSelect.value = quickSkillId;
+        }
+        if (el.modeRuntimeSkillInput) {
+          el.modeRuntimeSkillInput.focus();
+        }
+        showTransientNotice("Skill ready: " + quickSkillId);
+        return;
+      }
       if (event.target === el.settingsModal) {
         closeModal(el.settingsModal);
       }
     });
+
+    if (el.multi_agentModal) {
+      on(el.multi_agentModal, "click", function (event) {
+        var triageActionBtn = event.target && event.target.closest
+          ? event.target.closest("[data-action^='triage-']")
+          : null;
+        if (triageActionBtn) {
+          handleWorkspaceTreeClick(event);
+          return;
+        }
+        var residentOptionsBtn = event.target && event.target.closest
+          ? event.target.closest("button[data-action='multi_agent-resident-options-toggle'][data-resident-id]")
+          : null;
+        if (residentOptionsBtn) {
+          var rowSelectBtn = residentOptionsBtn.closest("[data-resident-id]");
+          if (rowSelectBtn) {
+            var selectedWsId = trim(String(state.commandRulesWorkspaceId || state.activeWorkspaceId || ""));
+            var selectedId = trim(String(rowSelectBtn.getAttribute("data-resident-id") || ""));
+            if (selectedWsId && selectedId) {
+              state.multiAgentSelectedResidentIdByWorkspace[selectedWsId] = selectedId;
+            }
+          }
+          var optResidentId = residentOptionsBtn.getAttribute("data-resident-id") || "";
+          var optionsWsId = trim(String(state.commandRulesWorkspaceId || state.activeWorkspaceId || ""));
+          if (!optResidentId || !optionsWsId) {
+            return;
+          }
+          if (state.multiAgentOpenResidentOptionsByWorkspace[optionsWsId] === optResidentId) {
+            state.multiAgentOpenResidentOptionsByWorkspace[optionsWsId] = "";
+          } else {
+            state.multiAgentOpenResidentOptionsByWorkspace[optionsWsId] = optResidentId;
+          }
+          renderMultiAgentModal();
+          return;
+        }
+
+        var residentRow = event.target && event.target.closest
+          ? event.target.closest("[data-action='multi_agent-resident-select'][data-workspace-id][data-resident-id]")
+          : null;
+        if (residentRow) {
+          if (event.target && event.target.closest && event.target.closest("input, select, button, label, textarea, a, summary")) {
+            return;
+          }
+          var rowWsId = residentRow.getAttribute("data-workspace-id") || "";
+          var rowResidentId = residentRow.getAttribute("data-resident-id") || "";
+          if (rowWsId && rowResidentId) {
+            state.multiAgentSelectedResidentIdByWorkspace[rowWsId] = rowResidentId;
+            renderMultiAgentModal();
+          }
+          return;
+        }
+
+        var commitmentStatusBtn = event.target && event.target.closest
+          ? event.target.closest("button[data-action='multi_agent-commitment-status'][data-workspace-id][data-entry-id][data-status]")
+          : null;
+        if (commitmentStatusBtn) {
+          var commitmentWsId = commitmentStatusBtn.getAttribute("data-workspace-id") || "";
+          var commitmentEntryId = commitmentStatusBtn.getAttribute("data-entry-id") || "";
+          var commitmentStatus = commitmentStatusBtn.getAttribute("data-status") || "";
+          runWithControlPending(commitmentStatusBtn, function () {
+            return apiPost("multi_agent_commitment_update", {
+              workspace_id: commitmentWsId,
+              entry_id: commitmentEntryId,
+              status: commitmentStatus
+            }).then(function (response) {
+              if (!response || !response.success) {
+                throw new Error((response && response.error) || "Could not update commitment status");
+              }
+              state.workspaceMultiAgentById[commitmentWsId] = response.workspace_multi_agent || state.workspaceMultiAgentById[commitmentWsId] || null;
+              return loadState();
+            }).then(renderUi);
+          }).catch(showError);
+          return;
+        }
+
+        var logDeleteBtn = event.target && event.target.closest
+          ? event.target.closest("button[data-action='multi_agent-log-delete'][data-workspace-id][data-log-kind][data-entry-id]")
+          : null;
+        if (logDeleteBtn) {
+          var deleteWsId = logDeleteBtn.getAttribute("data-workspace-id") || "";
+          var logKind = logDeleteBtn.getAttribute("data-log-kind") || "";
+          var entryId = logDeleteBtn.getAttribute("data-entry-id") || "";
+          runWithControlPending(logDeleteBtn, function () {
+            return apiPost("multi_agent_log_delete", {
+              workspace_id: deleteWsId,
+              log_kind: logKind,
+              entry_id: entryId
+            }).then(function (response) {
+              if (!response || !response.success) {
+                throw new Error((response && response.error) || "Could not delete entry");
+              }
+              state.workspaceMultiAgentById[deleteWsId] = response.workspace_multi_agent || state.workspaceMultiAgentById[deleteWsId] || null;
+              return loadState();
+            }).then(renderUi);
+          }).catch(showError);
+          return;
+        }
+
+        if (event.target === el.multi_agentModal) {
+          closeModal(el.multi_agentModal);
+        }
+      });
+
+      on(el.multi_agentModal, "change", function (event) {
+        var toggleInput = event.target && event.target.closest
+          ? event.target.closest("#multi_agent-toggle-amendments, #multi_agent-toggle-commitments, #multi_agent-toggle-policies")
+          : null;
+        if (toggleInput) {
+          var wsId = trim(String(state.commandRulesWorkspaceId || state.activeWorkspaceId || ""));
+          if (!wsId) {
+            return;
+          }
+          multiAgentSectionVisibilitySync();
+          saveMultiAgentGovernanceFromControls(wsId)
+            .then(function () { return loadState(); })
+            .then(renderUi)
+            .catch(showError);
+          return;
+        }
+
+        var residentEnableInput = event.target && event.target.closest
+          ? event.target.closest("input[data-action='multi_agent-resident-enable'][data-workspace-id][data-resident-id]")
+          : null;
+        if (residentEnableInput) {
+          var wsEnable = residentEnableInput.getAttribute("data-workspace-id") || "";
+          var residentEnableId = residentEnableInput.getAttribute("data-resident-id") || "";
+          if (wsEnable && residentEnableId) {
+            state.multiAgentSelectedResidentIdByWorkspace[wsEnable] = residentEnableId;
+          }
+          var checked = !!residentEnableInput.checked;
+          var modelSelect = null;
+          var visibleInput = null;
+          if (el.multi_agentModal) {
+            var residentModelSelects = el.multi_agentModal.querySelectorAll("select[data-action='multi_agent-resident-model'][data-workspace-id][data-resident-id]");
+            for (var rms = 0; rms < residentModelSelects.length; rms += 1) {
+              if (
+                String(residentModelSelects[rms].getAttribute("data-workspace-id") || "") === String(wsEnable) &&
+                String(residentModelSelects[rms].getAttribute("data-resident-id") || "") === String(residentEnableId)
+              ) {
+                modelSelect = residentModelSelects[rms];
+                break;
+              }
+            }
+            var residentVisibleInputs = el.multi_agentModal.querySelectorAll("input[data-action='multi_agent-resident-visible'][data-workspace-id][data-resident-id]");
+            for (var rvi = 0; rvi < residentVisibleInputs.length; rvi += 1) {
+              if (
+                String(residentVisibleInputs[rvi].getAttribute("data-workspace-id") || "") === String(wsEnable) &&
+                String(residentVisibleInputs[rvi].getAttribute("data-resident-id") || "") === String(residentEnableId)
+              ) {
+                visibleInput = residentVisibleInputs[rvi];
+                break;
+              }
+            }
+          }
+          var selectedModel = trim(String(modelSelect && modelSelect.value || ""));
+          var showInThreads = !!(visibleInput && visibleInput.checked);
+          var residentState = state.workspaceMultiAgentById[wsEnable];
+          var existingResidents = Array.isArray(residentState && residentState.residents) ? residentState.residents : [];
+          var alreadyExists = false;
+          for (var ri = 0; ri < existingResidents.length; ri += 1) {
+            if (String(existingResidents[ri] && existingResidents[ri].id || "") === residentEnableId) {
+              alreadyExists = true;
+              break;
+            }
+          }
+          var enablePromise = null;
+          if (checked && !alreadyExists) {
+            enablePromise = apiPost("multi_agent_resident_spawn", {
+              workspace_id: wsEnable,
+              resident_id: residentEnableId,
+              visible: showInThreads ? "1" : "0",
+              background: showInThreads ? "0" : "1",
+              reserve_compute: "0",
+              model: selectedModel
+            });
+          } else {
+            var updatePayload = {
+              workspace_id: wsEnable,
+              resident_id: residentEnableId,
+              enabled: checked ? "1" : "0",
+              visible: showInThreads ? "1" : "0",
+              background: showInThreads ? "0" : "1"
+            };
+            if (selectedModel) {
+              updatePayload.model = selectedModel;
+            }
+            enablePromise = apiPost("multi_agent_resident_update", updatePayload);
+          }
+          enablePromise.then(function (response) {
+            if (!response || !response.success) {
+              throw new Error((response && response.error) || "Could not update agent role");
+            }
+            state.workspaceMultiAgentById[wsEnable] = response.workspace_multi_agent || state.workspaceMultiAgentById[wsEnable] || null;
+            return loadState();
+          }).then(renderUi).catch(showError);
+          return;
+        }
+
+        var residentVisibleInput = event.target && event.target.closest
+          ? event.target.closest("input[data-action='multi_agent-resident-visible'][data-workspace-id][data-resident-id]")
+          : null;
+        if (residentVisibleInput) {
+          var wsVisible = residentVisibleInput.getAttribute("data-workspace-id") || "";
+          var residentVisibleId = residentVisibleInput.getAttribute("data-resident-id") || "";
+          if (wsVisible && residentVisibleId) {
+            state.multiAgentSelectedResidentIdByWorkspace[wsVisible] = residentVisibleId;
+          }
+          var showThreads = residentVisibleInput.checked ? "1" : "0";
+          apiPost("multi_agent_resident_update", {
+            workspace_id: wsVisible,
+            resident_id: residentVisibleId,
+            visible: showThreads,
+            background: showThreads === "1" ? "0" : "1"
+          }).then(function (response) {
+            if (!response || !response.success) {
+              throw new Error((response && response.error) || "Could not update agent visibility");
+            }
+            state.workspaceMultiAgentById[wsVisible] = response.workspace_multi_agent || state.workspaceMultiAgentById[wsVisible] || null;
+            return loadState();
+          }).then(renderUi).catch(showError);
+          return;
+        }
+
+        var residentModelSelect = event.target && event.target.closest
+          ? event.target.closest("select[data-action='multi_agent-resident-model'][data-workspace-id][data-resident-id]")
+          : null;
+        if (residentModelSelect) {
+          var wsModel = residentModelSelect.getAttribute("data-workspace-id") || "";
+          var residentModelId = residentModelSelect.getAttribute("data-resident-id") || "";
+          if (wsModel && residentModelId) {
+            state.multiAgentSelectedResidentIdByWorkspace[wsModel] = residentModelId;
+          }
+          var modelValue = trim(String(residentModelSelect.value || ""));
+          if (!modelValue) {
+            return;
+          }
+          apiPost("multi_agent_resident_update", {
+            workspace_id: wsModel,
+            resident_id: residentModelId,
+            model: modelValue
+          }).then(function (response) {
+            if (!response || !response.success) {
+              throw new Error((response && response.error) || "Could not update agent model");
+            }
+            state.workspaceMultiAgentById[wsModel] = response.workspace_multi_agent || state.workspaceMultiAgentById[wsModel] || null;
+            return loadState();
+          }).then(renderUi).catch(showError);
+        }
+      });
+    }
 
     if (el.commandRulesWorkspace) {
       on(el.commandRulesWorkspace, "change", function () {
@@ -10258,6 +14417,99 @@
         return loadAuthStatus();
       }).catch(showError);
     });
+
+    if (el.modeRuntimeTickBtn) {
+      on(el.modeRuntimeTickBtn, "click", function () {
+        runWithControlPending(el.modeRuntimeTickBtn, function () {
+          return modeRuntimeTickNow();
+        }, { spinner: false }).catch(showError);
+      });
+    }
+
+    if (el.assistantModeApplyBtn) {
+      on(el.assistantModeApplyBtn, "click", function () {
+        var selectedModeId = trim(String((el.assistantModeSelect && el.assistantModeSelect.value) || ""));
+        saveRunMode("assistant");
+        saveAssistantModeId(selectedModeId);
+        renderUi();
+        showTransientNotice(selectedModeId ? "Assistant focus mode applied" : "Assistant general mode applied");
+      });
+    }
+
+    if (el.modeRuntimeSkillInvokeForm) {
+      on(el.modeRuntimeSkillInvokeForm, "submit", function (event) {
+        event.preventDefault();
+        var skillId = trim(String((el.modeRuntimeSkillSelect && el.modeRuntimeSkillSelect.value) || ""));
+        if (!skillId) {
+          setModeRuntimeSkillResult("Select a skill first.", true);
+          return;
+        }
+        var modeId = trim(String((el.modeRuntimeSkillMode && el.modeRuntimeSkillMode.value) || "")) || "assistant";
+        var inputText = String((el.modeRuntimeSkillInput && el.modeRuntimeSkillInput.value) || "");
+        var capabilitiesCsv = trim(String((el.modeRuntimeSkillCapabilities && el.modeRuntimeSkillCapabilities.value) || ""));
+        runWithControlPending(el.modeRuntimeSkillInvokeBtn || event.submitter, function () {
+          setModeRuntimeSkillResult("Invoking skill...", false);
+          return modeRuntimeSkillInvoke(modeId, skillId, inputText, capabilitiesCsv);
+        }, { spinner: false }).catch(function (error) {
+          setModeRuntimeSkillResult(error && error.message ? error.message : String(error), true);
+        });
+      });
+    }
+
+    if (el.modeRuntimeSkillCreateForm) {
+      on(el.modeRuntimeSkillCreateForm, "submit", function (event) {
+        event.preventDefault();
+        var payload = {
+          skill_id: trim(String((el.modeRuntimeSkillCreateId && el.modeRuntimeSkillCreateId.value) || "")),
+          name: trim(String((el.modeRuntimeSkillCreateName && el.modeRuntimeSkillCreateName.value) || "")),
+          trigger: trim(String((el.modeRuntimeSkillCreateTrigger && el.modeRuntimeSkillCreateTrigger.value) || "")),
+          capabilities: trim(String((el.modeRuntimeSkillCreateCapabilities && el.modeRuntimeSkillCreateCapabilities.value) || "")),
+          description: trim(String((el.modeRuntimeSkillCreateDescription && el.modeRuntimeSkillCreateDescription.value) || ""))
+        };
+        if (!payload.skill_id) {
+          setModeRuntimeSkillResult("Provide a new skill id.", true);
+          return;
+        }
+        runWithControlPending(el.modeRuntimeSkillCreateBtn || event.submitter, function () {
+          return modeRuntimeSkillCreate(payload).then(function () {
+            showTransientNotice("Skill created: " + payload.skill_id);
+            setModeRuntimeSkillResult("Created skill bundle " + payload.skill_id + ".", false);
+            if (el.modeRuntimeSkillCreateForm) {
+              el.modeRuntimeSkillCreateForm.reset();
+            }
+          });
+        }, { spinner: false }).catch(function (error) {
+          setModeRuntimeSkillResult(error && error.message ? error.message : String(error), true);
+        });
+      });
+    }
+
+    if (el.modeRuntimeSkillInstallForm) {
+      on(el.modeRuntimeSkillInstallForm, "submit", function (event) {
+        event.preventDefault();
+        var payload = {
+          source_path: trim(String((el.modeRuntimeSkillInstallSource && el.modeRuntimeSkillInstallSource.value) || "")),
+          skill_id: trim(String((el.modeRuntimeSkillInstallId && el.modeRuntimeSkillInstallId.value) || "")),
+          replace: String((el.modeRuntimeSkillInstallReplace && el.modeRuntimeSkillInstallReplace.value) || "0") === "1"
+        };
+        if (!payload.source_path) {
+          setModeRuntimeSkillResult("Provide a source folder path.", true);
+          return;
+        }
+        runWithControlPending(el.modeRuntimeSkillInstallBtn || event.submitter, function () {
+          return modeRuntimeSkillInstall(payload).then(function (response) {
+            var installedId = trim(String((response && response.skill_id) || payload.skill_id || ""));
+            showTransientNotice("Skill installed" + (installedId ? ": " + installedId : ""));
+            setModeRuntimeSkillResult("Installed skill bundle " + (installedId || "from source") + ".", false);
+            if (el.modeRuntimeSkillInstallForm) {
+              el.modeRuntimeSkillInstallForm.reset();
+            }
+          });
+        }, { spinner: false }).catch(function (error) {
+          setModeRuntimeSkillResult(error && error.message ? error.message : String(error), true);
+        });
+      });
+    }
 
     if (el.githubUsername) {
       on(el.githubUsername, "input", function () {
@@ -10509,6 +14761,11 @@
     }
 
     on(el.chatLog, "click", function (event) {
+      var triageAction = event.target.closest("[data-action^='triage-']");
+      if (triageAction) {
+        handleWorkspaceTreeClick(event);
+        return;
+      }
       var stopBtn = event.target.closest("[data-action='stop-run'][data-workspace-id][data-conversation-id]");
       if (stopBtn) {
         event.preventDefault();
@@ -10547,7 +14804,7 @@
         }
         state.runDetailsOpenByEventId[eventId] = panel.open ? 1 : 0;
         if (panel.open) {
-          var preview = panel.querySelector(".run-stream-preview");
+          var preview = panel.querySelector(".run-live-feed");
           if (preview) {
             preview.scrollTop = preview.scrollHeight;
             state.runStreamAutoFollowByEventId[eventId] = true;
@@ -10557,7 +14814,7 @@
       }, true);
       el.chatLog.addEventListener("scroll", function (event) {
         var target = event && event.target;
-        if (!target || !target.classList || !target.classList.contains("run-stream-preview")) {
+        if (!target || !target.classList || !target.classList.contains("run-live-feed")) {
           return;
         }
         var panel = target.closest("details.run-details.run-thinking[data-event-id]");
@@ -10582,18 +14839,221 @@
       jumpChatToBottom();
     });
 
+    if (el.queueTray) {
+      on(el.queueTray, "click", function (event) {
+        var wsId = String(state.activeWorkspaceId || "");
+        var convId = String(state.activeConversationId || "");
+        if (!wsId || !convId) {
+          return;
+        }
+
+        var steerBtn = event.target.closest("[data-action='queue-steer-item'][data-queue-item-id]");
+        if (steerBtn) {
+          event.preventDefault();
+          var steerItemId = steerBtn.getAttribute("data-queue-item-id") || "";
+          runWithControlPending(steerBtn, function () {
+            return steerQueuedMessage(steerItemId, {
+              workspaceId: wsId,
+              conversationId: convId,
+              interruptRunning: true
+            });
+          }).catch(showError);
+          return;
+        }
+
+        var trashBtn = event.target.closest("[data-action='queue-trash-item'][data-queue-item-id]");
+        if (trashBtn) {
+          event.preventDefault();
+          var trashItemId = trashBtn.getAttribute("data-queue-item-id") || "";
+          runWithControlPending(trashBtn, function () {
+            return cancelQueuedMessage(trashItemId, {
+              workspaceId: wsId,
+              conversationId: convId
+            });
+          }).catch(showError);
+          return;
+        }
+
+        var editBtn = event.target.closest("[data-action='queue-edit-item'][data-queue-item-id]");
+        if (editBtn) {
+          event.preventDefault();
+          var editItemId = editBtn.getAttribute("data-queue-item-id") || "";
+          var queueItems = queueItemsForConversation(wsId, convId);
+          var editPrompt = "";
+          for (var i = 0; i < queueItems.length; i += 1) {
+            if (String((queueItems[i] && queueItems[i].id) || "") === String(editItemId)) {
+              editPrompt = String((queueItems[i] && queueItems[i].prompt) || "");
+              break;
+            }
+          }
+          beginQueueItemEdit(wsId, convId, editItemId, editPrompt);
+          renderUi();
+          setTimeout(function () {
+            var field = el.queueTray.querySelector("textarea[data-action='queue-edit-input'][data-queue-item-id='" + escAttr(editItemId) + "']");
+            if (field) {
+              field.focus();
+              field.selectionStart = field.value.length;
+              field.selectionEnd = field.value.length;
+            }
+          }, 0);
+          return;
+        }
+
+        var saveBtn = event.target.closest("[data-action='queue-edit-save'][data-queue-item-id]");
+        if (saveBtn) {
+          event.preventDefault();
+          var saveItemId = saveBtn.getAttribute("data-queue-item-id") || "";
+          if (!isQueueEditForConversation(wsId, convId) || String(state.queueEdit.itemId || "") !== String(saveItemId)) {
+            return;
+          }
+          if (state.queueEdit.saving) {
+            return;
+          }
+          state.queueEdit.saving = true;
+          renderUi();
+          updateQueuedMessage(saveItemId, state.queueEdit.draftText, {
+            workspaceId: wsId,
+            conversationId: convId
+          })
+            .then(function () {
+              clearQueueEditState();
+              showTransientNotice("Queued message updated");
+              renderUi();
+              kickQueueWorker();
+            })
+            .catch(function (error) {
+              state.queueEdit.saving = false;
+              renderUi();
+              showError(error);
+            });
+          return;
+        }
+
+        var cancelBtn = event.target.closest("[data-action='queue-edit-cancel'][data-queue-item-id]");
+        if (cancelBtn) {
+          event.preventDefault();
+          clearQueueEditState();
+          renderUi();
+          kickQueueWorker();
+        }
+      });
+
+      on(el.queueTray, "input", function (event) {
+        var input = event.target.closest("textarea[data-action='queue-edit-input'][data-queue-item-id]");
+        if (!input) {
+          return;
+        }
+        var itemId = String(input.getAttribute("data-queue-item-id") || "");
+        if (!itemId || String(state.queueEdit.itemId || "") !== itemId) {
+          return;
+        }
+        state.queueEdit.draftText = String(input.value || "");
+      });
+
+      on(el.queueTray, "keydown", function (event) {
+        var input = event.target.closest("textarea[data-action='queue-edit-input'][data-queue-item-id]");
+        if (!input) {
+          return;
+        }
+        var itemId = String(input.getAttribute("data-queue-item-id") || "");
+        if (!itemId || String(state.queueEdit.itemId || "") !== itemId) {
+          return;
+        }
+        if (event.key === "Escape") {
+          event.preventDefault();
+          clearQueueEditState();
+          renderUi();
+          kickQueueWorker();
+          return;
+        }
+        if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+          event.preventDefault();
+          if (state.queueEdit.saving) {
+            return;
+          }
+          state.queueEdit.saving = true;
+          renderUi();
+          updateQueuedMessage(itemId, state.queueEdit.draftText, {
+            workspaceId: String(state.activeWorkspaceId || ""),
+            conversationId: String(state.activeConversationId || "")
+          })
+            .then(function () {
+              clearQueueEditState();
+              showTransientNotice("Queued message updated");
+              renderUi();
+              kickQueueWorker();
+            })
+            .catch(function (error) {
+              state.queueEdit.saving = false;
+              renderUi();
+              showError(error);
+            });
+        }
+      });
+    }
+
+    if (el.runTodoMonitor) {
+      el.runTodoMonitor.addEventListener("toggle", function () {
+        if (!state.activeWorkspaceId || !state.activeConversationId) {
+          return;
+        }
+        var todoKey = queueConversationKey(state.activeWorkspaceId, state.activeConversationId);
+        if (!todoKey) {
+          return;
+        }
+        state.runTodoMonitorOpenByConversation[todoKey] = el.runTodoMonitor.open ? 1 : 0;
+      });
+    }
+
+    if (el.runTerminalMonitor) {
+      el.runTerminalMonitor.addEventListener("toggle", function () {
+        if (!state.activeWorkspaceId || !state.activeConversationId) {
+          return;
+        }
+        var key = queueConversationKey(state.activeWorkspaceId, state.activeConversationId);
+        if (!key) {
+          return;
+        }
+        state.runTerminalMonitorOpenByConversation[key] = el.runTerminalMonitor.open ? 1 : 0;
+      });
+    }
+
+    if (el.runTerminalMonitorStop) {
+      on(el.runTerminalMonitorStop, "click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        var wsId = String(el.runTerminalMonitorStop.dataset.workspaceId || state.activeWorkspaceId || "");
+        var convId = String(el.runTerminalMonitorStop.dataset.conversationId || state.activeConversationId || "");
+        if (!wsId || !convId) {
+          return;
+        }
+        runWithControlPending(el.runTerminalMonitorStop, function () {
+          return stopConversationRun(wsId, convId);
+        }).catch(showError);
+      });
+    }
+
     if (el.queueSteerBtn) {
       on(el.queueSteerBtn, "click", function () {
+        var fallbackItemId = trim((el.queueSteerBtn && el.queueSteerBtn.dataset.queueItemId) || "");
         runWithControlPending(el.queueSteerBtn, function () {
-          return steerQueuedMessage();
+          return steerQueuedMessage(fallbackItemId, {
+            workspaceId: state.activeWorkspaceId,
+            conversationId: state.activeConversationId,
+            interruptRunning: true
+          });
         }).catch(showError);
       });
     }
 
     if (el.queueCancelBtn) {
       on(el.queueCancelBtn, "click", function () {
+        var fallbackItemId = trim((el.queueCancelBtn && el.queueCancelBtn.dataset.queueItemId) || "");
         runWithControlPending(el.queueCancelBtn, function () {
-          return cancelQueuedMessage();
+          return cancelQueuedMessage(fallbackItemId, {
+            workspaceId: state.activeWorkspaceId,
+            conversationId: state.activeConversationId
+          });
         }).catch(showError);
       });
     }
@@ -10654,9 +15114,14 @@
         event.target.closest("#organize-menu") ||
         event.target.closest("#organize-btn") ||
         event.target.closest(".workspace-menu-trigger") ||
-        event.target.closest("[data-workspace-menu]")
+        event.target.closest("[data-workspace-menu]") ||
+        event.target.closest("[data-triage-scope-menu]") ||
+        event.target.closest("[data-action='triage-suppress-open']")
       ) {
         return;
+      }
+      if (state.openTriageSuppressProposalId) {
+        state.openTriageSuppressProposalId = "";
       }
       state.openWorkspaceMenuWorkspaceId = "";
       closeAllMenus();

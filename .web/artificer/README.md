@@ -10,6 +10,9 @@ Artificer is a local-first coding assistant template for wizardry web.
 - Multi-step agent loops (plan -> tool actions -> evaluation -> update)
 - Git status and git diff after every run
 - Filesystem-backed state (no database)
+- Scheduler-backed Mode Runtime (stateful governance modes + telemetry + dashboard composites)
+- Skill bundles (typed on-disk directive packs) with policy-gated invocation bus
+- Mode-to-mode cooperative governance bus (directives exchanged between modes for emergent coordination)
 - Persistent agent memory files:
   - `.plan.md` intent register
   - `.state` typed finite-state stance (`INVESTIGATE -> DESIGN -> IMPLEMENT -> VERIFY -> DONE`)
@@ -37,6 +40,12 @@ When this template is installed into a site:
 All actions are handled by `/cgi/artificer-api` with `action=`:
 
 - `state` (GET)
+- `mode_runtime_state` (GET)
+- `mode_runtime_update` (POST)
+- `mode_runtime_tick` (POST)
+- `mode_runtime_skill_invoke` (POST)
+- `mode_runtime_skill_create` (POST)
+- `mode_runtime_skill_install` (POST)
 - `models` (GET)
 - `pick_workspace` (GET, macOS native chooser)
 - `add_workspace` (POST)
@@ -70,6 +79,23 @@ All actions are handled by `/cgi/artificer-api` with `action=`:
 - Tool execution is intentionally mediated through a command safety policy.
 - Patches go through scratch files and gate checks before promotion to workspace files.
 - Every run still returns git diff so you can inspect what changed.
+- Mode Runtime stores state in `mode-runtime/` under site data:
+  - `modes/<mode-id>/` (governance policy, state, long-horizon memory namespace)
+  - `skills/<skill-id>/` bundles with `policy.md`, `trigger.yaml`, `tools.json`, `output.schema.json`
+  - `invocation-bus/` skill invocation requests/results (stateless skill execution records)
+  - `invocation-bus/directives/` cooperative mode-to-mode governance directives
+  - `dashboard/` composite panel substrate and scheduler snapshots
+- Run-mode picker includes a `More modes` expander that surfaces all runtime governance modes with blurbs, and selecting one applies `Assistant` run mode with that focus profile.
+- Composer now separates `Reasoning depth` from `Compute/time budget`:
+  - Reasoning controls planning depth/effort per step.
+  - Compute budget controls run/queue time ceilings (`Auto`, `Quick`, `Standard`, `Long`, `Until Complete`), is persisted per queued item, and is enforced backend-side.
+- Inline directives:
+  - Mode tags: `/chat`, `/task`, `/report`, `/assistant`, etc.
+  - Explicit skill tags: use `$skill-name` (or any valid `$skill-id`) anywhere in the prompt to trigger that skill during the run.
+- Settings include a Skill Manager for invoke/create/install flows:
+  - invoke existing skills under a chosen authorization mode
+  - create new skill bundles with typed files
+  - install external skill bundles from on-disk directories
 - Hard-coded typed transitions:
   - `INVESTIGATE -> DESIGN` when investigation commands succeed
   - `DESIGN -> IMPLEMENT` when a contract exists

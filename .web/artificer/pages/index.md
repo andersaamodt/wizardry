@@ -133,8 +133,24 @@ pagetitle: "Artificer"
 <span aria-hidden="true">&darr;</span>
 </button>
 <form id="run-form" class="run-form">
-<textarea id="run-prompt" rows="4" placeholder="Ask Artificer to inspect code, make changes, run checks, and summarize results."></textarea>
+<textarea id="run-prompt" rows="4" placeholder="Ask Artificer to inspect code, make changes, run checks, and summarize results. Tip: /chat /task /teacher /report /assistant and $skill-name"></textarea>
 <div id="attachment-strip" class="attachment-strip hidden" aria-live="polite"></div>
+<details id="run-todo-monitor" class="run-todo-monitor hidden">
+<summary>
+<span id="run-todo-monitor-label">0 out of 0 tasks completed</span>
+</summary>
+<ol id="run-todo-monitor-list" class="run-todo-monitor-list"></ol>
+</details>
+<div id="queue-tray" class="queue-tray hidden" aria-live="polite">
+<div id="queue-tray-list" class="queue-tray-list"></div>
+</div>
+<details id="run-terminal-monitor" class="run-terminal-monitor hidden">
+<summary>
+<span id="run-terminal-monitor-label">Running 1 terminal</span>
+<button id="run-terminal-monitor-stop" class="run-terminal-monitor-stop" type="button" aria-label="Stop active run">Stop</button>
+</summary>
+<pre id="run-terminal-monitor-output" class="terminal-output run-terminal-monitor-output"></pre>
+</details>
 <div class="composer-row">
 <button id="attach-btn" class="attach-btn" type="button" aria-label="Attach files" title="Attach files">+</button>
 <input id="attachment-picker" type="file" multiple hidden />
@@ -144,23 +160,42 @@ pagetitle: "Artificer"
 <div id="model-picker-list" class="model-picker-list"></div>
 </div>
 </div>
+<div class="menu-anchor run-mode-anchor">
+<button id="run-mode-btn" class="run-mode-btn" type="button" aria-haspopup="menu" aria-expanded="false" title="Run mode">Auto/Thinking</button>
+<div id="run-mode-menu" class="floating-menu hidden" role="menu" aria-label="Run mode selector">
+<p class="menu-title">Run mode</p>
+<button type="button" class="run-mode-item" data-run-mode="instant"><span class="run-mode-row"><span class="run-mode-name">Instant</span><span class="check" aria-hidden="true">&check;</span></span><span class="run-mode-blurb hidden">Single-pass reply.</span></button>
+<button type="button" class="run-mode-item" data-run-mode="auto"><span class="run-mode-row"><span class="run-mode-name">Auto/Thinking</span><span class="check" aria-hidden="true">&check;</span></span><span class="run-mode-blurb hidden">Balanced loop.</span></button>
+<button type="button" class="run-mode-item" data-run-mode="programming"><span class="run-mode-row"><span class="run-mode-name">Programming</span><span class="check" aria-hidden="true">&check;</span></span><span class="run-mode-blurb hidden">Build and verify code.</span></button>
+<button type="button" class="run-mode-item" data-run-mode="chat"><span class="run-mode-row"><span class="run-mode-name">Chat</span><span class="check" aria-hidden="true">&check;</span></span><span class="run-mode-blurb hidden">Conversation-first help.</span></button>
+<button type="button" class="run-mode-item" data-run-mode="teacher"><span class="run-mode-row"><span class="run-mode-name">Teacher</span><span class="check" aria-hidden="true">&check;</span></span><span class="run-mode-blurb hidden">Adaptive tutoring.</span></button>
+<button type="button" class="run-mode-item" data-run-mode="report"><span class="run-mode-row"><span class="run-mode-name">Report</span><span class="check" aria-hidden="true">&check;</span></span><span class="run-mode-blurb hidden">Investigate and summarize.</span></button>
+<button type="button" class="run-mode-item" data-run-mode="assistant"><span class="run-mode-row"><span class="run-mode-name">Assistant</span><span class="check" aria-hidden="true">&check;</span></span><span class="run-mode-blurb hidden">Autonomous execution.</span></button>
+<div class="menu-sep"></div>
+<button id="run-mode-more-toggle" type="button" data-action="run-mode-more-toggle" aria-expanded="false"><span>More modes</span><span class="run-mode-more-caret" aria-hidden="true">&#8250;</span></button>
+<div id="run-mode-more-list" class="run-mode-more-list hidden"></div>
+</div>
+</div>
 <div class="menu-anchor composer-reasoning-anchor">
-<button id="reasoning-menu-btn" class="reasoning-btn" type="button" aria-haspopup="menu" aria-expanded="false" title="Reasoning effort"><span class="menu-icon reasoning-brain-icon" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M5.1 3.2c-.9 0-1.8.7-1.8 1.8 0 .4.1.8.4 1.1-.7.4-1.1 1-1.1 1.8 0 1.2.9 2.1 2.1 2.1.1 1.1 1 1.9 2.1 1.9 1 0 1.8-.6 2.1-1.5.2.9 1.1 1.5 2.1 1.5 1.1 0 2-.8 2.1-1.9 1.2 0 2.1-.9 2.1-2.1 0-.8-.4-1.4-1.1-1.8.2-.3.4-.7.4-1.1 0-1-.8-1.8-1.8-1.8-.4 0-.8.1-1.1.4-.4-.8-1.2-1.3-2.1-1.3-.9 0-1.7.5-2.1 1.3-.3-.2-.7-.4-1.1-.4z"></path><path d="M6.3 5.8c-.6.2-.9.6-.9 1.1"></path><path d="M8 5.4v4.3"></path><path d="M9.8 5.9c.6.2.9.6.9 1.1"></path><path d="M6.4 8.6c.4.4 1 .6 1.6.6"></path><path d="M9.6 8.6c-.4.4-1 .6-1.6.6"></path></svg></span><span>Medium</span></button>
+<button id="reasoning-menu-btn" class="reasoning-btn" type="button" aria-haspopup="menu" aria-expanded="false" title="Reasoning depth (not time limit)"><span class="menu-icon reasoning-brain-icon" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M5.1 3.2c-.9 0-1.8.7-1.8 1.8 0 .4.1.8.4 1.1-.7.4-1.1 1-1.1 1.8 0 1.2.9 2.1 2.1 2.1.1 1.1 1 1.9 2.1 1.9 1 0 1.8-.6 2.1-1.5.2.9 1.1 1.5 2.1 1.5 1.1 0 2-.8 2.1-1.9 1.2 0 2.1-.9 2.1-2.1 0-.8-.4-1.4-1.1-1.8.2-.3.4-.7.4-1.1 0-1-.8-1.8-1.8-1.8-.4 0-.8.1-1.1.4-.4-.8-1.2-1.3-2.1-1.3-.9 0-1.7.5-2.1 1.3-.3-.2-.7-.4-1.1-.4z"></path><path d="M6.3 5.8c-.6.2-.9.6-.9 1.1"></path><path d="M8 5.4v4.3"></path><path d="M9.8 5.9c.6.2.9.6.9 1.1"></path><path d="M6.4 8.6c.4.4 1 .6 1.6.6"></path><path d="M9.6 8.6c-.4.4-1 .6-1.6.6"></path></svg></span><span>Medium</span></button>
 <div id="reasoning-menu" class="floating-menu hidden" role="menu" aria-label="Reasoning effort">
-<p class="menu-title">Select reasoning</p>
+<p class="menu-title">Reasoning depth</p>
 <button type="button" data-reasoning="low"><span class="menu-icon reasoning-brain-icon" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M5.1 3.2c-.9 0-1.8.7-1.8 1.8 0 .4.1.8.4 1.1-.7.4-1.1 1-1.1 1.8 0 1.2.9 2.1 2.1 2.1.1 1.1 1 1.9 2.1 1.9 1 0 1.8-.6 2.1-1.5.2.9 1.1 1.5 2.1 1.5 1.1 0 2-.8 2.1-1.9 1.2 0 2.1-.9 2.1-2.1 0-.8-.4-1.4-1.1-1.8.2-.3.4-.7.4-1.1 0-1-.8-1.8-1.8-1.8-.4 0-.8.1-1.1.4-.4-.8-1.2-1.3-2.1-1.3-.9 0-1.7.5-2.1 1.3-.3-.2-.7-.4-1.1-.4z"></path><path d="M6.3 5.8c-.6.2-.9.6-.9 1.1"></path><path d="M8 5.4v4.3"></path><path d="M9.8 5.9c.6.2.9.6.9 1.1"></path><path d="M6.4 8.6c.4.4 1 .6 1.6.6"></path><path d="M9.6 8.6c-.4.4-1 .6-1.6.6"></path></svg></span><span>Low</span><span class="check" aria-hidden="true">&check;</span></button>
 <button type="button" data-reasoning="medium"><span class="menu-icon reasoning-brain-icon" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M5.1 3.2c-.9 0-1.8.7-1.8 1.8 0 .4.1.8.4 1.1-.7.4-1.1 1-1.1 1.8 0 1.2.9 2.1 2.1 2.1.1 1.1 1 1.9 2.1 1.9 1 0 1.8-.6 2.1-1.5.2.9 1.1 1.5 2.1 1.5 1.1 0 2-.8 2.1-1.9 1.2 0 2.1-.9 2.1-2.1 0-.8-.4-1.4-1.1-1.8.2-.3.4-.7.4-1.1 0-1-.8-1.8-1.8-1.8-.4 0-.8.1-1.1.4-.4-.8-1.2-1.3-2.1-1.3-.9 0-1.7.5-2.1 1.3-.3-.2-.7-.4-1.1-.4z"></path><path d="M6.3 5.8c-.6.2-.9.6-.9 1.1"></path><path d="M8 5.4v4.3"></path><path d="M9.8 5.9c.6.2.9.6.9 1.1"></path><path d="M6.4 8.6c.4.4 1 .6 1.6.6"></path><path d="M9.6 8.6c-.4.4-1 .6-1.6.6"></path></svg></span><span>Medium</span><span class="check" aria-hidden="true">&check;</span></button>
 <button type="button" data-reasoning="high"><span class="menu-icon reasoning-brain-icon" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M5.1 3.2c-.9 0-1.8.7-1.8 1.8 0 .4.1.8.4 1.1-.7.4-1.1 1-1.1 1.8 0 1.2.9 2.1 2.1 2.1.1 1.1 1 1.9 2.1 1.9 1 0 1.8-.6 2.1-1.5.2.9 1.1 1.5 2.1 1.5 1.1 0 2-.8 2.1-1.9 1.2 0 2.1-.9 2.1-2.1 0-.8-.4-1.4-1.1-1.8.2-.3.4-.7.4-1.1 0-1-.8-1.8-1.8-1.8-.4 0-.8.1-1.1.4-.4-.8-1.2-1.3-2.1-1.3-.9 0-1.7.5-2.1 1.3-.3-.2-.7-.4-1.1-.4z"></path><path d="M6.3 5.8c-.6.2-.9.6-.9 1.1"></path><path d="M8 5.4v4.3"></path><path d="M9.8 5.9c.6.2.9.6.9 1.1"></path><path d="M6.4 8.6c.4.4 1 .6 1.6.6"></path><path d="M9.6 8.6c-.4.4-1 .6-1.6.6"></path></svg></span><span>High</span><span class="check" aria-hidden="true">&check;</span></button>
 <button type="button" data-reasoning="extra-high"><span class="menu-icon reasoning-brain-icon" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><path d="M5.1 3.2c-.9 0-1.8.7-1.8 1.8 0 .4.1.8.4 1.1-.7.4-1.1 1-1.1 1.8 0 1.2.9 2.1 2.1 2.1.1 1.1 1 1.9 2.1 1.9 1 0 1.8-.6 2.1-1.5.2.9 1.1 1.5 2.1 1.5 1.1 0 2-.8 2.1-1.9 1.2 0 2.1-.9 2.1-2.1 0-.8-.4-1.4-1.1-1.8.2-.3.4-.7.4-1.1 0-1-.8-1.8-1.8-1.8-.4 0-.8.1-1.1.4-.4-.8-1.2-1.3-2.1-1.3-.9 0-1.7.5-2.1 1.3-.3-.2-.7-.4-1.1-.4z"></path><path d="M6.3 5.8c-.6.2-.9.6-.9 1.1"></path><path d="M8 5.4v4.3"></path><path d="M9.8 5.9c.6.2.9.6.9 1.1"></path><path d="M6.4 8.6c.4.4 1 .6 1.6.6"></path><path d="M9.6 8.6c-.4.4-1 .6-1.6.6"></path></svg></span><span>Extra High</span><span class="check" aria-hidden="true">&check;</span></button>
 </div>
 </div>
-<button id="agent-loop-toggle" class="loop-toggle on" type="button" aria-pressed="true" title="Advanced agentive loop">
-<span class="loop-label">Loop</span>
-<span class="loop-track" aria-hidden="true"><span class="loop-knob"></span></span>
-</button>
-<div id="queue-controls" class="queue-controls hidden">
-<button id="queue-steer-btn" class="queue-btn" type="button">Steer</button>
-<button id="queue-cancel-btn" class="queue-btn queue-trash" type="button" aria-label="Delete queued message">&times;</button>
+<div class="menu-anchor composer-compute-anchor">
+<button id="compute-menu-btn" class="compute-btn" type="button" aria-haspopup="menu" aria-expanded="false" title="Compute/time budget"><span class="menu-icon compute-clock-icon" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="5.6"></circle><path d="M8 4.9v3.4l2.2 1.4"></path></svg></span><span>Auto</span></button>
+<div id="compute-menu" class="floating-menu hidden" role="menu" aria-label="Compute budget">
+<p class="menu-title">Compute/time budget</p>
+<button type="button" data-compute-budget="auto"><span class="menu-icon compute-clock-icon" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="5.6"></circle><path d="M8 4.9v3.4l2.2 1.4"></path></svg></span><span>Auto</span><span class="check" aria-hidden="true">&check;</span></button>
+<button type="button" data-compute-budget="quick"><span class="menu-icon compute-clock-icon" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="5.6"></circle><path d="M8 4.9v3.4l2.2 1.4"></path></svg></span><span>Instant</span><span class="check" aria-hidden="true">&check;</span></button>
+<button type="button" data-compute-budget="standard"><span class="menu-icon compute-clock-icon" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="5.6"></circle><path d="M8 4.9v3.4l2.2 1.4"></path></svg></span><span>Standard</span><span class="check" aria-hidden="true">&check;</span></button>
+<button type="button" data-compute-budget="long"><span class="menu-icon compute-clock-icon" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="5.6"></circle><path d="M8 4.9v3.4l2.2 1.4"></path></svg></span><span>Long-term</span><span class="check" aria-hidden="true">&check;</span></button>
+<button type="button" data-compute-budget="until-complete"><span class="menu-icon compute-clock-icon" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="5.6"></circle><path d="M8 4.9v3.4l2.2 1.4"></path></svg></span><span>Until Complete</span><span class="check" aria-hidden="true">&check;</span></button>
+</div>
 </div>
 <button id="run-btn" class="run-fab" type="submit" aria-label="Run agent" title="Send message"><span aria-hidden="true">&uarr;</span></button>
 </div>
@@ -360,8 +395,135 @@ pagetitle: "Artificer"
 <div id="command-rules-status" class="settings-hint"></div>
 <div id="command-rules-list" class="command-rules-list"></div>
 </div>
+<div class="settings-sep"></div>
+<div class="settings-rules">
+<div class="settings-rules-head">
+<strong>Mode Runtime + Skills</strong>
+<button id="mode-runtime-tick-btn" type="button">Tick scheduler</button>
+</div>
+<div id="mode-runtime-summary" class="settings-hint"></div>
+<div id="mode-runtime-panels" class="mode-runtime-panels"></div>
+<div id="mode-runtime-modes" class="mode-runtime-modes"></div>
+<div id="mode-runtime-skills" class="mode-runtime-skills"></div>
+<div class="mode-runtime-manager">
+<p class="settings-hint">Use the run-mode menu <strong>More modes</strong> expander to choose Assistant focus modes inline while composing.</p>
+<label for="assistant-mode-select">Assistant focus mode</label>
+<div class="mode-runtime-inline">
+<select id="assistant-mode-select"></select>
+<button id="assistant-mode-apply-btn" type="button">Use mode</button>
+</div>
+<div class="settings-sep"></div>
+<form id="mode-runtime-skill-invoke-form" class="stack compact">
+<label for="mode-runtime-skill-select">Invoke skill</label>
+<select id="mode-runtime-skill-select"></select>
+<label for="mode-runtime-skill-mode">Authorized by mode</label>
+<select id="mode-runtime-skill-mode"></select>
+<label for="mode-runtime-skill-capabilities">Capability override (optional CSV)</label>
+<input id="mode-runtime-skill-capabilities" placeholder="filesystem,network" />
+<label for="mode-runtime-skill-input">Skill input</label>
+<textarea id="mode-runtime-skill-input" rows="3" placeholder="What should this skill do?"></textarea>
+<div class="modal-actions">
+<button id="mode-runtime-skill-invoke-btn" type="submit">Invoke skill</button>
+</div>
+</form>
+<pre id="mode-runtime-skill-result" class="terminal-output hidden"></pre>
+<details class="mode-runtime-admin">
+<summary>Create or install skill bundles</summary>
+<form id="mode-runtime-skill-create-form" class="stack compact">
+<label for="mode-runtime-skill-create-id">New skill id</label>
+<input id="mode-runtime-skill-create-id" placeholder="my-skill-id" />
+<label for="mode-runtime-skill-create-name">Name</label>
+<input id="mode-runtime-skill-create-name" placeholder="My Skill" />
+<label for="mode-runtime-skill-create-trigger">Trigger</label>
+<input id="mode-runtime-skill-create-trigger" placeholder="when manually invoked" />
+<label for="mode-runtime-skill-create-capabilities">Capabilities (CSV)</label>
+<input id="mode-runtime-skill-create-capabilities" placeholder="filesystem" />
+<label for="mode-runtime-skill-create-description">Description</label>
+<input id="mode-runtime-skill-create-description" placeholder="What this skill does." />
+<div class="modal-actions">
+<button id="mode-runtime-skill-create-btn" type="submit">Create skill</button>
+</div>
+</form>
+<form id="mode-runtime-skill-install-form" class="stack compact">
+<label for="mode-runtime-skill-install-source">Install skill from folder</label>
+<input id="mode-runtime-skill-install-source" placeholder="/absolute/path/to/skill-bundle" />
+<label for="mode-runtime-skill-install-id">Override id (optional)</label>
+<input id="mode-runtime-skill-install-id" placeholder="optional-skill-id" />
+<label for="mode-runtime-skill-install-replace">Replace existing skill if id already exists</label>
+<select id="mode-runtime-skill-install-replace">
+<option value="0">No</option>
+<option value="1">Yes</option>
+</select>
+<div class="modal-actions">
+<button id="mode-runtime-skill-install-btn" type="submit">Install skill</button>
+</div>
+</form>
+</details>
+</div>
+</div>
 </div>
 </div>
 </div>
 
-<script src="/static/artificer-app.js?v=20260219-approvalux25"></script>
+<div id="multi_agent-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="multi_agent-title">
+<div class="modal-card">
+<div class="modal-head">
+<div class="modal-head-title">
+<h3 id="multi_agent-title">Manage agents</h3>
+<span id="multi_agent-project-label" class="multi-agent-project-label">No project selected</span>
+</div>
+<button id="multi_agent-modal-close" class="icon-btn ghost" type="button" aria-label="Close agent settings">&times;</button>
+</div>
+<div class="stack">
+<p id="multi_agent-status" class="settings-hint"></p>
+
+<label for="multi_agent-charter" title="Shared instructions that guide all agents in this project.">Project instructions</label>
+<textarea id="multi_agent-charter" rows="5" placeholder="Instructions for all agents in this project"></textarea>
+
+<div class="settings-rules">
+<div class="settings-rules-head"><strong>Agent team</strong></div>
+<p id="multi_agent-roles-hint" class="settings-hint">Turn built-in specialist agents on or off. Use each row menu for model and visibility.</p>
+<div id="multi_agent-residents-list" class="command-rules-list resident-listbox" role="listbox" aria-label="Agent team"></div>
+</div>
+
+<div class="settings-rules">
+<label class="toggle-row" title="Allow agent-proposed updates to project instructions and interpretation notes."><input id="multi_agent-toggle-amendments" type="checkbox" checked /> Instruction updates</label>
+<div id="multi_agent-section-amendments" class="multi-agent-section">
+<details class="multi-agent-collapse" open>
+<summary><span id="multi_agent-amendments-summary">Instruction updates</span></summary>
+<div class="multi-agent-frame">
+<div id="multi_agent-amendments-list" class="command-rules-list"></div>
+</div>
+</details>
+<details class="multi-agent-collapse" open>
+<summary><span id="multi_agent-interpretation-summary">Interpretation notes</span></summary>
+<div class="multi-agent-frame">
+<div id="multi_agent-interpretation-list" class="command-rules-list"></div>
+</div>
+</details>
+</div>
+
+<label class="toggle-row" title="Track agent commitments and their lifecycle over time."><input id="multi_agent-toggle-commitments" type="checkbox" checked /> Commitment tracking</label>
+<div id="multi_agent-section-commitments" class="multi-agent-section">
+<details class="multi-agent-collapse" open>
+<summary><span id="multi_agent-commitments-summary">Commitments</span></summary>
+<div class="multi-agent-frame">
+<div id="multi_agent-commitments-list" class="command-rules-list"></div>
+</div>
+</details>
+</div>
+
+<label class="toggle-row" title="Suppress recurring low-value decision types while keeping important decisions visible."><input id="multi_agent-toggle-policies" type="checkbox" checked /> Decision filters</label>
+<div id="multi_agent-section-policies" class="multi-agent-section">
+<details class="multi-agent-collapse" open>
+<summary><span id="multi_agent-policies-summary">Decision filters</span></summary>
+<div class="multi-agent-frame">
+<div id="multi_agent-policies-list" class="command-rules-list"></div>
+</div>
+</details>
+</div>
+</div>
+</div>
+</div>
+
+<script src="/static/artificer-app.js?v=20260220-agent-governance-tune02"></script>

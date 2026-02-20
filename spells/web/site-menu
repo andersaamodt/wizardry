@@ -199,8 +199,10 @@ while true; do
   fi
   
   # Always: Build all & restart server
-  build_restart_cmd="build \"$site_name\" --full"
-  build_restart_cmd="$build_restart_cmd && stop-site \"$site_name\""
+  # Stop first so deploy feedback is immediate and we avoid waiting for build
+  # before shutting down an already-running site.
+  build_restart_cmd="stop-site \"$site_name\""
+  build_restart_cmd="$build_restart_cmd && build \"$site_name\" --full"
   build_restart_cmd="$build_restart_cmd && serve-site \"$site_name\""
   build_restart_cmd_wrapped=$(wrap_cmd "Build all & restart server" \
     "$build_restart_cmd")
