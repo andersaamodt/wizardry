@@ -41,53 +41,40 @@ shift $((OPTIND-1)) # Shift off the options and optional --.
 display_priorities() {
   # Get directory
   dir="${PWD}"
+  tab=$(printf '\t')
 
   # Build a list of all prioritized files in the directory.
-  # Format: "echelon priority checked filename"
+  # Format: "echelon<TAB>priority<TAB>checked<TAB>filename"
   priority_list_file=$(temp-file priorities-list)
   priority_list_file="${priority_list_file?priorities: failed to create temp file}"
+  rows_file=$(temp-file priorities-rows)
+  rows_file="${rows_file?priorities: failed to create temp file}"
   item_count=0
-  
-  for f in "$dir"/*; do
-    [ -e "$f" ] || continue
-    
-    # Read all three attributes at once (major optimization)
-    attrs=$(get-attribute-batch "$f" echelon priority checked 2>/dev/null || true)
-    
-    # Parse the batch result
-    file_echelon=""
-    file_priority=""
-    checked_value=""
-    
-    # Extract values from "echelon=X priority=Y checked=Z" format
-    for pair in $attrs; do
-      case "$pair" in
-        echelon=*) file_echelon="${pair#echelon=}" ;;
-        priority=*) file_priority="${pair#priority=}" ;;
-        checked=*) checked_value="${pair#checked=}" ;;
-      esac
-    done
-    
+
+  collect-prioritized-rows "$dir" > "$rows_file"
+  while IFS="$tab" read -r priority_file file_echelon file_priority checked_value; do
+    [ -n "$priority_file" ] || continue
+
     # Skip if no echelon (not prioritized)
     case "$file_echelon" in
       ''|*Error*|*[!0-9]*) continue ;;
     esac
-    
+
     # Default priority to 0 if not set
     case "$file_priority" in
       ''|*Error*|*[!0-9]*) file_priority=0 ;;
     esac
-    
+
     # Default checked to 0 if not set
     case "$checked_value" in
       ''|*Error*|*[!0-9]*) checked_value=0 ;;
     esac
-    
+
     # Add to list with all data needed
-    printf '%s %s %s %s\n' "$file_echelon" "$file_priority" "$checked_value" "$f" >> "$priority_list_file"
-    
+    printf '%s\t%s\t%s\t%s\n' "$file_echelon" "$file_priority" "$checked_value" "$priority_file" >> "$priority_list_file"
     item_count=$((item_count + 1))
-  done
+  done < "$rows_file"
+  rm -f "$rows_file"
   
   # If there are no priorities, print an error message and exit
   if [ ! -s "$priority_list_file" ]; then
@@ -97,8 +84,7 @@ display_priorities() {
   fi
 
   # Sort by echelon (descending), then priority (ascending), then filename
-  # Using sort: -k1,1rn (first field reverse numeric), -k2,2n (second field numeric)
-  sort -k1,1rn -k2,2n -k4 "$priority_list_file" -o "$priority_list_file"
+  sort -t "$tab" -k1,1rn -k2,2n -k4,4 "$priority_list_file" -o "$priority_list_file"
 
   # Initialize variables
   prev_echelon=""
@@ -108,7 +94,7 @@ display_priorities() {
   total_menu_items=0
 
   # Process sorted list
-  while IFS=' ' read -r file_echelon file_priority checked_value priority_file; do
+  while IFS="$tab" read -r file_echelon file_priority checked_value priority_file; do
     # Add separator when echelon changes
     if [ -n "$prev_echelon" ] && [ "$file_echelon" != "$prev_echelon" ]; then
       menu_command="${menu_command} \"---\""
@@ -168,15 +154,8 @@ previous_item_count=0
 
 while true; do
   if [ "$first_run" -eq 0 ]; then
-    # Quick count of prioritized items (just count, don't read all attributes)
-    current_count_check=0
-    for f in "$PWD"/*; do
-      [ -e "$f" ] || continue
-      # Quick check: just see if echelon attribute exists
-      if read-magic "$f" echelon >/dev/null 2>&1; then
-        current_count_check=$((current_count_check + 1))
-      fi
-    done
+    # Quick count of prioritized items from the shared collector.
+    current_count_check=$(collect-prioritized-rows "$PWD" | wc -l | tr -d ' ')
     
     # If count increased since last iteration, keep "Add priority" selected
     if [ "$current_count_check" -gt "$previous_item_count" ]; then

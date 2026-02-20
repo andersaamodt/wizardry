@@ -125,48 +125,34 @@ if [ "$checked_value" = "1" ]; then
 fi
 
 # Find the highest echelon in the directory and highest priority within that echelon
-# Combined into single loop for performance
+# using the shared collector for performance.
 highest_echelon=0
 highest_priority_in_echelon=0
-for f in "$directory"/*; do
-  [ -e "$f" ] || continue
-  
-  # Read both echelon and priority in one batch call
-  attrs=$(get-attribute-batch "$f" echelon priority 2>/dev/null || true)
-  
-  file_echelon=""
-  file_priority=""
-  
-  for pair in $attrs; do
-    case "$pair" in
-      echelon=*) file_echelon="${pair#echelon=}" ;;
-      priority=*) file_priority="${pair#priority=}" ;;
-    esac
-  done
-  
-  # Skip if echelon not valid
+rows_tmp=$(mktemp "${TMPDIR:-/tmp}/prioritize-rows.XXXXXX")
+trap 'rm -f "$rows_tmp"' EXIT HUP INT TERM
+collect-prioritized-rows "$directory" > "$rows_tmp"
+
+tab=$(printf '\t')
+while IFS="$tab" read -r _path file_echelon file_priority _checked_value; do
   case "$file_echelon" in
     *Error*|''|*[!0-9]*) continue ;;
   esac
-  
-  # Update highest echelon
+
   if [ "$file_echelon" -gt "$highest_echelon" ]; then
     highest_echelon=$file_echelon
-    # Reset highest priority when we find a new highest echelon
     highest_priority_in_echelon=0
   fi
-  
-  # Track highest priority in the highest echelon
+
   if [ "$file_echelon" -eq "$highest_echelon" ]; then
     case "$file_priority" in
       *Error*|''|*[!0-9]*) file_priority=0 ;;
     esac
-    
+
     if [ "$file_priority" -gt "$highest_priority_in_echelon" ]; then
       highest_priority_in_echelon=$file_priority
     fi
   fi
-done
+done < "$rows_tmp"
 
 # If this is the first priority, set echelon=1, priority=1
 if [ "$highest_echelon" -eq 0 ]; then

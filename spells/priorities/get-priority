@@ -31,9 +31,16 @@ if [ ! -f "$file" ]; then
   exit 1
 fi
 
-# Read echelon and priority
-echelon=$(read-magic "$file" echelon 2>/dev/null || true)
-priority=$(read-magic "$file" priority 2>/dev/null || true)
+# Read both attributes in one call.
+attrs=$(get-attribute-batch "$file" echelon priority 2>/dev/null || true)
+echelon=""
+priority=""
+for pair in $attrs; do
+  case "$pair" in
+    echelon=*) echelon=${pair#echelon=} ;;
+    priority=*) priority=${pair#priority=} ;;
+  esac
+done
 
 # Handle error messages or empty values
 case "$echelon" in
