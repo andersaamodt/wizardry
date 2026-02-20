@@ -1,0 +1,25 @@
+#!/bin/sh
+
+# Install desktop apps from the wizardry-apps repository.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-wizardry-desktop-apps
+
+Installs wizardry-apps (default: $WIZARDRY_APPS_DIR) and verifies desktop apps.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+# shellcheck source=/dev/null
+. "$script_dir/wizardry-apps-common"
+
+wizardry_apps_install_component apps

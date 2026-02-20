@@ -38,15 +38,34 @@ fi
 WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
 SITES_DIR="$WEB_ROOT"
 SITE_DIR="$SITES_DIR/$site_name"
+WIZARDRY_DIR=${WIZARDRY_DIR:-$HOME/.wizardry}
+WIZARDRY_APPS_DIR=${WIZARDRY_APPS_DIR:-$HOME/git/wizardry-apps}
 
 # Check if site already exists
 if [ -d "$SITE_DIR" ]; then
   die "create-from-template: site '$site_name' already exists"
 fi
 
-# Get WIZARDRY_DIR to find templates
-template_dir="$WIZARDRY_DIR/.web/$template"
-shared_theme_dir="$WIZARDRY_DIR/.web/.themes"
+# Offer to install web templates if missing or if .web is a symlink (unsupported).
+templates_root="$WIZARDRY_APPS_DIR/.web"
+if [ ! -d "$templates_root" ]; then
+  ensure_templates_cmd="$WIZARDRY_DIR/spells/.arcana/wizardry-apps/ensure-wizardry-apps-component"
+  if [ -x "$ensure_templates_cmd" ]; then
+    "$ensure_templates_cmd" web-templates
+  fi
+fi
+
+template_dir="$templates_root/$template"
+shared_theme_dir="$templates_root/.themes"
+
+if [ ! -d "$template_dir" ]; then
+  ensure_templates_cmd="$WIZARDRY_DIR/spells/.arcana/wizardry-apps/ensure-wizardry-apps-component"
+  if [ -x "$ensure_templates_cmd" ]; then
+    "$ensure_templates_cmd" web-templates
+  fi
+  template_dir="$templates_root/$template"
+  shared_theme_dir="$templates_root/.themes"
+fi
 
 if [ ! -d "$template_dir" ]; then
   die "create-from-template: template '$template' not found"

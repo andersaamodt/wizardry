@@ -1,0 +1,79 @@
+#!/bin/sh
+
+# Ensure a wizardry-apps component is installed, optionally prompting to install.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: ensure-wizardry-apps-component COMPONENT [--yes]
+
+Ensures COMPONENT is installed.
+Components: web-templates, apps
+
+Prompts to install on demand unless --yes is provided.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+component=${1-}
+auto_yes=0
+case "${2-}" in
+  --yes) auto_yes=1 ;;
+  "") ;;
+  *) die "ensure-wizardry-apps-component: unknown option '$2'" ;;
+esac
+
+if [ -z "$component" ]; then
+  die 2 "ensure-wizardry-apps-component: COMPONENT required"
+fi
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+if "$script_dir/is-wizardry-apps-component-installed" "$component" >/dev/null 2>&1; then
+  exit 0
+fi
+
+case "$component" in
+  web-templates)
+    install_cmd="$script_dir/install-web-templates"
+    label="Web templates"
+    ;;
+  apps)
+    install_cmd="$script_dir/install-wizardry-desktop-apps"
+    label="Desktop apps"
+    ;;
+  *)
+    die 2 "ensure-wizardry-apps-component: unknown component '$component'"
+    ;;
+esac
+
+warn "$label not installed."
+
+if [ "$auto_yes" -eq 1 ]; then
+  "$install_cmd"
+  exit 0
+fi
+
+if has ask-yn; then
+  if ! ask-yn "Install $label now?" "y"; then
+    die "Skipped installation of $label"
+  fi
+else
+  printf '%s' "Install $label now? [Y/n]: "
+  IFS= read -r choice || exit 1
+  case "$choice" in
+    ""|y|Y|yes|YES)
+      ;;
+    *)
+      die "Skipped installation of $label"
+      ;;
+  esac
+fi
+
+"$install_cmd"

@@ -1,0 +1,43 @@
+#!/bin/sh
+
+# Build and launch Forge from wizardry-apps.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: launch-forge
+
+Compiles and launches Forge from the wizardry-apps repository.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+# shellcheck source=/dev/null
+. "$script_dir/wizardry-apps-common"
+
+if ! wizardry_apps_repo_installed; then
+  die "launch-forge: wizardry-apps is not installed (run install-wizardry-apps first)"
+fi
+
+if ! wizardry_apps_forge_available; then
+  die "launch-forge: Forge scripts not found in $wizardry_apps_dir"
+fi
+
+step "Compiling Forge..."
+(
+  cd "$wizardry_apps_dir"
+  ./install-forge
+)
+
+step "Launching Forge..."
+(
+  cd "$wizardry_apps_dir"
+  exec ./run-forge
+)

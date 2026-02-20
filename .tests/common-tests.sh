@@ -516,7 +516,7 @@ script_uses_declared_global() {
 
 test_scripts_using_globals_have_set_u() {
   # List of globals declared in declare-globals
-  declared_globals="WIZARDRY_DIR SPELLBOOK_DIR MUD_DIR"
+  declared_globals="WIZARDRY_DIR SPELLBOOK_DIR MUD_DIR WIZARDRY_APPS_DIR"
   violations=""
   
   check_global_usage() {
@@ -593,7 +593,7 @@ test_no_global_declarations_outside_declare_globals() {
   return 0
 }
 
-# --- Check: declare-globals has exactly 4 globals ---
+# --- Check: declare-globals has exactly 6 globals ---
 # Ensures no new globals are added without explicit tracking
 test_declare_globals_count() {
   skip-if-compiled || return $?
@@ -611,8 +611,8 @@ test_declare_globals_count() {
   # The colon-equals syntax (:=) assigns a default value if unset.
   global_count=$(grep -cE '^[[:space:]]*: "\$\{[A-Z][A-Z0-9_]+:=' "$declare_globals_file" 2>/dev/null || printf '0')
   
-  if [ "$global_count" -ne 4 ]; then
-    TEST_FAILURE_REASON="expected exactly 4 globals in declare-globals, found $global_count"
+  if [ "$global_count" -ne 6 ]; then
+    TEST_FAILURE_REASON="expected exactly 6 globals in declare-globals, found $global_count"
     return 1
   fi
   return 0
@@ -644,7 +644,7 @@ test_no_undeclared_global_exports() {
         case "$var_name" in
           PATH|NIX_PACKAGE|APT_PACKAGE|DNF_PACKAGE|YUM_PACKAGE|ZYPPER_PACKAGE|PACMAN_PACKAGE|APK_PACKAGE|PKGIN_PACKAGE|BREW_PACKAGE)
             return ;;
-          WIZARDRY_DIR|SPELLBOOK_DIR|MUD_DIR|WIZARDRY_LOG_LEVEL)
+          WIZARDRY_DIR|SPELLBOOK_DIR|MUD_DIR|WIZARDRY_SITES_DIR|WIZARDRY_APPS_DIR|WIZARDRY_LOG_LEVEL)
             return ;;  # Declared globals are allowed
           WIZARDRY_PLATFORM|WIZARDRY_RC_FILE|WIZARDRY_RC_FORMAT)
             return ;;  # Used by learn-spell for rc file detection
@@ -2807,4 +2807,3 @@ test_menu_signal_handling() {
 }
 
 run_filtered_test "menu_signal_handling" "Menus have proper ESC/Exit/Ctrl-C handling" test_menu_signal_handling
-

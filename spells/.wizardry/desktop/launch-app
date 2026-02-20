@@ -33,14 +33,20 @@ fi
 
 # Use WIZARDRY_DIR from environment (set by invoke-wizardry)
 wizardry_dir=${WIZARDRY_DIR:-$HOME/.wizardry}
+wizardry_apps_dir=${WIZARDRY_APPS_DIR:-$HOME/git/wizardry-apps}
 
 if [ ! -d "$wizardry_dir" ]; then
   printf '%s\n' "launch-app: wizardry directory not found: $wizardry_dir" >&2
   exit 1
 fi
 
-apps_dir="$wizardry_dir/.apps"
+apps_dir="$wizardry_apps_dir/.apps"
 app_path="$apps_dir/$app_name"
+
+ensure_apps_cmd="$wizardry_dir/spells/.arcana/wizardry-apps/ensure-wizardry-apps-component"
+if [ -x "$ensure_apps_cmd" ]; then
+  "$ensure_apps_cmd" apps
+fi
 
 # Validate app exists and has required structure
 if ! app-validate "$app_path"; then

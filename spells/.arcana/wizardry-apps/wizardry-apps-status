@@ -1,0 +1,53 @@
+#!/bin/sh
+
+# Report installation status for wizardry-apps components.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: wizardry-apps-status
+
+Reports installation status of wizardry-apps components (web-templates, apps).
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+if command -v colors >/dev/null 2>&1; then
+  # shellcheck source=/dev/null
+  . colors
+else
+  RESET=""
+  THEME_SUCCESS=""
+  THEME_WARNING=""
+  GREY=""
+fi
+
+installed=0
+total=2
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+for component in web-templates apps; do
+  if "$script_dir/is-wizardry-apps-component-installed" "$component" >/dev/null 2>&1; then
+    installed=$((installed + 1))
+  fi
+done
+
+if [ "$installed" -eq 0 ]; then
+  color="$GREY"
+  status="not installed"
+elif [ "$installed" -eq "$total" ]; then
+  color="$THEME_SUCCESS"
+  status="installed"
+else
+  color="$THEME_WARNING"
+  status="partial install"
+fi
+
+printf '%s%s%s\n' "$color" "$status" "$RESET"

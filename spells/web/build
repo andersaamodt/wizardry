@@ -25,6 +25,7 @@ set -eu
 . env-clear
 
 WIZARDRY_DIR=${WIZARDRY_DIR:-$HOME/.wizardry}
+WIZARDRY_APPS_DIR=${WIZARDRY_APPS_DIR:-$HOME/git/wizardry-apps}
 
 site_name=${1-}
 if [ -z "$site_name" ]; then
@@ -63,7 +64,7 @@ fi
 
 build_site() {
   step "Building site: $site_name"
-  shared_theme_dir="$WIZARDRY_DIR/.web/.themes"
+  shared_theme_dir="$WIZARDRY_APPS_DIR/.web/.themes"
   
   # Create build directories
   mkdir -p "$SITE_DIR/build/pages"

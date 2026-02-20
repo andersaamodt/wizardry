@@ -5,6 +5,21 @@ while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" !
 done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
+create_fake_templates_root() {
+  fake_wizardry_root=$(temp-dir wizardry-template-root)
+
+  mkdir -p "$fake_wizardry_root/.web/demo/pages"
+  mkdir -p "$fake_wizardry_root/.web/demo/static"
+  cat > "$fake_wizardry_root/.web/demo/pages/index.md" <<'EOF'
+# Demo Template
+EOF
+  cat > "$fake_wizardry_root/.web/demo/static/site.css" <<'EOF'
+body { padding: 0; }
+EOF
+
+  printf '%s\n' "$fake_wizardry_root"
+}
+
 test_help() {
   run_spell spells/web/update-from-template --help
   assert_success
@@ -17,10 +32,11 @@ test_updates_from_template() {
   
   # Set up test environment
   test_web_root=$(temp-dir web-wizardry-test)
+  fake_wizardry_root=$(create_fake_templates_root)
   export WEB_WIZARDRY_ROOT="$test_web_root"
   
   # Create a test site from demo template
-  run_spell spells/web/create-from-template mytestsite demo
+  WIZARDRY_APPS_DIR="$fake_wizardry_root" run_spell spells/web/create-from-template mytestsite demo
   assert_success
   
   # Modify a template file to simulate customization
@@ -33,7 +49,7 @@ test_updates_from_template() {
   }
   
   # Update from template with --force flag
-  run_spell spells/web/update-from-template mytestsite --force
+  WIZARDRY_APPS_DIR="$fake_wizardry_root" run_spell spells/web/update-from-template mytestsite --force
   assert_success
   
   # Verify customization was overwritten (file should be back to original)
@@ -55,7 +71,7 @@ test_updates_from_template() {
   }
   
   # Cleanup
-  rm -rf "$test_web_root"
+  rm -rf "$test_web_root" "$fake_wizardry_root"
 }
 
 test_preserves_uploads() {
@@ -63,17 +79,18 @@ test_preserves_uploads() {
   
   # Set up test environment
   test_web_root=$(temp-dir web-wizardry-test)
+  fake_wizardry_root=$(create_fake_templates_root)
   export WEB_WIZARDRY_ROOT="$test_web_root"
   
   # Create a test site
-  run_spell spells/web/create-from-template mytestsite demo
+  WIZARDRY_APPS_DIR="$fake_wizardry_root" run_spell spells/web/create-from-template mytestsite demo
   assert_success
   
   # Add a file to uploads
   echo "test upload content" > "$test_web_root/mytestsite/site/uploads/test-file.txt"
   
   # Update from template
-  run_spell spells/web/update-from-template mytestsite --force
+  WIZARDRY_APPS_DIR="$fake_wizardry_root" run_spell spells/web/update-from-template mytestsite --force
   assert_success
   
   # Verify upload is still there
@@ -83,7 +100,7 @@ test_preserves_uploads() {
   }
   
   # Cleanup
-  rm -rf "$test_web_root"
+  rm -rf "$test_web_root" "$fake_wizardry_root"
 }
 
 test_fails_for_nonexistent_site() {
@@ -91,15 +108,16 @@ test_fails_for_nonexistent_site() {
   
   # Set up test environment
   test_web_root=$(temp-dir web-wizardry-test)
+  fake_wizardry_root=$(create_fake_templates_root)
   export WEB_WIZARDRY_ROOT="$test_web_root"
   
   # Try to update a nonexistent site
-  run_spell spells/web/update-from-template nonexistent --force
+  WIZARDRY_APPS_DIR="$fake_wizardry_root" run_spell spells/web/update-from-template nonexistent --force
   assert_failure
   assert_output_contains "not found"
   
   # Cleanup
-  rm -rf "$test_web_root"
+  rm -rf "$test_web_root" "$fake_wizardry_root"
 }
 
 test_update_uses_web_template_directory() {
@@ -117,7 +135,7 @@ EOF
 body { margin: 0; }
 EOF
 
-  WIZARDRY_DIR="$fake_wizardry_root" WEB_WIZARDRY_ROOT="$test_web_root" \
+  WIZARDRY_APPS_DIR="$fake_wizardry_root" WEB_WIZARDRY_ROOT="$test_web_root" \
     run_spell spells/web/create-from-template minisite minimal
   assert_success
 
@@ -127,7 +145,7 @@ EOF
 # from template v2
 EOF
 
-  WIZARDRY_DIR="$fake_wizardry_root" WEB_WIZARDRY_ROOT="$test_web_root" \
+  WIZARDRY_APPS_DIR="$fake_wizardry_root" WEB_WIZARDRY_ROOT="$test_web_root" \
     run_spell spells/web/update-from-template minisite --force
   assert_success
 

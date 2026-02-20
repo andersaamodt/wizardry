@@ -150,8 +150,11 @@ while true; do
     fi
   fi
   
-  # Add create options (template first, then blank)
-  set -- "$@" "Create from template%template-menu" "Create blank site%create-site-prompt"
+  # Add create options (template first, then blank), plus template installer.
+  set -- "$@" \
+    "Create from template%template-menu" \
+    "Create blank site%create-site-prompt" \
+    "Install web templates%wizardry-apps-menu --templates-only"
   
   # Add exit option
   set -- "$@" "${exit_label}%kill -TERM \$PPID"

@@ -1,0 +1,112 @@
+#!/bin/sh
+
+# Shared helpers for the wizardry-apps arcanum.
+
+wizardry_apps_repo_url=${WIZARDRY_APPS_REPO_URL:-https://github.com/andersaamodt/wizardry-apps.git}
+wizardry_apps_dir=${WIZARDRY_APPS_DIR:-$HOME/git/wizardry-apps}
+
+wizardry_apps_component_path() {
+  component=$1
+  case "$component" in
+    web-templates) printf '%s\n' "$wizardry_apps_dir/.web" ;;
+    apps) printf '%s\n' "$wizardry_apps_dir/.apps" ;;
+    *) return 2 ;;
+  esac
+}
+
+wizardry_apps_component_source_path() {
+  wizardry_apps_component_path "$1"
+}
+
+wizardry_apps_component_label() {
+  component=$1
+  case "$component" in
+    web-templates) printf '%s\n' "web templates" ;;
+    apps) printf '%s\n' "desktop apps" ;;
+    *) printf '%s\n' "$component" ;;
+  esac
+}
+
+wizardry_apps_component_installed() {
+  component=$1
+  target=$(wizardry_apps_component_path "$component") || return 1
+
+  [ -d "$target" ] || return 1
+  [ -n "$(ls -A "$target" 2>/dev/null)" ] || return 1
+
+  return 0
+}
+
+wizardry_apps_ensure_repo() {
+  if ! command -v git >/dev/null 2>&1; then
+    die "wizardry-apps: git is required"
+  fi
+
+  parent_dir=$(dirname "$wizardry_apps_dir")
+  mkdir -p "$parent_dir"
+
+  if [ -d "$wizardry_apps_dir/.git" ]; then
+    step "Updating wizardry-apps repository..."
+    git -C "$wizardry_apps_dir" fetch --depth 1 origin || die "wizardry-apps: failed to fetch updates"
+    default_branch=$(git -C "$wizardry_apps_dir" symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null || true)
+    if [ -n "$default_branch" ]; then
+      default_branch=${default_branch#origin/}
+      git -C "$wizardry_apps_dir" checkout -q "$default_branch" || true
+      git -C "$wizardry_apps_dir" reset --hard "origin/$default_branch" >/dev/null 2>&1 || true
+    else
+      git -C "$wizardry_apps_dir" pull --ff-only || die "wizardry-apps: failed to update repository"
+    fi
+    return 0
+  fi
+
+  if [ -e "$wizardry_apps_dir" ]; then
+    die "wizardry-apps: $wizardry_apps_dir exists and is not a git repository"
+  fi
+
+  step "Cloning wizardry-apps repository..."
+  git clone --depth 1 "$wizardry_apps_repo_url" "$wizardry_apps_dir" || die "wizardry-apps: failed to clone repository"
+}
+
+wizardry_apps_install_component() {
+  component=$1
+  label=$(wizardry_apps_component_label "$component")
+  source_dir=$(wizardry_apps_component_source_path "$component") || die "wizardry-apps: unknown component '$component'"
+
+  wizardry_apps_ensure_repo
+
+  if [ ! -d "$source_dir" ]; then
+    die "wizardry-apps: source directory not found: $source_dir"
+  fi
+
+  success "Installed $label at $source_dir"
+}
+
+wizardry_apps_uninstall_component() {
+  component=$1
+  case "$component" in
+    web-templates|apps)
+      wizardry_apps_uninstall_repo
+      ;;
+    *)
+      die "wizardry-apps: unknown component '$component'"
+      ;;
+  esac
+}
+
+wizardry_apps_uninstall_repo() {
+  if [ ! -d "$wizardry_apps_dir" ]; then
+    info "wizardry-apps is not installed"
+    return 0
+  fi
+
+  rm -rf "$wizardry_apps_dir"
+  success "Uninstalled wizardry-apps from $wizardry_apps_dir"
+}
+
+wizardry_apps_repo_installed() {
+  [ -d "$wizardry_apps_dir/.git" ]
+}
+
+wizardry_apps_forge_available() {
+  [ -x "$wizardry_apps_dir/install-forge" ] && [ -x "$wizardry_apps_dir/run-forge" ]
+}

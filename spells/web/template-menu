@@ -25,6 +25,13 @@ fi
 trap 'exit 130' INT
 trap 'exit 0' TERM
 
+# Ensure web templates are installed (without symlink indirection).
+WIZARDRY_DIR=${WIZARDRY_DIR:-$HOME/.wizardry}
+ensure_templates_cmd="$WIZARDRY_DIR/spells/.arcana/wizardry-apps/ensure-wizardry-apps-component"
+if [ -x "$ensure_templates_cmd" ]; then
+  "$ensure_templates_cmd" web-templates
+fi
+
 # Prompt for site name
 printf 'Enter name for new site: '
 read -r site_name

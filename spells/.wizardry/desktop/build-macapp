@@ -44,8 +44,14 @@ fi
 
 # Use WIZARDRY_DIR from environment
 wizardry_dir=${WIZARDRY_DIR:-$HOME/.wizardry}
-apps_dir="$wizardry_dir/.apps"
+wizardry_apps_dir=${WIZARDRY_APPS_DIR:-$HOME/git/wizardry-apps}
+apps_dir="$wizardry_apps_dir/.apps"
 app_path="$apps_dir/$app_name"
+
+ensure_apps_cmd="$wizardry_dir/spells/.arcana/wizardry-apps/ensure-wizardry-apps-component"
+if [ -x "$ensure_apps_cmd" ]; then
+  "$ensure_apps_cmd" apps
+fi
 
 # Validate app exists
 if ! app-validate "$app_path"; then

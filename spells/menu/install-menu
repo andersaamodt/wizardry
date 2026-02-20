@@ -45,7 +45,7 @@ list_entries() {
         return
     fi
 
-    # Preferred order: core, mud, web-wizardry first, then others alphabetically
+    # Preferred order: core, mud, web-wizardry, wizardry-apps, ai-dev, then others alphabetically
     # First output 'core' if it exists
     if [ -e "$install_dir/core" ]; then
         printf '%s\n' "core"
@@ -60,6 +60,16 @@ list_entries() {
     if [ -e "$install_dir/web-wizardry" ]; then
         printf '%s\n' "web-wizardry"
     fi
+
+    # Then 'wizardry-apps' if it exists
+    if [ -e "$install_dir/wizardry-apps" ]; then
+        printf '%s\n' "wizardry-apps"
+    fi
+
+    # Then 'ai-dev' if it exists
+    if [ -e "$install_dir/ai-dev" ]; then
+        printf '%s\n' "ai-dev"
+    fi
     
     # Then output all other entries alphabetically
     for entry in "$install_dir"/*; do
@@ -69,6 +79,8 @@ list_entries() {
         [ "$entry_name" = "core" ] && continue
         [ "$entry_name" = "mud" ] && continue
         [ "$entry_name" = "web-wizardry" ] && continue
+        [ "$entry_name" = "wizardry-apps" ] && continue
+        [ "$entry_name" = "ai-dev" ] && continue
         # Skip 'import-arcanum' since it's a special menu item added separately
         [ "$entry_name" = "import-arcanum" ] && continue
         printf '%s\n' "$entry_name"
@@ -142,6 +154,7 @@ while :; do
             core) label="core wizardry" ;;
             mud) label="wizardry MUD" ;;
             web-wizardry) label="web wizardry" ;;
+            wizardry-apps) label="wizardry apps" ;;
             ai-dev) label="AI dev" ;;
             docker) label="Docker" ;;
         esac

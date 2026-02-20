@@ -1,0 +1,25 @@
+#!/bin/sh
+
+# Check if a wizardry-apps component is installed.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: is-wizardry-apps-component-installed COMPONENT
+
+Returns 0 if installed, 1 otherwise.
+Components: web-templates, apps
+USAGE
+  exit 0
+  ;;
+esac
+
+# Conditional helper, do not use strict error mode.
+set +e
+set +u
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+# shellcheck source=/dev/null
+. "$script_dir/wizardry-apps-common"
+
+wizardry_apps_component_installed "${1:-}"

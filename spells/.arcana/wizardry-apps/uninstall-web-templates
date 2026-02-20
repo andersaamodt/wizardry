@@ -1,0 +1,25 @@
+#!/bin/sh
+
+# Uninstall web templates managed by wizardry-apps.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uninstall-web-templates
+
+Uninstalls wizardry-apps from $WIZARDRY_APPS_DIR.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+# shellcheck source=/dev/null
+. "$script_dir/wizardry-apps-common"
+
+wizardry_apps_uninstall_component web-templates
