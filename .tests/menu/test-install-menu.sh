@@ -266,7 +266,7 @@ SH
   web_pos=$(printf '%s' "$menu_args" | grep -b -o "web wizardry - ready%" | head -1 | cut -d: -f1 || true)
   apps_pos=$(printf '%s' "$menu_args" | grep -b -o "wizardry apps - ready%" | head -1 | cut -d: -f1 || true)
   ai_pos=$(printf '%s' "$menu_args" | grep -b -o "AI dev - ready%" | head -1 | cut -d: -f1 || true)
-  voice_pos=$(printf '%s' "$menu_args" | grep -b -o "Voice Recognition - ready%" | head -1 | cut -d: -f1 || true)
+  voice_pos=$(printf '%s' "$menu_args" | grep -b -o "voice recognition - ready%" | head -1 | cut -d: -f1 || true)
 
   [ "$core_pos" -gt 0 ] && [ "$mud_pos" -gt 0 ] && [ "$web_pos" -gt 0 ] && [ "$apps_pos" -gt 0 ] && [ "$ai_pos" -gt 0 ] && [ "$voice_pos" -gt 0 ] || {
     TEST_FAILURE_REASON="missing one or more expected ordered entries"

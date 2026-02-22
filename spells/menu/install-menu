@@ -162,7 +162,7 @@ while :; do
             web-wizardry) label="web wizardry" ;;
             wizardry-apps) label="wizardry apps" ;;
             ai-dev) label="AI dev" ;;
-            voice-recognition) label="Voice Recognition" ;;
+            voice-recognition) label="voice recognition" ;;
             docker) label="Docker" ;;
         esac
         
