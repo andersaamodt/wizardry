@@ -36,7 +36,7 @@ test_menu_shows_macos_toggles() {
   assert_success || return 1
   args=$(cat "$tmp/menu.log")
   case "$args" in
-    *"Voice Recognition:"*"[ ] Faster-Whisper"*"[ ] MLX-Whisper"*'Exit%kill -TERM $PPID'*) : ;;
+    *"Voice Recognition:"*"[ ] Faster-Whisper%$ROOT_DIR/spells/.arcana/voice-recognition/install-faster-whisper"*"[ ] MLX-Whisper%$ROOT_DIR/spells/.arcana/voice-recognition/install-mlx-whisper"*'Exit%kill -TERM $PPID'*) : ;;
     *)
       TEST_FAILURE_REASON="unexpected macOS menu options: $args"
       return 1
@@ -64,7 +64,7 @@ test_menu_shows_parakeet_toggle_on_linux_nvidia() {
   assert_success || return 1
   args=$(cat "$tmp/menu.log")
   case "$args" in
-    *"Voice Recognition:"*"[ ] Faster-Whisper"*"[ ] Parakeet"*'Exit%kill -TERM $PPID'*) : ;;
+    *"Voice Recognition:"*"[ ] Faster-Whisper%$ROOT_DIR/spells/.arcana/voice-recognition/install-faster-whisper"*"[ ] Parakeet%$ROOT_DIR/spells/.arcana/voice-recognition/install-parakeet"*'Exit%kill -TERM $PPID'*) : ;;
     *)
       TEST_FAILURE_REASON="unexpected Linux NVIDIA menu options: $args"
       return 1
