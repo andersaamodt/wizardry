@@ -93,7 +93,7 @@ vr_component_model() {
   component=$1
   case "$component" in
     ctranslate2-whisper)
-      printf '%s\n' "${WIZARDRY_VOICE_MODEL_CTRANSLATE2:-${WIZARDRY_VOICE_MODEL_FASTER:-small.en}}"
+      printf '%s\n' "small.en"
       ;;
     mlx-whisper)
       printf '%s\n' "${WIZARDRY_VOICE_MODEL_MLX:-mlx-community/whisper-small}"

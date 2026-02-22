@@ -91,18 +91,16 @@ test_backend_outputs_python_and_model() {
 
   run_cmd env \
     WIZARDRY_VOICE_RECOGNITION_DIR="$root" \
-    WIZARDRY_VOICE_MODEL_CTRANSLATE2=base.en \
     "$ROOT_DIR/spells/.arcana/voice-recognition/voice-recognition-backend" --python
   assert_success || return 1
   assert_output_contains "$root/ctranslate2-whisper/venv/bin/python" || return 1
 
   run_cmd env \
     WIZARDRY_VOICE_RECOGNITION_DIR="$root" \
-    WIZARDRY_VOICE_MODEL_CTRANSLATE2=base.en \
     "$ROOT_DIR/spells/.arcana/voice-recognition/voice-recognition-backend" --model
   assert_success || return 1
-  [ "$OUTPUT" = "base.en" ] || {
-    TEST_FAILURE_REASON="expected base.en model output, got: $OUTPUT"
+  [ "$OUTPUT" = "small.en" ] || {
+    TEST_FAILURE_REASON="expected small.en model output, got: $OUTPUT"
     return 1
   }
 }
