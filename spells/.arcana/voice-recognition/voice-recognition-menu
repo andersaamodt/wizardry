@@ -1,0 +1,83 @@
+#!/bin/sh
+
+# Present the Voice Recognition backend management menu.
+
+case "${1-}" in
+  --help|--usage|-h)
+    cat <<'USAGE'
+Usage: voice-recognition-menu
+
+Displays install and uninstall toggles for local dictation backends.
+USAGE
+    exit 0
+    ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+. colors
+
+if ! require menu "The voice-recognition-menu needs the 'menu' command to present options."; then
+  exit 1
+fi
+
+trap 'exit 130' INT
+trap 'exit 0' TERM
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+VR_ARCANA_DIR=$script_dir
+export VR_ARCANA_DIR
+# shellcheck source=/dev/null
+. "$script_dir/voice-recognition-common"
+
+component_cmd="$script_dir/voice-recognition-component"
+
+while :; do
+  unset menu_status
+
+  set --
+
+  if "$component_cmd" --is-installed faster-whisper >/dev/null 2>&1; then
+    faster_label="[X] Faster-Whisper"
+    faster_cmd="$component_cmd --disable faster-whisper"
+  else
+    faster_label="[ ] Faster-Whisper"
+    faster_cmd="$component_cmd --enable faster-whisper"
+  fi
+  set -- "$@" "$faster_label%$faster_cmd"
+
+  if vr_is_macos_apple_silicon; then
+    if "$component_cmd" --is-installed mlx-whisper >/dev/null 2>&1; then
+      mlx_label="[X] MLX-Whisper"
+      mlx_cmd="$component_cmd --disable mlx-whisper"
+    else
+      mlx_label="[ ] MLX-Whisper"
+      mlx_cmd="$component_cmd --enable mlx-whisper"
+    fi
+    set -- "$@" "$mlx_label%$mlx_cmd"
+  fi
+
+  if vr_has_nvidia_gpu; then
+    if "$component_cmd" --is-installed parakeet >/dev/null 2>&1; then
+      parakeet_label="[X] Parakeet"
+      parakeet_cmd="$component_cmd --disable parakeet"
+    else
+      parakeet_label="[ ] Parakeet"
+      parakeet_cmd="$component_cmd --enable parakeet"
+    fi
+    set -- "$@" "$parakeet_label%$parakeet_cmd"
+  fi
+
+  exit_label=$(exit-label)
+  set -- "$@" "${exit_label}%kill -TERM \$PPID"
+
+  menu "Voice Recognition:" "$@" || menu_status=$?
+  menu_status=${menu_status:-0}
+
+  if [ "$menu_status" -eq 130 ]; then
+    printf 'ESC\n' >&2
+    exit 0
+  fi
+done

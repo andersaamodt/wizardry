@@ -114,7 +114,7 @@ case "$level" in
     ;;
   20)
     name='Process & System Info (PSI)'
-    spells='check:tasks get-checked:tasks list-contacts:psi read-contact:psi rename-interactive:tasks uncheck:tasks'
+    spells='check:tasks dictate:psi get-checked:tasks list-contacts:psi read-contact:psi rename-interactive:tasks uncheck:tasks'
     imps=''
     ;;
   21)

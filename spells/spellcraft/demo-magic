@@ -371,6 +371,7 @@ demo_level() {
       printf '\n'
       
       printf 'PSI (Process & System Info) spells:\n'
+      printf '  • dictate - Dictate prose from microphone input\n'
       printf '  • list-contacts - Show available process contacts\n'
       printf '  • read-contact - Read process information\n'
       printf '\n'

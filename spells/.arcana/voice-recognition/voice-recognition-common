@@ -1,0 +1,204 @@
+#!/bin/sh
+
+# Shared helpers for the voice-recognition arcanum.
+
+vr_root_dir=${WIZARDRY_VOICE_RECOGNITION_DIR:-$HOME/.wizardry/voice-recognition}
+vr_hf_home=${WIZARDRY_VOICE_RECOGNITION_HF_HOME:-$vr_root_dir/huggingface}
+
+vr_uname_s() {
+  if [ -n "${WIZARDRY_VOICE_UNAME_S-}" ]; then
+    printf '%s\n' "$WIZARDRY_VOICE_UNAME_S"
+    return 0
+  fi
+  uname -s 2>/dev/null || printf 'unknown\n'
+}
+
+vr_uname_m() {
+  if [ -n "${WIZARDRY_VOICE_UNAME_M-}" ]; then
+    printf '%s\n' "$WIZARDRY_VOICE_UNAME_M"
+    return 0
+  fi
+  uname -m 2>/dev/null || printf 'unknown\n'
+}
+
+vr_is_macos() {
+  [ "$(vr_uname_s)" = "Darwin" ]
+}
+
+vr_is_linux() {
+  [ "$(vr_uname_s)" = "Linux" ]
+}
+
+vr_is_macos_apple_silicon() {
+  if ! vr_is_macos; then
+    return 1
+  fi
+
+  case "$(vr_uname_m)" in
+    arm64|aarch64) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+vr_has_nvidia_gpu() {
+  case "${WIZARDRY_VOICE_HAS_NVIDIA-}" in
+    1|true|TRUE|yes|YES|on|ON) return 0 ;;
+    0|false|FALSE|no|NO|off|OFF) return 1 ;;
+  esac
+
+  if ! vr_is_linux; then
+    return 1
+  fi
+
+  if ! command -v nvidia-smi >/dev/null 2>&1; then
+    return 1
+  fi
+
+  nvidia-smi -L >/dev/null 2>&1
+}
+
+vr_component_dir() {
+  component=$1
+  printf '%s/%s\n' "$vr_root_dir" "$component"
+}
+
+vr_component_venv() {
+  component=$1
+  printf '%s/venv\n' "$(vr_component_dir "$component")"
+}
+
+vr_component_python() {
+  component=$1
+  printf '%s/bin/python\n' "$(vr_component_venv "$component")"
+}
+
+vr_component_state_file() {
+  component=$1
+  printf '%s/installed\n' "$(vr_component_dir "$component")"
+}
+
+vr_component_model() {
+  component=$1
+  case "$component" in
+    faster-whisper)
+      printf '%s\n' "${WIZARDRY_VOICE_MODEL_FASTER:-small.en}"
+      ;;
+    mlx-whisper)
+      printf '%s\n' "${WIZARDRY_VOICE_MODEL_MLX:-mlx-community/whisper-small}"
+      ;;
+    parakeet)
+      printf '%s\n' "${WIZARDRY_VOICE_MODEL_PARAKEET:-nvidia/parakeet-tdt-0.6b-v2}"
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+vr_component_installed() {
+  component=$1
+  state_file=$(vr_component_state_file "$component") || return 1
+  python_bin=$(vr_component_python "$component") || return 1
+
+  [ -f "$state_file" ] && [ -x "$python_bin" ]
+}
+
+vr_component_supported_on_host() {
+  component=$1
+
+  case "$component" in
+    faster-whisper)
+      return 0
+      ;;
+    mlx-whisper)
+      vr_is_macos_apple_silicon
+      ;;
+    parakeet)
+      vr_has_nvidia_gpu
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+vr_find_manage_command() {
+  manage_cmd=${MANAGE_SYSTEM_COMMAND:-manage-system-command}
+  if command -v "$manage_cmd" >/dev/null 2>&1; then
+    printf '%s\n' "$manage_cmd"
+    return 0
+  fi
+
+  if [ -n "${VR_ARCANA_DIR-}" ] && [ -x "$VR_ARCANA_DIR/../core/manage-system-command" ]; then
+    printf '%s\n' "$VR_ARCANA_DIR/../core/manage-system-command"
+    return 0
+  fi
+
+  return 1
+}
+
+vr_try_install_command() {
+  cmd_name=$1
+
+  if command -v "$cmd_name" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  manage_cmd=$(vr_find_manage_command 2>/dev/null || printf '')
+  if [ -z "$manage_cmd" ]; then
+    return 1
+  fi
+
+  case "$cmd_name" in
+    python3)
+      case "$(vr_uname_s)" in
+        Darwin)
+          PKGIN_PACKAGE=python312 "$manage_cmd" python3 python3 >/dev/null 2>&1 || \
+            PKGIN_PACKAGE=python311 "$manage_cmd" python3 python3 >/dev/null 2>&1 || \
+            "$manage_cmd" python3 python3 >/dev/null 2>&1 || true
+          ;;
+        *)
+          PACMAN_PACKAGE=python "$manage_cmd" python3 python3 >/dev/null 2>&1 || \
+            "$manage_cmd" python3 python3 >/dev/null 2>&1 || true
+          ;;
+      esac
+      ;;
+    ffmpeg)
+      "$manage_cmd" ffmpeg ffmpeg >/dev/null 2>&1 || true
+      ;;
+    *)
+      "$manage_cmd" "$cmd_name" "$cmd_name" >/dev/null 2>&1 || true
+      ;;
+  esac
+
+  command -v "$cmd_name" >/dev/null 2>&1
+}
+
+vr_select_backend() {
+  if vr_is_macos && vr_component_installed "mlx-whisper"; then
+    printf '%s\n' "mlx-whisper"
+    return 0
+  fi
+
+  if vr_has_nvidia_gpu && vr_component_installed "parakeet"; then
+    printf '%s\n' "parakeet"
+    return 0
+  fi
+
+  if vr_component_installed "faster-whisper"; then
+    printf '%s\n' "faster-whisper"
+    return 0
+  fi
+
+  if vr_component_installed "mlx-whisper"; then
+    printf '%s\n' "mlx-whisper"
+    return 0
+  fi
+
+  if vr_component_installed "parakeet"; then
+    printf '%s\n' "parakeet"
+    return 0
+  fi
+
+  return 1
+}

@@ -150,7 +150,7 @@ SH
   chmod +x "$install_root/test/test-status"
   
   # Run install-menu in background
-  env PATH="$tmp:$PATH" INSTALL_MENU_ROOT="$install_root" INSTALL_MENU_DIRS="test" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/install-menu" &
+  env PATH="$tmp:$PATH" INSTALL_MENU_ROOT="$install_root" INSTALL_MENU_DIRS="test" MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/require.log" "$ROOT_DIR/spells/menu/install-menu" &
   menu_pid=$!
   sleep 0.5
   kill -TERM "$menu_pid" 2>/dev/null || true
@@ -236,9 +236,10 @@ test_install_menu_prefers_expected_core_order() {
     "$install_root/mud" \
     "$install_root/web-wizardry" \
     "$install_root/wizardry-apps" \
-    "$install_root/ai-dev"
+    "$install_root/ai-dev" \
+    "$install_root/voice-recognition"
 
-  for name in core mud web-wizardry wizardry-apps ai-dev; do
+  for name in core mud web-wizardry wizardry-apps ai-dev voice-recognition; do
     cat >"$tmp/$name-status" <<'SH'
 #!/bin/sh
 echo ready
@@ -265,14 +266,15 @@ SH
   web_pos=$(printf '%s' "$menu_args" | grep -b -o "web wizardry - ready%" | head -1 | cut -d: -f1 || true)
   apps_pos=$(printf '%s' "$menu_args" | grep -b -o "wizardry apps - ready%" | head -1 | cut -d: -f1 || true)
   ai_pos=$(printf '%s' "$menu_args" | grep -b -o "AI dev - ready%" | head -1 | cut -d: -f1 || true)
+  voice_pos=$(printf '%s' "$menu_args" | grep -b -o "Voice Recognition - ready%" | head -1 | cut -d: -f1 || true)
 
-  [ "$core_pos" -gt 0 ] && [ "$mud_pos" -gt 0 ] && [ "$web_pos" -gt 0 ] && [ "$apps_pos" -gt 0 ] && [ "$ai_pos" -gt 0 ] || {
+  [ "$core_pos" -gt 0 ] && [ "$mud_pos" -gt 0 ] && [ "$web_pos" -gt 0 ] && [ "$apps_pos" -gt 0 ] && [ "$ai_pos" -gt 0 ] && [ "$voice_pos" -gt 0 ] || {
     TEST_FAILURE_REASON="missing one or more expected ordered entries"
     return 1
   }
 
-  [ "$core_pos" -lt "$mud_pos" ] && [ "$mud_pos" -lt "$web_pos" ] && [ "$web_pos" -lt "$apps_pos" ] && [ "$apps_pos" -lt "$ai_pos" ] || {
-    TEST_FAILURE_REASON="unexpected install-menu order for core/mud/web-wizardry/wizardry-apps/ai-dev"
+  [ "$core_pos" -lt "$mud_pos" ] && [ "$mud_pos" -lt "$web_pos" ] && [ "$web_pos" -lt "$apps_pos" ] && [ "$apps_pos" -lt "$ai_pos" ] && [ "$ai_pos" -lt "$voice_pos" ] || {
+    TEST_FAILURE_REASON="unexpected install-menu order for core/mud/web-wizardry/wizardry-apps/ai-dev/voice-recognition"
     return 1
   }
 }

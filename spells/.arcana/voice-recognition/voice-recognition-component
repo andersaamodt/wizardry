@@ -1,0 +1,182 @@
+#!/bin/sh
+
+# Install, remove, and inspect voice recognition backend components.
+
+case "${1-}" in
+  --help|--usage|-h)
+    cat <<'USAGE'
+Usage: voice-recognition-component (--enable|--disable|--is-installed) COMPONENT
+
+Manages local dictation backends.
+Components: faster-whisper, mlx-whisper, parakeet
+USAGE
+    exit 0
+    ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+VR_ARCANA_DIR=$script_dir
+export VR_ARCANA_DIR
+# shellcheck source=/dev/null
+. "$script_dir/voice-recognition-common"
+
+action=${1-}
+component=${2-}
+
+case "$action" in
+  --enable|--disable|--is-installed)
+    ;;
+  *)
+    die 2 "voice-recognition-component: unknown action '$action'"
+    ;;
+esac
+
+case "$component" in
+  faster-whisper|mlx-whisper|parakeet)
+    ;;
+  *)
+    die 2 "voice-recognition-component: unknown component '$component'"
+    ;;
+esac
+
+case "$action" in
+  --is-installed)
+    if vr_component_installed "$component"; then
+      exit 0
+    fi
+    exit 1
+    ;;
+
+  --disable)
+    component_dir=$(vr_component_dir "$component")
+
+    if [ ! -d "$component_dir" ]; then
+      info "voice-recognition: $component is not installed"
+      exit 0
+    fi
+
+    rm -rf "$component_dir"
+    success "voice-recognition: removed $component"
+
+    # Remove root only when it's empty.
+    if [ -d "$vr_root_dir" ] && [ -z "$(ls -A "$vr_root_dir" 2>/dev/null || printf '')" ]; then
+      rmdir "$vr_root_dir" 2>/dev/null || true
+    fi
+
+    exit 0
+    ;;
+
+  --enable)
+    if ! vr_component_supported_on_host "$component"; then
+      case "$component" in
+        mlx-whisper)
+          die "voice-recognition: mlx-whisper requires macOS on Apple Silicon"
+          ;;
+        parakeet)
+          die "voice-recognition: parakeet requires Linux with an NVIDIA GPU"
+          ;;
+        *)
+          die "voice-recognition: $component is unavailable on this host"
+          ;;
+      esac
+    fi
+
+    if vr_component_installed "$component"; then
+      success "voice-recognition: $component is already installed"
+      exit 0
+    fi
+
+    if ! vr_try_install_command python3; then
+      die "voice-recognition: python3 is required"
+    fi
+
+    if ! vr_try_install_command ffmpeg; then
+      die "voice-recognition: ffmpeg is required for microphone capture"
+    fi
+
+    component_dir=$(vr_component_dir "$component")
+    venv_dir=$(vr_component_venv "$component")
+    python_bin=$(vr_component_python "$component")
+    state_file=$(vr_component_state_file "$component")
+    model_name=$(vr_component_model "$component")
+
+    mkdir -p "$component_dir"
+
+    if [ -d "$venv_dir" ]; then
+      rm -rf "$venv_dir"
+    fi
+
+    step "voice-recognition: creating virtual environment for $component"
+    python3 -m venv "$venv_dir" || \
+      die "voice-recognition: could not create venv for $component"
+
+    [ -x "$python_bin" ] || die "voice-recognition: missing python in $venv_dir"
+
+    "$python_bin" -m ensurepip --upgrade >/dev/null 2>&1 || true
+    "$python_bin" -m pip install --upgrade pip >/dev/null 2>&1 || \
+      die "voice-recognition: pip upgrade failed for $component"
+
+    step "voice-recognition: installing $component packages"
+    case "$component" in
+      faster-whisper)
+        "$python_bin" -m pip install --upgrade faster-whisper >/dev/null 2>&1 || \
+          die "voice-recognition: faster-whisper package installation failed"
+        ;;
+      mlx-whisper)
+        "$python_bin" -m pip install --upgrade mlx-whisper huggingface-hub >/dev/null 2>&1 || \
+          die "voice-recognition: mlx-whisper package installation failed"
+        ;;
+      parakeet)
+        "$python_bin" -m pip install --upgrade "nemo_toolkit[asr]" >/dev/null 2>&1 || \
+          die "voice-recognition: parakeet package installation failed"
+        ;;
+    esac
+
+    mkdir -p "$vr_hf_home"
+    export HF_HOME="$vr_hf_home"
+
+    step "voice-recognition: preparing local model cache"
+    case "$component" in
+      faster-whisper)
+        VR_MODEL="$model_name" "$python_bin" <<'PY'
+import os
+from faster_whisper import WhisperModel
+
+model_name = os.environ.get("VR_MODEL", "small.en")
+WhisperModel(model_name, device="cpu", compute_type="int8")
+PY
+        ;;
+      mlx-whisper)
+        VR_MODEL="$model_name" "$python_bin" <<'PY'
+import os
+from huggingface_hub import snapshot_download
+
+model_name = os.environ.get("VR_MODEL", "mlx-community/whisper-small")
+snapshot_download(repo_id=model_name)
+PY
+        ;;
+      parakeet)
+        VR_MODEL="$model_name" "$python_bin" <<'PY'
+import os
+import nemo.collections.asr as nemo_asr
+
+model_name = os.environ.get("VR_MODEL", "nvidia/parakeet-tdt-0.6b-v2")
+nemo_asr.models.ASRModel.from_pretrained(model_name=model_name)
+PY
+        ;;
+    esac
+
+    printf 'component=%s\nmodel=%s\ninstalled_at=%s\n' \
+      "$component" \
+      "$model_name" \
+      "$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || printf unknown)" > "$state_file"
+
+    success "voice-recognition: installed $component"
+    exit 0
+    ;;
+esac

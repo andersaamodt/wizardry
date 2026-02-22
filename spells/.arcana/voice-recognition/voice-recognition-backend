@@ -1,0 +1,53 @@
+#!/bin/sh
+
+# Select the preferred local dictation backend for this host.
+
+case "${1-}" in
+  --help|--usage|-h)
+    cat <<'USAGE'
+Usage: voice-recognition-backend [--python|--model]
+
+Prints the selected backend name by default.
+Use --python to print the backend venv python path.
+Use --model to print the backend model name.
+USAGE
+    exit 0
+    ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+VR_ARCANA_DIR=$script_dir
+export VR_ARCANA_DIR
+# shellcheck source=/dev/null
+. "$script_dir/voice-recognition-common"
+
+mode=${1-}
+case "$mode" in
+  ""|--python|--model)
+    ;;
+  *)
+    die 2 "voice-recognition-backend: unknown option '$mode'"
+    ;;
+esac
+
+backend=$(vr_select_backend 2>/dev/null || printf '')
+if [ -z "$backend" ]; then
+  die "voice-recognition-backend: no installed backend found"
+fi
+
+case "$mode" in
+  --python)
+    printf '%s\n' "$(vr_component_python "$backend")"
+    ;;
+  --model)
+    vr_component_model "$backend"
+    ;;
+  *)
+    printf '%s\n' "$backend"
+    ;;
+esac

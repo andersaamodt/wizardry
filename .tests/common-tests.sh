@@ -2730,6 +2730,7 @@ test_menu_signal_handling() {
     spells/.arcana/node/node-menu
     spells/.arcana/simplex-chat/simplex-chat-menu
     spells/.arcana/tor/tor-menu
+    spells/.arcana/voice-recognition/voice-recognition-menu
   "
   
   for menu_file in $menu_files; do
