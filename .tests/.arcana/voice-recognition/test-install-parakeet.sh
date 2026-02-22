@@ -74,6 +74,7 @@ test_install_parakeet_installs_on_linux_nvidia() {
     WIZARDRY_VOICE_HAS_NVIDIA=1 \
     "$ROOT_DIR/spells/.arcana/voice-recognition/install-parakeet"
   assert_success || return 1
+  assert_output_contains "installing parakeet" || return 1
   assert_path_exists "$tmp/voice/parakeet/installed" || return 1
   assert_path_exists "$tmp/voice/parakeet/venv/bin/python" || return 1
 }

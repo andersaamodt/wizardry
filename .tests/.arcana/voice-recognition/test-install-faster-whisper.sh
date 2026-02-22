@@ -64,6 +64,7 @@ test_install_faster_whisper_installs_runtime() {
     WIZARDRY_VOICE_UNAME_S=Linux \
     "$ROOT_DIR/spells/.arcana/voice-recognition/install-faster-whisper"
   assert_success || return 1
+  assert_output_contains "installing faster-whisper" || return 1
   assert_path_exists "$tmp/voice/faster-whisper/installed" || return 1
   assert_path_exists "$tmp/voice/faster-whisper/venv/bin/python" || return 1
 }

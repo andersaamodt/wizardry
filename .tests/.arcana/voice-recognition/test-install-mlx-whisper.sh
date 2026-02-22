@@ -73,6 +73,7 @@ test_install_mlx_whisper_installs_on_apple_silicon() {
     WIZARDRY_VOICE_UNAME_M=arm64 \
     "$ROOT_DIR/spells/.arcana/voice-recognition/install-mlx-whisper"
   assert_success || return 1
+  assert_output_contains "installing mlx-whisper" || return 1
   assert_path_exists "$tmp/voice/mlx-whisper/installed" || return 1
   assert_path_exists "$tmp/voice/mlx-whisper/venv/bin/python" || return 1
 }

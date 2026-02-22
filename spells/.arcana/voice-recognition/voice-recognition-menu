@@ -38,6 +38,7 @@ install_mlx_cmd="$script_dir/install-mlx-whisper"
 uninstall_mlx_cmd="$script_dir/uninstall-mlx-whisper"
 install_parakeet_cmd="$script_dir/install-parakeet"
 uninstall_parakeet_cmd="$script_dir/uninstall-parakeet"
+install_env_prefix="WIZARDRY_LOG_LEVEL=1 "
 
 while :; do
   unset menu_status
@@ -49,7 +50,7 @@ while :; do
     faster_cmd="$uninstall_faster_cmd"
   else
     faster_label="[ ] Faster-Whisper"
-    faster_cmd="$install_faster_cmd"
+    faster_cmd="${install_env_prefix}${install_faster_cmd}"
   fi
   set -- "$@" "$faster_label%$faster_cmd"
 
@@ -59,7 +60,7 @@ while :; do
       mlx_cmd="$uninstall_mlx_cmd"
     else
       mlx_label="[ ] MLX-Whisper"
-      mlx_cmd="$install_mlx_cmd"
+      mlx_cmd="${install_env_prefix}${install_mlx_cmd}"
     fi
     set -- "$@" "$mlx_label%$mlx_cmd"
   fi
@@ -70,7 +71,7 @@ while :; do
       parakeet_cmd="$uninstall_parakeet_cmd"
     else
       parakeet_label="[ ] Parakeet"
-      parakeet_cmd="$install_parakeet_cmd"
+      parakeet_cmd="${install_env_prefix}${install_parakeet_cmd}"
     fi
     set -- "$@" "$parakeet_label%$parakeet_cmd"
   fi

@@ -165,6 +165,8 @@ vr_install_component() {
     return 0
   fi
 
+  success "voice-recognition: installing $component (this may take several minutes)"
+
   if ! vr_try_install_command python3; then
     die "voice-recognition: python3 is required"
   fi
