@@ -32,8 +32,8 @@ export VR_ARCANA_DIR
 # shellcheck source=/dev/null
 . "$script_dir/voice-recognition-common"
 
-install_faster_cmd="$script_dir/install-faster-whisper"
-uninstall_faster_cmd="$script_dir/uninstall-faster-whisper"
+install_ctranslate2_cmd="$script_dir/install-ctranslate2-whisper"
+uninstall_ctranslate2_cmd="$script_dir/uninstall-ctranslate2-whisper"
 install_mlx_cmd="$script_dir/install-mlx-whisper"
 uninstall_mlx_cmd="$script_dir/uninstall-mlx-whisper"
 install_parakeet_cmd="$script_dir/install-parakeet"
@@ -45,14 +45,14 @@ while :; do
 
   set --
 
-  if vr_component_installed "faster-whisper"; then
-    faster_label="[X] Faster-Whisper"
-    faster_cmd="$uninstall_faster_cmd"
+  if vr_component_installed "ctranslate2-whisper"; then
+    ctranslate2_label="[X] CTranslate2 Whisper (via whisper-ctranslate2)"
+    ctranslate2_cmd="$uninstall_ctranslate2_cmd"
   else
-    faster_label="[ ] Faster-Whisper"
-    faster_cmd="${install_env_prefix}${install_faster_cmd}"
+    ctranslate2_label="[ ] CTranslate2 Whisper (via whisper-ctranslate2)"
+    ctranslate2_cmd="${install_env_prefix}${install_ctranslate2_cmd}"
   fi
-  set -- "$@" "$faster_label%$faster_cmd"
+  set -- "$@" "$ctranslate2_label%$ctranslate2_cmd"
 
   if vr_is_macos_apple_silicon; then
     if vr_component_installed "mlx-whisper"; then

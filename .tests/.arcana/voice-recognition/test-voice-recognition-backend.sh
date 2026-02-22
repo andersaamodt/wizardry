@@ -31,7 +31,7 @@ test_backend_help() {
 test_backend_prefers_mlx_on_macos() {
   tmp=$(make_tempdir)
   root="$tmp/voice"
-  make_component_install "$root" faster-whisper
+  make_component_install "$root" ctranslate2-whisper
   make_component_install "$root" mlx-whisper
 
   run_cmd env \
@@ -50,7 +50,7 @@ test_backend_prefers_mlx_on_macos() {
 test_backend_prefers_parakeet_on_linux_nvidia() {
   tmp=$(make_tempdir)
   root="$tmp/voice"
-  make_component_install "$root" faster-whisper
+  make_component_install "$root" ctranslate2-whisper
   make_component_install "$root" parakeet
 
   run_cmd env \
@@ -66,10 +66,10 @@ test_backend_prefers_parakeet_on_linux_nvidia() {
   }
 }
 
-test_backend_falls_back_to_faster() {
+test_backend_falls_back_to_ctranslate2() {
   tmp=$(make_tempdir)
   root="$tmp/voice"
-  make_component_install "$root" faster-whisper
+  make_component_install "$root" ctranslate2-whisper
 
   run_cmd env \
     WIZARDRY_VOICE_RECOGNITION_DIR="$root" \
@@ -78,8 +78,8 @@ test_backend_falls_back_to_faster() {
     "$ROOT_DIR/spells/.arcana/voice-recognition/voice-recognition-backend"
 
   assert_success || return 1
-  [ "$OUTPUT" = "faster-whisper" ] || {
-    TEST_FAILURE_REASON="expected faster-whisper, got: $OUTPUT"
+  [ "$OUTPUT" = "ctranslate2-whisper" ] || {
+    TEST_FAILURE_REASON="expected ctranslate2-whisper, got: $OUTPUT"
     return 1
   }
 }
@@ -87,18 +87,18 @@ test_backend_falls_back_to_faster() {
 test_backend_outputs_python_and_model() {
   tmp=$(make_tempdir)
   root="$tmp/voice"
-  make_component_install "$root" faster-whisper
+  make_component_install "$root" ctranslate2-whisper
 
   run_cmd env \
     WIZARDRY_VOICE_RECOGNITION_DIR="$root" \
-    WIZARDRY_VOICE_MODEL_FASTER=base.en \
+    WIZARDRY_VOICE_MODEL_CTRANSLATE2=base.en \
     "$ROOT_DIR/spells/.arcana/voice-recognition/voice-recognition-backend" --python
   assert_success || return 1
-  assert_output_contains "$root/faster-whisper/venv/bin/python" || return 1
+  assert_output_contains "$root/ctranslate2-whisper/venv/bin/python" || return 1
 
   run_cmd env \
     WIZARDRY_VOICE_RECOGNITION_DIR="$root" \
-    WIZARDRY_VOICE_MODEL_FASTER=base.en \
+    WIZARDRY_VOICE_MODEL_CTRANSLATE2=base.en \
     "$ROOT_DIR/spells/.arcana/voice-recognition/voice-recognition-backend" --model
   assert_success || return 1
   [ "$OUTPUT" = "base.en" ] || {
@@ -123,7 +123,7 @@ test_backend_fails_when_missing() {
 run_test_case "voice-recognition-backend shows help" test_backend_help
 run_test_case "voice-recognition-backend prefers mlx on macOS" test_backend_prefers_mlx_on_macos
 run_test_case "voice-recognition-backend prefers parakeet on Linux NVIDIA" test_backend_prefers_parakeet_on_linux_nvidia
-run_test_case "voice-recognition-backend falls back to faster-whisper" test_backend_falls_back_to_faster
+run_test_case "voice-recognition-backend falls back to ctranslate2-whisper" test_backend_falls_back_to_ctranslate2
 run_test_case "voice-recognition-backend outputs python and model" test_backend_outputs_python_and_model
 run_test_case "voice-recognition-backend fails when none installed" test_backend_fails_when_missing
 

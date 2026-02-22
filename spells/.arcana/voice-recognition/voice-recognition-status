@@ -37,7 +37,7 @@ fi
 installed=0
 total=1
 
-if vr_component_installed "faster-whisper"; then
+if vr_component_installed "ctranslate2-whisper"; then
   installed=$((installed + 1))
 fi
 

@@ -34,7 +34,7 @@ test_status_not_installed() {
 test_status_partial_when_optional_missing() {
   tmp=$(make_tempdir)
   root="$tmp/voice"
-  make_component_install "$root" faster-whisper
+  make_component_install "$root" ctranslate2-whisper
 
   run_cmd env \
     WIZARDRY_VOICE_RECOGNITION_DIR="$root" \
@@ -48,7 +48,7 @@ test_status_partial_when_optional_missing() {
 test_status_installed_when_all_available_are_ready() {
   tmp=$(make_tempdir)
   root="$tmp/voice"
-  make_component_install "$root" faster-whisper
+  make_component_install "$root" ctranslate2-whisper
   make_component_install "$root" mlx-whisper
 
   run_cmd env \

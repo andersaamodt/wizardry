@@ -1,13 +1,14 @@
 #!/bin/sh
 
-# Remove the faster-whisper backend for local dictation.
+# Install the CTranslate2 Whisper backend for local dictation.
 
 case "${1-}" in
   --help|--usage|-h)
     cat <<'USAGE'
-Usage: uninstall-faster-whisper
+Usage: install-ctranslate2-whisper
 
-Removes the local faster-whisper runtime.
+Installs CTranslate2 Whisper (via whisper-ctranslate2)
+in a local voice-recognition runtime.
 USAGE
     exit 0
     ;;
@@ -24,4 +25,4 @@ export VR_ARCANA_DIR
 # shellcheck source=/dev/null
 . "$script_dir/voice-recognition-common"
 
-vr_uninstall_component "faster-whisper"
+vr_install_component "ctranslate2-whisper"

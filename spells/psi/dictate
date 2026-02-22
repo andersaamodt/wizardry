@@ -11,7 +11,7 @@ Captures microphone audio and prints transcribed text to stdout.
 Backend selection is automatic:
   1. MLX-Whisper on macOS when installed
   2. Parakeet on Linux with NVIDIA GPU when installed
-  3. Faster-Whisper fallback
+  3. CTranslate2 Whisper (via whisper-ctranslate2) fallback
 USAGE
   exit 0
   ;;
@@ -159,7 +159,7 @@ def squash(text):
 text = ""
 
 try:
-    if backend == "faster-whisper":
+    if backend == "ctranslate2-whisper":
         from faster_whisper import WhisperModel
 
         model = WhisperModel(model_name, device="auto", compute_type="int8")

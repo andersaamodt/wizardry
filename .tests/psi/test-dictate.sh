@@ -65,10 +65,10 @@ test_dictate_uses_backend_and_prints_text() {
   write_python_stub "$python_stub"
 
   voice_root="$tmp/voice"
-  mkdir -p "$voice_root/faster-whisper/venv/bin"
-  cp "$python_stub" "$voice_root/faster-whisper/venv/bin/python"
-  chmod +x "$voice_root/faster-whisper/venv/bin/python"
-  printf 'component=faster-whisper\n' > "$voice_root/faster-whisper/installed"
+  mkdir -p "$voice_root/ctranslate2-whisper/venv/bin"
+  cp "$python_stub" "$voice_root/ctranslate2-whisper/venv/bin/python"
+  chmod +x "$voice_root/ctranslate2-whisper/venv/bin/python"
+  printf 'component=ctranslate2-whisper\n' > "$voice_root/ctranslate2-whisper/installed"
 
   run_cmd env \
     PATH="$stubs:$PATH" \

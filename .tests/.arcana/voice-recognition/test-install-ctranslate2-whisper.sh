@@ -44,13 +44,13 @@ SH
   chmod +x "$stub_dir/ffmpeg"
 }
 
-test_install_faster_whisper_help() {
-  run_spell "spells/.arcana/voice-recognition/install-faster-whisper" --help
+test_install_ctranslate2_whisper_help() {
+  run_spell "spells/.arcana/voice-recognition/install-ctranslate2-whisper" --help
   assert_success || return 1
-  assert_output_contains "Usage: install-faster-whisper" || return 1
+  assert_output_contains "Usage: install-ctranslate2-whisper" || return 1
 }
 
-test_install_faster_whisper_installs_runtime() {
+test_install_ctranslate2_whisper_installs_runtime() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   stubs="$tmp/stubs"
@@ -62,14 +62,14 @@ test_install_faster_whisper_installs_runtime() {
     PATH="$stubs:$PATH" \
     WIZARDRY_VOICE_RECOGNITION_DIR="$tmp/voice" \
     WIZARDRY_VOICE_UNAME_S=Linux \
-    "$ROOT_DIR/spells/.arcana/voice-recognition/install-faster-whisper"
+    "$ROOT_DIR/spells/.arcana/voice-recognition/install-ctranslate2-whisper"
   assert_success || return 1
-  assert_output_contains "installing faster-whisper" || return 1
-  assert_path_exists "$tmp/voice/faster-whisper/installed" || return 1
-  assert_path_exists "$tmp/voice/faster-whisper/venv/bin/python" || return 1
+  assert_output_contains "installing ctranslate2-whisper" || return 1
+  assert_path_exists "$tmp/voice/ctranslate2-whisper/installed" || return 1
+  assert_path_exists "$tmp/voice/ctranslate2-whisper/venv/bin/python" || return 1
 }
 
-run_test_case "install-faster-whisper shows help" test_install_faster_whisper_help
-run_test_case "install-faster-whisper installs local runtime" test_install_faster_whisper_installs_runtime
+run_test_case "install-ctranslate2-whisper shows help" test_install_ctranslate2_whisper_help
+run_test_case "install-ctranslate2-whisper installs local runtime" test_install_ctranslate2_whisper_installs_runtime
 
 finish_tests

@@ -80,7 +80,7 @@ vr_component_state_file() {
 vr_component_known() {
   component=$1
   case "$component" in
-    faster-whisper|mlx-whisper|parakeet)
+    ctranslate2-whisper|mlx-whisper|parakeet)
       return 0
       ;;
     *)
@@ -92,8 +92,8 @@ vr_component_known() {
 vr_component_model() {
   component=$1
   case "$component" in
-    faster-whisper)
-      printf '%s\n' "${WIZARDRY_VOICE_MODEL_FASTER:-small.en}"
+    ctranslate2-whisper)
+      printf '%s\n' "${WIZARDRY_VOICE_MODEL_CTRANSLATE2:-${WIZARDRY_VOICE_MODEL_FASTER:-small.en}}"
       ;;
     mlx-whisper)
       printf '%s\n' "${WIZARDRY_VOICE_MODEL_MLX:-mlx-community/whisper-small}"
@@ -134,7 +134,7 @@ vr_component_supported_on_host() {
   component=$1
 
   case "$component" in
-    faster-whisper)
+    ctranslate2-whisper)
       return 0
       ;;
     mlx-whisper)
@@ -200,9 +200,9 @@ vr_install_component() {
 
   step "voice-recognition: installing $component packages"
   case "$component" in
-    faster-whisper)
-      "$python_bin" -m pip install --upgrade faster-whisper >/dev/null 2>&1 || \
-        die "voice-recognition: faster-whisper package installation failed"
+    ctranslate2-whisper)
+      "$python_bin" -m pip install --upgrade whisper-ctranslate2 >/dev/null 2>&1 || \
+        die "voice-recognition: whisper-ctranslate2 package installation failed"
       ;;
     mlx-whisper)
       "$python_bin" -m pip install --upgrade mlx-whisper huggingface-hub >/dev/null 2>&1 || \
@@ -219,7 +219,7 @@ vr_install_component() {
 
   step "voice-recognition: preparing local model cache"
   case "$component" in
-    faster-whisper)
+    ctranslate2-whisper)
       VR_MODEL="$model_name" "$python_bin" <<'PY'
 import os
 from faster_whisper import WhisperModel
@@ -342,8 +342,8 @@ vr_select_backend() {
     return 0
   fi
 
-  if vr_component_installed "faster-whisper"; then
-    printf '%s\n' "faster-whisper"
+  if vr_component_installed "ctranslate2-whisper"; then
+    printf '%s\n' "ctranslate2-whisper"
     return 0
   fi
 

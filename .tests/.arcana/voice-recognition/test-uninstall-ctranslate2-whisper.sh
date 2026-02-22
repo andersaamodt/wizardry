@@ -22,25 +22,25 @@ PY
   printf 'component=%s\n' "$component" > "$comp_dir/installed"
 }
 
-test_uninstall_faster_whisper_help() {
-  run_spell "spells/.arcana/voice-recognition/uninstall-faster-whisper" --help
+test_uninstall_ctranslate2_whisper_help() {
+  run_spell "spells/.arcana/voice-recognition/uninstall-ctranslate2-whisper" --help
   assert_success || return 1
-  assert_output_contains "Usage: uninstall-faster-whisper" || return 1
+  assert_output_contains "Usage: uninstall-ctranslate2-whisper" || return 1
 }
 
-test_uninstall_faster_whisper_removes_runtime() {
+test_uninstall_ctranslate2_whisper_removes_runtime() {
   tmp=$(make_tempdir)
   root="$tmp/voice"
-  make_component_install "$root" faster-whisper
+  make_component_install "$root" ctranslate2-whisper
 
   run_cmd env \
     WIZARDRY_VOICE_RECOGNITION_DIR="$root" \
-    "$ROOT_DIR/spells/.arcana/voice-recognition/uninstall-faster-whisper"
+    "$ROOT_DIR/spells/.arcana/voice-recognition/uninstall-ctranslate2-whisper"
   assert_success || return 1
-  assert_path_missing "$root/faster-whisper" || return 1
+  assert_path_missing "$root/ctranslate2-whisper" || return 1
 }
 
-run_test_case "uninstall-faster-whisper shows help" test_uninstall_faster_whisper_help
-run_test_case "uninstall-faster-whisper removes local runtime" test_uninstall_faster_whisper_removes_runtime
+run_test_case "uninstall-ctranslate2-whisper shows help" test_uninstall_ctranslate2_whisper_help
+run_test_case "uninstall-ctranslate2-whisper removes local runtime" test_uninstall_ctranslate2_whisper_removes_runtime
 
 finish_tests
