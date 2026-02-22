@@ -32,40 +32,45 @@ export VR_ARCANA_DIR
 # shellcheck source=/dev/null
 . "$script_dir/voice-recognition-common"
 
-component_cmd="$script_dir/voice-recognition-component"
+install_faster_cmd="$script_dir/install-faster-whisper"
+uninstall_faster_cmd="$script_dir/uninstall-faster-whisper"
+install_mlx_cmd="$script_dir/install-mlx-whisper"
+uninstall_mlx_cmd="$script_dir/uninstall-mlx-whisper"
+install_parakeet_cmd="$script_dir/install-parakeet"
+uninstall_parakeet_cmd="$script_dir/uninstall-parakeet"
 
 while :; do
   unset menu_status
 
   set --
 
-  if "$component_cmd" --is-installed faster-whisper >/dev/null 2>&1; then
+  if vr_component_installed "faster-whisper"; then
     faster_label="[X] Faster-Whisper"
-    faster_cmd="$component_cmd --disable faster-whisper"
+    faster_cmd="$uninstall_faster_cmd"
   else
     faster_label="[ ] Faster-Whisper"
-    faster_cmd="$component_cmd --enable faster-whisper"
+    faster_cmd="$install_faster_cmd"
   fi
   set -- "$@" "$faster_label%$faster_cmd"
 
   if vr_is_macos_apple_silicon; then
-    if "$component_cmd" --is-installed mlx-whisper >/dev/null 2>&1; then
+    if vr_component_installed "mlx-whisper"; then
       mlx_label="[X] MLX-Whisper"
-      mlx_cmd="$component_cmd --disable mlx-whisper"
+      mlx_cmd="$uninstall_mlx_cmd"
     else
       mlx_label="[ ] MLX-Whisper"
-      mlx_cmd="$component_cmd --enable mlx-whisper"
+      mlx_cmd="$install_mlx_cmd"
     fi
     set -- "$@" "$mlx_label%$mlx_cmd"
   fi
 
   if vr_has_nvidia_gpu; then
-    if "$component_cmd" --is-installed parakeet >/dev/null 2>&1; then
+    if vr_component_installed "parakeet"; then
       parakeet_label="[X] Parakeet"
-      parakeet_cmd="$component_cmd --disable parakeet"
+      parakeet_cmd="$uninstall_parakeet_cmd"
     else
       parakeet_label="[ ] Parakeet"
-      parakeet_cmd="$component_cmd --enable parakeet"
+      parakeet_cmd="$install_parakeet_cmd"
     fi
     set -- "$@" "$parakeet_label%$parakeet_cmd"
   fi

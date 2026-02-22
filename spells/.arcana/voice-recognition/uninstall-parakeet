@@ -1,0 +1,27 @@
+#!/bin/sh
+
+# Remove the Parakeet backend for local dictation.
+
+case "${1-}" in
+  --help|--usage|-h)
+    cat <<'USAGE'
+Usage: uninstall-parakeet
+
+Removes the local Parakeet runtime.
+USAGE
+    exit 0
+    ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+VR_ARCANA_DIR=$script_dir
+export VR_ARCANA_DIR
+# shellcheck source=/dev/null
+. "$script_dir/voice-recognition-common"
+
+vr_uninstall_component "parakeet"
