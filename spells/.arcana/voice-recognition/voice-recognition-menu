@@ -46,10 +46,10 @@ while :; do
   set --
 
   if vr_component_installed "ctranslate2-whisper"; then
-    ctranslate2_label="[X] CTranslate2 Whisper (via whisper-ctranslate2)"
+    ctranslate2_label="[X] CTranslate2 Whisper"
     ctranslate2_cmd="$uninstall_ctranslate2_cmd"
   else
-    ctranslate2_label="[ ] CTranslate2 Whisper (via whisper-ctranslate2)"
+    ctranslate2_label="[ ] CTranslate2 Whisper"
     ctranslate2_cmd="${install_env_prefix}${install_ctranslate2_cmd}"
   fi
   set -- "$@" "$ctranslate2_label%$ctranslate2_cmd"

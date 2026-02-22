@@ -36,7 +36,7 @@ test_menu_shows_macos_toggles() {
   assert_success || return 1
   args=$(cat "$tmp/menu.log")
   case "$args" in
-    *"Voice Recognition:"*"[ ] CTranslate2 Whisper (via whisper-ctranslate2)%WIZARDRY_LOG_LEVEL=1 $ROOT_DIR/spells/.arcana/voice-recognition/install-ctranslate2-whisper"*"[ ] MLX-Whisper%WIZARDRY_LOG_LEVEL=1 $ROOT_DIR/spells/.arcana/voice-recognition/install-mlx-whisper"*'Exit%kill -TERM $PPID'*) : ;;
+    *"Voice Recognition:"*"[ ] CTranslate2 Whisper%WIZARDRY_LOG_LEVEL=1 $ROOT_DIR/spells/.arcana/voice-recognition/install-ctranslate2-whisper"*"[ ] MLX-Whisper%WIZARDRY_LOG_LEVEL=1 $ROOT_DIR/spells/.arcana/voice-recognition/install-mlx-whisper"*'Exit%kill -TERM $PPID'*) : ;;
     *)
       TEST_FAILURE_REASON="unexpected macOS menu options: $args"
       return 1
@@ -64,7 +64,7 @@ test_menu_shows_parakeet_toggle_on_linux_nvidia() {
   assert_success || return 1
   args=$(cat "$tmp/menu.log")
   case "$args" in
-    *"Voice Recognition:"*"[ ] CTranslate2 Whisper (via whisper-ctranslate2)%WIZARDRY_LOG_LEVEL=1 $ROOT_DIR/spells/.arcana/voice-recognition/install-ctranslate2-whisper"*"[ ] Parakeet%WIZARDRY_LOG_LEVEL=1 $ROOT_DIR/spells/.arcana/voice-recognition/install-parakeet"*'Exit%kill -TERM $PPID'*) : ;;
+    *"Voice Recognition:"*"[ ] CTranslate2 Whisper%WIZARDRY_LOG_LEVEL=1 $ROOT_DIR/spells/.arcana/voice-recognition/install-ctranslate2-whisper"*"[ ] Parakeet%WIZARDRY_LOG_LEVEL=1 $ROOT_DIR/spells/.arcana/voice-recognition/install-parakeet"*'Exit%kill -TERM $PPID'*) : ;;
     *)
       TEST_FAILURE_REASON="unexpected Linux NVIDIA menu options: $args"
       return 1
