@@ -20,14 +20,10 @@ set -eu
 . colors
 
 if ! command -v nostril >/dev/null 2>&1; then
-  info "nostril is not installed"
-  exit 0
-fi
-
-if command -v cargo >/dev/null 2>&1; then
-  step "Removing nostril via cargo..."
-  if cargo uninstall nostril >/dev/null 2>&1; then
-    success "Uninstalled nostril"
+  if [ -f "${XDG_BIN_HOME:-$HOME/.local/bin}/nostril" ]; then
+    :
+  else
+    info "nostril is not installed"
     exit 0
   fi
 fi
@@ -36,6 +32,31 @@ nostril_path=$(command -v nostril 2>/dev/null || printf '')
 if [ -n "$nostril_path" ] && [ -f "$nostril_path" ]; then
   step "Removing nostril binary at $nostril_path"
   rm -f "$nostril_path"
+fi
+
+local_bin="${XDG_BIN_HOME:-$HOME/.local/bin}"
+if [ -f "$local_bin/nostril" ]; then
+  step "Removing nostril binary at $local_bin/nostril"
+  rm -f "$local_bin/nostril"
+fi
+if [ -f "$local_bin/nostril-query" ]; then
+  rm -f "$local_bin/nostril-query"
+fi
+
+if [ -f "/usr/local/bin/nostril" ]; then
+  step "Removing nostril binary at /usr/local/bin/nostril"
+  rm -f /usr/local/bin/nostril
+fi
+if [ -f "/usr/local/bin/nostril-query" ]; then
+  rm -f /usr/local/bin/nostril-query
+fi
+
+if [ -f "/opt/homebrew/bin/nostril" ]; then
+  step "Removing nostril binary at /opt/homebrew/bin/nostril"
+  rm -f /opt/homebrew/bin/nostril
+fi
+if [ -f "/opt/homebrew/bin/nostril-query" ]; then
+  rm -f /opt/homebrew/bin/nostril-query
 fi
 
 if command -v nostril >/dev/null 2>&1; then

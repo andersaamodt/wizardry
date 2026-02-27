@@ -24,16 +24,77 @@ if command -v nostril >/dev/null 2>&1; then
   exit 0
 fi
 
-if ! command -v cargo >/dev/null 2>&1; then
-  die "install-nostril: cargo is required. Install the Rust toolchain first."
+if ! command -v git >/dev/null 2>&1; then
+  die "install-nostril: git is required."
+fi
+if ! command -v make >/dev/null 2>&1 || ! command make -v >/dev/null 2>&1; then
+  die "install-nostril: make is required."
+fi
+if ! command -v cc >/dev/null 2>&1; then
+  die "install-nostril: a C compiler (cc) is required."
 fi
 
-step "Installing nostril via cargo..."
-if cargo install --locked nostril >/dev/null 2>&1; then
-  if command -v nostril >/dev/null 2>&1; then
-    success "Installed nostril"
-    exit 0
+if ! command -v autoreconf >/dev/null 2>&1; then
+  if command -v brew >/dev/null 2>&1; then
+    step "Installing nostril build prerequisites via Homebrew..."
+    command brew install autoconf automake libtool >/dev/null 2>&1 || \
+      die "install-nostril: could not install autotools via Homebrew."
   fi
 fi
 
-die "install-nostril: installation failed. Try 'cargo install --locked nostril' for details."
+if ! command -v autoreconf >/dev/null 2>&1; then
+  die "install-nostril: missing autoreconf. Install autoconf/automake/libtool and retry."
+fi
+
+build_root="${XDG_CACHE_HOME:-$HOME/.cache}/wizardry/nostril-src"
+repo_dir="$build_root/nostril"
+install_bin_dir=""
+for candidate in /usr/local/bin /opt/homebrew/bin "${XDG_BIN_HOME:-$HOME/.local/bin}"; do
+  [ -d "$candidate" ] || continue
+  if [ -w "$candidate" ]; then
+    install_bin_dir="$candidate"
+    break
+  fi
+done
+[ -n "$install_bin_dir" ] || install_bin_dir="${XDG_BIN_HOME:-$HOME/.local/bin}"
+
+step "Preparing nostril source..."
+mkdir -p "$build_root"
+if [ -d "$repo_dir/.git" ]; then
+  (
+    cd "$repo_dir"
+    git fetch --depth 1 origin >/dev/null 2>&1 || true
+    git reset --hard FETCH_HEAD >/dev/null 2>&1 || true
+  )
+else
+  git clone --depth 1 https://github.com/jb55/nostril.git "$repo_dir" >/dev/null 2>&1 || \
+    die "install-nostril: could not clone upstream nostril repository."
+fi
+
+step "Building nostril..."
+(
+  cd "$repo_dir"
+  command git submodule update --init --recursive >/dev/null 2>&1 || \
+    die "install-nostril: could not fetch nostril submodules."
+  command make nostril || \
+    die "install-nostril: build failed. Required build tools for upstream nostril may be missing."
+)
+
+step "Installing nostril binary..."
+mkdir -p "$install_bin_dir"
+cp "$repo_dir/nostril" "$install_bin_dir/nostril" || \
+  die "install-nostril: failed to copy nostril binary into $install_bin_dir."
+chmod +x "$install_bin_dir/nostril"
+
+if [ -f "$repo_dir/nostril-query" ]; then
+  cp "$repo_dir/nostril-query" "$install_bin_dir/nostril-query" || true
+  chmod +x "$install_bin_dir/nostril-query" || true
+fi
+
+if command -v nostril >/dev/null 2>&1; then
+  success "Installed nostril"
+  exit 0
+fi
+
+info "nostril installed at $install_bin_dir/nostril"
+die "install-nostril: nostril is not currently on PATH. Add $install_bin_dir to PATH and retry."
