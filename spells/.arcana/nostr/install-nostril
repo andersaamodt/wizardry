@@ -1,0 +1,39 @@
+#!/bin/sh
+
+# Install or verify nostril tooling.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-nostril
+
+Ensures the nostril CLI is available for Nostr signature verification.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+. colors
+
+if command -v nostril >/dev/null 2>&1; then
+  success "nostril is already installed"
+  exit 0
+fi
+
+if ! command -v cargo >/dev/null 2>&1; then
+  die "install-nostril: cargo is required. Install the Rust toolchain first."
+fi
+
+step "Installing nostril via cargo..."
+if cargo install --locked nostril >/dev/null 2>&1; then
+  if command -v nostril >/dev/null 2>&1; then
+    success "Installed nostril"
+    exit 0
+  fi
+fi
+
+die "install-nostril: installation failed. Try 'cargo install --locked nostril' for details."

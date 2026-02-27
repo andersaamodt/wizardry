@@ -96,7 +96,7 @@ vr_component_model() {
       printf '%s\n' "small.en"
       ;;
     mlx-whisper)
-      printf '%s\n' "${WIZARDRY_VOICE_MODEL_MLX:-mlx-community/whisper-small}"
+      printf '%s\n' "${WIZARDRY_VOICE_MODEL_MLX:-mlx-community/whisper-small-mlx}"
       ;;
     parakeet)
       printf '%s\n' "${WIZARDRY_VOICE_MODEL_PARAKEET:-nvidia/parakeet-tdt-0.6b-v2}"

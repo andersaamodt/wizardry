@@ -1,0 +1,77 @@
+#!/bin/sh
+
+# List player accounts on this host (mud group members).
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: list-players
+
+Lists authorized MUD player accounts on this host from the `mud` group and
+shows whether each account has an authorized SSH key installed.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+group_members_line() {
+  if command -v getent >/dev/null 2>&1; then
+    getent group mud 2>/dev/null | awk -F: 'NR==1 {print $4}'
+    return 0
+  fi
+
+  if command -v dscl >/dev/null 2>&1; then
+    dscl . -read /Groups/mud GroupMembership 2>/dev/null | sed 's/^GroupMembership:[[:space:]]*//' | tr ' ' ','
+    return 0
+  fi
+
+  awk -F: '/^mud:/ {print $4; exit}' /etc/group 2>/dev/null || true
+}
+
+resolve_home() {
+  user=$1
+  if eval "home=~$user" 2>/dev/null; then
+    [ -n "${home:-}" ] && [ "$home" != "~$user" ] && {
+      printf '%s\n' "$home"
+      return 0
+    }
+  fi
+  if command -v getent >/dev/null 2>&1; then
+    home=$(getent passwd "$user" 2>/dev/null | awk -F: 'NR==1 {print $6}')
+    [ -n "$home" ] && {
+      printf '%s\n' "$home"
+      return 0
+    }
+  fi
+  if command -v dscl >/dev/null 2>&1; then
+    home=$(dscl . -read "/Users/$user" NFSHomeDirectory 2>/dev/null | awk '{print $2}')
+    [ -n "$home" ] && {
+      printf '%s\n' "$home"
+      return 0
+    }
+  fi
+  return 1
+}
+
+members=$(group_members_line)
+if [ -z "$members" ]; then
+  printf '%s\n' "No players found in the 'mud' group."
+  exit 0
+fi
+
+printf '%s\n' "Players on this host:"
+printf '%s\n' ""
+printf '%-18s %-10s %s\n' "PLAYER" "SSH KEY" "HOME"
+printf '%-18s %-10s %s\n' "------" "-------" "----"
+
+printf '%s' "$members" | tr ',' '\n' | sed 's/^ *//;s/ *$//' | awk 'NF' | sort -u | while IFS= read -r player; do
+  home=$(resolve_home "$player" 2>/dev/null || printf '?')
+  has_key="no"
+  if [ -n "$home" ] && [ "$home" != "?" ] && [ -s "$home/.ssh/authorized_keys" ]; then
+    has_key="yes"
+  fi
+  printf '%-18s %-10s %s\n' "$player" "$has_key" "$home"
+done
+

@@ -1,0 +1,61 @@
+#!/bin/sh
+
+# Show whether the current shell/user is in player context.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: player-status
+
+Shows:
+  - whether your current UNIX user is a MUD player account on this host
+  - whether `MUD_PLAYER` is set
+  - whether the selected/local player key exists in ~/.ssh
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+is_user_in_group() {
+  user=$1
+  group=$2
+
+  if command -v id >/dev/null 2>&1; then
+    id -nG "$user" 2>/dev/null | tr ' ' '\n' | grep -qx "$group"
+    return $?
+  fi
+  return 1
+}
+
+current_user=${USER:-$(id -un 2>/dev/null || whoami)}
+selected_player=${MUD_PLAYER-}
+
+logged_in_player="no"
+if is_user_in_group "$current_user" mud; then
+  logged_in_player="yes"
+fi
+
+current_user_key="no"
+if [ -f "$HOME/.ssh/$current_user.pub" ] || [ -f "$HOME/.ssh/$current_user" ]; then
+  current_user_key="yes"
+fi
+
+selected_player_display="(not set)"
+selected_player_key="n/a"
+if [ -n "$selected_player" ]; then
+  selected_player_display=$selected_player
+  if [ -f "$HOME/.ssh/$selected_player.pub" ] || [ -f "$HOME/.ssh/$selected_player" ]; then
+    selected_player_key="yes"
+  else
+    selected_player_key="no"
+  fi
+fi
+
+printf '%-38s %s\n' "Current UNIX user:" "$current_user"
+printf '%-38s %s\n' "Logged in as player account on host:" "$logged_in_player"
+printf '%-38s %s\n' "Current user has local player key:" "$current_user_key"
+printf '%-38s %s\n' "Selected player identity (MUD_PLAYER):" "$selected_player_display"
+printf '%-38s %s\n' "Selected identity key present in ~/.ssh:" "$selected_player_key"
+

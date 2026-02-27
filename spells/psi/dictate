@@ -109,16 +109,16 @@ case "$os_name" in
   Darwin)
     ffmpeg -nostdin -hide_banner -loglevel error \
       -f avfoundation -i ":0" \
-      -t "$duration" -ac 1 -ar 16000 -y "$audio_file" || die "dictate: microphone capture failed on macOS"
+      -t "$duration" -ac 1 -ar 16000 -f wav -y "$audio_file" || die "dictate: microphone capture failed on macOS"
     ;;
   Linux)
     if ffmpeg -nostdin -hide_banner -loglevel error \
       -f pulse -i default \
-      -t "$duration" -ac 1 -ar 16000 -y "$audio_file"; then
+      -t "$duration" -ac 1 -ar 16000 -f wav -y "$audio_file"; then
       :
     elif ffmpeg -nostdin -hide_banner -loglevel error \
       -f alsa -i default \
-      -t "$duration" -ac 1 -ar 16000 -y "$audio_file"; then
+      -t "$duration" -ac 1 -ar 16000 -f wav -y "$audio_file"; then
       :
     else
       die "dictate: microphone capture failed on Linux"

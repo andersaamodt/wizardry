@@ -87,6 +87,10 @@ SH
     TEST_FAILURE_REASON="MUD Settings action missing"
     return 1
   }
+  grep -q "Player status%player-status" "$tmp/log" || {
+    TEST_FAILURE_REASON="Player status action missing"
+    return 1
+  }
 }
 
 test_mud_shows_menu_title() {
@@ -107,6 +111,53 @@ SH
     TEST_FAILURE_REASON="MUD Menu: title missing"
     return 1
   }
+}
+
+test_mud_shows_create_player_first_when_no_keys() {
+  skip-if-compiled || return $?
+  tmp=$(make_tempdir)
+  home_tmp="$tmp/home"
+  mkdir -p "$home_tmp"
+  stub-menu "$tmp"
+  stub-require-command "$tmp"
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$tmp/exit-label"
+
+  HOME="$home_tmp" PATH="$tmp:$PATH" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/mud"
+  assert_success
+
+  args=$(cat "$tmp/log")
+  case "$args" in
+    *"MUD Menu:"*"Create Player%new-player"*"Look Around%look"*) : ;;
+    *) TEST_FAILURE_REASON="Create Player should appear before main actions when no keys exist: $args"; return 1 ;;
+  esac
+}
+
+test_mud_shows_change_player_near_end_when_logged_in() {
+  skip-if-compiled || return $?
+  tmp=$(make_tempdir)
+  home_tmp="$tmp/home"
+  mkdir -p "$home_tmp/.ssh"
+  touch "$home_tmp/.ssh/hero.pub"
+  stub-menu "$tmp"
+  stub-require-command "$tmp"
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$tmp/exit-label"
+
+  HOME="$home_tmp" MUD_PLAYER=hero PATH="$tmp:$PATH" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/mud"
+  assert_success
+
+  args=$(cat "$tmp/log")
+  case "$args" in
+    *"Admin MUD Hosting%mud-admin-menu"*"Change player%choose-player"*'MUD Settings%. mud-settings'*'Exit%kill -TERM $PPID'*) : ;;
+    *) TEST_FAILURE_REASON="Change player should be third-to-last when logged in: $args"; return 1 ;;
+  esac
 }
 
 # Test ESC and Exit behavior - menu exits properly when escape status returned
@@ -146,6 +197,8 @@ run_test_case "mud --help shows usage" test_shows_help
 run_test_case "mud presents navigation options" test_mud_presents_navigation_options
 run_test_case "mud presents admin options" test_mud_presents_admin_options
 run_test_case "mud shows menu title" test_mud_shows_menu_title
+run_test_case "mud shows Create Player first when no keys exist" test_mud_shows_create_player_first_when_no_keys
+run_test_case "mud shows Change player near end when logged in" test_mud_shows_change_player_near_end_when_logged_in
 run_test_case "mud ESC/Exit behavior" test_esc_exit_behavior
 
 

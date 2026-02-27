@@ -66,6 +66,11 @@ else
   file="$*"
 fi
 
+file_existed=0
+if [ -e "$file" ]; then
+  file_existed=1
+fi
+
 # Check if the target file exists
 if [ ! -e "$file" ]; then
   # Ask to create the file if it doesn't exist (unless --yes/-y is used)
@@ -162,8 +167,17 @@ if [ "$highest_echelon" -eq 0 ]; then
   exit 0
 fi
 
-# If file is already at the highest echelon, promote to new echelon
+# If file is already at the highest echelon:
+# - Existing files are treated as duplicate-add style and stay in highest echelon.
+# - Newly created files keep promotion semantics when re-prioritized later.
 if [ "$current_echelon" -eq "$highest_echelon" ] && [ "$current_echelon" -gt 0 ]; then
+  if [ "$file_existed" -eq 1 ]; then
+    new_priority=$((highest_priority_in_echelon + 1))
+    enchant "$file" echelon "$highest_echelon" >/dev/null
+    enchant "$file" priority "$new_priority" >/dev/null
+    printf '%s\n' "Kept '$(basename "$file")' in echelon $highest_echelon (priority $new_priority)."
+    exit 0
+  fi
   new_echelon=$((highest_echelon + 1))
   enchant "$file" echelon "$new_echelon" >/dev/null
   enchant "$file" priority 1 >/dev/null

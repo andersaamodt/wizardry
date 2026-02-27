@@ -1,0 +1,84 @@
+#!/bin/sh
+
+# Promote an existing player account to blog admin on this machine.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: promote-admin [PLAYER]
+
+Adds PLAYER to the local `blog-admin` UNIX group.
+Requires root privileges or sudo.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+player=${1-}
+if [ -z "$player" ]; then
+  printf '%s' "Enter player name to promote: "
+  read -r player
+fi
+
+if ! validate-player-name "$player"; then
+  exit 1
+fi
+
+run_priv() {
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+    return
+  fi
+  if command -v sudo >/dev/null 2>&1; then
+    sudo "$@"
+    return
+  fi
+  printf '%s\n' "promote-admin: root or sudo is required." >&2
+  exit 1
+}
+
+if ! id "$player" >/dev/null 2>&1; then
+  printf '%s\n' "promote-admin: player '$player' does not exist on this host." >&2
+  exit 1
+fi
+
+os_name=$(uname -s 2>/dev/null || printf '')
+
+if [ "$os_name" = "Darwin" ] && command -v dscl >/dev/null 2>&1; then
+  if ! dscl . -read /Groups/blog-admin >/dev/null 2>&1; then
+    max_gid=$(dscl . -list /Groups PrimaryGroupID 2>/dev/null | awk '{print $2}' | sort -n | tail -1)
+    case "$max_gid" in ''|*[!0-9]*) max_gid=500 ;; esac
+    gid=$((max_gid + 1))
+    run_priv dscl . -create /Groups/blog-admin
+    run_priv dscl . -create /Groups/blog-admin PrimaryGroupID "$gid"
+    run_priv dscl . -create /Groups/blog-admin RealName "Wizardry Blog Admins"
+  fi
+
+  if command -v dseditgroup >/dev/null 2>&1; then
+    run_priv dseditgroup -o edit -a "$player" -t user blog-admin
+  else
+    run_priv dscl . -append /Groups/blog-admin GroupMembership "$player"
+  fi
+else
+  if command -v getent >/dev/null 2>&1; then
+    if ! getent group blog-admin >/dev/null 2>&1; then
+      run_priv groupadd blog-admin
+    fi
+  elif ! grep -q '^blog-admin:' /etc/group 2>/dev/null; then
+    run_priv groupadd blog-admin
+  fi
+
+  if command -v usermod >/dev/null 2>&1; then
+    run_priv usermod -aG blog-admin "$player"
+  elif command -v gpasswd >/dev/null 2>&1; then
+    run_priv gpasswd -a "$player" blog-admin
+  else
+    printf '%s\n' "promote-admin: neither usermod nor gpasswd is available." >&2
+    exit 1
+  fi
+fi
+
+success "Player '$player' promoted to blog admin."
+printf '%s\n' "They may need to log out/in again for group membership changes to apply."

@@ -45,7 +45,7 @@ list_entries() {
         return
     fi
 
-    # Preferred order: core, mud, web-wizardry, wizardry-apps, ai-dev, voice-recognition, then others alphabetically
+    # Preferred order: core, mud, web-wizardry, wizardry-apps, ai-dev, voice-recognition, nostr, then others alphabetically
     # First output 'core' if it exists
     if [ -e "$install_dir/core" ]; then
         printf '%s\n' "core"
@@ -75,6 +75,11 @@ list_entries() {
     if [ -e "$install_dir/voice-recognition" ]; then
         printf '%s\n' "voice-recognition"
     fi
+
+    # Then 'nostr' if it exists
+    if [ -e "$install_dir/nostr" ]; then
+        printf '%s\n' "nostr"
+    fi
     
     # Then output all other entries alphabetically
     for entry in "$install_dir"/*; do
@@ -87,6 +92,7 @@ list_entries() {
         [ "$entry_name" = "wizardry-apps" ] && continue
         [ "$entry_name" = "ai-dev" ] && continue
         [ "$entry_name" = "voice-recognition" ] && continue
+        [ "$entry_name" = "nostr" ] && continue
         # Skip 'import-arcanum' since it's a special menu item added separately
         [ "$entry_name" = "import-arcanum" ] && continue
         printf '%s\n' "$entry_name"
@@ -163,6 +169,7 @@ while :; do
             wizardry-apps) label="wizardry apps" ;;
             ai-dev) label="AI dev" ;;
             voice-recognition) label="voice recognition" ;;
+            nostr) label="Nostr" ;;
             docker) label="Docker" ;;
         esac
         
