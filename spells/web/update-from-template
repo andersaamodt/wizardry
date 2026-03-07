@@ -47,7 +47,10 @@ SITES_DIR="$WEB_ROOT"
 SITE_DIR="$SITES_DIR/$site_name"
 WIZARDRY_DIR=${WIZARDRY_DIR:-$HOME/.wizardry}
 WIZARDRY_APPS_DIR=${WIZARDRY_APPS_DIR:-$HOME/git/wizardry-apps}
-templates_root="$WIZARDRY_APPS_DIR/.web"
+templates_root="$WIZARDRY_APPS_DIR/web"
+if [ ! -d "$templates_root" ]; then
+  templates_root="$WIZARDRY_APPS_DIR/.web"
+fi
 
 # Check if site exists
 if [ ! -d "$SITE_DIR" ]; then
@@ -59,6 +62,11 @@ if [ ! -d "$templates_root" ]; then
   ensure_templates_cmd="$WIZARDRY_DIR/spells/.arcana/wizardry-apps/ensure-wizardry-apps-component"
   if [ -x "$ensure_templates_cmd" ]; then
     "$ensure_templates_cmd" web-templates
+  fi
+  if [ -d "$WIZARDRY_APPS_DIR/web" ]; then
+    templates_root="$WIZARDRY_APPS_DIR/web"
+  elif [ -d "$WIZARDRY_APPS_DIR/.web" ]; then
+    templates_root="$WIZARDRY_APPS_DIR/.web"
   fi
 fi
 
@@ -175,12 +183,24 @@ if [ ! -d "$template_dir" ]; then
   if [ -x "$ensure_templates_cmd" ]; then
     "$ensure_templates_cmd" web-templates
   fi
+  if [ -d "$WIZARDRY_APPS_DIR/web" ]; then
+    templates_root="$WIZARDRY_APPS_DIR/web"
+  elif [ -d "$WIZARDRY_APPS_DIR/.web" ]; then
+    templates_root="$WIZARDRY_APPS_DIR/.web"
+  fi
   template_dir="$templates_root/$template"
   shared_theme_dir="$templates_root/.themes"
 fi
 
 if [ ! -d "$template_dir" ]; then
-  die "update-from-template: template '$template' not found at $template_dir"
+  # Local development fallback for the blog template repository.
+  dev_blog_dir="$HOME/git/nostr-blog"
+  if [ "$template" = "blog" ] && [ -d "$dev_blog_dir/pages" ] && [ -d "$dev_blog_dir/static" ] && [ -d "$dev_blog_dir/cgi" ]; then
+    template_dir="$dev_blog_dir"
+    shared_theme_dir="$dev_blog_dir/static/themes"
+  else
+    die "update-from-template: template '$template' not found at $template_dir"
+  fi
 fi
 
 # Ask for confirmation unless --force

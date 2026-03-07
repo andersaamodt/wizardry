@@ -47,11 +47,19 @@ if [ -d "$SITE_DIR" ]; then
 fi
 
 # Offer to install web templates if missing or if .web is a symlink (unsupported).
-templates_root="$WIZARDRY_APPS_DIR/.web"
+templates_root="$WIZARDRY_APPS_DIR/web"
+if [ ! -d "$templates_root" ]; then
+  templates_root="$WIZARDRY_APPS_DIR/.web"
+fi
 if [ ! -d "$templates_root" ]; then
   ensure_templates_cmd="$WIZARDRY_DIR/spells/.arcana/wizardry-apps/ensure-wizardry-apps-component"
   if [ -x "$ensure_templates_cmd" ]; then
     "$ensure_templates_cmd" web-templates
+  fi
+  if [ -d "$WIZARDRY_APPS_DIR/web" ]; then
+    templates_root="$WIZARDRY_APPS_DIR/web"
+  elif [ -d "$WIZARDRY_APPS_DIR/.web" ]; then
+    templates_root="$WIZARDRY_APPS_DIR/.web"
   fi
 fi
 
@@ -63,12 +71,23 @@ if [ ! -d "$template_dir" ]; then
   if [ -x "$ensure_templates_cmd" ]; then
     "$ensure_templates_cmd" web-templates
   fi
+  if [ -d "$WIZARDRY_APPS_DIR/web" ]; then
+    templates_root="$WIZARDRY_APPS_DIR/web"
+  elif [ -d "$WIZARDRY_APPS_DIR/.web" ]; then
+    templates_root="$WIZARDRY_APPS_DIR/.web"
+  fi
   template_dir="$templates_root/$template"
   shared_theme_dir="$templates_root/.themes"
 fi
 
 if [ ! -d "$template_dir" ]; then
-  die "create-from-template: template '$template' not found"
+  dev_blog_dir="$HOME/git/nostr-blog"
+  if [ "$template" = "blog" ] && [ -d "$dev_blog_dir/pages" ] && [ -d "$dev_blog_dir/static" ] && [ -d "$dev_blog_dir/cgi" ]; then
+    template_dir="$dev_blog_dir"
+    shared_theme_dir="$dev_blog_dir/static/themes"
+  else
+    die "create-from-template: template '$template' not found"
+  fi
 fi
 
 step "Creating site '$site_name' from template '$template'..."

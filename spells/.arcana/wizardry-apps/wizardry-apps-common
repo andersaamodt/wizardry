@@ -8,7 +8,13 @@ wizardry_apps_dir=${WIZARDRY_APPS_DIR:-$HOME/git/wizardry-apps}
 wizardry_apps_component_path() {
   component=$1
   case "$component" in
-    web-templates) printf '%s\n' "$wizardry_apps_dir/.web" ;;
+    web-templates)
+      if [ -d "$wizardry_apps_dir/web" ]; then
+        printf '%s\n' "$wizardry_apps_dir/web"
+      else
+        printf '%s\n' "$wizardry_apps_dir/.web"
+      fi
+      ;;
     apps) printf '%s\n' "$wizardry_apps_dir/.apps" ;;
     *) return 2 ;;
   esac
