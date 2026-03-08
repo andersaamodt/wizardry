@@ -1,0 +1,28 @@
+#!/bin/sh
+
+# Returns success when yt-dlp is installed and executable.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: is-yt-dlp-installed
+
+Checks whether yt-dlp is installed.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+if command -v yt-dlp >/dev/null 2>&1; then
+  exit 0
+fi
+
+for path in /usr/local/bin/yt-dlp /opt/homebrew/bin/yt-dlp /usr/bin/yt-dlp "$HOME/.local/bin/yt-dlp"; do
+  if [ -x "$path" ]; then
+    exit 0
+  fi
+done
+
+exit 1

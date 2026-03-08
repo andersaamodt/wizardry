@@ -1,0 +1,52 @@
+#!/bin/sh
+
+# Manage yt-dlp installation and launch video download workflows.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: yt-dlp-menu
+
+Displays install/uninstall toggle for yt-dlp and a launcher for video-download-menu.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+. colors
+
+if ! require menu "The yt-dlp-menu needs the 'menu' command to present options."; then
+  exit 1
+fi
+
+trap 'exit 130' INT
+trap 'exit 0' TERM
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+
+while :; do
+  unset menu_status
+
+  title="${BOLD}${CYAN}yt-dlp: $($script_dir/yt-dlp-status)"
+  if "$script_dir/is-yt-dlp-installed"; then
+    use_item="Use yt-dlp%$script_dir/video-download-menu"
+    toggle_item="[X] Install yt-dlp%$script_dir/uninstall-yt-dlp"
+    exit_label=$(exit-label)
+    exit_item="${exit_label}%kill -TERM \$PPID"
+    menu "$title" "$use_item" "$toggle_item" "$exit_item" || menu_status=$?
+  else
+    toggle_item="[ ] Install yt-dlp%$script_dir/install-yt-dlp"
+    exit_label=$(exit-label)
+    exit_item="${exit_label}%kill -TERM \$PPID"
+    menu "$title" "$toggle_item" "$exit_item" || menu_status=$?
+  fi
+  menu_status=${menu_status:-0}
+
+  if [ "$menu_status" -eq 130 ]; then
+    exit 0
+  fi
+done

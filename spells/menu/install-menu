@@ -45,7 +45,7 @@ list_entries() {
         return
     fi
 
-    # Preferred order: core, mud, web-wizardry, wizardry-apps, ai-dev, voice-recognition, nostr, then others alphabetically
+    # Preferred order: core, mud, web-wizardry, wizardry-apps, ai-dev, yt-dlp, voice-recognition, nostr, then others alphabetically
     # First output 'core' if it exists
     if [ -e "$install_dir/core" ]; then
         printf '%s\n' "core"
@@ -71,6 +71,11 @@ list_entries() {
         printf '%s\n' "ai-dev"
     fi
 
+    # Then 'yt-dlp' if it exists
+    if [ -e "$install_dir/yt-dlp" ]; then
+        printf '%s\n' "yt-dlp"
+    fi
+
     # Then 'voice-recognition' if it exists
     if [ -e "$install_dir/voice-recognition" ]; then
         printf '%s\n' "voice-recognition"
@@ -91,6 +96,7 @@ list_entries() {
         [ "$entry_name" = "web-wizardry" ] && continue
         [ "$entry_name" = "wizardry-apps" ] && continue
         [ "$entry_name" = "ai-dev" ] && continue
+        [ "$entry_name" = "yt-dlp" ] && continue
         [ "$entry_name" = "voice-recognition" ] && continue
         [ "$entry_name" = "nostr" ] && continue
         # Skip 'import-arcanum' since it's a special menu item added separately
@@ -168,6 +174,7 @@ while :; do
             web-wizardry) label="web wizardry" ;;
             wizardry-apps) label="wizardry apps" ;;
             ai-dev) label="AI dev" ;;
+            yt-dlp) label="yt-dlp" ;;
             voice-recognition) label="voice recognition" ;;
             nostr) label="Nostr" ;;
             docker) label="Docker" ;;
