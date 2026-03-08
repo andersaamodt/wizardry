@@ -33,8 +33,6 @@ run_with_priv() {
   fi
 }
 
-say "Installing yt-dlp..."
-
 installed=0
 
 if command -v pkgin >/dev/null 2>&1; then
