@@ -211,7 +211,9 @@ if [ "$force_flag" -eq 0 ]; then
   info ""
   info "Content in site/uploads and site data will be preserved."
   printf 'Continue? [y/N] '
-  read -r response
+  if ! IFS= read -r response; then
+    response=""
+  fi
   case "$response" in
     [yY]|[yY][eE][sS])
       # Continue
