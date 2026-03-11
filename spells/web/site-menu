@@ -209,7 +209,7 @@ while true; do
   
   # Always: Update from template
   update_template_cmd_wrapped=$(wrap_cmd "Update from template" \
-    "update-from-template \"$site_name\"")
+    "update-from-template \"$site_name\" --force")
   
   # Conditional: Copy .onion address
   if [ -n "$copy_site_onion" ]; then
