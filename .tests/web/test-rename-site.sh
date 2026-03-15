@@ -76,8 +76,45 @@ EOF
   rm -rf "$stub_dir" "$test_web_root"
 }
 
+test_rename_site_allows_dotted_destination() {
+  skip-if-compiled || return $?
+
+  test_web_root=$(temp-dir rename-site-test)
+  stub_dir=$(temp-dir rename-site-stubs)
+  export WIZARDRY_SITES_DIR="$test_web_root"
+  export SERVICE_DIR="$test_web_root/services"
+  mkdir -p "$SERVICE_DIR"
+  mkdir -p "$test_web_root/oldsite/site/pages"
+  printf 'site-name=oldsite\nport=8080\ndomain=localhost\nhttps=false\n' > "$test_web_root/oldsite/site.conf"
+
+  cat > "$stub_dir/configure-nginx" <<'EOF'
+#!/bin/sh
+set -eu
+exit 0
+EOF
+  chmod +x "$stub_dir/configure-nginx"
+
+  cat > "$stub_dir/fix-site-security" <<'EOF'
+#!/bin/sh
+set -eu
+exit 0
+EOF
+  chmod +x "$stub_dir/fix-site-security"
+
+  PATH="$stub_dir:$PATH"
+  export PATH
+
+  run_spell spells/web/rename-site oldsite new.andersaamodt.com
+  assert_success
+  assert_path_exists "$test_web_root/new.andersaamodt.com"
+  assert_file_contains "$test_web_root/new.andersaamodt.com/site.conf" "site-name=new.andersaamodt.com"
+
+  rm -rf "$stub_dir" "$test_web_root"
+}
+
 run_test_case "rename-site --help" test_rename_site_help
 run_test_case "rename-site requires OLD_NAME" test_rename_site_requires_old_name
 run_test_case "rename-site moves site and data" test_rename_site_moves_site_and_data
+run_test_case "rename-site allows dotted destination" test_rename_site_allows_dotted_destination
 
 finish_tests

@@ -29,10 +29,10 @@ if [ -z "$site_name" ]; then
   die 2 "create-site: SITENAME required"
 fi
 
-# Validate site name (alphanumeric, dash, underscore only)
+# Validate site name (alphanumeric, dot, dash, underscore only)
 case "$site_name" in
-  *[!a-zA-Z0-9_-]*)
-    die 2 "create-site: invalid site name (use alphanumeric, dash, underscore only)"
+  *[!a-zA-Z0-9._-]*)
+    die 2 "create-site: invalid site name (use alphanumeric, dot, dash, underscore only)"
     ;;
 esac
 
@@ -61,7 +61,7 @@ title: Welcome
 
 # Welcome to Your Website
 
-This is your homepage. Edit `site/pages/index.md` to customize it.
+This is your homepage. Edit site/pages/index.md to customize it.
 
 ## Features
 
@@ -73,10 +73,10 @@ This is your homepage. Edit `site/pages/index.md` to customize it.
 
 ## Getting Started
 
-1. Edit pages in `site/pages/`
-2. Add static files to `site/static/`
-3. Build with `web-wizardry build SITENAME`
-4. Serve with `web-wizardry serve SITENAME`
+1. Edit pages in site/pages/
+2. Add static files to site/static/
+3. Build with web-wizardry build SITENAME
+4. Serve with web-wizardry serve SITENAME
 
 ## Example CGI
 

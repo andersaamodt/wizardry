@@ -51,14 +51,14 @@ if [ -z "$new_name" ]; then
 fi
 
 case "$old_name" in
-  *[!a-zA-Z0-9_-]*)
-    die 2 "rename-site: invalid OLD_NAME (use alphanumeric, dash, underscore only)"
+  *[!a-zA-Z0-9._-]*)
+    die 2 "rename-site: invalid OLD_NAME (use alphanumeric, dot, dash, underscore only)"
     ;;
 esac
 
 case "$new_name" in
-  *[!a-zA-Z0-9_-]*)
-    die 2 "rename-site: invalid NEW_NAME (use alphanumeric, dash, underscore only)"
+  *[!a-zA-Z0-9._-]*)
+    die 2 "rename-site: invalid NEW_NAME (use alphanumeric, dot, dash, underscore only)"
     ;;
 esac
 

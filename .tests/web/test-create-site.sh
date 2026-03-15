@@ -51,7 +51,25 @@ test_web_create_site_creates_structure() {
   rm -rf "$test_web_root" "$stub_dir"
 }
 
+test_web_create_site_allows_dotted_names() {
+  skip-if-compiled || return $?
+
+  test_web_root=$(temp-dir web-wizardry-test)
+  export WEB_WIZARDRY_ROOT="$test_web_root"
+
+  stub_dir=$(temp-dir web-wizardry-stub)
+  stub-sudo "$stub_dir"
+  export PATH="$stub_dir:$PATH"
+
+  run_spell spells/web/create-site new.andersaamodt.com
+  assert_success
+  assert_path_exists "$test_web_root/new.andersaamodt.com"
+
+  rm -rf "$test_web_root" "$stub_dir"
+}
+
 run_test_case "create-site --help works" test_web_create_site_help
 run_test_case "create-site creates structure" test_web_create_site_creates_structure
+run_test_case "create-site allows dotted names" test_web_create_site_allows_dotted_names
 
 finish_tests
