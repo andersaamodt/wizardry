@@ -89,8 +89,8 @@ old_site_conf="$old_site_dir/site.conf"
 if [ ! -f "$old_site_conf" ]; then
   die "rename-site: missing site config: $old_site_conf"
 fi
-old_site_user_default="ww_$(printf '%s' "$old_name" | tr 'A-Z' 'a-z' | tr '.-' '__')"
-new_site_user_default="ww_$(printf '%s' "$new_name" | tr 'A-Z' 'a-z' | tr '.-' '__')"
+old_site_user_default="$(printf '%s' "$old_name" | tr 'A-Z' 'a-z' | tr '.-' '__')"
+new_site_user_default="$(printf '%s' "$new_name" | tr 'A-Z' 'a-z' | tr '.-' '__')"
 
 old_daemon_enabled=0
 if is-site-daemon-enabled "$old_name" 2>/dev/null; then

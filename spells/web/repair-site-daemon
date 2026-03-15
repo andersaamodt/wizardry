@@ -32,7 +32,7 @@ if [ ! -d "$SITE_DIR" ]; then
   die "repair-site-daemon: site '$site_name' not found"
 fi
 
-site_user_default="ww_$(printf '%s' "$site_name" | tr 'A-Z' 'a-z' | tr '.-' '__')"
+site_user_default="$(printf '%s' "$site_name" | tr 'A-Z' 'a-z' | tr '.-' '__')"
 site_user=$(config-get "$SITE_CONFIG" site-user 2>/dev/null || printf '')
 [ -z "$site_user" ] && site_user="$site_user_default"
 if ! id -u "$site_user" >/dev/null 2>&1; then
