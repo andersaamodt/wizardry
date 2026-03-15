@@ -13,6 +13,14 @@ test_site_menu_help() {
   assert_output_contains "Usage:"
 }
 
+test_site_menu_offers_rename_site() {
+  if ! grep -q '"Rename site%' "$ROOT_DIR/spells/web/site-menu"; then
+    fail "site-menu does not expose the Rename site action"
+    return 1
+  fi
+}
+
 run_test_case "site-menu --help" test_site_menu_help
+run_test_case "site-menu offers Rename site" test_site_menu_offers_rename_site
 
 finish_tests

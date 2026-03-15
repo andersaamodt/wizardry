@@ -1,0 +1,203 @@
+#!/bin/sh
+
+# Rename a wizardry web site and its related artifacts.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: rename-site OLD_NAME [NEW_NAME]
+
+Renames a website directory and its matching .sitedata directory, updates the
+site.conf site-name field, regenerates nginx configuration for the new site
+name, and recreates daemon artifacts if they existed under the old name.
+
+If NEW_NAME is not provided, prompts for it.
+
+Example:
+  rename-site oldsite newsite
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+run_priv() {
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+    return 0
+  fi
+  if has sudo; then
+    sudo "$@"
+    return 0
+  fi
+  die "rename-site: root or sudo is required for that step"
+}
+
+old_name=${1-}
+if [ -z "$old_name" ]; then
+  die 2 "rename-site: OLD_NAME required"
+fi
+
+new_name=${2-}
+if [ -z "$new_name" ]; then
+  printf 'Rename site %s to: ' "$old_name"
+  new_name=$(read-line)
+fi
+
+if [ -z "$new_name" ]; then
+  die 2 "rename-site: NEW_NAME required"
+fi
+
+case "$old_name" in
+  *[!a-zA-Z0-9_-]*)
+    die 2 "rename-site: invalid OLD_NAME (use alphanumeric, dash, underscore only)"
+    ;;
+esac
+
+case "$new_name" in
+  *[!a-zA-Z0-9_-]*)
+    die 2 "rename-site: invalid NEW_NAME (use alphanumeric, dash, underscore only)"
+    ;;
+esac
+
+if [ "$old_name" = "$new_name" ]; then
+  info "Site is already named $new_name"
+  exit 0
+fi
+
+SITES_DIR=${WIZARDRY_SITES_DIR:-${WEB_WIZARDRY_ROOT:-$HOME/sites}}
+old_site_dir="$SITES_DIR/$old_name"
+new_site_dir="$SITES_DIR/$new_name"
+old_data_dir="$SITES_DIR/.sitedata/$old_name"
+new_data_dir="$SITES_DIR/.sitedata/$new_name"
+
+if [ ! -d "$old_site_dir" ]; then
+  die "rename-site: site '$old_name' not found"
+fi
+
+if [ -e "$new_site_dir" ]; then
+  die "rename-site: destination site path already exists: $new_site_dir"
+fi
+
+if [ -e "$new_data_dir" ]; then
+  die "rename-site: destination site data path already exists: $new_data_dir"
+fi
+
+old_site_conf="$old_site_dir/site.conf"
+if [ ! -f "$old_site_conf" ]; then
+  die "rename-site: missing site config: $old_site_conf"
+fi
+
+old_daemon_enabled=0
+if is-site-daemon-enabled "$old_name" 2>/dev/null; then
+  old_daemon_enabled=1
+fi
+
+old_artifact_exists=0
+old_daemon_artifact=
+if has systemctl; then
+  old_daemon_artifact="${SERVICE_DIR:-/etc/systemd/system}/wizardry-site-${old_name}.service"
+  if [ -f "$old_daemon_artifact" ]; then
+    old_artifact_exists=1
+  fi
+else
+  if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
+    old_daemon_artifact="/Library/LaunchDaemons/org.wizardry.web.${old_name}.plist"
+    if [ -f "$old_daemon_artifact" ]; then
+      old_artifact_exists=1
+    fi
+  fi
+fi
+
+was_running=0
+if [ -f "$old_site_dir/nginx/nginx.pid" ]; then
+  old_nginx_pid=$(cat "$old_site_dir/nginx/nginx.pid" 2>/dev/null || printf '')
+  if [ -n "$old_nginx_pid" ] && kill -0 "$old_nginx_pid" 2>/dev/null; then
+    was_running=1
+  fi
+fi
+
+printf 'Preparing rename:\n'
+printf '  site directory: %s -> %s\n' "$old_site_dir" "$new_site_dir"
+printf '  site data:      %s -> %s\n' "$old_data_dir" "$new_data_dir"
+printf '  site config:    %s -> %s\n' "$old_site_conf" "$new_site_dir/site.conf"
+if [ -n "$old_daemon_artifact" ]; then
+  if has systemctl; then
+    printf '  daemon unit:    %s -> %s\n' "$old_daemon_artifact" "${SERVICE_DIR:-/etc/systemd/system}/wizardry-site-${new_name}.service"
+  else
+    printf '  daemon plist:   %s -> %s\n' "$old_daemon_artifact" "/Library/LaunchDaemons/org.wizardry.web.${new_name}.plist"
+  fi
+fi
+
+if [ "$old_daemon_enabled" -eq 1 ]; then
+  printf 'Change: disabling startup daemon for old site name: %s\n' "$old_name"
+  disable-site-daemon "$old_name"
+fi
+
+if [ "$was_running" -eq 1 ]; then
+  printf 'Change: stopping running site before rename: %s\n' "$old_name"
+  stop-site "$old_name"
+fi
+
+printf 'Change: moving site directory\n'
+printf '  from: %s\n' "$old_site_dir"
+printf '  to:   %s\n' "$new_site_dir"
+mv "$old_site_dir" "$new_site_dir"
+
+if [ -d "$old_data_dir" ]; then
+  printf 'Change: moving site data directory\n'
+  printf '  from: %s\n' "$old_data_dir"
+  printf '  to:   %s\n' "$new_data_dir"
+  mkdir -p "$SITES_DIR/.sitedata"
+  mv "$old_data_dir" "$new_data_dir"
+else
+  printf 'Change: no site data directory exists at %s\n' "$old_data_dir"
+fi
+
+new_site_conf="$new_site_dir/site.conf"
+printf 'Change: updating site-name in config\n'
+printf '  file: %s\n' "$new_site_conf"
+printf '  key:  site-name=%s\n' "$new_name"
+config-set "$new_site_conf" site-name "$new_name"
+
+printf 'Change: regenerating nginx configuration for new site name\n'
+printf '  site: %s\n' "$new_name"
+configure-nginx "$new_name"
+
+printf 'Change: repairing site permissions for renamed paths\n'
+printf '  site: %s\n' "$new_name"
+fix-site-security "$new_name"
+
+if [ "$old_artifact_exists" -eq 1 ]; then
+  if [ -n "$old_daemon_artifact" ] && [ -f "$old_daemon_artifact" ]; then
+    printf 'Change: removing old daemon artifact\n'
+    printf '  path: %s\n' "$old_daemon_artifact"
+    run_priv rm -f "$old_daemon_artifact"
+    if has systemctl; then
+      run_priv systemctl daemon-reload
+    fi
+  fi
+  printf 'Change: creating daemon artifact for new site name\n'
+  printf '  site: %s\n' "$new_name"
+  repair-site-daemon "$new_name"
+fi
+
+if [ "$old_daemon_enabled" -eq 1 ]; then
+  printf 'Change: re-enabling startup daemon for new site name\n'
+  printf '  site: %s\n' "$new_name"
+  enable-site-daemon "$new_name"
+fi
+
+if [ "$was_running" -eq 1 ]; then
+  printf 'Change: starting renamed site again\n'
+  printf '  site: %s\n' "$new_name"
+  serve-site "$new_name"
+fi
+
+success "Renamed site '$old_name' to '$new_name'"
+info "New site directory: $new_site_dir"
+if [ -d "$new_data_dir" ]; then
+  info "New site data directory: $new_data_dir"
+fi

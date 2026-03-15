@@ -274,6 +274,10 @@ while true; do
   # Always: Change port
   port_cmd_wrapped=$(wrap_cmd "Change port (current: $port)" \
     "change-site-port \"$site_name\"")
+
+  # Always: Rename site
+  rename_cmd_wrapped=$(wrap_cmd "Rename site" \
+    "rename-site \"$site_name\"")
   
   # Conditional: HTTPS setup/renew
   if [ -n "$https_option" ]; then
@@ -331,6 +335,7 @@ while true; do
     ${tor_hosting_option:+"$tor_hosting_option"} \
     ${serve_on_startup_option:+"$serve_on_startup_option"} \
     "Change port (current: $port)%$port_cmd_wrapped" \
+    "Rename site%$rename_cmd_wrapped" \
     ${https_option:+"$https_option"} \
     ${https_disable_option:+"$https_disable_option"} \
     "Rebuild nginx.conf%$nginx_conf_cmd_wrapped" \
