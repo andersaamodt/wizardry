@@ -225,12 +225,12 @@ http {
             try_files /pages/index.html =404;
         }
 
-        # SPA deep-link routing:
+        # Deep-link routing:
         # - serve real files when they exist
-        # - otherwise fall back to the app shell so routes like
-        #   /workspace-slug--id/thread-slug--id/ survive refresh
+        # - map extensionless paths (e.g. /oeuvre) to /pages/<slug>.html
+        # - finally fall back to the app shell for SPA-like routes
         location / {
-            try_files \$uri /pages/index.html;
+            try_files \$uri \$uri/ /pages\$uri /pages\$uri.html /pages\$uri/index.html /pages/index.html;
         }
         
         # Serve pages
