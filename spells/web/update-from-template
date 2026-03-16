@@ -241,6 +241,12 @@ fi
 if [ -f "$template_dir/wizardry-server-requirements.conf" ]; then
   cp "$template_dir/wizardry-server-requirements.conf" "$SITE_DIR/"
 fi
+if [ -f "$SITE_DIR/wizardry-content-layout.conf" ]; then
+  rm -f "$SITE_DIR/wizardry-content-layout.conf"
+fi
+if [ -f "$template_dir/wizardry-content-layout.conf" ]; then
+  cp "$template_dir/wizardry-content-layout.conf" "$SITE_DIR/"
+fi
 
 # Restore site.conf
 cp "$temp_conf" "$SITE_DIR/site.conf"

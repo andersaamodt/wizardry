@@ -82,6 +82,10 @@ if [ -f "$template_dir/wizardry-server-requirements.conf" ]; then
   cp "$template_dir/wizardry-server-requirements.conf" "$SITE_DIR/"
 fi
 
+if [ -f "$template_dir/wizardry-content-layout.conf" ]; then
+  cp "$template_dir/wizardry-content-layout.conf" "$SITE_DIR/"
+fi
+
 # Create additional required directories
 mkdir -p "$SITE_DIR/site/uploads"
 mkdir -p "$SITE_DIR/build"

@@ -1,0 +1,68 @@
+#!/bin/sh
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-syncthing
+
+Ensures Syncthing is installed for content synchronization.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
+
+say() {
+  printf '%s\n' "$1"
+}
+
+has_cmd() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+run_privileged() {
+  if "$@" 2>/dev/null; then
+    return 0
+  fi
+  if type run_sudo_cmd >/dev/null 2>&1; then
+    run_sudo_cmd "$@"
+    return 0
+  fi
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+    return 0
+  fi
+  if has_cmd sudo; then
+    sudo "$@"
+    return 0
+  fi
+  "$@"
+}
+
+if has_cmd syncthing; then
+  say "Syncthing is already installed"
+  exit 0
+fi
+
+if has_cmd apt-get; then
+  run_privileged apt-get update -y >/dev/null
+  run_privileged env DEBIAN_FRONTEND=noninteractive apt-get install -y syncthing >/dev/null
+elif has_cmd dnf; then
+  run_privileged dnf install -y syncthing >/dev/null
+elif has_cmd brew; then
+  brew install syncthing >/dev/null
+else
+  say "install-syncthing: no supported package manager found." >&2
+  exit 1
+fi
+
+if has_cmd syncthing; then
+  say "Installed Syncthing"
+  exit 0
+fi
+
+say "install-syncthing: installation incomplete. Ensure syncthing is on PATH." >&2
+exit 1

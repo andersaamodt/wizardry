@@ -25,7 +25,6 @@ set -eu
 . env-clear
 
 WIZARDRY_DIR=${WIZARDRY_DIR:-$HOME/.wizardry}
-WIZARDRY_APPS_DIR=${WIZARDRY_APPS_DIR:-$HOME/git/wizardry-apps}
 
 site_name=${1-}
 if [ -z "$site_name" ]; then
@@ -53,119 +52,545 @@ if [ ! -d "$SITE_DIR" ]; then
   die "build: site '$site_name' not found"
 fi
 
-# Note: We don't re-exec as site user here - the actual user should be able to build
-# The build/ directory is owned by site user but has proper permissions (755/644)
-# set by fix-site-security to allow the actual user to write to it.
-
-# Check for pandoc
 if ! has pandoc; then
   die "build: pandoc is required but not installed"
 fi
 
+extract_front_matter_value() {
+  file=$1
+  key=$2
+  awk -v key="$key" '
+    BEGIN { in_fm = 0 }
+    /^---$/ {
+      if (in_fm == 0) {
+        in_fm = 1
+        next
+      }
+      exit
+    }
+    in_fm == 1 {
+      if (index($0, key ":") == 1) {
+        sub(/^[^:]*:[[:space:]]*/, "", $0)
+        gsub(/^"|"$/, "", $0)
+        print $0
+        exit
+      }
+    }
+  ' "$file"
+}
+
+extract_markdown_body() {
+  file=$1
+  awk '
+    BEGIN { d = 0 }
+    /^---$/ { d++; next }
+    d >= 2 { print }
+    d == 0 { print }
+  ' "$file"
+}
+
+normalize_tags() {
+  printf '%s' "${1-}" | tr '\n' ',' | tr ',' '\n' | sed 's/^ *//;s/ *$//' | awk 'NF { if (!seen[$0]++) { if (out != "") out = out ", "; out = out $0 } } END { printf "%s", out }'
+}
+
+xml_escape() {
+  printf '%s' "${1-}" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' -e 's/"/\&quot;/g' -e "s/'/\&apos;/g"
+}
+
+cdata_safe() {
+  printf '%s' "${1-}" | sed 's/]]>/]]]]><![CDATA[>/g'
+}
+
+iso_to_rfc822() {
+  iso=${1-}
+  if [ -z "$iso" ]; then
+    date -u '+%a, %d %b %Y %H:%M:%S +0000'
+    return 0
+  fi
+
+  if date -u -d "$iso" '+%a, %d %b %Y %H:%M:%S +0000' >/dev/null 2>&1; then
+    date -u -d "$iso" '+%a, %d %b %Y %H:%M:%S +0000'
+    return 0
+  fi
+
+  if date -j -u -f "%Y-%m-%dT%H:%M:%SZ" "$iso" '+%a, %d %b %Y %H:%M:%S +0000' >/dev/null 2>&1; then
+    date -j -u -f "%Y-%m-%dT%H:%M:%SZ" "$iso" '+%a, %d %b %Y %H:%M:%S +0000'
+    return 0
+  fi
+
+  printf '%s\n' "$iso"
+}
+
+site_base_url() {
+  domain=$(config-get "$SITE_DIR/site.conf" domain 2>/dev/null || printf 'localhost')
+  use_https=$(config-get "$SITE_DIR/site.conf" https 2>/dev/null || printf 'false')
+  scheme=http
+  if [ "$use_https" = "true" ]; then
+    scheme=https
+  fi
+  printf '%s://%s\n' "$scheme" "$domain"
+}
+
+run_site_pre_build_hook() {
+  hook_path=''
+  for candidate in "$SITE_DIR/cgi/pre-build" "$SITE_DIR/pre-build"; do
+    if [ -x "$candidate" ]; then
+      hook_path=$candidate
+      break
+    fi
+  done
+  [ -n "$hook_path" ] || return 0
+
+  info "Running site pre-build hook..."
+  WIZARDRY_SITES_DIR="$SITES_DIR" \
+    WIZARDRY_SITE_NAME="$site_name" \
+    WIZARDRY_DIR="$WIZARDRY_DIR" \
+    WEB_WIZARDRY_ROOT="$WEB_ROOT" \
+    "$hook_path" || die "build: site pre-build hook failed"
+}
+
+generate_blog_feeds_and_sitemap() {
+  posts_dir="$SITE_DIR/site/pages/posts"
+  build_pages_dir="$SITE_DIR/build/pages"
+
+  if [ ! -d "$posts_dir" ]; then
+    return 0
+  fi
+
+  site_title=$(config-get "$SITE_DIR/site.conf" site_title 2>/dev/null || printf 'My Blog')
+  feed_full_text=$(config-get "$SITE_DIR/site.conf" feed_full_text 2>/dev/null || printf 'true')
+  feed_items=$(config-get "$SITE_DIR/site.conf" feed_items 2>/dev/null || printf '50')
+  case "$feed_full_text" in true|false) ;; *) feed_full_text=true ;; esac
+  case "$feed_items" in ''|*[!0-9]*) feed_items=50 ;; esac
+  if [ "$feed_items" -lt 1 ]; then
+    feed_items=1
+  fi
+
+  base_url=$(site_base_url)
+
+  posts_tmp=$(temp-file blog-feed-posts)
+  ranked_tmp=$(temp-file blog-feed-ranked)
+
+  find "$posts_dir" -type f -name '*.md' | while IFS= read -r file; do
+    visibility=$(extract_front_matter_value "$file" visibility 2>/dev/null || printf '')
+    if [ -z "$visibility" ]; then
+      visibility=public
+    fi
+    if [ "$visibility" != "public" ]; then
+      continue
+    fi
+
+    published_at=$(extract_front_matter_value "$file" published_at 2>/dev/null || printf '')
+    if [ -z "$published_at" ]; then
+      published_at='1970-01-01T00:00:00Z'
+    fi
+
+    printf '%s|%s\n' "$published_at" "$file"
+  done | sort -r > "$ranked_tmp"
+
+  awk -F'|' '{print $2}' "$ranked_tmp" > "$posts_tmp"
+
+  latest_iso=$(awk -F'|' 'NR==1 {print $1}' "$ranked_tmp")
+  if [ -z "$latest_iso" ]; then
+    latest_iso=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+  fi
+
+  rss_file="$SITE_DIR/build/rss.xml"
+  atom_file="$SITE_DIR/build/atom.xml"
+  sitemap_file="$SITE_DIR/build/sitemap.xml"
+  robots_file="$SITE_DIR/build/robots.txt"
+
+  {
+    printf '<?xml version="1.0" encoding="UTF-8"?>\n'
+    printf '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">\n'
+    printf '  <channel>\n'
+    printf '    <title>%s</title>\n' "$(xml_escape "$site_title")"
+    printf '    <link>%s</link>\n' "$(xml_escape "$base_url/")"
+    printf '    <description>%s</description>\n' "$(xml_escape "$site_title")"
+    printf '    <language>en-us</language>\n'
+    printf '    <lastBuildDate>%s</lastBuildDate>\n' "$(iso_to_rfc822 "$latest_iso")"
+    printf '    <atom:link href="%s/rss.xml" rel="self" type="application/rss+xml" />\n' "$(xml_escape "$base_url")"
+
+    count=0
+    while IFS= read -r post_file; do
+      count=$((count + 1))
+      if [ "$count" -gt "$feed_items" ]; then
+        break
+      fi
+
+      title=$(extract_front_matter_value "$post_file" title 2>/dev/null || printf 'Untitled')
+      summary=$(extract_front_matter_value "$post_file" summary 2>/dev/null || printf '')
+      published_at=$(extract_front_matter_value "$post_file" published_at 2>/dev/null || printf '')
+      rel=${post_file#"$posts_dir/"}
+      rel=${rel%.md}
+      link="$base_url/pages/posts/$rel.html"
+
+      body_md=$(extract_markdown_body "$post_file")
+      if [ "$feed_full_text" = "true" ]; then
+        body_html=$(printf '%s\n' "$body_md" | pandoc --from markdown+raw_html --to html5 2>/dev/null || printf '<pre>%s</pre>' "$(xml_escape "$body_md")")
+      else
+        body_html=$(xml_escape "$summary")
+      fi
+
+      printf '    <item>\n'
+      printf '      <title>%s</title>\n' "$(xml_escape "$title")"
+      printf '      <link>%s</link>\n' "$(xml_escape "$link")"
+      printf '      <guid isPermaLink="true">%s</guid>\n' "$(xml_escape "$link")"
+      if [ -n "$published_at" ]; then
+        printf '      <pubDate>%s</pubDate>\n' "$(iso_to_rfc822 "$published_at")"
+      fi
+      printf '      <description><![CDATA[%s]]></description>\n' "$(cdata_safe "$body_html")"
+      if [ "$feed_full_text" = "true" ]; then
+        printf '      <content:encoded><![CDATA[%s]]></content:encoded>\n' "$(cdata_safe "$body_html")"
+      fi
+      printf '    </item>\n'
+    done < "$posts_tmp"
+
+    printf '  </channel>\n'
+    printf '</rss>\n'
+  } > "$rss_file"
+
+  {
+    printf '<?xml version="1.0" encoding="utf-8"?>\n'
+    printf '<feed xmlns="http://www.w3.org/2005/Atom">\n'
+    printf '  <title>%s</title>\n' "$(xml_escape "$site_title")"
+    printf '  <link href="%s/atom.xml" rel="self" />\n' "$(xml_escape "$base_url")"
+    printf '  <link href="%s/" />\n' "$(xml_escape "$base_url")"
+    printf '  <id>%s/</id>\n' "$(xml_escape "$base_url")"
+    printf '  <updated>%s</updated>\n' "$(xml_escape "$latest_iso")"
+
+    count=0
+    while IFS= read -r post_file; do
+      count=$((count + 1))
+      if [ "$count" -gt "$feed_items" ]; then
+        break
+      fi
+
+      title=$(extract_front_matter_value "$post_file" title 2>/dev/null || printf 'Untitled')
+      summary=$(extract_front_matter_value "$post_file" summary 2>/dev/null || printf '')
+      published_at=$(extract_front_matter_value "$post_file" published_at 2>/dev/null || printf '')
+      rel=${post_file#"$posts_dir/"}
+      rel=${rel%.md}
+      link="$base_url/pages/posts/$rel.html"
+      if [ -z "$published_at" ]; then
+        published_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+      fi
+
+      body_md=$(extract_markdown_body "$post_file")
+      if [ "$feed_full_text" = "true" ]; then
+        body_html=$(printf '%s\n' "$body_md" | pandoc --from markdown+raw_html --to html5 2>/dev/null || printf '<pre>%s</pre>' "$(xml_escape "$body_md")")
+      else
+        body_html=$(xml_escape "$summary")
+      fi
+
+      printf '  <entry>\n'
+      printf '    <title>%s</title>\n' "$(xml_escape "$title")"
+      printf '    <link href="%s" />\n' "$(xml_escape "$link")"
+      printf '    <id>%s</id>\n' "$(xml_escape "$link")"
+      printf '    <updated>%s</updated>\n' "$(xml_escape "$published_at")"
+      printf '    <summary>%s</summary>\n' "$(xml_escape "$summary")"
+      printf '    <content type="html"><![CDATA[%s]]></content>\n' "$(cdata_safe "$body_html")"
+      printf '  </entry>\n'
+    done < "$posts_tmp"
+
+    printf '</feed>\n'
+  } > "$atom_file"
+
+  {
+    printf '<?xml version="1.0" encoding="UTF-8"?>\n'
+    printf '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    printf '  <url><loc>%s</loc></url>\n' "$(xml_escape "$base_url/")"
+
+    find "$build_pages_dir" -type f -name '*.html' | sort | while IFS= read -r html_file; do
+      rel=${html_file#"$build_pages_dir/"}
+      printf '  <url><loc>%s</loc></url>\n' "$(xml_escape "$base_url/pages/$rel")"
+    done
+
+    printf '  <url><loc>%s</loc></url>\n' "$(xml_escape "$base_url/rss.xml")"
+    printf '  <url><loc>%s</loc></url>\n' "$(xml_escape "$base_url/atom.xml")"
+    printf '</urlset>\n'
+  } > "$sitemap_file"
+
+  {
+    printf 'User-agent: *\n'
+    printf 'Allow: /\n\n'
+    printf 'Sitemap: %s/sitemap.xml\n' "$base_url"
+  } > "$robots_file"
+
+  rm -f "$posts_tmp" "$ranked_tmp"
+}
+
+render_cgi_fragment() {
+  script_path=$1
+  query_string=${2-}
+  out_file=$3
+
+  if [ ! -x "$script_path" ]; then
+    return 1
+  fi
+
+  raw_tmp=$(temp-file cgi-raw)
+  body_tmp=$(temp-file cgi-body)
+
+  (
+    export REQUEST_METHOD=GET
+    export CONTENT_LENGTH=0
+    export QUERY_STRING="$query_string"
+    export WIZARDRY_DIR
+    export WIZARDRY_SITES_DIR="$SITES_DIR"
+    export WIZARDRY_SITE_NAME="$site_name"
+    "$script_path"
+  ) > "$raw_tmp" 2>/dev/null || {
+    rm -f "$raw_tmp" "$body_tmp"
+    return 1
+  }
+
+  awk '
+    BEGIN { in_body = 0 }
+    {
+      line = $0
+      sub(/\r$/, "", line)
+      if (in_body == 1) {
+        print line
+      } else if (line == "") {
+        in_body = 1
+      }
+    }
+  ' "$raw_tmp" > "$body_tmp"
+
+  if [ ! -s "$body_tmp" ]; then
+    cp "$raw_tmp" "$body_tmp"
+  fi
+
+  cp "$body_tmp" "$out_file"
+  rm -f "$raw_tmp" "$body_tmp"
+  return 0
+}
+
+replace_html_container_by_id() {
+  html_file=$1
+  container_id=$2
+  replacement_file=$3
+
+  tmp_html=$(temp-file html-replaced)
+  if awk -v id="$container_id" -v replacement_file="$replacement_file" '
+    BEGIN {
+      inside = 0
+      depth = 0
+      replaced = 0
+    }
+    {
+      if (inside == 0 && index($0, "id=\"" id "\"") > 0 && $0 ~ /<div[[:space:]>]/) {
+        while ((getline line < replacement_file) > 0) {
+          print line
+        }
+        close(replacement_file)
+        replaced = 1
+        inside = 1
+        open_count = gsub(/<div([[:space:]>])/, "&", $0)
+        close_count = gsub(/<\/div>/, "&", $0)
+        depth = open_count - close_count
+        if (depth <= 0) {
+          inside = 0
+          depth = 0
+        }
+        next
+      }
+
+      if (inside == 1) {
+        open_count = gsub(/<div([[:space:]>])/, "&", $0)
+        close_count = gsub(/<\/div>/, "&", $0)
+        depth = depth + open_count - close_count
+        if (depth <= 0) {
+          inside = 0
+          depth = 0
+        }
+        next
+      }
+
+      print
+    }
+    END {
+      if (replaced == 0) {
+        exit 2
+      }
+    }
+  ' "$html_file" > "$tmp_html"; then
+    mv "$tmp_html" "$html_file"
+    return 0
+  fi
+
+  rm -f "$tmp_html"
+  return 1
+}
+
+prerender_blog_dynamic_sections() {
+  if [ "$site_template" != "blog" ]; then
+    return 0
+  fi
+
+  cgi_dir="$SITE_DIR/cgi"
+  if [ ! -d "$cgi_dir" ]; then
+    return 0
+  fi
+
+  if [ -f "$SITE_DIR/build/pages/index.html" ] && [ -x "$cgi_dir/blog-index" ]; then
+    post_list_tmp=$(temp-file blog-index-fragment)
+    if render_cgi_fragment "$cgi_dir/blog-index" "page=1" "$post_list_tmp"; then
+      replace_html_container_by_id "$SITE_DIR/build/pages/index.html" "post-list" "$post_list_tmp" || true
+    fi
+    rm -f "$post_list_tmp"
+  fi
+
+  if [ -f "$SITE_DIR/build/pages/tags.html" ] && [ -x "$cgi_dir/blog-tags" ]; then
+    tag_cloud_tmp=$(temp-file blog-tags-fragment)
+    if render_cgi_fragment "$cgi_dir/blog-tags" "" "$tag_cloud_tmp"; then
+      replace_html_container_by_id "$SITE_DIR/build/pages/tags.html" "tag-cloud" "$tag_cloud_tmp" || true
+    fi
+    rm -f "$tag_cloud_tmp"
+  fi
+
+  if [ -f "$SITE_DIR/build/pages/archive.html" ] && [ -x "$cgi_dir/blog-archive" ]; then
+    archive_list_tmp=$(temp-file blog-archive-fragment)
+    if render_cgi_fragment "$cgi_dir/blog-archive" "" "$archive_list_tmp"; then
+      replace_html_container_by_id "$SITE_DIR/build/pages/archive.html" "archive-list" "$archive_list_tmp" || true
+    fi
+    rm -f "$archive_list_tmp"
+  fi
+}
+
 build_site() {
   step "Building site: $site_name"
-  shared_theme_dir="$WIZARDRY_APPS_DIR/.web/.themes"
-  
-  # Create build directories
+  shared_theme_root="$WIZARDRY_DIR/web"
+  shared_theme_dir="$shared_theme_root/.themes"
+  site_template=$(config-get "$SITE_DIR/site.conf" template 2>/dev/null || printf '')
+
+  if [ "$site_template" = "blog" ]; then
+    if ! has nostril; then
+      if has install-nostril; then
+        info "Blog template requires nostril; attempting install..."
+        install-nostril >/dev/null 2>&1 || true
+      fi
+    fi
+    if ! has nostril; then
+      if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" = "1" ]; then
+        warn "build: missing nostril in test mode; continuing"
+      else
+        die "build: blog template requires nostril. Run: web-wizardry install-nostril"
+      fi
+    fi
+  fi
+
+  if [ "$site_template" = "blog" ] && [ -x "$SITE_DIR/cgi/blog-nostr-rebuild" ]; then
+    if ! WIZARDRY_SITES_DIR="$SITES_DIR" WIZARDRY_SITE_NAME="$site_name" "$SITE_DIR/cgi/blog-nostr-rebuild" >/dev/null 2>&1; then
+      warn "build: blog Nostr derived rebuild failed; continuing with existing local files"
+    fi
+  fi
+
+  run_site_pre_build_hook
+
   mkdir -p "$SITE_DIR/build/pages"
   mkdir -p "$SITE_DIR/build/static"
   mkdir -p "$SITE_DIR/build/static/js"
-  
-  # Ensure web libraries are installed.
-  # Default cache lives in per-site data (outside project source tree).
+
   default_js_lib_dir="$SITE_DATA_DIR/.web-libs/js"
   js_lib_dir="${WIZARDRY_WEB_JS_DIR:-$default_js_lib_dir}"
   if ! mkdir -p "$js_lib_dir" 2>/dev/null; then
     warn "build: cannot write web lib cache at $js_lib_dir"
-    if [ "$js_lib_dir" != "$default_js_lib_dir" ] && \
-      mkdir -p "$default_js_lib_dir" 2>/dev/null; then
+    if [ "$js_lib_dir" != "$default_js_lib_dir" ] && mkdir -p "$default_js_lib_dir" 2>/dev/null; then
       info "build: using fallback cache: $default_js_lib_dir"
       js_lib_dir="$default_js_lib_dir"
     else
       die "build: failed to create web lib cache at $default_js_lib_dir"
     fi
   fi
+
   if [ ! -f "$js_lib_dir/htmx.min.js" ] || [ ! -f "$js_lib_dir/idiomorph-ext.min.js" ]; then
     info "Web libraries not found, installing..."
     WIZARDRY_WEB_JS_DIR="$js_lib_dir"
     export WIZARDRY_WEB_JS_DIR
     install-htmx || die "build: failed to install web libraries"
   fi
-  
-  # Copy web libraries to site's static directory
+
   info "Copying web libraries to build/static/js/..."
-  cp "$js_lib_dir/htmx.min.js" "$SITE_DIR/build/static/js/" || \
-    die "build: failed to copy htmx.min.js"
-  cp "$js_lib_dir/idiomorph-ext.min.js" "$SITE_DIR/build/static/js/" || \
-    die "build: failed to copy idiomorph-ext.min.js"
-  
-  # Copy static files
+  cp "$js_lib_dir/htmx.min.js" "$SITE_DIR/build/static/js/" || die "build: failed to copy htmx.min.js"
+  cp "$js_lib_dir/idiomorph-ext.min.js" "$SITE_DIR/build/static/js/" || die "build: failed to copy idiomorph-ext.min.js"
+
   if [ -d "$shared_theme_dir" ]; then
     mkdir -p "$SITE_DIR/site/static/themes"
     cp -f "$shared_theme_dir"/*.css "$SITE_DIR/site/static/themes/" 2>/dev/null || true
   fi
 
-  # Copy static files
   if [ -d "$SITE_DIR/site/static" ]; then
     info "Copying static files to build/static/..."
     cp -r "$SITE_DIR/site/static"/* "$SITE_DIR/build/static/" 2>/dev/null || true
   fi
-  
-  # Build each Markdown page
+
   info "Converting Markdown to HTML..."
   built_count=0
   if [ -d "$SITE_DIR/site/pages" ]; then
-    # Check if there are any .md files
-    md_file_count=$(find "$SITE_DIR/site/pages" -name "*.md" -type f 2>/dev/null | wc -l)
+    md_file_count=$(find "$SITE_DIR/site/pages" -name '*.md' -type f 2>/dev/null | wc -l)
     if [ "$md_file_count" -eq 0 ]; then
       warn "No Markdown files found in $SITE_DIR/site/pages/"
       warn "Create .md files there to build HTML pages."
     fi
-    
-    for md_file in "$SITE_DIR/site/pages"/*.md; do
-      [ -f "$md_file" ] || continue
-      
-      base_name=$(basename "$md_file" .md)
-      html_file="$SITE_DIR/build/pages/${base_name}.html"
-      
-      # Incremental build: skip if HTML is newer than MD (unless --full)
+
+    find "$SITE_DIR/site/pages" -name '*.md' -type f | sort | while IFS= read -r md_file; do
+      rel_path=${md_file#"$SITE_DIR/site/pages/"}
+      rel_html=${rel_path%.md}.html
+      html_file="$SITE_DIR/build/pages/$rel_html"
+      html_dir=$(dirname "$html_file")
+      mkdir -p "$html_dir"
+
       if [ "$full_rebuild" -eq 0 ] && [ -f "$html_file" ] && newer "$html_file" "$md_file"; then
-        debug "Skipping $base_name (up to date)"
+        debug "Skipping $rel_path (up to date)"
         continue
       fi
-      
-      info "  Building: $base_name.md → $base_name.html"
-      
-      base_name=$(basename "$md_file" .md)
-      html_file="$SITE_DIR/build/pages/${base_name}.html"
-      
-      # Incremental build: skip if HTML is newer than MD (unless --full)
-      if [ "$full_rebuild" -eq 0 ] && [ -f "$html_file" ] && newer "$html_file" "$md_file"; then
-        debug "Skipping $base_name (up to date)"
-        continue
-      fi
-      
-      info "  Building: $base_name.md → $base_name.html"
-      
-      # Create temporary header file with htmx and idiomorph extension (local copies)
+
+      info "  Building: $rel_path -> $rel_html"
+
       htmx_header=$(temp-file htmx-header)
       cat > "$htmx_header" <<'HTMX_HEADER'
 <script src="/static/js/htmx.min.js"></script>
 <script src="/static/js/idiomorph-ext.min.js"></script>
 HTMX_HEADER
-      
-      # Check for includes directory
+
       includes_dir="$SITE_DIR/site/includes"
       nav_file="$includes_dir/nav.md"
+      footer_file="$includes_dir/footer.md"
+      nav_exists=0
+      footer_exists=0
+      footer_tmp=""
+      if [ -f "$nav_file" ]; then
+        nav_exists=1
+      fi
+      if [ -f "$footer_file" ]; then
+        footer_exists=1
+      elif [ "$site_template" = "blog" ]; then
+        # Backward-compatible default footer for older blog sites that
+        # predate includes/footer.md.
+        footer_tmp=$(temp-file blog-default-footer)
+        cat > "$footer_tmp" <<'BLOG_FOOTER'
+<footer class="site-footer">
+  <div class="footer-feeds" aria-label="Syndication feeds">
+    <a href="/rss.xml" class="footer-feed-link" aria-label="RSS feed" title="RSS feed">
+      <span>RSS</span>
+    </a>
+    <a href="/atom.xml" class="footer-feed-link" aria-label="Atom feed" title="Atom feed">
+      <span>Atom</span>
+    </a>
+  </div>
+</footer>
+BLOG_FOOTER
+        footer_file="$footer_tmp"
+        footer_exists=1
+      fi
       head_file="$includes_dir/head.html"
       head_arg=""
       if [ -f "$head_file" ]; then
         head_arg="--include-in-header=$head_file"
       fi
-      
-      # Use Pandoc to convert Markdown to HTML with YAML front matter
-      # Include htmx for interactive CGI features
-      # raw_html extension allows HTML blocks to pass through
+
       pandoc \
         --from markdown+yaml_metadata_block+raw_html \
         --to html5 \
@@ -175,10 +600,8 @@ HTMX_HEADER
         $head_arg \
         --output="$html_file" \
         "$md_file"
-      
-      # If nav file exists, insert it right after <body> tag (above title/header)
-      if [ -f "$nav_file" ]; then
-        # Use awk to insert nav immediately after <body> tag
+
+      if [ "$nav_exists" -eq 1 ]; then
         temp_html=$(temp-file html-with-nav)
         awk -v nav_file="$nav_file" '
           /<body>/ {
@@ -193,15 +616,36 @@ HTMX_HEADER
         ' "$html_file" > "$temp_html"
         mv "$temp_html" "$html_file"
       fi
-      
-      # Clean up temporary header file
+
+      if [ "$footer_exists" -eq 1 ]; then
+        temp_html=$(temp-file html-with-footer)
+        awk -v footer_file="$footer_file" '
+          /<\/body>/ {
+            while ((getline line < footer_file) > 0) {
+              print line
+            }
+            close(footer_file)
+            print
+            next
+          }
+          { print }
+        ' "$html_file" > "$temp_html"
+        mv "$temp_html" "$html_file"
+      fi
+
       rm -f "$htmx_header"
-      
-      # Ensure generated file is readable by nginx
+      if [ -n "$footer_tmp" ] && [ -f "$footer_tmp" ]; then
+        rm -f "$footer_tmp"
+      fi
       chmod 644 "$html_file"
-      
       built_count=$((built_count + 1))
+      printf '%s\n' "$built_count" > "$SITE_DIR/build/.build-count.tmp"
     done
+
+    if [ -f "$SITE_DIR/build/.build-count.tmp" ]; then
+      built_count=$(cat "$SITE_DIR/build/.build-count.tmp" 2>/dev/null || printf '0')
+      rm -f "$SITE_DIR/build/.build-count.tmp"
+    fi
   else
     warn "Pages directory not found: $SITE_DIR/site/pages/"
     warn "Expected site structure:"
@@ -209,25 +653,24 @@ HTMX_HEADER
     warn "  $SITE_DIR/site/static/   - CSS, images, etc."
     warn "  $SITE_DIR/build/         - Generated HTML (output)"
   fi
-  
-  # Ensure all directories have proper permissions
+
+  generate_blog_feeds_and_sitemap
+  prerender_blog_dynamic_sections
+
   info "Setting file permissions..."
   find "$SITE_DIR/build" -type d -exec chmod 755 {} \; 2>/dev/null || true
   find "$SITE_DIR/build" -type f -exec chmod 644 {} \; 2>/dev/null || true
-  
+
   success "Built $built_count pages for $site_name"
   info "Build output: $SITE_DIR/build/"
 }
 
 if [ "$watch_mode" -eq 1 ]; then
-  # Watch mode - rebuild on changes
-  # This is a simple implementation; a production version might use inotify
   step "Watching $site_name for changes (Ctrl-C to stop)"
   while true; do
     build_site
     sleep 2
   done
 else
-  # Single build
   build_site
 fi
