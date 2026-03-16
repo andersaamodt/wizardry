@@ -100,8 +100,60 @@ install_built_binary() {
   run_privileged install -m 755 "$source_path" "$target_bin_dir/$target_name"
 }
 
+platform_suffix() {
+  os_name=$(uname -s 2>/dev/null || printf '')
+  arch_name=$(uname -m 2>/dev/null || printf '')
+  case "$os_name" in
+    Linux) platform_os=linux ;;
+    Darwin) platform_os=darwin ;;
+    FreeBSD) platform_os=freebsd ;;
+    *)
+      return 1
+      ;;
+  esac
+  case "$arch_name" in
+    x86_64|amd64) platform_arch=amd64 ;;
+    arm64|aarch64) platform_arch=arm64 ;;
+    riscv64) platform_arch=riscv64 ;;
+    *)
+      return 1
+      ;;
+  esac
+  printf '%s-%s\n' "$platform_os" "$platform_arch"
+}
+
+install_nak_release_binary() {
+  if has_cmd nak; then
+    return 0
+  fi
+  if ! has_cmd curl; then
+    return 1
+  fi
+  platform=$(platform_suffix 2>/dev/null || true)
+  [ -n "$platform" ] || return 1
+
+  release_json=$(curl -fsSL https://api.github.com/repos/fiatjaf/nak/releases/latest 2>/dev/null || true)
+  [ -n "$release_json" ] || return 1
+  release_json_one_line=$(printf '%s' "$release_json" | tr '\n' ' ')
+  download_url=$(printf '%s\n' "$release_json_one_line" | sed -n "s/.*\"browser_download_url\":[[:space:]]*\"\\([^\"]*nak-[^\"]*-${platform}\\)\".*/\\1/p" | head -n 1)
+  [ -n "$download_url" ] || return 1
+
+  tmp_bin=$(mktemp "${TMPDIR:-/tmp}/nak-release.XXXXXX")
+  curl -fsSL "$download_url" -o "$tmp_bin" || {
+    rm -f "$tmp_bin"
+    return 1
+  }
+  chmod 755 "$tmp_bin"
+  install_built_binary "$tmp_bin" nak
+  rm -f "$tmp_bin"
+  has_cmd nak
+}
+
 install_nak_binary() {
   if has_cmd nak; then
+    return 0
+  fi
+  if install_nak_release_binary; then
     return 0
   fi
   if ! has_cmd go; then
