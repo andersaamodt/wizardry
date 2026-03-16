@@ -162,17 +162,25 @@ if has_cmd nostril && has_cmd nak; then
   exit 0
 fi
 
+install_nostril_binary >/dev/null 2>&1 || true
+install_nak_binary >/dev/null 2>&1 || true
+
+if has_cmd nostril && has_cmd nak; then
+  say "Installed Nostr server tooling"
+  exit 0
+fi
+
 if ! ensure_build_deps; then
   say "install-nostril: no supported package manager found for installing build dependencies." >&2
   exit 1
 fi
 
-if ! install_nostril_binary; then
+if ! has_cmd nostril && ! install_nostril_binary; then
   say "install-nostril: could not install nostril." >&2
   exit 1
 fi
 
-if ! install_nak_binary; then
+if ! has_cmd nak && ! install_nak_binary; then
   say "install-nostril: could not install nak." >&2
   exit 1
 fi
