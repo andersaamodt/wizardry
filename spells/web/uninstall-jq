@@ -1,0 +1,85 @@
+#!/bin/sh
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uninstall-jq
+
+Removes jq when it was installed through a supported package manager or a
+known local binary path.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
+
+say() {
+  printf '%s\n' "$1"
+}
+
+has_cmd() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+run_privileged() {
+  if "$@" 2>/dev/null; then
+    return 0
+  fi
+  if type run_sudo_cmd >/dev/null 2>&1; then
+    run_sudo_cmd "$@"
+    return 0
+  fi
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+    return 0
+  fi
+  if has_cmd sudo; then
+    sudo "$@"
+    return 0
+  fi
+  "$@"
+}
+
+remove_known_binary() {
+  removed=1
+  for candidate in \
+    "$(command -v jq 2>/dev/null || printf '')" \
+    "${XDG_BIN_HOME:-$HOME/.local/bin}/jq" \
+    "/usr/local/bin/jq" \
+    "/opt/homebrew/bin/jq"
+  do
+    [ -n "$candidate" ] || continue
+    [ -f "$candidate" ] || continue
+    run_privileged rm -f "$candidate"
+  done
+}
+
+removed=0
+
+if has_cmd apt-get; then
+  run_privileged env DEBIAN_FRONTEND=noninteractive apt-get remove -y jq >/dev/null 2>&1 || true
+  removed=1
+elif has_cmd dnf; then
+  run_privileged dnf remove -y jq >/dev/null 2>&1 || true
+  removed=1
+elif has_cmd brew; then
+  brew uninstall jq >/dev/null 2>&1 || true
+  removed=1
+fi
+
+remove_known_binary || true
+
+if has_cmd jq; then
+  say "uninstall-jq: jq is still present on PATH" >&2
+  exit 1
+fi
+
+if [ "$removed" -eq 0 ]; then
+  say "jq is not installed"
+  exit 0
+fi
+
+say "Uninstalled jq"

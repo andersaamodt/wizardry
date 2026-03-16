@@ -1,0 +1,26 @@
+#!/bin/sh
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: check-jq
+
+Checks whether jq is available for shell JSON processing.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
+
+if command -v jq >/dev/null 2>&1; then
+  printf 'status=ok\n'
+  printf 'summary=%s\n' 'jq is available on PATH.'
+  exit 0
+fi
+
+printf 'status=bad\n'
+printf 'summary=%s\n' 'jq is not installed.'
+exit 0
