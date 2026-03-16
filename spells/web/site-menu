@@ -55,12 +55,13 @@ fi
 SITES_DIR="$WEB_ROOT"
 SITE_DIR="$SITES_DIR/$site_name"
 SITE_DATA_DIR="$SITES_DIR/.sitedata/$site_name"
+site_template=$(config-get "$SITE_DIR/site.conf" template 2>/dev/null || printf '')
 
 if [ ! -d "$SITE_DIR" ]; then
   die "site-menu: site '$site_name' not found"
 fi
 
-site_user_default="$(printf '%s' "$site_name" | tr 'A-Z' 'a-z' | tr '.-' '__')"
+site_user_default="$(printf '%s' "$site_name" | tr 'A-Z' 'a-z' | tr '-' '_')"
 site_user=$(config-get "$SITE_DIR/site.conf" site-user 2>/dev/null || printf '')
 [ -z "$site_user" ] && site_user="$site_user_default"
 
@@ -199,10 +200,8 @@ while true; do
   fi
   
   # Always: Build all & restart server
-  # Stop first so deploy feedback is immediate and we avoid waiting for build
-  # before shutting down an already-running site.
-  build_restart_cmd="stop-site \"$site_name\""
-  build_restart_cmd="$build_restart_cmd && build \"$site_name\" --full"
+  build_restart_cmd="build \"$site_name\" --full"
+  build_restart_cmd="$build_restart_cmd && stop-site \"$site_name\""
   build_restart_cmd="$build_restart_cmd && serve-site \"$site_name\""
   build_restart_cmd_wrapped=$(wrap_cmd "Build all & restart server" \
     "$build_restart_cmd")
@@ -210,6 +209,67 @@ while true; do
   # Always: Update from template
   update_template_cmd_wrapped=$(wrap_cmd "Update from template" \
     "update-from-template \"$site_name\"")
+
+  site_requirements_file="$SITE_DIR/wizardry-server-requirements.conf"
+  if [ ! -f "$site_requirements_file" ] && [ "$site_template" = "blog" ] && [ -f "$HOME/git/nostr-blog/wizardry-server-requirements.conf" ]; then
+    site_requirements_file="$HOME/git/nostr-blog/wizardry-server-requirements.conf"
+  fi
+  requirements_registry_dir="$WIZARDRY_DIR/spells/web/.requirements"
+
+  requirement_meta_value() {
+    requirement_id=$1
+    requirement_key=$2
+    requirement_file="$requirements_registry_dir/$requirement_id.conf"
+    [ -f "$requirement_file" ] || return 1
+    awk -F= -v key="$requirement_key" '
+      $1 == key {
+        sub(/^[^=]+=/, "")
+        print
+        exit
+      }
+    ' "$requirement_file"
+  }
+
+  requirement_status() {
+    requirement_id=$1
+    check_spell=$(requirement_meta_value "$requirement_id" check_spell 2>/dev/null || printf '')
+    [ -n "$check_spell" ] || return 1
+    [ -x "$WIZARDRY_DIR/spells/web/$check_spell" ] || return 1
+    output=$(PATH="$PATH" "$WIZARDRY_DIR/spells/web/$check_spell" 2>/dev/null || true)
+    printf '%s\n' "$output" | awk -F= '$1=="status" { print $2; exit }'
+  }
+
+  requirement_menu_items_file=$(temp-file site-requirements-menu)
+  if [ -f "$site_requirements_file" ] && [ -d "$requirements_registry_dir" ]; then
+    while IFS= read -r requirement_line; do
+      case "$requirement_line" in
+        ''|'#'*) continue ;;
+      esac
+      requirement_id=${requirement_line%%=*}
+      requirement_id=$(printf '%s' "$requirement_id" | tr -d '[:space:]')
+      [ -n "$requirement_id" ] || continue
+      label=$(requirement_meta_value "$requirement_id" label 2>/dev/null || printf '%s' "$requirement_id")
+      install_label=$(requirement_meta_value "$requirement_id" install_label 2>/dev/null || printf 'Install %s' "$label")
+      uninstall_label=$(requirement_meta_value "$requirement_id" uninstall_label 2>/dev/null || printf 'Uninstall %s' "$label")
+      install_spell=$(requirement_meta_value "$requirement_id" install_spell 2>/dev/null || printf '')
+      uninstall_spell=$(requirement_meta_value "$requirement_id" uninstall_spell 2>/dev/null || printf '')
+      requirement_state=$(requirement_status "$requirement_id" 2>/dev/null || printf 'bad')
+      if [ "$requirement_state" = "ok" ] && [ -n "$uninstall_spell" ]; then
+        uninstall_cmd_wrapped=$(wrap_cmd "$uninstall_label" "$uninstall_spell")
+        printf '%s\n' "${uninstall_label}%$uninstall_cmd_wrapped" >> "$requirement_menu_items_file"
+      elif [ -n "$install_spell" ]; then
+        install_cmd_wrapped=$(wrap_cmd "$install_label" "$install_spell")
+        printf '%s\n' "${install_label}%$install_cmd_wrapped" >> "$requirement_menu_items_file"
+      fi
+    done < "$site_requirements_file"
+  fi
+
+  mirror_nostr_option=""
+  if [ "$site_template" = "blog" ]; then
+    mirror_nostr_cmd_wrapped=$(wrap_cmd "Mirror Nostr events" \
+      "blog-nostr-mirror \"$site_name\"")
+    mirror_nostr_option="Mirror Nostr events%$mirror_nostr_cmd_wrapped"
+  fi
   
   # Conditional: Copy .onion address
   if [ -n "$copy_site_onion" ]; then
@@ -274,10 +334,6 @@ while true; do
   # Always: Change port
   port_cmd_wrapped=$(wrap_cmd "Change port (current: $port)" \
     "change-site-port \"$site_name\"")
-
-  # Always: Rename site
-  rename_cmd_wrapped=$(wrap_cmd "Rename site" \
-    "rename-site \"$site_name\"")
   
   # Conditional: HTTPS setup/renew
   if [ -n "$https_option" ]; then
@@ -311,7 +367,7 @@ while true; do
   # Always: Manage allowed dirs
   dirs_cmd_wrapped=$(wrap_cmd "Manage allowed dirs" \
     "manage-allowed-dirs \"$site_name\"")
-  
+
   # Always: Delete site
   delete_cmd_wrapped=$(wrap_cmd "Delete site" "delete-site \"$site_name\"")
   
@@ -322,6 +378,14 @@ while true; do
   set -- \
     ${open_browser_option:+"$open_browser_option"} \
     "Build all & restart server%$build_restart_cmd_wrapped" \
+    ${mirror_nostr_option:+"$mirror_nostr_option"}
+  if [ -f "$requirement_menu_items_file" ]; then
+    while IFS= read -r requirement_item; do
+      [ -n "$requirement_item" ] || continue
+      set -- "$@" "$requirement_item"
+    done < "$requirement_menu_items_file"
+  fi
+  set -- "$@" \
     "Update from template%$update_template_cmd_wrapped" \
     ${copy_site_onion:+"$copy_site_onion"} \
     "Open site directory%$open_dir_cmd_wrapped" \
@@ -335,7 +399,6 @@ while true; do
     ${tor_hosting_option:+"$tor_hosting_option"} \
     ${serve_on_startup_option:+"$serve_on_startup_option"} \
     "Change port (current: $port)%$port_cmd_wrapped" \
-    "Rename site%$rename_cmd_wrapped" \
     ${https_option:+"$https_option"} \
     ${https_disable_option:+"$https_disable_option"} \
     "Rebuild nginx.conf%$nginx_conf_cmd_wrapped" \

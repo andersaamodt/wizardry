@@ -5,21 +5,6 @@ while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" !
 done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-create_fake_templates_root() {
-  fake_wizardry_root=$(temp-dir wizardry-template-root)
-
-  mkdir -p "$fake_wizardry_root/.web/demo/pages"
-  mkdir -p "$fake_wizardry_root/.web/demo/static"
-  cat > "$fake_wizardry_root/.web/demo/pages/index.md" <<'EOF'
-# Demo Template
-EOF
-  cat > "$fake_wizardry_root/.web/demo/static/site.css" <<'EOF'
-body { padding: 0; }
-EOF
-
-  printf '%s\n' "$fake_wizardry_root"
-}
-
 test_help() {
   run_spell spells/web/update-from-template --help
   assert_success
@@ -32,11 +17,10 @@ test_updates_from_template() {
   
   # Set up test environment
   test_web_root=$(temp-dir web-wizardry-test)
-  fake_wizardry_root=$(create_fake_templates_root)
   export WEB_WIZARDRY_ROOT="$test_web_root"
   
   # Create a test site from demo template
-  WIZARDRY_APPS_DIR="$fake_wizardry_root" run_spell spells/web/create-from-template mytestsite demo
+  WIZARDRY_DIR="$ROOT_DIR" run_spell spells/web/create-from-template mytestsite demo
   assert_success
   
   # Modify a template file to simulate customization
@@ -49,7 +33,7 @@ test_updates_from_template() {
   }
   
   # Update from template with --force flag
-  WIZARDRY_APPS_DIR="$fake_wizardry_root" run_spell spells/web/update-from-template mytestsite --force
+  WIZARDRY_DIR="$ROOT_DIR" run_spell spells/web/update-from-template mytestsite --force
   assert_success
   
   # Verify customization was overwritten (file should be back to original)
@@ -71,7 +55,7 @@ test_updates_from_template() {
   }
   
   # Cleanup
-  rm -rf "$test_web_root" "$fake_wizardry_root"
+  rm -rf "$test_web_root"
 }
 
 test_preserves_uploads() {
@@ -79,18 +63,17 @@ test_preserves_uploads() {
   
   # Set up test environment
   test_web_root=$(temp-dir web-wizardry-test)
-  fake_wizardry_root=$(create_fake_templates_root)
   export WEB_WIZARDRY_ROOT="$test_web_root"
   
   # Create a test site
-  WIZARDRY_APPS_DIR="$fake_wizardry_root" run_spell spells/web/create-from-template mytestsite demo
+  WIZARDRY_DIR="$ROOT_DIR" run_spell spells/web/create-from-template mytestsite demo
   assert_success
   
   # Add a file to uploads
   echo "test upload content" > "$test_web_root/mytestsite/site/uploads/test-file.txt"
   
   # Update from template
-  WIZARDRY_APPS_DIR="$fake_wizardry_root" run_spell spells/web/update-from-template mytestsite --force
+  WIZARDRY_DIR="$ROOT_DIR" run_spell spells/web/update-from-template mytestsite --force
   assert_success
   
   # Verify upload is still there
@@ -100,7 +83,7 @@ test_preserves_uploads() {
   }
   
   # Cleanup
-  rm -rf "$test_web_root" "$fake_wizardry_root"
+  rm -rf "$test_web_root"
 }
 
 test_fails_for_nonexistent_site() {
@@ -108,16 +91,15 @@ test_fails_for_nonexistent_site() {
   
   # Set up test environment
   test_web_root=$(temp-dir web-wizardry-test)
-  fake_wizardry_root=$(create_fake_templates_root)
   export WEB_WIZARDRY_ROOT="$test_web_root"
   
   # Try to update a nonexistent site
-  WIZARDRY_APPS_DIR="$fake_wizardry_root" run_spell spells/web/update-from-template nonexistent --force
+  WIZARDRY_DIR="$ROOT_DIR" run_spell spells/web/update-from-template nonexistent --force
   assert_failure
   assert_output_contains "not found"
   
   # Cleanup
-  rm -rf "$test_web_root" "$fake_wizardry_root"
+  rm -rf "$test_web_root"
 }
 
 test_update_uses_web_template_directory() {
@@ -125,7 +107,7 @@ test_update_uses_web_template_directory() {
 
   test_web_root=$(temp-dir web-wizardry-test)
   fake_wizardry_root=$(temp-dir wizardry-template-root)
-  template_root="$fake_wizardry_root/.web/minimal"
+  template_root="$fake_wizardry_root/web/minimal"
 
   mkdir -p "$template_root/pages" "$template_root/static"
   cat > "$template_root/pages/index.md" <<'EOF'
@@ -135,7 +117,7 @@ EOF
 body { margin: 0; }
 EOF
 
-  WIZARDRY_APPS_DIR="$fake_wizardry_root" WEB_WIZARDRY_ROOT="$test_web_root" \
+  WIZARDRY_DIR="$fake_wizardry_root" WEB_WIZARDRY_ROOT="$test_web_root" \
     run_spell spells/web/create-from-template minisite minimal
   assert_success
 
@@ -145,18 +127,60 @@ EOF
 # from template v2
 EOF
 
-  WIZARDRY_APPS_DIR="$fake_wizardry_root" WEB_WIZARDRY_ROOT="$test_web_root" \
+  WIZARDRY_DIR="$fake_wizardry_root" WEB_WIZARDRY_ROOT="$test_web_root" \
     run_spell spells/web/update-from-template minisite --force
   assert_success
 
   if grep -q "custom line" "$test_web_root/minisite/site/pages/index.md"; then
-    TEST_FAILURE_REASON="update-from-template did not overwrite from .web template"
+    TEST_FAILURE_REASON="update-from-template did not overwrite from web template"
     rm -rf "$test_web_root" "$fake_wizardry_root"
     return 1
   fi
 
   if ! grep -q "from template v2" "$test_web_root/minisite/site/pages/index.md"; then
-    TEST_FAILURE_REASON="updated template content not copied from .web"
+    TEST_FAILURE_REASON="updated template content not copied from web"
+    rm -rf "$test_web_root" "$fake_wizardry_root"
+    return 1
+  fi
+  [ ! -f "$test_web_root/minisite/wizardry-server-requirements.conf" ] || {
+    TEST_FAILURE_REASON="requirements file should not exist when template does not define one"
+    rm -rf "$test_web_root" "$fake_wizardry_root"
+    return 1
+  }
+
+  rm -rf "$test_web_root" "$fake_wizardry_root"
+}
+
+test_update_refreshes_requirements_file() {
+  skip-if-compiled || return $?
+
+  test_web_root=$(temp-dir web-wizardry-test)
+  fake_wizardry_root=$(temp-dir wizardry-template-root)
+  template_root="$fake_wizardry_root/web/minimal"
+
+  mkdir -p "$template_root/pages" "$template_root/static"
+  cat > "$template_root/pages/index.md" <<'EOF'
+# from template
+EOF
+  cat > "$template_root/static/style.css" <<'EOF'
+body { margin: 0; }
+EOF
+  cat > "$template_root/wizardry-server-requirements.conf" <<'EOF'
+nostril=required
+EOF
+
+  WIZARDRY_DIR="$fake_wizardry_root" WEB_WIZARDRY_ROOT="$test_web_root" \
+    run_spell spells/web/create-from-template minisite minimal
+  assert_success
+
+  printf '%s\n' 'old=requirement' > "$test_web_root/minisite/wizardry-server-requirements.conf"
+
+  WIZARDRY_DIR="$fake_wizardry_root" WEB_WIZARDRY_ROOT="$test_web_root" \
+    run_spell spells/web/update-from-template minisite --force
+  assert_success
+
+  if ! grep -q '^nostril=required$' "$test_web_root/minisite/wizardry-server-requirements.conf"; then
+    TEST_FAILURE_REASON="requirements file not refreshed from template"
     rm -rf "$test_web_root" "$fake_wizardry_root"
     return 1
   fi
@@ -168,6 +192,7 @@ run_test_case "update-from-template shows help" test_help
 run_test_case "update-from-template updates files from template" test_updates_from_template
 run_test_case "update-from-template preserves uploads" test_preserves_uploads
 run_test_case "update-from-template fails for nonexistent site" test_fails_for_nonexistent_site
-run_test_case "update-from-template resolves templates from .web" test_update_uses_web_template_directory
+run_test_case "update-from-template resolves templates from web" test_update_uses_web_template_directory
+run_test_case "update-from-template refreshes requirements file" test_update_refreshes_requirements_file
 
 finish_tests

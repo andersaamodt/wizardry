@@ -17,6 +17,10 @@ Commands:
   stop SITENAME      Stop serving a website
   status [SITENAME]  Show website status
   configure SITENAME Configure website settings
+  nostr-mirror SITENAME  Mirror Nostr events for a blog site
+  check-nostril    Check Nostr server tooling
+  install-nostril Ensure nostril is installed
+  uninstall-nostril Remove nostril
 
 Without arguments, opens an interactive menu.
 
@@ -119,6 +123,26 @@ case "$cmd" in
     configure-nginx "$site_name" "$@"
     exit 0
     ;;
+  nostr-mirror)
+    site_name=${2-}
+    if [ -z "$site_name" ]; then
+      die 2 "web-wizardry: nostr-mirror requires SITENAME argument"
+    fi
+    blog-nostr-mirror "$site_name"
+    exit 0
+    ;;
+  check-nostril)
+    check-nostril
+    exit 0
+    ;;
+  install-nostril)
+    install-nostril
+    exit 0
+    ;;
+  uninstall-nostril)
+    uninstall-nostril
+    exit 0
+    ;;
   '')
     # No command - show interactive menu
     ;;
@@ -150,11 +174,8 @@ while true; do
     fi
   fi
   
-  # Add create options (template first, then blank), plus template installer.
-  set -- "$@" \
-    "Create from template%template-menu" \
-    "Create blank site%create-site-prompt" \
-    "Install web templates%wizardry-apps-menu --templates-only"
+  # Add create options (template first, then blank)
+  set -- "$@" "Create from template%template-menu" "Create blank site%create-site-prompt"
   
   # Add exit option
   set -- "$@" "${exit_label}%kill -TERM \$PPID"

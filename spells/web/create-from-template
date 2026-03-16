@@ -11,9 +11,7 @@ Creates a new site by copying a template.
 
 Templates:
   demo    - Interactive demo site with 15+ CGI examples
-  unix-settings - Local system authority dashboard (read-only)
   blog    - Personal blog with content-addressable posts
-  artificer - Local coding assistant UI + agent backend
 
 Example: create-from-template mysite demo
 USAGE
@@ -38,56 +36,18 @@ fi
 WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
 SITES_DIR="$WEB_ROOT"
 SITE_DIR="$SITES_DIR/$site_name"
-WIZARDRY_DIR=${WIZARDRY_DIR:-$HOME/.wizardry}
-WIZARDRY_APPS_DIR=${WIZARDRY_APPS_DIR:-$HOME/git/wizardry-apps}
 
 # Check if site already exists
 if [ -d "$SITE_DIR" ]; then
   die "create-from-template: site '$site_name' already exists"
 fi
 
-# Offer to install web templates if missing or if .web is a symlink (unsupported).
-templates_root="$WIZARDRY_APPS_DIR/web"
-if [ ! -d "$templates_root" ]; then
-  templates_root="$WIZARDRY_APPS_DIR/.web"
-fi
-if [ ! -d "$templates_root" ]; then
-  ensure_templates_cmd="$WIZARDRY_DIR/spells/.arcana/wizardry-apps/ensure-wizardry-apps-component"
-  if [ -x "$ensure_templates_cmd" ]; then
-    "$ensure_templates_cmd" web-templates
-  fi
-  if [ -d "$WIZARDRY_APPS_DIR/web" ]; then
-    templates_root="$WIZARDRY_APPS_DIR/web"
-  elif [ -d "$WIZARDRY_APPS_DIR/.web" ]; then
-    templates_root="$WIZARDRY_APPS_DIR/.web"
-  fi
-fi
-
-template_dir="$templates_root/$template"
-shared_theme_dir="$templates_root/.themes"
+template_root="$WIZARDRY_DIR/web"
+template_dir="$template_root/$template"
+shared_theme_dir="$template_root/.themes"
 
 if [ ! -d "$template_dir" ]; then
-  ensure_templates_cmd="$WIZARDRY_DIR/spells/.arcana/wizardry-apps/ensure-wizardry-apps-component"
-  if [ -x "$ensure_templates_cmd" ]; then
-    "$ensure_templates_cmd" web-templates
-  fi
-  if [ -d "$WIZARDRY_APPS_DIR/web" ]; then
-    templates_root="$WIZARDRY_APPS_DIR/web"
-  elif [ -d "$WIZARDRY_APPS_DIR/.web" ]; then
-    templates_root="$WIZARDRY_APPS_DIR/.web"
-  fi
-  template_dir="$templates_root/$template"
-  shared_theme_dir="$templates_root/.themes"
-fi
-
-if [ ! -d "$template_dir" ]; then
-  dev_blog_dir="$HOME/git/nostr-blog"
-  if [ "$template" = "blog" ] && [ -d "$dev_blog_dir/pages" ] && [ -d "$dev_blog_dir/static" ] && [ -d "$dev_blog_dir/cgi" ]; then
-    template_dir="$dev_blog_dir"
-    shared_theme_dir="$dev_blog_dir/static/themes"
-  else
-    die "create-from-template: template '$template' not found"
-  fi
+  die "create-from-template: template '$template' not found"
 fi
 
 step "Creating site '$site_name' from template '$template'..."
@@ -118,9 +78,20 @@ if [ -d "$shared_theme_dir" ]; then
   cp -f "$shared_theme_dir"/*.css "$SITE_DIR/site/static/themes/" 2>/dev/null || true
 fi
 
+if [ -f "$template_dir/wizardry-server-requirements.conf" ]; then
+  cp "$template_dir/wizardry-server-requirements.conf" "$SITE_DIR/"
+fi
+
 # Create additional required directories
 mkdir -p "$SITE_DIR/site/uploads"
 mkdir -p "$SITE_DIR/build"
+if [ "$template" = "blog" ]; then
+  mkdir -p "$SITE_DIR/site/nostr/state" "$SITE_DIR/site/nostr/events" "$SITE_DIR/site/nostr/derived"
+  : > "$SITE_DIR/site/nostr/state/authors.txt"
+  : > "$SITE_DIR/site/nostr/state/relays.txt"
+  : > "$SITE_DIR/site/nostr/state/blocklist.txt"
+  : > "$SITE_DIR/site/nostr/state/hidden_posts.txt"
+fi
 
 # Create site config
 cat > "$SITE_DIR/site.conf" <<EOF
@@ -132,6 +103,13 @@ port=8080
 domain=localhost
 https=false
 EOF
+
+if [ "$template" = "blog" ]; then
+  cat >> "$SITE_DIR/site.conf" <<'EOF'
+nostr_bridge_enabled=false
+new_users_are_admins=true
+EOF
+fi
 
 cat > "$SITE_DIR/site.allowlist" <<EOF
 # List additional absolute paths this site may access.
