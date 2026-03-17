@@ -244,11 +244,6 @@ http {
             alias $SITE_DIR/build/static/;
         }
         
-        # Serve uploaded files (from site data directory)
-        location /uploads/ {
-            alias $SITES_DIR/.sitedata/$site_name/uploads/;
-        }
-        
         # SSE endpoint - requires unbuffered streaming
         location ~ ^/cgi/chat-stream$ {
             # Resolve site-specific CGI first, then shared CGI
