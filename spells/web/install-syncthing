@@ -67,6 +67,26 @@ install_binary() {
   run_privileged install -m 755 "$source_path" "$target_bin_dir/syncthing"
 }
 
+install_systemd_override() {
+  [ -f /lib/systemd/system/syncthing@.service ] || [ -f /usr/lib/systemd/system/syncthing@.service ] || return 0
+  target_bin_dir=$(install_target_bin_dir)
+  target_bin="$target_bin_dir/syncthing"
+  [ -x "$target_bin" ] || return 0
+  override_dir=/etc/systemd/system/syncthing@.service.d
+  run_privileged install -d -m 755 "$override_dir"
+  tmp_override=$(mktemp "${TMPDIR:-/tmp}/syncthing-override.XXXXXX")
+  cat > "$tmp_override" <<EOF
+[Service]
+ExecStart=
+ExecStart=$target_bin -no-browser -no-restart -logflags=0
+EOF
+  run_privileged install -m 644 "$tmp_override" "$override_dir/override.conf"
+  rm -f "$tmp_override"
+  if has_cmd systemctl; then
+    run_privileged systemctl daemon-reload >/dev/null 2>&1 || true
+  fi
+}
+
 platform_suffix() {
   os_name=$(uname -s 2>/dev/null || printf '')
   arch_name=$(uname -m 2>/dev/null || printf '')
@@ -149,6 +169,7 @@ install_release_binary() {
 }
 
 if syncthing_cli_supported; then
+  install_systemd_override
   say "Syncthing is already installed"
   exit 0
 fi
@@ -156,6 +177,7 @@ fi
 install_release_binary >/dev/null 2>&1 || true
 
 if syncthing_cli_supported; then
+  install_systemd_override
   say "Installed Syncthing"
   exit 0
 fi
@@ -175,6 +197,7 @@ fi
 install_release_binary >/dev/null 2>&1 || true
 
 if syncthing_cli_supported; then
+  install_systemd_override
   say "Installed Syncthing"
   exit 0
 fi
