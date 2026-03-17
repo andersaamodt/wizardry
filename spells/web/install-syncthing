@@ -23,6 +23,12 @@ has_cmd() {
   command -v "$1" >/dev/null 2>&1
 }
 
+syncthing_cli_supported() {
+  has_cmd syncthing || return 1
+  syncthing version 2>/dev/null | grep -Eiq '^syncthing v|^syncthing '
+  syncthing cli --help 2>/dev/null | grep -q 'Command line interface'
+}
+
 run_privileged() {
   if "$@" 2>/dev/null; then
     return 0
@@ -42,8 +48,115 @@ run_privileged() {
   "$@"
 }
 
-if has_cmd syncthing; then
+install_target_bin_dir() {
+  if [ "$(id -u)" -eq 0 ]; then
+    printf '%s\n' /usr/local/bin
+    return 0
+  fi
+  if has_cmd sudo || type run_sudo_cmd >/dev/null 2>&1; then
+    printf '%s\n' /usr/local/bin
+    return 0
+  fi
+  printf '%s\n' "${XDG_BIN_HOME:-$HOME/.local/bin}"
+}
+
+install_binary() {
+  source_path=$1
+  target_bin_dir=$(install_target_bin_dir)
+  run_privileged install -d -m 755 "$target_bin_dir"
+  run_privileged install -m 755 "$source_path" "$target_bin_dir/syncthing"
+}
+
+platform_suffix() {
+  os_name=$(uname -s 2>/dev/null || printf '')
+  arch_name=$(uname -m 2>/dev/null || printf '')
+  case "$os_name" in
+    Linux) platform_os=linux ;;
+    Darwin) platform_os=macos ;;
+    FreeBSD) platform_os=freebsd ;;
+    *)
+      return 1
+      ;;
+  esac
+  case "$platform_os:$arch_name" in
+    linux:x86_64|linux:amd64) platform_arch=amd64 ;;
+    linux:arm64|linux:aarch64) platform_arch=arm64 ;;
+    linux:riscv64) platform_arch=riscv64 ;;
+    macos:arm64|macos:aarch64) platform_arch=universal ;;
+    macos:x86_64|macos:amd64) platform_arch=universal ;;
+    freebsd:x86_64|freebsd:amd64) platform_arch=amd64 ;;
+    *)
+      return 1
+      ;;
+  esac
+  printf '%s-%s\n' "$platform_os" "$platform_arch"
+}
+
+install_release_binary() {
+  has_cmd curl || return 1
+  has_cmd tar || return 1
+  platform=$(platform_suffix 2>/dev/null || true)
+  [ -n "$platform" ] || return 1
+
+  release_json=$(curl -fsSL https://api.github.com/repos/syncthing/syncthing/releases/latest 2>/dev/null || true)
+  [ -n "$release_json" ] || return 1
+  release_json_one_line=$(printf '%s' "$release_json" | tr '\n' ' ')
+  case "$platform" in
+    macos-universal)
+      asset_suffix="syncthing-macos-universal-v"
+      asset_ext=".zip"
+      ;;
+    *)
+      asset_suffix="syncthing-${platform}-v"
+      asset_ext=".tar.gz"
+      ;;
+  esac
+  download_url=$(printf '%s\n' "$release_json_one_line" | sed -n "s/.*\"browser_download_url\":[[:space:]]*\"\\([^\"]*${asset_suffix}[^\"]*${asset_ext}\\)\".*/\\1/p" | head -n 1)
+  [ -n "$download_url" ] || return 1
+
+  tmp_dir=$(mktemp -d "${TMPDIR:-/tmp}/syncthing-release.XXXXXX")
+  archive_path="$tmp_dir/archive${asset_ext}"
+  curl -fsSL "$download_url" -o "$archive_path" || {
+    rm -rf "$tmp_dir"
+    return 1
+  }
+  case "$asset_ext" in
+    .tar.gz)
+      tar -xzf "$archive_path" -C "$tmp_dir" || {
+        rm -rf "$tmp_dir"
+        return 1
+      }
+      ;;
+    .zip)
+      has_cmd unzip || {
+        rm -rf "$tmp_dir"
+        return 1
+      }
+      unzip -q "$archive_path" -d "$tmp_dir" || {
+        rm -rf "$tmp_dir"
+        return 1
+      }
+      ;;
+  esac
+  binary_path=$(find "$tmp_dir" -mindepth 2 -maxdepth 2 -type f -path '*/syncthing' -perm -111 | head -n 1)
+  [ -n "$binary_path" ] || {
+    rm -rf "$tmp_dir"
+    return 1
+  }
+  install_binary "$binary_path"
+  rm -rf "$tmp_dir"
+  syncthing_cli_supported
+}
+
+if syncthing_cli_supported; then
   say "Syncthing is already installed"
+  exit 0
+fi
+
+install_release_binary >/dev/null 2>&1 || true
+
+if syncthing_cli_supported; then
+  say "Installed Syncthing"
   exit 0
 fi
 
@@ -59,10 +172,12 @@ else
   exit 1
 fi
 
-if has_cmd syncthing; then
+install_release_binary >/dev/null 2>&1 || true
+
+if syncthing_cli_supported; then
   say "Installed Syncthing"
   exit 0
 fi
 
-say "install-syncthing: installation incomplete. Ensure syncthing is on PATH." >&2
+say "install-syncthing: installation incomplete. Ensure a modern Syncthing with CLI support is on PATH." >&2
 exit 1
