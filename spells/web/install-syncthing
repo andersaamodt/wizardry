@@ -78,7 +78,7 @@ install_systemd_override() {
   cat > "$tmp_override" <<EOF
 [Service]
 ExecStart=
-ExecStart=$target_bin -no-browser -no-restart -logflags=0
+ExecStart=$target_bin serve --no-browser --no-restart --logflags=0
 EOF
   run_privileged install -m 644 "$tmp_override" "$override_dir/override.conf"
   rm -f "$tmp_override"

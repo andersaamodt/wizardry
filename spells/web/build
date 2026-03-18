@@ -89,6 +89,73 @@ extract_markdown_body() {
   ' "$file"
 }
 
+strip_dynamic_title_block() {
+  file=$1
+  [ -f "$file" ] || return 0
+  if ! grep -Eq 'id="(blog-page-root|nip23-page-root|public-ranking-root|oeuvre-root|contact-page-root)"' "$file"; then
+    return 0
+  fi
+
+  tmp=$(mktemp "${TMPDIR:-/tmp}/wizardry-dynamic-page.XXXXXX")
+  awk '
+    BEGIN {
+      in_header = 0
+      removed = 0
+      header = ""
+    }
+    function flush_header() {
+      if (header != "") {
+        printf "%s", header
+        header = ""
+      }
+    }
+    {
+      if (removed == 0 && in_header == 0 && $0 ~ /^<header([[:space:]][^>]*)?>[[:space:]]*$/) {
+        in_header = 1
+        header = $0 "\n"
+        next
+      }
+      if (in_header == 1) {
+        header = header $0 "\n"
+        if ($0 ~ /^<\/header>[[:space:]]*$/) {
+          if (header ~ /class="title"/) {
+            removed = 1
+            header = ""
+          } else {
+            flush_header()
+          }
+          in_header = 0
+        }
+        next
+      }
+      print
+    }
+    END {
+      flush_header()
+    }
+  ' "$file" > "$tmp"
+  mv "$tmp" "$file"
+}
+
+prune_stale_build_pages() {
+  build_pages_dir=$1
+  site_pages_dir=$2
+
+  [ -d "$build_pages_dir" ] || return 0
+
+  find "$build_pages_dir" -type f -name '*.html' ! -name '._*' | while IFS= read -r html_file; do
+    rel_html=${html_file#"$build_pages_dir/"}
+    rel_md=${rel_html%.html}.md
+    md_file="$site_pages_dir/$rel_md"
+    if [ ! -f "$md_file" ]; then
+      info "  Removing stale build page: $rel_html"
+      rm -f "$html_file"
+    fi
+  done
+
+  find "$build_pages_dir" -depth -type d -empty -delete 2>/dev/null || true
+}
+
 normalize_tags() {
   printf '%s' "${1-}" | tr '\n' ',' | tr ',' '\n' | sed 's/^ *//;s/ *$//' | awk 'NF { if (!seen[$0]++) { if (out != "") out = out ", "; out = out $0 } } END { printf "%s", out }'
 }
@@ -171,7 +238,7 @@ generate_blog_feeds_and_sitemap() {
   posts_tmp=$(temp-file blog-feed-posts)
   ranked_tmp=$(temp-file blog-feed-ranked)
 
-  find "$posts_dir" -type f -name '*.md' | while IFS= read -r file; do
+  find "$posts_dir" -type f -name '*.md' ! -name '._*' | while IFS= read -r file; do
     visibility=$(extract_front_matter_value "$file" visibility 2>/dev/null || printf '')
     if [ -z "$visibility" ]; then
       visibility=public
@@ -367,6 +434,34 @@ render_cgi_fragment() {
   return 0
 }
 
+build_path_newer_than() {
+  candidate_path=${1-}
+  target_path=${2-}
+  [ -n "$candidate_path" ] || return 1
+  [ -n "$target_path" ] || return 1
+  [ -e "$candidate_path" ] || return 1
+  [ -e "$target_path" ] || return 0
+  if [ -d "$candidate_path" ]; then
+    find "$candidate_path" -type f -newer "$target_path" -print -quit 2>/dev/null | grep -q .
+    return $?
+  fi
+  [ "$candidate_path" -nt "$target_path" ]
+}
+
+blog_dynamic_section_needs_refresh() {
+  target_html=${1-}
+  shift || true
+  [ -n "$target_html" ] || return 0
+  [ -f "$target_html" ] || return 0
+  [ "${full_rebuild:-0}" -eq 1 ] && return 0
+  for source_path in "$@"; do
+    if build_path_newer_than "$source_path" "$target_html"; then
+      return 0
+    fi
+  done
+  return 1
+}
+
 replace_html_container_by_id() {
   html_file=$1
   container_id=$2
@@ -434,7 +529,15 @@ prerender_blog_dynamic_sections() {
     return 0
   fi
 
-  if [ -f "$SITE_DIR/build/pages/index.html" ] && [ -x "$cgi_dir/blog-index" ]; then
+  if [ -f "$SITE_DIR/build/pages/index.html" ] &&
+     [ -x "$cgi_dir/blog-index" ] &&
+     blog_dynamic_section_needs_refresh \
+       "$SITE_DIR/build/pages/index.html" \
+       "$cgi_dir/blog-index" \
+       "$cgi_dir/blog-lib.sh" \
+       "$cgi_dir/blog-list-common.sh" \
+       "$cgi_dir/blog-nostr-pages-common.sh" \
+       "$SITE_DIR/site/pages/posts"; then
     post_list_tmp=$(temp-file blog-index-fragment)
     if render_cgi_fragment "$cgi_dir/blog-index" "page=1" "$post_list_tmp"; then
       replace_html_container_by_id "$SITE_DIR/build/pages/index.html" "post-list" "$post_list_tmp" || true
@@ -442,7 +545,15 @@ prerender_blog_dynamic_sections() {
     rm -f "$post_list_tmp"
   fi
 
-  if [ -f "$SITE_DIR/build/pages/tags.html" ] && [ -x "$cgi_dir/blog-tags" ]; then
+  if [ -f "$SITE_DIR/build/pages/tags.html" ] &&
+     [ -x "$cgi_dir/blog-tags" ] &&
+     blog_dynamic_section_needs_refresh \
+       "$SITE_DIR/build/pages/tags.html" \
+       "$cgi_dir/blog-tags" \
+       "$cgi_dir/blog-lib.sh" \
+       "$cgi_dir/blog-list-common.sh" \
+       "$cgi_dir/blog-nostr-pages-common.sh" \
+       "$SITE_DIR/site/pages/posts"; then
     tag_cloud_tmp=$(temp-file blog-tags-fragment)
     if render_cgi_fragment "$cgi_dir/blog-tags" "" "$tag_cloud_tmp"; then
       replace_html_container_by_id "$SITE_DIR/build/pages/tags.html" "tag-cloud" "$tag_cloud_tmp" || true
@@ -450,7 +561,15 @@ prerender_blog_dynamic_sections() {
     rm -f "$tag_cloud_tmp"
   fi
 
-  if [ -f "$SITE_DIR/build/pages/archive.html" ] && [ -x "$cgi_dir/blog-archive" ]; then
+  if [ -f "$SITE_DIR/build/pages/archive.html" ] &&
+     [ -x "$cgi_dir/blog-archive" ] &&
+     blog_dynamic_section_needs_refresh \
+       "$SITE_DIR/build/pages/archive.html" \
+       "$cgi_dir/blog-archive" \
+       "$cgi_dir/blog-lib.sh" \
+       "$cgi_dir/blog-list-common.sh" \
+       "$cgi_dir/blog-nostr-pages-common.sh" \
+       "$SITE_DIR/site/pages/posts"; then
     archive_list_tmp=$(temp-file blog-archive-fragment)
     if render_cgi_fragment "$cgi_dir/blog-archive" "" "$archive_list_tmp"; then
       replace_html_container_by_id "$SITE_DIR/build/pages/archive.html" "archive-list" "$archive_list_tmp" || true
@@ -526,16 +645,18 @@ build_site() {
     cp -r "$SITE_DIR/site/static"/* "$SITE_DIR/build/static/" 2>/dev/null || true
   fi
 
+  prune_stale_build_pages "$SITE_DIR/build/pages" "$SITE_DIR/site/pages"
+
   info "Converting Markdown to HTML..."
   built_count=0
   if [ -d "$SITE_DIR/site/pages" ]; then
-    md_file_count=$(find "$SITE_DIR/site/pages" -name '*.md' -type f 2>/dev/null | wc -l)
+    md_file_count=$(find "$SITE_DIR/site/pages" -type f -name '*.md' ! -name '._*' 2>/dev/null | wc -l)
     if [ "$md_file_count" -eq 0 ]; then
       warn "No Markdown files found in $SITE_DIR/site/pages/"
       warn "Create .md files there to build HTML pages."
     fi
 
-    find "$SITE_DIR/site/pages" -name '*.md' -type f | sort | while IFS= read -r md_file; do
+    find "$SITE_DIR/site/pages" -type f -name '*.md' ! -name '._*' | sort | while IFS= read -r md_file; do
       rel_path=${md_file#"$SITE_DIR/site/pages/"}
       rel_html=${rel_path%.md}.html
       html_file="$SITE_DIR/build/pages/$rel_html"
@@ -633,6 +754,8 @@ BLOG_FOOTER
         mv "$temp_html" "$html_file"
       fi
 
+      strip_dynamic_title_block "$html_file"
+
       rm -f "$htmx_header"
       if [ -n "$footer_tmp" ] && [ -f "$footer_tmp" ]; then
         rm -f "$footer_tmp"
@@ -657,9 +780,8 @@ BLOG_FOOTER
   generate_blog_feeds_and_sitemap
   prerender_blog_dynamic_sections
 
-  info "Setting file permissions..."
-  find "$SITE_DIR/build" -type d -exec chmod 755 {} \; 2>/dev/null || true
-  find "$SITE_DIR/build" -type f -exec chmod 644 {} \; 2>/dev/null || true
+  date -u +%Y-%m-%dT%H:%M:%SZ > "$SITE_DIR/build/.wizardry-build-stamp"
+  chmod 644 "$SITE_DIR/build/.wizardry-build-stamp" 2>/dev/null || true
 
   success "Built $built_count pages for $site_name"
   info "Build output: $SITE_DIR/build/"

@@ -26,6 +26,37 @@ esac
 set -eu
 . env-clear
 
+resolve_template_dir() {
+  template_name=${1-}
+  wizardry_root=${WIZARDRY_DIR:-$HOME/.wizardry}
+  if [ -n "$template_name" ] && [ -d "$wizardry_root/web/$template_name" ]; then
+    printf '%s\n' "$wizardry_root/web/$template_name"
+    return 0
+  fi
+  case "$template_name" in
+    blog)
+      if [ -d "$HOME/git/nostr-blog" ]; then
+        printf '%s\n' "$HOME/git/nostr-blog"
+        return 0
+      fi
+      ;;
+  esac
+  return 1
+}
+
+resolve_shared_theme_dir() {
+  wizardry_root=${WIZARDRY_DIR:-$HOME/.wizardry}
+  if [ -d "$wizardry_root/web/.themes" ]; then
+    printf '%s\n' "$wizardry_root/web/.themes"
+    return 0
+  fi
+  if [ -d "$HOME/git/wizardry-apps/web/.themes" ]; then
+    printf '%s\n' "$HOME/git/wizardry-apps/web/.themes"
+    return 0
+  fi
+  return 1
+}
+
 site_name=${1-}
 force_flag=0
 
@@ -152,12 +183,11 @@ fi
 
 # Get WIZARDRY_DIR to find templates
 WIZARDRY_DIR=${WIZARDRY_DIR:-$HOME/.wizardry}
-template_root="$WIZARDRY_DIR/web"
-template_dir="$template_root/$template"
-shared_theme_dir="$template_root/.themes"
+template_dir=$(resolve_template_dir "$template" 2>/dev/null || true)
+shared_theme_dir=$(resolve_shared_theme_dir 2>/dev/null || true)
 
 if [ ! -d "$template_dir" ]; then
-  die "update-from-template: template '$template' not found at $template_dir"
+  die "update-from-template: template '$template' not found"
 fi
 
 # Ask for confirmation unless --force

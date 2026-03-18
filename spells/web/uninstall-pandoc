@@ -1,0 +1,68 @@
+#!/bin/sh
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uninstall-pandoc
+
+Removes pandoc when it was installed through a supported package manager.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
+
+say() {
+  printf '%s\n' "$1"
+}
+
+has_cmd() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+run_privileged() {
+  if "$@" 2>/dev/null; then
+    return 0
+  fi
+  if type run_sudo_cmd >/dev/null 2>&1; then
+    run_sudo_cmd "$@"
+    return 0
+  fi
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+    return 0
+  fi
+  if has_cmd sudo; then
+    sudo "$@"
+    return 0
+  fi
+  "$@"
+}
+
+removed=0
+
+if has_cmd apt-get; then
+  run_privileged env DEBIAN_FRONTEND=noninteractive apt-get remove -y pandoc >/dev/null 2>&1 || true
+  removed=1
+elif has_cmd dnf; then
+  run_privileged dnf remove -y pandoc >/dev/null 2>&1 || true
+  removed=1
+elif has_cmd brew; then
+  brew uninstall pandoc >/dev/null 2>&1 || true
+  removed=1
+fi
+
+if has_cmd pandoc; then
+  say "uninstall-pandoc: pandoc is still present on PATH" >&2
+  exit 1
+fi
+
+if [ "$removed" -eq 0 ]; then
+  say "pandoc is not installed"
+  exit 0
+fi
+
+say "Uninstalled pandoc"
