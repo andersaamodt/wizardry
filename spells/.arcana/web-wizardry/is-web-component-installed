@@ -8,7 +8,7 @@ case "${1-}" in
 Usage: is-web-component-installed COMPONENT
 
 Returns 0 if the component is installed, 1 otherwise.
-Components: pandoc, nginx, fcgiwrap, openssl, htmx, certbot
+Components: pandoc, nginx, fcgiwrap, filesystem-tools, openssl, htmx, certbot
 USAGE
   exit 0
   ;;
@@ -24,6 +24,9 @@ component=${1:-}
 case "$component" in
   pandoc|nginx|fcgiwrap|openssl)
     command -v "$component" >/dev/null 2>&1
+    ;;
+  filesystem-tools)
+    command -v resize2fs >/dev/null 2>&1 && command -v xfs_growfs >/dev/null 2>&1
     ;;
   htmx)
     # Check new shared location first, then fall back to old location

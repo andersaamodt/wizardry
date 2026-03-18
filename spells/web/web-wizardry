@@ -18,6 +18,9 @@ Commands:
   status [SITENAME]  Show website status
   configure SITENAME Configure website settings
   nostr-mirror SITENAME  Mirror Nostr events for a blog site
+  check-filesystem-tools Check filesystem growth tooling
+  install-filesystem-tools Ensure filesystem growth tooling is installed
+  uninstall-filesystem-tools Remove filesystem growth tooling
   check-nostril    Check Nostr server tooling
   install-nostril Ensure nostril is installed
   uninstall-nostril Remove nostril
@@ -129,6 +132,18 @@ case "$cmd" in
       die 2 "web-wizardry: nostr-mirror requires SITENAME argument"
     fi
     blog-nostr-mirror "$site_name"
+    exit 0
+    ;;
+  check-filesystem-tools)
+    check-filesystem-tools
+    exit 0
+    ;;
+  install-filesystem-tools)
+    install-filesystem-tools
+    exit 0
+    ;;
+  uninstall-filesystem-tools)
+    uninstall-filesystem-tools
     exit 0
     ;;
   check-nostril)

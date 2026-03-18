@@ -39,6 +39,7 @@ while true; do
   pandoc_was_installed=0
   nginx_was_installed=0
   fcgiwrap_was_installed=0
+  filesystem_tools_was_installed=0
   openssl_was_installed=0
   htmx_was_installed=0
   certbot_was_installed=0
@@ -46,6 +47,7 @@ while true; do
   "$script_dir/is-web-component-installed" pandoc 2>/dev/null && pandoc_was_installed=1
   "$script_dir/is-web-component-installed" nginx 2>/dev/null && nginx_was_installed=1
   "$script_dir/is-web-component-installed" fcgiwrap 2>/dev/null && fcgiwrap_was_installed=1
+  "$script_dir/is-web-component-installed" filesystem-tools 2>/dev/null && filesystem_tools_was_installed=1
   "$script_dir/is-web-component-installed" openssl 2>/dev/null && openssl_was_installed=1
   "$script_dir/is-web-component-installed" htmx 2>/dev/null && htmx_was_installed=1
   "$script_dir/is-web-component-installed" certbot 2>/dev/null && certbot_was_installed=1
@@ -92,6 +94,16 @@ while true; do
     fcgiwrap_pos=$pos
   fi
   pos=$((pos + 1))
+
+  # Filesystem tools toggle
+  if [ "$filesystem_tools_was_installed" -eq 1 ]; then
+    filesystem_tools_toggle="[X] filesystem tools%uninstall-filesystem-tools"
+    filesystem_tools_pos=$pos
+  else
+    filesystem_tools_toggle="[ ] filesystem tools%install-filesystem-tools"
+    filesystem_tools_pos=$pos
+  fi
+  pos=$((pos + 1))
   
   # OpenSSL toggle
   if [ "$openssl_was_installed" -eq 1 ]; then
@@ -135,7 +147,7 @@ while true; do
   
   # Check if all are installed for enable/disable all toggle
   all_installed=1
-  for component in pandoc nginx fcgiwrap openssl htmx certbot; do
+  for component in pandoc nginx fcgiwrap filesystem-tools openssl htmx certbot; do
     if ! "$script_dir/is-web-component-installed" "$component" 2>/dev/null; then
       all_installed=0
       break
@@ -156,7 +168,7 @@ while true; do
   # We need to handle all combinations of nginx_admin, htmx_update, and https_admin
   set -- "$pandoc_toggle" "$nginx_toggle"
   [ -n "$nginx_admin" ] && set -- "$@" "$nginx_admin"
-  set -- "$@" "$fcgiwrap_toggle" "$openssl_toggle" "$htmx_toggle"
+  set -- "$@" "$fcgiwrap_toggle" "$filesystem_tools_toggle" "$openssl_toggle" "$htmx_toggle"
   [ -n "$htmx_update" ] && set -- "$@" "$htmx_update"
   set -- "$@" "$certbot_toggle"
   [ -n "$https_admin" ] && set -- "$@" "$https_admin"
@@ -187,6 +199,11 @@ while true; do
   else
     fcgiwrap_now_installed=0
   fi
+  if "$script_dir/is-web-component-installed" filesystem-tools 2>/dev/null; then
+    filesystem_tools_now_installed=1
+  else
+    filesystem_tools_now_installed=0
+  fi
   if "$script_dir/is-web-component-installed" openssl 2>/dev/null; then
     openssl_now_installed=1
   else
@@ -210,6 +227,8 @@ while true; do
     start_selection=$nginx_pos
   elif [ "$fcgiwrap_was_installed" -ne "$fcgiwrap_now_installed" ]; then
     start_selection=$fcgiwrap_pos
+  elif [ "$filesystem_tools_was_installed" -ne "$filesystem_tools_now_installed" ]; then
+    start_selection=$filesystem_tools_pos
   elif [ "$openssl_was_installed" -ne "$openssl_now_installed" ]; then
     start_selection=$openssl_pos
   elif [ "$htmx_was_installed" -ne "$htmx_now_installed" ]; then

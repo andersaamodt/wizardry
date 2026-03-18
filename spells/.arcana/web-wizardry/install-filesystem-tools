@@ -1,0 +1,16 @@
+#!/bin/sh
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-filesystem-tools
+
+Installs filesystem growth tools used by Wizardry and Headquarters.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+exec install-filesystem-tools "$@"

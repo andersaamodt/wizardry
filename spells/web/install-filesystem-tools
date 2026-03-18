@@ -1,0 +1,117 @@
+#!/bin/sh
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-filesystem-tools
+
+Ensures filesystem growth tools are installed for Wizardry and Headquarters
+storage operations.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+PATH=/opt/homebrew/opt/e2fsprogs/sbin:/opt/homebrew/opt/e2fsprogs/bin:/usr/local/opt/e2fsprogs/sbin:/usr/local/opt/e2fsprogs/bin:/opt/homebrew/opt/xfsprogs/bin:/usr/local/opt/xfsprogs/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
+
+say() {
+  printf '%s\n' "$1"
+}
+
+has_cmd() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+all_present() {
+  has_cmd resize2fs && has_cmd xfs_growfs
+}
+
+any_present() {
+  has_cmd resize2fs || has_cmd xfs_growfs
+}
+
+run_privileged() {
+  if "$@" 2>/dev/null; then
+    return 0
+  fi
+  if type run_sudo_cmd >/dev/null 2>&1; then
+    run_sudo_cmd "$@"
+    return 0
+  fi
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+    return 0
+  fi
+  if has_cmd sudo; then
+    sudo "$@"
+    return 0
+  fi
+  "$@"
+}
+
+apt_space_prep() {
+  run_privileged apt-get clean >/dev/null 2>&1 || true
+  run_privileged sh -eu -c 'rm -rf /var/lib/apt/lists/partial 2>/dev/null || true; find /var/lib/apt/lists -mindepth 1 -maxdepth 1 -exec rm -rf {} + 2>/dev/null || true' >/dev/null 2>&1 || true
+  run_privileged sh -eu -c 'find /var/cache/apt/archives -mindepth 1 -maxdepth 1 -type f -name "*.deb" -delete 2>/dev/null || true' >/dev/null 2>&1 || true
+}
+
+apt_repair_state() {
+  run_privileged dpkg --configure -a >/dev/null 2>&1 || true
+  run_privileged env DEBIAN_FRONTEND=noninteractive apt-get install -f -y >/dev/null 2>&1 || true
+}
+
+install_package() {
+  package_name=$1
+  case "$package_name" in
+    e2fsprogs)
+      has_cmd resize2fs && return 0
+      ;;
+    xfsprogs)
+      has_cmd xfs_growfs && return 0
+      ;;
+  esac
+  if has_cmd apt-get; then
+    apt_space_prep
+    apt_repair_state
+    run_privileged apt-get update -y >/dev/null 2>&1 || true
+    run_privileged env DEBIAN_FRONTEND=noninteractive apt-get install -y --fix-broken --no-install-recommends "$package_name" >/dev/null
+    return 0
+  fi
+  if has_cmd dnf; then
+    run_privileged dnf install -y "$package_name" >/dev/null
+    return 0
+  fi
+  if has_cmd brew; then
+    brew install "$package_name" >/dev/null
+    return 0
+  fi
+  return 1
+}
+
+if all_present; then
+  say "Filesystem tools are already installed"
+  exit 0
+fi
+
+if ! has_cmd apt-get && ! has_cmd dnf && ! has_cmd brew; then
+  say "install-filesystem-tools: no supported package manager found." >&2
+  exit 1
+fi
+
+install_package e2fsprogs || true
+install_package xfsprogs || true
+
+if all_present; then
+  say "Installed filesystem tools"
+  exit 0
+fi
+
+if any_present; then
+  say "install-filesystem-tools: partial install completed. One filesystem growth tool is available, but others are still missing." >&2
+  exit 1
+fi
+
+say "install-filesystem-tools: installation incomplete. No supported growth tools are on PATH." >&2
+exit 1

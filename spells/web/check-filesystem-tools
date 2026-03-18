@@ -1,0 +1,48 @@
+#!/bin/sh
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: check-filesystem-tools
+
+Checks whether the filesystem growth tools needed by Wizardry and Headquarters
+are available.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+PATH=/opt/homebrew/opt/e2fsprogs/sbin:/opt/homebrew/opt/e2fsprogs/bin:/usr/local/opt/e2fsprogs/sbin:/usr/local/opt/e2fsprogs/bin:/opt/homebrew/opt/xfsprogs/bin:/usr/local/opt/xfsprogs/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
+
+has_cmd() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+present=''
+missing=''
+for tool in resize2fs xfs_growfs; do
+  if has_cmd "$tool"; then
+    present="$present $tool"
+  else
+    missing="$missing $tool"
+  fi
+done
+
+present=$(printf '%s' "$present" | sed 's/^ *//')
+missing=$(printf '%s' "$missing" | sed 's/^ *//')
+
+if [ -n "$present" ]; then
+  printf 'status=ok\n'
+  if [ -n "$missing" ]; then
+    printf 'summary=%s\n' "Available: $present. Still missing: $missing."
+  else
+    printf 'summary=%s\n' "Available: $present."
+  fi
+  exit 0
+fi
+
+printf 'status=bad\n'
+printf 'summary=%s\n' "Missing filesystem tools: $missing"
+exit 0
