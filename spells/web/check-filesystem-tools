@@ -22,7 +22,7 @@ has_cmd() {
 
 present=''
 missing=''
-for tool in resize2fs xfs_growfs; do
+for tool in resize2fs e2image xfs_growfs; do
   if has_cmd "$tool"; then
     present="$present $tool"
   else
