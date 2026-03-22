@@ -162,6 +162,16 @@ while true; do
     serve_on_startup_option="[ ] Serve on startup%enable-site-daemon \"$site_name\""
   fi
 
+  autorebuild_toggle_option=""
+  autorebuild_status_output=$(site-autorebuild status "$site_name" 2>/dev/null || true)
+  autorebuild_enabled=0
+  if printf '%s\n' "$autorebuild_status_output" | grep -q '^enabled=yes$'; then
+    autorebuild_enabled=1
+    autorebuild_toggle_option="[X] Auto-rebuild watcher%site-autorebuild toggle \"$site_name\""
+  else
+    autorebuild_toggle_option="[ ] Auto-rebuild watcher%site-autorebuild toggle \"$site_name\""
+  fi
+
   exit_label=$(exit-label)
 
   if has systemctl; then
@@ -330,6 +340,14 @@ while true; do
     startup_label=$(printf '%s' "$serve_on_startup_option" | cut -d% -f1)
     serve_on_startup_option="${startup_label}%$startup_cmd_wrapped"
   fi
+
+  if [ -n "$autorebuild_toggle_option" ]; then
+    autorebuild_cmd_wrapped=$(wrap_cmd \
+      "$(printf '%s' "$autorebuild_toggle_option" | cut -d% -f1)" \
+      "$(printf '%s' "$autorebuild_toggle_option" | cut -d% -f2-)")
+    autorebuild_label=$(printf '%s' "$autorebuild_toggle_option" | cut -d% -f1)
+    autorebuild_toggle_option="${autorebuild_label}%$autorebuild_cmd_wrapped"
+  fi
   
   # Always: Change port
   port_cmd_wrapped=$(wrap_cmd "Change port (current: $port)" \
@@ -398,6 +416,7 @@ while true; do
     "---" \
     ${tor_hosting_option:+"$tor_hosting_option"} \
     ${serve_on_startup_option:+"$serve_on_startup_option"} \
+    ${autorebuild_toggle_option:+"$autorebuild_toggle_option"} \
     "Change port (current: $port)%$port_cmd_wrapped" \
     ${https_option:+"$https_option"} \
     ${https_disable_option:+"$https_disable_option"} \
@@ -415,6 +434,10 @@ while true; do
     search_label="Start server"
   elif [ "$saved_label" = "Start server" ] && [ "$is_serving" -eq 1 ]; then
     search_label="Stop server"
+  elif [ "$saved_label" = "[X] Auto-rebuild watcher" ] && [ "$autorebuild_enabled" -eq 0 ]; then
+    search_label="[ ] Auto-rebuild watcher"
+  elif [ "$saved_label" = "[ ] Auto-rebuild watcher" ] && [ "$autorebuild_enabled" -eq 1 ]; then
+    search_label="[X] Auto-rebuild watcher"
   fi
   
   # Find position of search_label in menu (skip separators)

@@ -17,6 +17,8 @@ Commands:
   stop SITENAME      Stop serving a website
   status [SITENAME]  Show website status
   configure SITENAME Configure website settings
+  autorebuild SITENAME [status|enable|disable|toggle]
+                    Manage automatic rebuild watcher + cron for a site
   nostr-mirror SITENAME  Mirror Nostr events for a blog site
   check-filesystem-tools Check filesystem growth tooling
   install-filesystem-tools Ensure filesystem growth tooling is installed
@@ -124,6 +126,22 @@ case "$cmd" in
     fi
     shift 2
     configure-nginx "$site_name" "$@"
+    exit 0
+    ;;
+  autorebuild)
+    site_name=${2-}
+    if [ -z "$site_name" ]; then
+      die 2 "web-wizardry: autorebuild requires SITENAME argument"
+    fi
+    autorebuild_action=${3-status}
+    case "$autorebuild_action" in
+      status|enable|disable|toggle)
+        site-autorebuild "$autorebuild_action" "$site_name"
+        ;;
+      *)
+        die 2 "web-wizardry: autorebuild action must be status|enable|disable|toggle"
+        ;;
+    esac
     exit 0
     ;;
   nostr-mirror)

@@ -1,0 +1,733 @@
+#!/bin/sh
+
+# Manage automatic site rebuilds from source-content changes.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage:
+  site-autorebuild [ACTION] SITENAME
+  site-autorebuild [ACTION] --managed SITE_USER [CONTENT_ROOT]
+
+Actions:
+  status        Show current auto-rebuild state (default)
+  enable        Enable auto-rebuild (cron always, watcher when available)
+  disable       Disable auto-rebuild
+  toggle        Toggle auto-rebuild
+  run           Run one change-detection + rebuild pass now
+  watch-daemon  Run persistent watcher loop (used by @reboot cron)
+
+Notes:
+  - Local mode (SITENAME) manages user crontab entries.
+  - Managed mode (--managed SITE_USER) manages /etc/cron.d entries and
+    rebuilds the current /home/SITE_USER/site release from
+    /home/SITE_USER/.sitedata/site[CONTENT_ROOT].
+  - Watcher priority: inotifywait, then fswatch, then cron-only fallback.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
+
+action=status
+case "${1-}" in
+  status|enable|disable|toggle|run|watch-daemon)
+    action=$1
+    shift || :
+    ;;
+esac
+
+mode=local
+site_name=''
+site_user=''
+content_root='.'
+site_root_override=''
+
+while [ $# -gt 0 ]; do
+  case "${1-}" in
+    --managed)
+      mode=managed
+      shift || :
+      if [ -z "${site_user-}" ] && [ $# -gt 0 ] && [ "${1-}" != "--" ] && [ "${1#-}" = "$1" ]; then
+        site_user=$1
+        shift || :
+      fi
+      ;;
+    --site-user)
+      mode=managed
+      site_user=${2-}
+      [ -n "$site_user" ] || {
+        printf '%s\n' 'site-autorebuild: --site-user requires USER' >&2
+        exit 2
+      }
+      shift 2
+      ;;
+    --content-root)
+      content_root=${2-}
+      [ -n "$content_root" ] || {
+        printf '%s\n' 'site-autorebuild: --content-root requires ROOT' >&2
+        exit 2
+      }
+      shift 2
+      ;;
+    --site-root)
+      site_root_override=${2-}
+      [ -n "$site_root_override" ] || {
+        printf '%s\n' 'site-autorebuild: --site-root requires PATH' >&2
+        exit 2
+      }
+      shift 2
+      ;;
+    --)
+      shift || :
+      break
+      ;;
+    -*)
+      printf '%s\n' "site-autorebuild: unknown option: $1" >&2
+      exit 2
+      ;;
+    *)
+      if [ "$mode" = managed ]; then
+        if [ -z "$site_user" ]; then
+          site_user=$1
+        elif [ "$content_root" = '.' ]; then
+          content_root=$1
+        else
+          printf '%s\n' "site-autorebuild: unexpected argument: $1" >&2
+          exit 2
+        fi
+      else
+        if [ -z "$site_name" ]; then
+          site_name=$1
+        else
+          printf '%s\n' "site-autorebuild: unexpected argument: $1" >&2
+          exit 2
+        fi
+      fi
+      shift || :
+      ;;
+  esac
+done
+
+if [ "$mode" = managed ]; then
+  [ -n "$site_user" ] || {
+    printf '%s\n' 'site-autorebuild: SITE_USER required for --managed mode' >&2
+    exit 2
+  }
+else
+  [ -n "$site_name" ] || {
+    printf '%s\n' 'site-autorebuild: SITENAME required in local mode' >&2
+    exit 2
+  }
+fi
+
+run_privileged() {
+  if [ "$(id -u 2>/dev/null || printf '1')" -eq 0 ]; then
+    "$@"
+    return 0
+  fi
+  if command -v run_sudo_cmd >/dev/null 2>&1; then
+    run_sudo_cmd "$@"
+    return 0
+  fi
+  if command -v sudo >/dev/null 2>&1; then
+    sudo "$@"
+    return 0
+  fi
+  "$@"
+}
+
+run_as_user() {
+  target_user=$1
+  shift || :
+  current_user=$(id -un 2>/dev/null || printf '')
+  if [ -n "$current_user" ] && [ "$current_user" = "$target_user" ]; then
+    "$@"
+    return 0
+  fi
+  if command -v runuser >/dev/null 2>&1; then
+    run_privileged runuser -u "$target_user" -- "$@"
+    return 0
+  fi
+  if command -v sudo >/dev/null 2>&1; then
+    run_privileged sudo -u "$target_user" "$@"
+    return 0
+  fi
+  "$@"
+}
+
+watcher_tool() {
+  if command -v inotifywait >/dev/null 2>&1; then
+    printf '%s\n' 'inotifywait'
+    return 0
+  fi
+  if command -v fswatch >/dev/null 2>&1; then
+    printf '%s\n' 'fswatch'
+    return 0
+  fi
+  printf '%s\n' 'none'
+}
+
+cron_block_strip() {
+  input_text=$1
+  begin_marker=$2
+  end_marker=$3
+  printf '%s\n' "$input_text" | awk -v begin="$begin_marker" -v end="$end_marker" '
+    $0 == begin { skipping=1; next }
+    $0 == end { skipping=0; next }
+    !skipping { print }
+  '
+}
+
+self_script_path() {
+  self_raw=$0
+  case "$self_raw" in
+    */*) ;;
+    *) self_raw=$(command -v "$self_raw" 2>/dev/null || printf '%s' "$self_raw") ;;
+  esac
+  case "$self_raw" in
+    /*)
+      printf '%s\n' "$self_raw"
+      return 0
+      ;;
+    *)
+      current_dir=$(pwd -P 2>/dev/null || pwd)
+      printf '%s/%s\n' "$current_dir" "$self_raw"
+      return 0
+      ;;
+  esac
+}
+
+managed_spell_path() {
+  root_path=$1
+  printf '%s\n' "$root_path/.wizardry/spells/web/site-autorebuild"
+}
+
+wizardry_spell_path() {
+  runtime_dir=$1
+  spell_path=/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin
+  for seed_dir in "$runtime_dir/spells/.imps/sys" "$runtime_dir/spells/.imps"; do
+    [ -d "$seed_dir" ] || continue
+    case :$spell_path: in
+      *:"$seed_dir":*) ;;
+      *) spell_path="$seed_dir:$spell_path" ;;
+    esac
+  done
+  if [ -d "$runtime_dir/spells" ]; then
+    for dir in "$runtime_dir/spells"/* "$runtime_dir/spells"/.* "$runtime_dir/spells"/*/* "$runtime_dir/spells"/.*/*; do
+      [ -d "$dir" ] || continue
+      case "$dir" in
+        */.|*/..|*/.DS_Store) continue ;;
+      esac
+      case :$spell_path: in
+        *:"$dir":*) ;;
+        *) spell_path="$dir:$spell_path" ;;
+      esac
+    done
+  fi
+  printf '%s\n' "$spell_path"
+}
+
+if [ "$mode" = managed ]; then
+  if [ -n "$site_root_override" ]; then
+    site_root=$site_root_override
+  else
+    site_root=/home/$site_user
+  fi
+  releases_root=$site_root/releases
+  current_link=$site_root/site
+  content_dir=$site_root/.sitedata/site
+  case "$content_root" in
+    ''|.) ;;
+    *) content_dir=$content_dir/$content_root ;;
+  esac
+  state_dir=$site_root/.wizardry.hq
+  signature_file=$state_dir/content-sync-rebuild.signature
+  target_file=$state_dir/content-sync-rebuild.target
+  watcher_pid_file=$state_dir/content-sync-rebuild.watch.pid
+  log_file=$state_dir/content-sync-rebuild.log
+  cron_file=/etc/cron.d/headquarters-content-rebuild-$site_user
+  cron_begin="# BEGIN HEADQUARTERS CONTENT AUTOREBUILD $site_user"
+  cron_end="# END HEADQUARTERS CONTENT AUTOREBUILD $site_user"
+  spell_exec_path=$(managed_spell_path "$site_root")
+else
+  WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
+  site_root=${site_root_override:-$WEB_ROOT/$site_name}
+  releases_root=$WEB_ROOT
+  current_link=$site_root
+  content_dir=$site_root/site
+  state_dir=$site_root/.wizardry-autorebuild
+  signature_file=$state_dir/site-autorebuild.signature
+  target_file=$state_dir/site-autorebuild.target
+  watcher_pid_file=$state_dir/site-autorebuild.watch.pid
+  log_file=$site_root/.log/site-autorebuild.log
+  cron_begin="# BEGIN WIZARDRY SITE AUTOREBUILD $site_name"
+  cron_end="# END WIZARDRY SITE AUTOREBUILD $site_name"
+  spell_exec_path=$(self_script_path)
+fi
+
+calc_signature() {
+  target_dir=$1
+  if [ ! -d "$target_dir" ]; then
+    printf '%s\n' 'missing'
+    return 0
+  fi
+  tmp_file=$(mktemp "${TMPDIR:-/tmp}/site-autorebuild-signature.XXXXXX")
+  find "$target_dir" -type f \
+    ! -path '*/.git/*' \
+    ! -path '*/.stversions/*' \
+    ! -name '.stfolder' \
+    ! -name '.stignore' \
+    ! -name '.DS_Store' \
+    ! -name '.log' \
+    ! -name '*.sync-conflict-*' \
+    -print 2>/dev/null | sort > "$tmp_file"
+  if command -v shasum >/dev/null 2>&1; then
+    signature=$(shasum -a 256 "$tmp_file" | awk '{print $1}')
+  elif command -v sha256sum >/dev/null 2>&1; then
+    signature=$(sha256sum "$tmp_file" | awk '{print $1}')
+  else
+    signature=$(cksum "$tmp_file" | awk '{print $1 ":" $2}')
+  fi
+  rm -f "$tmp_file"
+  printf '%s\n' "$signature"
+}
+
+resolve_managed_current_target() {
+  if [ ! -L "$current_link" ]; then
+    printf '%s\n' ''
+    return 0
+  fi
+  link_value=$(readlink "$current_link" 2>/dev/null || true)
+  case "$link_value" in
+    /home/*/releases/*)
+      printf '%s\n' "$link_value"
+      ;;
+    releases/*)
+      printf '%s\n' "$site_root/$link_value"
+      ;;
+    *)
+      printf '%s\n' ''
+      ;;
+  esac
+}
+
+ensure_state_dir() {
+  if [ "$mode" = managed ]; then
+    run_privileged install -d -m 755 "$state_dir"
+    run_privileged chown "$site_user:$site_user" "$state_dir" 2>/dev/null || true
+  else
+    mkdir -p "$state_dir" "$(dirname "$log_file")"
+  fi
+}
+
+write_state_value() {
+  file_path=$1
+  value=$2
+  tmp_path=$file_path.tmp.$$ 
+  if [ "$mode" = managed ]; then
+    ensure_state_dir
+    run_as_user "$site_user" sh -eu -c '
+      target_file=$1
+      temp_file=$2
+      value=$3
+      printf "%s\n" "$value" > "$temp_file"
+      mv "$temp_file" "$target_file"
+    ' sh "$file_path" "$tmp_path" "$value"
+  else
+    ensure_state_dir
+    printf '%s\n' "$value" > "$tmp_path"
+    mv "$tmp_path" "$file_path"
+  fi
+}
+
+read_state_value() {
+  file_path=$1
+  if [ "$mode" = managed ]; then
+    run_as_user "$site_user" sh -eu -c '
+      target_file=$1
+      if [ -f "$target_file" ]; then
+        cat "$target_file"
+      fi
+    ' sh "$file_path" 2>/dev/null || true
+  else
+    if [ -f "$file_path" ]; then
+      cat "$file_path" 2>/dev/null || true
+    fi
+  fi
+}
+
+run_build_once() {
+  if [ "$mode" = managed ]; then
+    runtime_dir=$site_root/.wizardry
+    build_spell=$runtime_dir/spells/web/build
+    [ -x "$build_spell" ] || {
+      printf '%s\n' "site-autorebuild: managed build spell missing: $build_spell" >&2
+      return 1
+    }
+    current_target=$(resolve_managed_current_target)
+    [ -n "$current_target" ] || {
+      printf '%s\n' 'site-autorebuild: managed current release link is missing or invalid' >&2
+      return 1
+    }
+    release_name=${current_target##*/}
+    spell_path=$(wizardry_spell_path "$runtime_dir")
+    run_as_user "$site_user" env HOME="$site_root" PATH="$spell_path" WEB_WIZARDRY_ROOT="$releases_root" WIZARDRY_DIR="$runtime_dir" "$build_spell" "$release_name" --full
+    return 0
+  fi
+
+  wizardry_dir=${WIZARDRY_DIR:-$HOME/.wizardry}
+  build_spell=$wizardry_dir/spells/web/build
+  if [ -x "$build_spell" ]; then
+    env WEB_WIZARDRY_ROOT="$releases_root" WIZARDRY_DIR="$wizardry_dir" "$build_spell" "$site_name" --full
+    return 0
+  fi
+  if command -v build >/dev/null 2>&1; then
+    env WEB_WIZARDRY_ROOT="$releases_root" build "$site_name" --full
+    return 0
+  fi
+  printf '%s\n' "site-autorebuild: build spell not found for site $site_name" >&2
+  return 1
+}
+
+run_change_pass() {
+  ensure_state_dir
+
+  current_signature=''
+  if [ "$mode" = managed ]; then
+    current_signature=$(run_as_user "$site_user" sh -eu -c '
+      target_dir=$1
+      if [ ! -d "$target_dir" ]; then
+        printf "%s\n" "missing"
+        exit 0
+      fi
+      tmp_file=$(mktemp "${TMPDIR:-/tmp}/site-autorebuild-signature.XXXXXX")
+      find "$target_dir" -type f \
+        ! -path "*/.git/*" \
+        ! -path "*/.stversions/*" \
+        ! -name ".stfolder" \
+        ! -name ".stignore" \
+        ! -name ".DS_Store" \
+        ! -name ".log" \
+        ! -name "*.sync-conflict-*" \
+        -print 2>/dev/null | sort > "$tmp_file"
+      if command -v shasum >/dev/null 2>&1; then
+        sig=$(shasum -a 256 "$tmp_file" | awk "{print \\$1}")
+      elif command -v sha256sum >/dev/null 2>&1; then
+        sig=$(sha256sum "$tmp_file" | awk "{print \\$1}")
+      else
+        sig=$(cksum "$tmp_file" | awk "{print \\$1 \":" \\$2}")
+      fi
+      rm -f "$tmp_file"
+      printf "%s\n" "$sig"
+    ' sh "$content_dir" 2>/dev/null || printf '%s\n' 'missing')
+  else
+    current_signature=$(calc_signature "$content_dir")
+  fi
+
+  current_target=''
+  if [ "$mode" = managed ]; then
+    current_target=$(resolve_managed_current_target)
+  else
+    current_target=$site_root
+  fi
+
+  previous_signature=$(read_state_value "$signature_file")
+  previous_target=$(read_state_value "$target_file")
+
+  if [ "$current_signature" = "$previous_signature" ] && [ "$current_target" = "$previous_target" ]; then
+    return 0
+  fi
+
+  run_build_once || return 1
+  write_state_value "$signature_file" "$current_signature"
+  write_state_value "$target_file" "$current_target"
+  return 0
+}
+
+watcher_running() {
+  watcher_token=""
+  if [ "$mode" = managed ]; then
+    watcher_token="$spell_exec_path watch-daemon --managed $site_user"
+    pids=$(pgrep -u "$site_user" -f "$watcher_token" 2>/dev/null || true)
+  else
+    watcher_token="$spell_exec_path watch-daemon $site_name"
+    pids=$(pgrep -u "$(id -u 2>/dev/null || printf '0')" -f "$watcher_token" 2>/dev/null || true)
+  fi
+  if [ -n "$pids" ]; then
+    printf '%s\n' yes
+  else
+    printf '%s\n' no
+  fi
+}
+
+stop_watcher() {
+  if [ "$mode" = managed ]; then
+    pids=$(pgrep -u "$site_user" -f "$spell_exec_path watch-daemon --managed $site_user" 2>/dev/null || true)
+  else
+    pids=$(pgrep -u "$(id -u 2>/dev/null || printf '0')" -f "$spell_exec_path watch-daemon $site_name" 2>/dev/null || true)
+  fi
+  for pid in $pids; do
+    kill "$pid" 2>/dev/null || true
+  done
+  if [ -n "$pids" ]; then
+    sleep 1
+    for pid in $pids; do
+      kill -9 "$pid" 2>/dev/null || true
+    done
+  fi
+}
+
+managed_cron_present() {
+  if [ ! -f "$cron_file" ]; then
+    printf '%s\n' no
+    return 0
+  fi
+  if run_privileged grep -q "$cron_begin" "$cron_file" 2>/dev/null; then
+    printf '%s\n' yes
+    return 0
+  fi
+  printf '%s\n' no
+}
+
+local_cron_present() {
+  if ! command -v crontab >/dev/null 2>&1; then
+    printf '%s\n' no
+    return 0
+  fi
+  current_cron=$(crontab -l 2>/dev/null || true)
+  case "$current_cron" in
+    *"$cron_begin"*) printf '%s\n' yes ;;
+    *) printf '%s\n' no ;;
+  esac
+}
+
+cron_present() {
+  if [ "$mode" = managed ]; then
+    managed_cron_present
+  else
+    local_cron_present
+  fi
+}
+
+emit_status() {
+  watcher=$(watcher_tool)
+  watcher_supported=no
+  if [ "$watcher" != none ]; then
+    watcher_supported=yes
+  fi
+  script_installed=no
+  if [ "$mode" = managed ]; then
+    if run_privileged test -x "$spell_exec_path" >/dev/null 2>&1; then
+      script_installed=yes
+    fi
+  else
+    if [ -x "$spell_exec_path" ] || [ -f "$spell_exec_path" ]; then
+      script_installed=yes
+    fi
+  fi
+  cron_installed=$(cron_present)
+  running=$(watcher_running)
+  enabled=no
+  if [ "$cron_installed" = yes ] && [ "$script_installed" = yes ]; then
+    enabled=yes
+  fi
+  mode_label=disabled
+  if [ "$enabled" = yes ] && [ "$watcher_supported" = yes ]; then
+    mode_label=watcher+cron
+  elif [ "$enabled" = yes ]; then
+    mode_label=cron
+  fi
+  printf 'enabled=%s\n' "$enabled"
+  printf 'cron_installed=%s\n' "$cron_installed"
+  printf 'script_installed=%s\n' "$script_installed"
+  printf 'watcher_supported=%s\n' "$watcher_supported"
+  printf 'watcher_tool=%s\n' "$watcher"
+  printf 'watcher_running=%s\n' "$running"
+  printf 'mode=%s\n' "$mode_label"
+  printf 'content_path=%s\n' "$content_dir"
+  printf 'state_dir=%s\n' "$state_dir"
+  if [ "$mode" = managed ]; then
+    printf 'cron_path=%s\n' "$cron_file"
+    printf 'spell_path=%s\n' "$spell_exec_path"
+  else
+    printf 'cron_path=%s\n' 'user-crontab'
+    printf 'spell_path=%s\n' "$spell_exec_path"
+  fi
+}
+
+enable_local() {
+  command -v crontab >/dev/null 2>&1 || {
+    printf '%s\n' 'site-autorebuild: crontab command is required in local mode' >&2
+    exit 1
+  }
+  [ -d "$site_root" ] || {
+    printf '%s\n' "site-autorebuild: site '$site_name' not found at $site_root" >&2
+    exit 1
+  }
+  ensure_state_dir
+  current_cron=$(crontab -l 2>/dev/null || true)
+  cleaned=$(cron_block_strip "$current_cron" "$cron_begin" "$cron_end")
+  tmp_cron=$(mktemp "${TMPDIR:-/tmp}/site-autorebuild-cron.XXXXXX")
+  {
+    printf '%s\n' "$cleaned" | sed '/^[[:space:]]*$/d'
+    printf '%s\n' "$cron_begin"
+    printf '* * * * * /bin/sh %s run %s >> %s 2>&1\n' "$spell_exec_path" "$site_name" "$log_file"
+    printf '@reboot /bin/sh %s watch-daemon %s >> %s 2>&1\n' "$spell_exec_path" "$site_name" "$log_file"
+    printf '%s\n' "$cron_end"
+  } > "$tmp_cron"
+  crontab "$tmp_cron"
+  rm -f "$tmp_cron"
+  nohup /bin/sh "$spell_exec_path" watch-daemon "$site_name" >/dev/null 2>&1 &
+}
+
+enable_managed() {
+  run_privileged test -d "$site_root" >/dev/null 2>&1 || {
+    printf '%s\n' "site-autorebuild: managed site root not found: $site_root" >&2
+    exit 1
+  }
+  run_privileged test -x "$spell_exec_path" >/dev/null 2>&1 || {
+    printf '%s\n' "site-autorebuild: managed spell not found on server runtime: $spell_exec_path" >&2
+    exit 1
+  }
+  ensure_state_dir
+  run_privileged sh -eu -c '
+    cron_file=$1
+    cron_begin=$2
+    cron_end=$3
+    site_user=$4
+    spell_exec=$5
+    content_root=$6
+    log_file=$7
+    tmp_file=$(mktemp "${TMPDIR:-/tmp}/site-autorebuild-managed-cron.XXXXXX")
+    {
+      printf "%s\n" "$cron_begin"
+      printf "* * * * * root WIZARDRY_DIR=/home/%s/.wizardry /bin/sh %s run --managed %s %s >> %s 2>&1\n" "$site_user" "$spell_exec" "$site_user" "$content_root" "$log_file"
+      printf "@reboot root WIZARDRY_DIR=/home/%s/.wizardry /bin/sh %s watch-daemon --managed %s %s >> %s 2>&1\n" "$site_user" "$spell_exec" "$site_user" "$content_root" "$log_file"
+      printf "%s\n" "$cron_end"
+    } > "$tmp_file"
+    install -m 644 "$tmp_file" "$cron_file"
+    rm -f "$tmp_file"
+  ' sh "$cron_file" "$cron_begin" "$cron_end" "$site_user" "$spell_exec_path" "$content_root" "$log_file"
+  run_privileged touch "$log_file"
+  run_privileged chown "$site_user:$site_user" "$log_file" 2>/dev/null || true
+  run_privileged sh -eu -c 'nohup /bin/sh "$1" watch-daemon --managed "$2" "$3" >/dev/null 2>&1 &' sh "$spell_exec_path" "$site_user" "$content_root"
+}
+
+disable_local() {
+  command -v crontab >/dev/null 2>&1 || return 0
+  current_cron=$(crontab -l 2>/dev/null || true)
+  cleaned=$(cron_block_strip "$current_cron" "$cron_begin" "$cron_end")
+  tmp_cron=$(mktemp "${TMPDIR:-/tmp}/site-autorebuild-cron.XXXXXX")
+  printf '%s\n' "$cleaned" | sed '/^[[:space:]]*$/d' > "$tmp_cron"
+  crontab "$tmp_cron"
+  rm -f "$tmp_cron"
+  stop_watcher
+}
+
+disable_managed() {
+  if run_privileged test -f "$cron_file" >/dev/null 2>&1; then
+    run_privileged rm -f "$cron_file"
+  fi
+  stop_watcher
+}
+
+run_watch_loop() {
+  tool=$(watcher_tool)
+  [ "$tool" != none ] || exit 0
+  ensure_state_dir
+
+  existing_pid=''
+  if [ "$mode" = managed ]; then
+    existing_pid=$(run_as_user "$site_user" sh -eu -c '
+      pid_file=$1
+      if [ -f "$pid_file" ]; then
+        cat "$pid_file"
+      fi
+    ' sh "$watcher_pid_file" 2>/dev/null || true)
+  else
+    if [ -f "$watcher_pid_file" ]; then
+      existing_pid=$(cat "$watcher_pid_file" 2>/dev/null || true)
+    fi
+  fi
+
+  if [ -n "$existing_pid" ] && kill -0 "$existing_pid" 2>/dev/null; then
+    exit 0
+  fi
+
+  write_state_value "$watcher_pid_file" "$$"
+  trap 'rm -f "$watcher_pid_file" >/dev/null 2>&1 || true' EXIT HUP INT TERM
+
+  run_change_pass || true
+
+  case "$tool" in
+    inotifywait)
+      while inotifywait -qq -r -e modify,create,delete,move "$content_dir" >/dev/null 2>&1; do
+        sleep 1
+        run_change_pass || true
+      done
+      ;;
+    fswatch)
+      fswatch -or "$content_dir" 2>/dev/null | while IFS= read -r _event_line; do
+        sleep 1
+        run_change_pass || true
+      done
+      ;;
+    *)
+      exit 0
+      ;;
+  esac
+}
+
+case "$action" in
+  status)
+    emit_status
+    ;;
+  enable)
+    if [ "$mode" = managed ]; then
+      enable_managed
+    else
+      enable_local
+    fi
+    emit_status
+    ;;
+  disable)
+    if [ "$mode" = managed ]; then
+      disable_managed
+    else
+      disable_local
+    fi
+    emit_status
+    ;;
+  toggle)
+    current_enabled=$(cron_present)
+    if [ "$current_enabled" = yes ]; then
+      if [ "$mode" = managed ]; then
+        disable_managed
+      else
+        disable_local
+      fi
+    else
+      if [ "$mode" = managed ]; then
+        enable_managed
+      else
+        enable_local
+      fi
+    fi
+    emit_status
+    ;;
+  run)
+    run_change_pass
+    emit_status
+    ;;
+  watch-daemon)
+    run_watch_loop
+    ;;
+  *)
+    printf '%s\n' "site-autorebuild: unknown action: $action" >&2
+    exit 2
+    ;;
+esac
