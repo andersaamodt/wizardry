@@ -135,6 +135,7 @@ ec_saved_require_log="${REQUIRE_LOG:-}"
 ec_saved_mock_toplevel="${MOCK_TOPLEVEL:-}"
 ec_saved_pull_status="${PULL_STATUS:-}"
 ec_saved_await_buffer_file="${AWAIT_KEYPRESS_BUFFER_FILE:-}"
+ec_saved_await_device="${AWAIT_KEYPRESS_DEVICE:-}"
 
 # Preserve bootstrap/installer variables
 ec_saved_assume_yes="${ASSUME_YES:-}"
@@ -230,6 +231,7 @@ export OLDPWD="$ec_saved_oldpwd"
 if [ -n "$ec_saved_await_buffer_file" ]; then
   export AWAIT_KEYPRESS_BUFFER_FILE="$ec_saved_await_buffer_file"
 fi
+[ -n "$ec_saved_await_device" ] && export AWAIT_KEYPRESS_DEVICE="$ec_saved_await_device"
 
 # Restore bootstrap variables
 [ -n "$ec_saved_assume_yes" ] && export ASSUME_YES="$ec_saved_assume_yes"
@@ -277,7 +279,7 @@ unset ec_saved_apt_pkg ec_saved_pacman_pkg ec_saved_pkgin_pkg ec_saved_test_fail
 unset ec_saved_test_skip ec_saved_wiz_tmpdir ec_saved_global_subtest
 unset ec_saved_test_compiled ec_saved_test_helpers ec_saved_system_path
 unset ec_saved_ask_input ec_saved_choose_input ec_saved_menu_loop_limit
-unset ec_saved_require_command ec_saved_menu_log ec_saved_await_buffer_file
+unset ec_saved_require_command ec_saved_menu_log ec_saved_await_buffer_file ec_saved_await_device
 unset ec_saved_assume_yes ec_saved_force_install ec_saved_root_dir
 unset ec_saved_platform ec_saved_rc_file ec_saved_rc_format
 unset ec_saved_await_keep_raw ec_saved_disable_sandbox ec_saved_bwrap_warning
