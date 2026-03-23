@@ -26,6 +26,7 @@ Commands:
   check-nostril    Check Nostr server tooling
   install-nostril Ensure nostril is installed
   uninstall-nostril Remove nostril
+  btcpay-status   Show BTCPay install status text
   check-btcpay    Check BTCPay Server tooling/runtime
   install-btcpay Ensure BTCPay Server is installed
   uninstall-btcpay Remove BTCPay Server
@@ -177,6 +178,10 @@ case "$cmd" in
     ;;
   uninstall-nostril)
     uninstall-nostril
+    exit 0
+    ;;
+  btcpay-status)
+    btcpay-status
     exit 0
     ;;
   check-btcpay)
