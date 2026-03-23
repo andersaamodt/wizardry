@@ -6,9 +6,10 @@ set -eu
 dir=$1
 cat <<'STUB' >"$dir/require-command"
 #!/bin/sh
-printf '%s %s\n' "$1" "$2" >>"$REQUIRE_LOG"
+if [ -n "${REQUIRE_LOG-}" ]; then
+  printf '%s %s\n' "$1" "${2-}" >>"$REQUIRE_LOG"
+fi
 exit 0
 STUB
 chmod +x "$dir/require-command"
-
 

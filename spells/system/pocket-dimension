@@ -122,8 +122,21 @@ set -eu
   mkdir -p "$pocket_home" "$pocket_tmp" "$pocket_run" "$pocket_work"
 
   workdir=$(pwd -P)
-  record_dir="$pocket_root/records"
-  mkdir -p "$record_dir"
+  record_mutations=${WIZARDRY_POCKET_RECORD_MUTATIONS:-0}
+  case "$record_mutations" in
+    1) : ;;
+    *) record_mutations=0 ;;
+  esac
+  # Keeping the pocket implies an inspection workflow; record mutations then.
+  if [ "$keep_pocket" -eq 1 ]; then
+    record_mutations=1
+  fi
+
+  record_dir=''
+  if [ "$record_mutations" -eq 1 ]; then
+    record_dir="$pocket_root/records"
+    mkdir -p "$record_dir"
+  fi
 
   snapshot_files() {
     snapshot_target=$1
@@ -136,7 +149,9 @@ set -eu
     fi
   }
 
-  snapshot_files "$record_dir/before" 2>/dev/null || true
+  if [ "$record_mutations" -eq 1 ]; then
+    snapshot_files "$record_dir/before" 2>/dev/null || true
+  fi
 
   env_args=""
   env_args="$env_args PATH=${PATH:-}"
@@ -241,13 +256,15 @@ set -eu
     fi
   fi
 
-  snapshot_files "$record_dir/after" 2>/dev/null || true
-  if command -v diff >/dev/null 2>&1; then
-    diff -u "$record_dir/before" "$record_dir/after" >"$record_dir/mutations.diff" 2>/dev/null || true
-  fi
+  if [ "$record_mutations" -eq 1 ]; then
+    snapshot_files "$record_dir/after" 2>/dev/null || true
+    if command -v diff >/dev/null 2>&1; then
+      diff -u "$record_dir/before" "$record_dir/after" >"$record_dir/mutations.diff" 2>/dev/null || true
+    fi
 
-  if [ -s "$record_dir/mutations.diff" ]; then
-    printf '%s\n' "pocket-dimension: filesystem mutations recorded at $record_dir/mutations.diff" >&2
+    if [ -s "$record_dir/mutations.diff" ]; then
+      printf '%s\n' "pocket-dimension: filesystem mutations recorded at $record_dir/mutations.diff" >&2
+    fi
   fi
 
   if [ "$keep_pocket" -eq 0 ]; then

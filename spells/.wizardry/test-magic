@@ -109,6 +109,18 @@ only_this_level=0
 verbose=0
 run_all=0
 
+# Preserve original argv before parsing/shift operations.
+# This is used when re-execing into pocket-dimension.
+original_args=''
+for original_arg in "$@"; do
+  if [ -z "$original_args" ]; then
+    original_args=$original_arg
+  else
+    original_args="${original_args}
+$original_arg"
+  fi
+done
+
 if [ "$#" -gt 0 ]; then
   case "$1" in
     all)
@@ -241,6 +253,15 @@ if [ "${GITHUB_ACTIONS-}" != "true" ]; then
             fi
             ;;
         esac
+        if [ -n "$original_args" ]; then
+          old_ifs=$IFS
+          IFS='
+'
+          set -- $original_args
+          IFS=$old_ifs
+        else
+          set --
+        fi
         exec pocket-dimension --network closed -- "$test_magic_path" "$@"
       else
         printf 'test-magic: pocket-dimension unavailable\n' >&2

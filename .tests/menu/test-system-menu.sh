@@ -16,11 +16,8 @@ test_system_menu_checks_requirements() {
   tmp=$(make_tempdir)
   stub-menu "$tmp"
   stub-require-command "$tmp"
-  env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/req" "$ROOT_DIR/spells/menu/system-menu" &
-  menu_pid=$!
-  sleep 0.5
-  kill -TERM "$menu_pid" 2>/dev/null || true
-  wait "$menu_pid" 2>/dev/null || true
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/req" "$ROOT_DIR/spells/menu/system-menu"
+  assert_success || return 1
   assert_path_exists "$tmp/req"
 }
 
@@ -34,11 +31,8 @@ test_system_menu_includes_test_utilities() {
 printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
-  env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/system-menu" &
-  menu_pid=$!
-  sleep 0.5
-  kill -TERM "$menu_pid" 2>/dev/null || true
-  wait "$menu_pid" 2>/dev/null || true
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/req" "$ROOT_DIR/spells/menu/system-menu"
+  assert_success || return 1
   args=$(cat "$tmp/log" 2>/dev/null || printf '')
   case "$args" in
     *"System Menu:"*"Restart...%shutdown-menu"*"Update all software%update-all -v"*"Update wizardry%update-wizardry"*"Manage services%"*"services-menu"*"Test all wizardry spells%test-magic"*'Exit%kill -TERM $PPID' ) : ;;
