@@ -16,7 +16,7 @@ esac
 set -eu
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-arcana_uninstall="$script_dir/../.arcana/btcpay/uninstall-btcpay"
+arcana_uninstall="$script_dir/../.arcana/btcpay/uninstall-btcpay-arcana"
 
 if [ ! -x "$arcana_uninstall" ]; then
   printf '%s\n' 'uninstall-btcpay: BTCPay uninstall spell is unavailable.' >&2

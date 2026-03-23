@@ -17,7 +17,7 @@ esac
 set -eu
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-arcana_install="$script_dir/../.arcana/btcpay/install-btcpay"
+arcana_install="$script_dir/../.arcana/btcpay/install-btcpay-arcana"
 
 if [ ! -x "$arcana_install" ]; then
   printf '%s\n' 'install-btcpay: BTCPay installer spell is unavailable.' >&2

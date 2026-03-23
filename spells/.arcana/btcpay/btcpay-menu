@@ -30,10 +30,10 @@ script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while :; do
   unset menu_status
 
-  if "$script_dir/check-btcpay" 2>/dev/null | grep -q '^status=ok$'; then
-    toggle_item="[X] Install BTCPay Server%$script_dir/uninstall-btcpay"
+  if "$script_dir/check-btcpay-arcana" 2>/dev/null | grep -q '^status=ok$'; then
+    toggle_item="[X] Install BTCPay Server%$script_dir/uninstall-btcpay-arcana"
   else
-    toggle_item="[ ] Install BTCPay Server%$script_dir/install-btcpay"
+    toggle_item="[ ] Install BTCPay Server%$script_dir/install-btcpay-arcana"
   fi
 
   exit_label=$(exit-label)

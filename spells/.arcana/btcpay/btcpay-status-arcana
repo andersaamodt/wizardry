@@ -26,7 +26,7 @@ else
   GREY=""
 fi
 
-status=$(check-btcpay 2>/dev/null | awk -F= '/^status=/{print $2; exit}')
+status=$(check-btcpay-arcana 2>/dev/null | awk -F= '/^status=/{print $2; exit}')
 if [ "$status" = "ok" ]; then
   printf '%sinstalled%s\n' "$THEME_SUCCESS" "$RESET"
 else

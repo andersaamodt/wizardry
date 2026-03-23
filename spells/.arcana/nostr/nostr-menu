@@ -31,9 +31,9 @@ while :; do
   unset menu_status
 
   if command -v nostril >/dev/null 2>&1; then
-    toggle_item="[X] Install nostril%$script_dir/uninstall-nostril"
+    toggle_item="[X] Install nostril%$script_dir/uninstall-nostril-arcana"
   else
-    toggle_item="[ ] Install nostril%$script_dir/install-nostril"
+    toggle_item="[ ] Install nostril%$script_dir/install-nostril-arcana"
   fi
 
   exit_label=$(exit-label)

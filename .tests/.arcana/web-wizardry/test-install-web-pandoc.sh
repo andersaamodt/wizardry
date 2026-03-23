@@ -6,9 +6,9 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_install_pandoc_help() {
-  run_spell "spells/.arcana/web-wizardry/install-pandoc" --help
+  run_spell "spells/.arcana/web-wizardry/install-web-pandoc" --help
   assert_success && assert_output_contains "certbot"
 }
 
-run_test_case "install-pandoc shows help" test_install_pandoc_help
+run_test_case "install-web-pandoc shows help" test_install_pandoc_help
 finish_tests

@@ -186,7 +186,7 @@ if ! run_setup "$repo_dir"; then
   exit 1
 fi
 
-if ! check-btcpay | grep -q '^status=ok$'; then
+if ! check-btcpay-arcana | grep -q '^status=ok$'; then
   say "install-btcpay: install finished but BTCPay could not be detected." >&2
   exit 1
 fi

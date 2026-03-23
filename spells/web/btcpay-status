@@ -16,7 +16,7 @@ esac
 set -eu
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-arcana_status="$script_dir/../.arcana/btcpay/btcpay-status"
+arcana_status="$script_dir/../.arcana/btcpay/btcpay-status-arcana"
 
 if [ ! -x "$arcana_status" ]; then
   printf '%s\n' 'btcpay-status: BTCPay status spell is unavailable.' >&2

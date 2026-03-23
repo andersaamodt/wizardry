@@ -62,10 +62,10 @@ while true; do
   
   # Pandoc toggle
   if [ "$pandoc_was_installed" -eq 1 ]; then
-    pandoc_toggle="[X] pandoc%uninstall-pandoc"
+    pandoc_toggle="[X] pandoc%uninstall-web-pandoc"
     pandoc_pos=$pos
   else
-    pandoc_toggle="[ ] pandoc%install-pandoc"
+    pandoc_toggle="[ ] pandoc%install-web-pandoc"
     pandoc_pos=$pos
   fi
   pos=$((pos + 1))
@@ -97,20 +97,20 @@ while true; do
 
   # Filesystem tools toggle
   if [ "$filesystem_tools_was_installed" -eq 1 ]; then
-    filesystem_tools_toggle="[X] filesystem tools%uninstall-filesystem-tools"
+    filesystem_tools_toggle="[X] filesystem tools%uninstall-web-filesystem-tools"
     filesystem_tools_pos=$pos
   else
-    filesystem_tools_toggle="[ ] filesystem tools%install-filesystem-tools"
+    filesystem_tools_toggle="[ ] filesystem tools%install-web-filesystem-tools"
     filesystem_tools_pos=$pos
   fi
   pos=$((pos + 1))
   
   # OpenSSL toggle
   if [ "$openssl_was_installed" -eq 1 ]; then
-    openssl_toggle="[X] OpenSSL%uninstall-openssl"
+    openssl_toggle="[X] OpenSSL%uninstall-web-openssl"
     openssl_pos=$pos
   else
-    openssl_toggle="[ ] OpenSSL%install-openssl"
+    openssl_toggle="[ ] OpenSSL%install-web-openssl"
     openssl_pos=$pos
   fi
   pos=$((pos + 1))

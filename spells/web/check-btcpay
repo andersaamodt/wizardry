@@ -17,7 +17,7 @@ esac
 set -eu
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-arcana_check="$script_dir/../.arcana/btcpay/check-btcpay"
+arcana_check="$script_dir/../.arcana/btcpay/check-btcpay-arcana"
 
 if [ -x "$arcana_check" ]; then
   "$arcana_check"
