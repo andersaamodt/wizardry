@@ -26,13 +26,38 @@ esac
 set -eu
 . env-clear
 
+template_source_candidates() {
+  wizardry_root=${WIZARDRY_DIR:-$HOME/.wizardry}
+  wizardry_parent=$(dirname "$wizardry_root")
+  printf '%s\n' \
+    "$wizardry_root/web" \
+    "$wizardry_root/spells/web" \
+    "$wizardry_parent/git/wizardry-apps/web" \
+    "$HOME/git/wizardry-apps/web"
+}
+
+resolve_template_catalog_dir() {
+  for candidate in $(template_source_candidates); do
+    [ -d "$candidate" ] || continue
+    for template_path in "$candidate"/*; do
+      [ -d "$template_path" ] || continue
+      if [ -d "$template_path/pages" ]; then
+        printf '%s\n' "$candidate"
+        return 0
+      fi
+    done
+  done
+  return 1
+}
+
 resolve_template_dir() {
   template_name=${1-}
-  wizardry_root=${WIZARDRY_DIR:-$HOME/.wizardry}
-  if [ -n "$template_name" ] && [ -d "$wizardry_root/web/$template_name" ]; then
-    printf '%s\n' "$wizardry_root/web/$template_name"
-    return 0
-  fi
+  for candidate in $(template_source_candidates); do
+    if [ -n "$template_name" ] && [ -d "$candidate/$template_name" ]; then
+      printf '%s\n' "$candidate/$template_name"
+      return 0
+    fi
+  done
   case "$template_name" in
     blog)
       if [ -d "$HOME/git/nostr-blog" ]; then
@@ -45,11 +70,12 @@ resolve_template_dir() {
 }
 
 resolve_shared_theme_dir() {
-  wizardry_root=${WIZARDRY_DIR:-$HOME/.wizardry}
-  if [ -d "$wizardry_root/web/.themes" ]; then
-    printf '%s\n' "$wizardry_root/web/.themes"
-    return 0
-  fi
+  for candidate in $(template_source_candidates); do
+    if [ -d "$candidate/.themes" ]; then
+      printf '%s\n' "$candidate/.themes"
+      return 0
+    fi
+  done
   if [ -d "$HOME/git/wizardry-apps/web/.themes" ]; then
     printf '%s\n' "$HOME/git/wizardry-apps/web/.themes"
     return 0
@@ -114,9 +140,8 @@ if [ -z "$template" ]; then
   info "Please select a template to use for '$site_name':"
   info ""
   
-  # Get WIZARDRY_DIR to find templates
-  WIZARDRY_DIR=${WIZARDRY_DIR:-$HOME/.wizardry}
-  template_list_dir="$WIZARDRY_DIR/web"
+  # Locate template catalog.
+  template_list_dir=$(resolve_template_catalog_dir 2>/dev/null || printf '')
   
   # Check if templates exist
   if [ ! -d "$template_list_dir" ] || [ -z "$(ls -A "$template_list_dir" 2>/dev/null)" ]; then
@@ -181,8 +206,6 @@ EOF
   success "Template '$template' saved to site.conf"
 fi
 
-# Get WIZARDRY_DIR to find templates
-WIZARDRY_DIR=${WIZARDRY_DIR:-$HOME/.wizardry}
 template_dir=$(resolve_template_dir "$template" 2>/dev/null || true)
 shared_theme_dir=$(resolve_shared_theme_dir 2>/dev/null || true)
 

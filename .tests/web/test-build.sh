@@ -7,6 +7,19 @@ while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" !
 done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
+resolve_build_template_root() {
+  root_parent=$(dirname "$ROOT_DIR")
+  for candidate in "$ROOT_DIR/web" "$ROOT_DIR/spells/web" "$root_parent/git/wizardry-apps/web" "$HOME/git/wizardry-apps/web"; do
+    [ -d "$candidate" ] || continue
+    for template_path in "$candidate"/*; do
+      [ -d "$template_path/pages" ] || continue
+      printf '%s\n' "$candidate"
+      return 0
+    done
+  done
+  return 1
+}
+
 make_build_stub_dir() {
   stub_dir=$(temp-dir web-build-stubs)
 
@@ -116,8 +129,9 @@ test_build_help() {
 test_build_generates_html_for_every_template() {
   skip-if-compiled || return $?
 
-  if [ ! -d "$ROOT_DIR/web" ]; then
-    TEST_FAILURE_REASON="template directory missing: $ROOT_DIR/web"
+  template_root=$(resolve_build_template_root 2>/dev/null || printf '')
+  if [ -z "$template_root" ] || [ ! -d "$template_root" ]; then
+    TEST_FAILURE_REASON="template directory missing"
     return 1
   fi
 
@@ -125,7 +139,7 @@ test_build_generates_html_for_every_template() {
   stub_dir=$(make_build_stub_dir)
 
   found_template=0
-  for template_path in "$ROOT_DIR/web"/*; do
+  for template_path in "$template_root"/*; do
     [ -d "$template_path" ] || continue
     found_template=1
     template=$(basename "$template_path")
@@ -172,7 +186,7 @@ test_build_generates_html_for_every_template() {
   done
 
   if [ "$found_template" -ne 1 ]; then
-    TEST_FAILURE_REASON="no templates found in $ROOT_DIR/web"
+    TEST_FAILURE_REASON="no templates found in $template_root"
     rm -rf "$test_web_root" "$stub_dir"
     return 1
   fi

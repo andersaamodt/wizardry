@@ -34,7 +34,7 @@ SH
   assert_success
   args=$(cat "$tmp/log")
   case "$args" in
-    *"MUD Admin:"*"Create player SSH identity%new-player"*"Authorize player on this host%add-player"*"Promote player to blog admin (sudo)%promote-blog-admin"*"List players%list-players"*"Player status%player-status"*"List shared rooms%list-rooms"*'Exit%kill -TERM $PPID' ) : ;;
+    *"MUD Admin:"*"Create player SSH identity%new-player"*"Authorize player on this host%add-player"*"Promote player to blog admin (sudo)%promote-admin"*"List players%list-players"*"Player status%player-status"*"List shared rooms%list-rooms"*'Exit%kill -TERM $PPID' ) : ;;
     *) TEST_FAILURE_REASON="menu not invoked with expected actions: $args"; return 1 ;;
   esac
 }

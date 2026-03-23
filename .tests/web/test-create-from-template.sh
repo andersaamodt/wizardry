@@ -5,6 +5,21 @@ while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" !
 done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
+resolve_test_template_root() {
+  root_parent=$(dirname "$ROOT_DIR")
+  for candidate in "$ROOT_DIR/web" "$ROOT_DIR/spells/web" "$root_parent/git/wizardry-apps/web" "$HOME/git/wizardry-apps/web"; do
+    [ -d "$candidate" ] || continue
+    for template_path in "$candidate"/*; do
+      [ -d "$template_path/pages" ] || continue
+      printf '%s\n' "$candidate"
+      return 0
+    done
+  done
+  return 1
+}
+
+TEST_TEMPLATE_ROOT=$(resolve_test_template_root 2>/dev/null || printf '')
+
 test_help() {
   run_spell spells/web/create-from-template --help
   assert_success
@@ -34,8 +49,9 @@ test_blog_template_has_sample_posts() {
 test_all_web_templates_create_expected_structure() {
   skip-if-compiled || return $?
 
-  if [ ! -d "$ROOT_DIR/web" ]; then
-    TEST_FAILURE_REASON="template directory missing: $ROOT_DIR/web"
+  template_root=${TEST_TEMPLATE_ROOT-}
+  if [ -z "$template_root" ] || [ ! -d "$template_root" ]; then
+    TEST_FAILURE_REASON="template directory missing"
     return 1
   fi
 
@@ -43,7 +59,7 @@ test_all_web_templates_create_expected_structure() {
   export WEB_WIZARDRY_ROOT="$test_web_root"
 
   found_template=0
-  for template_path in "$ROOT_DIR/web"/*; do
+  for template_path in "$template_root"/*; do
     [ -d "$template_path" ] || continue
     found_template=1
     template=$(basename "$template_path")
@@ -98,7 +114,7 @@ test_all_web_templates_create_expected_structure() {
   done
 
   if [ "$found_template" -ne 1 ]; then
-    TEST_FAILURE_REASON="no templates found in $ROOT_DIR/web"
+    TEST_FAILURE_REASON="no templates found in $template_root"
     rm -rf "$test_web_root"
     return 1
   fi
@@ -149,6 +165,8 @@ EOF
 
 run_test_case "create-from-template shows help" test_help
 if [ -d "$ROOT_DIR/web/blog" ]; then
+  run_test_case "blog template has sample posts" test_blog_template_has_sample_posts
+elif [ -d "$ROOT_DIR/spells/web/blog" ] || [ -d "$(dirname "$ROOT_DIR")/git/wizardry-apps/web/blog" ] || [ -d "$HOME/git/wizardry-apps/web/blog" ]; then
   run_test_case "blog template has sample posts" test_blog_template_has_sample_posts
 fi
 run_test_case "all templates create expected site structure" test_all_web_templates_create_expected_structure

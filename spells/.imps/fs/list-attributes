@@ -10,9 +10,11 @@ file=$1
 # Try xattr first (macOS)
 if check-attribute-tool xattr; then
   if keys=$(xattr "$file" 2>/dev/null); then
-    if [ -n "$keys" ]; then
-      printf '%s\n' "$keys"
-  exit 0
+    # Ignore macOS provenance metadata; it is system-generated noise.
+    filtered=$(printf '%s\n' "$keys" | sed '/^com\.apple\.provenance$/d' | awk 'NF { print }')
+    if [ -n "$filtered" ]; then
+      printf '%s\n' "$filtered"
+      exit 0
     fi
   fi
 fi
@@ -31,7 +33,7 @@ if check-attribute-tool attr; then
     fi
     if [ -n "$parsed" ]; then
       printf '%s\n' "$parsed"
-  exit 0
+      exit 0
     fi
   fi
 fi
@@ -42,7 +44,7 @@ if check-attribute-tool getfattr; then
     parsed=$(printf '%s' "$keys" | awk -F '=' '/^# / {next} {print $1}')
     if [ -n "$parsed" ]; then
       printf '%s' "$parsed"
-  exit 0
+      exit 0
     fi
   fi
 fi

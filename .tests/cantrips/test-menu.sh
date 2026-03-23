@@ -74,9 +74,9 @@ menu_respects_start_selection() {
   
   # Run with real PTY - sends enter key to select item
   # The PATH includes stubs first so terminal queries get responses
-  PTY_INPUT='
-' run_cmd env \
+  PTY_INPUT='' run_cmd env \
     PATH="$stub_dir:$PATH" \
+    PTY_KEYS='enter' \
     run-with-pty \
     menu --start-selection 2 "Test:" \
     "First%printf first" \
@@ -125,10 +125,10 @@ menu_highlight_strips_ansi_codes() {
   reset_code=$(printf '\033[0m')
   
   # Run with real PTY
-  PTY_INPUT='
-' run_cmd env \
+  PTY_INPUT='' run_cmd env \
     PATH="$stub_dir:$PATH" \
     TERM=xterm \
+    PTY_KEYS='enter' \
     run-with-pty \
     menu "Test:" \
     "${yellow_code}ColoredItem${reset_code}%printf selected"
@@ -180,10 +180,10 @@ menu_restores_cursor_on_exit() {
   done
   
   # Run with real PTY
-  PTY_INPUT='
-' run_cmd env \
+  PTY_INPUT='' run_cmd env \
     PATH="$stub_dir:$PATH" \
     TERM=xterm \
+    PTY_KEYS='enter' \
     run-with-pty \
     menu "Test:" "Item%printf selected"
   
@@ -234,12 +234,11 @@ menu_arrow_up_navigation() {
     ln -s "$ROOT_DIR/spells/.imps/test/stub-$stub" "$stub_dir/$stub"
   done
   
-  # Send actual arrow escape sequences via PTY
-  PTY_KEYS="up up enter"
-  
   # Run menu with PTY starting at item 3, navigate up twice to item 1
   run_cmd env \
     PATH="$stub_dir:$PATH" \
+    PTY_INPUT='' \
+    PTY_KEYS='up up enter' \
     run-with-pty \
     menu --start-selection 3 "Navigation Test:" \
     "First Item%printf first" \
@@ -277,11 +276,10 @@ menu_arrow_down_navigation() {
     ln -s "$ROOT_DIR/spells/.imps/test/stub-$stub" "$stub_dir/$stub"
   done
   
-  # Send actual arrow escape sequences via PTY
-  PTY_KEYS="down enter"
-  
   run_cmd env \
     PATH="$stub_dir:$PATH" \
+    PTY_INPUT='' \
+    PTY_KEYS='down enter' \
     run-with-pty \
     menu --start-selection 1 "Navigation Test:" \
     "First Item%printf first" \
@@ -319,11 +317,10 @@ menu_arrow_wrapping() {
     ln -s "$ROOT_DIR/spells/.imps/test/stub-$stub" "$stub_dir/$stub"
   done
   
-  # Send actual arrow escape sequences via PTY
-  PTY_KEYS="up enter"
-  
   run_cmd env \
     PATH="$stub_dir:$PATH" \
+    PTY_INPUT='' \
+    PTY_KEYS='up enter' \
     run-with-pty \
     menu --start-selection 1 "Navigation Test:" \
     "First Item%printf first" \
@@ -370,9 +367,9 @@ menu_truncates_long_labels() {
   long_label="This is a very long menu item label that should be truncated to preserve command column space"
   
   # Run menu with long label
-  PTY_INPUT='
-' run_cmd env \
+  PTY_INPUT='' run_cmd env \
     PATH="$stub_dir:$PATH" \
+    PTY_KEYS='enter' \
     run-with-pty \
     menu "Test:" \
     "${long_label}%printf 'test-cmd'"
@@ -410,10 +407,10 @@ menu_hides_selection_wrapper_suffixes() {
 
   selection_file="$tmpdir/selection"
 
-  PTY_INPUT='
-' run_cmd env \
+  PTY_INPUT='' run_cmd env \
     PATH="$stub_dir:$PATH" \
     SELECTION_FILE="$selection_file" \
+    PTY_KEYS='enter' \
     run-with-pty \
     menu "Display Test:" \
     'Toggle parse%printf selected; echo 3 > "$SELECTION_FILE"'
