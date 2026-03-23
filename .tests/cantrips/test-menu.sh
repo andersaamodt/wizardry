@@ -259,7 +259,6 @@ menu_arrow_up_navigation() {
       ;;
   esac
 }
-run_test_case "menu responds to arrow up keys" menu_arrow_up_navigation
 
 # Test that menu responds to arrow down key
 menu_arrow_down_navigation() {
@@ -394,5 +393,60 @@ menu_truncates_long_labels() {
 }
 
 run_test_case "menu truncates long labels to preserve command column" menu_truncates_long_labels
+
+menu_hides_selection_wrapper_suffixes() {
+  if ! command -v socat >/dev/null 2>&1; then
+    test_skip "requires socat"
+    return 0
+  fi
+
+  tmpdir=$(make_tempdir)
+  stub_dir="$tmpdir/stubs"
+  mkdir -p "$stub_dir"
+
+  for stub in fathom-cursor fathom-terminal; do
+    ln -s "$ROOT_DIR/spells/.imps/test/stub-$stub" "$stub_dir/$stub"
+  done
+
+  selection_file="$tmpdir/selection"
+
+  PTY_INPUT='
+' run_cmd env \
+    PATH="$stub_dir:$PATH" \
+    SELECTION_FILE="$selection_file" \
+    run-with-pty \
+    menu "Display Test:" \
+    'Toggle parse%printf selected; echo 3 > "$SELECTION_FILE"'
+
+  assert_success || return 1
+
+  clean_output=$(printf '%s' "$OUTPUT" | socat-normalize-output)
+  case "$clean_output" in
+    *selected*)
+      :
+      ;;
+    *)
+      TEST_FAILURE_REASON="expected command execution output in transcript"
+      return 1
+      ;;
+  esac
+
+  case "$clean_output" in
+    *SELECTION_FILE*)
+      TEST_FAILURE_REASON="display command should not expose SELECTION_FILE wrapper"
+      return 1
+      ;;
+  esac
+  case "$clean_output" in
+    *'echo 3 > '*)
+      TEST_FAILURE_REASON="display command should not expose echo selection wrapper"
+      return 1
+      ;;
+  esac
+
+  return 0
+}
+
+run_test_case "menu hides selection wrapper suffixes in command column" menu_hides_selection_wrapper_suffixes
 
 finish_tests

@@ -392,10 +392,61 @@ format_command_for_display() {
                 return 0
         fi
 
-        case "$raw_cmd" in
+        # Strip internal wrapper suffixes so the command column stays readable.
+        # Menus may append these for cursor/selection bookkeeping.
+        simplified_cmd=$raw_cmd
+
+        case "$simplified_cmd" in
+                *"&& kill -TERM \$PPID")
+                        simplified_cmd=${simplified_cmd%"&& kill -TERM \$PPID"}
+                        ;;
+        esac
+        case "$simplified_cmd" in
+                *"; kill -TERM \$PPID")
+                        simplified_cmd=${simplified_cmd%"; kill -TERM \$PPID"}
+                        ;;
+        esac
+        case "$simplified_cmd" in
+                *'; echo '*' > "$SELECTION_FILE"')
+                        simplified_cmd=${simplified_cmd%'; echo '*}
+                        ;;
+        esac
+        case "$simplified_cmd" in
+                *"; printf '%s' "*' > "$SELECTION_FILE"')
+                        simplified_cmd=${simplified_cmd%"; printf '%s' "*}
+                        ;;
+        esac
+
+        # Trim leading/trailing spaces after wrapper removal.
+        while :; do
+                case "$simplified_cmd" in
+                        ' '*)
+                                simplified_cmd=${simplified_cmd# }
+                                ;;
+                        *)
+                                break
+                                ;;
+                esac
+        done
+        while :; do
+                case "$simplified_cmd" in
+                        *' ')
+                                simplified_cmd=${simplified_cmd% }
+                                ;;
+                        *)
+                                break
+                                ;;
+                esac
+        done
+
+        if [ -z "$simplified_cmd" ]; then
+                simplified_cmd=$raw_cmd
+        fi
+
+        case "$simplified_cmd" in
                 ". "*)
                         prefix=". "
-                        remainder=${raw_cmd#". "}
+                        remainder=${simplified_cmd#". "}
                         first_word=${remainder%% *}
                         if [ "$first_word" = "$remainder" ]; then
                                 trailing=''
@@ -405,11 +456,11 @@ format_command_for_display() {
                         ;;
                 *)
                         prefix=''
-                        first_word=${raw_cmd%% *}
-                        if [ "$first_word" = "$raw_cmd" ]; then
+                        first_word=${simplified_cmd%% *}
+                        if [ "$first_word" = "$simplified_cmd" ]; then
                                 trailing=''
                         else
-                                trailing=${raw_cmd#"$first_word"}
+                                trailing=${simplified_cmd#"$first_word"}
                         fi
                         ;;
         esac

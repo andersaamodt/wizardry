@@ -29,7 +29,15 @@ trap 'rm -rf "$test_dir"' EXIT INT TERM
 # Determine input data
 if [ -n "${PTY_KEYS:-}" ]; then
   # Convert symbolic keys to escape sequences using socat-send-keys
-  input_data=$(socat-send-keys $PTY_KEYS)
+  socat_send_keys_bin=$(command -v socat-send-keys 2>/dev/null || true)
+  if [ -z "$socat_send_keys_bin" ]; then
+    printf 'run-with-pty: socat-send-keys not found\n' >&2
+    exit 1
+  fi
+  # Execute via /bin/sh for consistent exit behavior across shells.
+  # Direct execution can return non-zero on some environments even on success.
+  # shellcheck disable=SC2086
+  input_data=$(/bin/sh "$socat_send_keys_bin" $PTY_KEYS)
 elif [ -n "${PTY_INPUT:-}" ]; then
   # Use raw input as-is
   input_data="$PTY_INPUT"
@@ -55,5 +63,19 @@ fi
 } > "$test_dir/cmd.sh"
 chmod +x "$test_dir/cmd.sh"
 
-# Use socat with stdin as input side and EXEC with PTY on output side
-printf '%s' "$input_data" | timeout 5 socat - "EXEC:$test_dir/cmd.sh,pty,stderr" 2>&1 || true
+# Resolve timeout command across platforms (GNU coreutils on macOS may install gtimeout)
+timeout_cmd=''
+if command -v timeout >/dev/null 2>&1; then
+  timeout_cmd='timeout'
+elif command -v gtimeout >/dev/null 2>&1; then
+  timeout_cmd='gtimeout'
+fi
+
+# Use socat with stdin as input side and EXEC with PTY on output side.
+# -T 5 applies socat's own inactivity timeout so PTY tests do not hang when
+# GNU timeout is unavailable (common on macOS).
+if [ -n "$timeout_cmd" ]; then
+  printf '%s' "$input_data" | "$timeout_cmd" 7 socat -T 5 - "EXEC:$test_dir/cmd.sh,pty,stderr" 2>&1 || true
+else
+  printf '%s' "$input_data" | socat -T 5 - "EXEC:$test_dir/cmd.sh,pty,stderr" 2>&1 || true
+fi
