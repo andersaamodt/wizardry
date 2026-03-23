@@ -66,10 +66,10 @@ ensure_build_deps() {
   case "$manager" in
     apt)
       run_privileged apt-get update -y >/dev/null
-      run_privileged env DEBIAN_FRONTEND=noninteractive apt-get install -y git make gcc autoconf automake libtool golang-go ca-certificates >/dev/null
+      run_privileged env DEBIAN_FRONTEND=noninteractive apt-get install -y git make gcc autoconf automake libtool golang-go ca-certificates curl >/dev/null
       ;;
     dnf)
-      run_privileged dnf install -y git make gcc autoconf automake libtool golang ca-certificates >/dev/null
+      run_privileged dnf install -y git make gcc autoconf automake libtool golang ca-certificates curl >/dev/null
       ;;
     brew)
       brew install git go autoconf automake libtool >/dev/null
@@ -196,9 +196,22 @@ install_nostril_binary() {
     ) || return 1
   fi
 
+  # nostril upstream Makefile uses `make -j` in sub-builds, which can
+  # exhaust memory on small VPS instances. Force deterministic low
+  # concurrency for those recursive invocations.
+  if [ -f "$repo_dir/Makefile" ]; then
+    sed \
+      -e 's/make -j[[:space:]]\{1,\}libsecp256k1\.la/$(MAKE) -j1 libsecp256k1.la/g' \
+      -e 's/make -j[[:space:]]\{1,\}libsodium\.la/$(MAKE) -j1 libsodium.la/g' \
+      "$repo_dir/Makefile" > "$repo_dir/Makefile.hq-tuned" 2>/dev/null || true
+    if [ -f "$repo_dir/Makefile.hq-tuned" ]; then
+      mv "$repo_dir/Makefile.hq-tuned" "$repo_dir/Makefile"
+    fi
+  fi
+
   (
     cd "$repo_dir"
-    make nostril >/dev/null 2>&1
+    MAKEFLAGS=-j1 make nostril >/dev/null 2>&1
   ) || return 1
 
   [ -f "$repo_dir/nostril" ] || return 1
