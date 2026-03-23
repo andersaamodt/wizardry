@@ -1,0 +1,34 @@
+#!/bin/sh
+
+# Report installation status for BTCPay Server.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: btcpay-status
+
+Reports whether BTCPay Server appears installed.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+if command -v colors >/dev/null 2>&1; then
+  . colors
+else
+  RESET=""
+  THEME_SUCCESS=""
+  GREY=""
+fi
+
+status=$(check-btcpay 2>/dev/null | awk -F= '/^status=/{print $2; exit}')
+if [ "$status" = "ok" ]; then
+  printf '%sinstalled%s\n' "$THEME_SUCCESS" "$RESET"
+else
+  printf '%snot installed%s\n' "$GREY" "$RESET"
+fi

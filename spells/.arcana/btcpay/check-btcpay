@@ -1,0 +1,48 @@
+#!/bin/sh
+
+# Check whether BTCPay Server tooling/runtime is available.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: check-btcpay
+
+Checks whether BTCPay Server runtime appears installed and, when possible,
+whether its Docker services are running.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+btcpay_root=${BTCPAY_BASE_DIR:-${HOME:-}/.btcpayserver}
+repo_dir="$btcpay_root/btcpayserver-docker"
+
+is_installed=false
+is_running=false
+
+if [ -x "$repo_dir/btcpay-setup.sh" ] || [ -x "$repo_dir/btcpay-up.sh" ] || [ -f "$repo_dir/docker-compose-generator/docker-fragments/opt-btcpayserver.yml" ]; then
+  is_installed=true
+fi
+
+if command -v docker >/dev/null 2>&1; then
+  if docker ps --format '{{.Names}}' 2>/dev/null | grep -Eiq 'btcpay|nbxplorer|generated_btcpay'; then
+    is_running=true
+  fi
+fi
+
+if [ "$is_installed" = true ]; then
+  printf 'status=ok\n'
+  if [ "$is_running" = true ]; then
+    printf 'summary=%s\n' 'BTCPay Server appears installed and running.'
+  else
+    printf 'summary=%s\n' 'BTCPay Server appears installed but not running.'
+  fi
+  exit 0
+fi
+
+printf 'status=bad\n'
+printf 'summary=%s\n' 'BTCPay Server is not installed.'
+exit 0

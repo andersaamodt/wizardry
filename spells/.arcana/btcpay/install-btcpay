@@ -1,0 +1,194 @@
+#!/bin/sh
+
+# Install or upgrade BTCPay Server in production-domain mode.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-btcpay
+
+Installs BTCPay Server using the official btcpayserver-docker setup flow.
+Set BTCPAY_HOST to the public HTTPS hostname (for example pay.example.com).
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+say() {
+  printf '%s\n' "$1"
+}
+
+has_cmd() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+run_privileged() {
+  if "$@" 2>/dev/null; then
+    return 0
+  fi
+  if type run_sudo_cmd >/dev/null 2>&1; then
+    run_sudo_cmd "$@"
+    return 0
+  fi
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+    return 0
+  fi
+  if has_cmd sudo; then
+    sudo "$@"
+    return 0
+  fi
+  "$@"
+}
+
+normalize_host() {
+  raw=${1-}
+  raw=$(printf '%s' "$raw" | tr -d '\r\n' | sed -e 's#^[[:space:]]*##' -e 's#[[:space:]]*$##')
+  raw=$(printf '%s' "$raw" | sed -e 's#^https\{0,1\}://##' -e 's#/.*$##' -e 's/:[0-9][0-9]*$//')
+  printf '%s\n' "$raw"
+}
+
+valid_host() {
+  candidate=${1-}
+  [ -n "$candidate" ] || return 1
+  printf '%s' "$candidate" | grep -Eq '^[A-Za-z0-9.-]+$' || return 1
+  printf '%s' "$candidate" | grep -q '\.' || return 1
+  case "$candidate" in
+    localhost|*.local|*..*|.*|*.) return 1 ;;
+  esac
+  case "$candidate" in
+    [0-9]*.[0-9]*.[0-9]*.[0-9]*) return 1 ;;
+  esac
+  return 0
+}
+
+ensure_docker() {
+  if has_cmd docker; then
+    return 0
+  fi
+  script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  docker_install="$script_dir/../docker/install-docker"
+  if [ -x "$docker_install" ]; then
+    "$docker_install"
+  elif has_cmd install-docker; then
+    install-docker
+  fi
+  has_cmd docker
+}
+
+ensure_git() {
+  if has_cmd git; then
+    return 0
+  fi
+  manager=none
+  if has_cmd apt-get; then
+    manager=apt
+  elif has_cmd dnf; then
+    manager=dnf
+  elif has_cmd brew; then
+    manager=brew
+  fi
+  case "$manager" in
+    apt)
+      run_privileged apt-get update -y >/dev/null
+      run_privileged env DEBIAN_FRONTEND=noninteractive apt-get install -y git ca-certificates curl >/dev/null
+      ;;
+    dnf)
+      run_privileged dnf install -y git ca-certificates curl >/dev/null
+      ;;
+    brew)
+      brew install git >/dev/null
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+  has_cmd git
+}
+
+run_setup() {
+  repo_dir=$1
+  input_file=$(mktemp "${TMPDIR:-/tmp}/btcpay-setup-input.XXXXXX")
+  i=0
+  while [ "$i" -lt 16 ]; do
+    printf '\n' >> "$input_file"
+    i=$((i + 1))
+  done
+
+  set +e
+  if has_cmd timeout; then
+    timeout 3600 sh -c 'cd "$1" && ./btcpay-setup.sh -i < "$2"' sh "$repo_dir" "$input_file"
+    status=$?
+  else
+    sh -c 'cd "$1" && ./btcpay-setup.sh -i < "$2"' sh "$repo_dir" "$input_file"
+    status=$?
+  fi
+  set -e
+
+  rm -f "$input_file"
+  return "$status"
+}
+
+btcpay_host=$(normalize_host "${BTCPAY_HOST-}")
+if ! valid_host "$btcpay_host"; then
+  say "install-btcpay: BTCPAY_HOST is required and must be a public FQDN (for example pay.example.com)." >&2
+  exit 1
+fi
+
+if ! ensure_git; then
+  say "install-btcpay: could not install or locate git." >&2
+  exit 1
+fi
+
+if ! ensure_docker; then
+  say "install-btcpay: docker is required and could not be installed automatically." >&2
+  exit 1
+fi
+
+btcpay_root=${BTCPAY_BASE_DIR:-${HOME:-}/.btcpayserver}
+repo_dir="$btcpay_root/btcpayserver-docker"
+mkdir -p "$btcpay_root"
+
+if [ -d "$repo_dir/.git" ]; then
+  (
+    cd "$repo_dir"
+    git fetch --depth 1 origin >/dev/null 2>&1 || true
+    git reset --hard FETCH_HEAD >/dev/null 2>&1 || true
+  )
+else
+  rm -rf "$repo_dir"
+  git clone --depth 1 https://github.com/btcpayserver/btcpayserver-docker.git "$repo_dir" >/dev/null 2>&1 || {
+    say "install-btcpay: failed to clone btcpayserver-docker." >&2
+    exit 1
+  }
+fi
+
+if [ ! -x "$repo_dir/btcpay-setup.sh" ]; then
+  say "install-btcpay: btcpay-setup.sh was not found in $repo_dir." >&2
+  exit 1
+fi
+
+export BTCPAY_HOST="$btcpay_host"
+export REVERSEPROXY_DEFAULT_HOST="$btcpay_host"
+export NBITCOIN_NETWORK=${BTCPAY_NETWORK:-mainnet}
+export BTCPAYGEN_CRYPTO1=${BTCPAY_CRYPTO1:-btc}
+export BTCPAYGEN_REVERSEPROXY=${BTCPAY_REVERSEPROXY:-nginx}
+export LETSENCRYPT_EMAIL=${BTCPAY_LETSENCRYPT_EMAIL:-admin@${btcpay_host}}
+
+say "Installing BTCPay Server for host: $btcpay_host"
+if ! run_setup "$repo_dir"; then
+  say "install-btcpay: btcpay setup failed." >&2
+  exit 1
+fi
+
+if ! check-btcpay | grep -q '^status=ok$'; then
+  say "install-btcpay: install finished but BTCPay could not be detected." >&2
+  exit 1
+fi
+
+say "Installed BTCPay Server"

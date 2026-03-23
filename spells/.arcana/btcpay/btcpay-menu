@@ -1,0 +1,49 @@
+#!/bin/sh
+
+# Present the BTCPay Server management menu.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: btcpay-menu
+
+Displays install and uninstall toggle for BTCPay Server.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+if ! require menu "The btcpay-menu needs the 'menu' command to present options."; then
+  exit 1
+fi
+
+trap 'exit 130' INT
+trap 'exit 0' TERM
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+
+while :; do
+  unset menu_status
+
+  if "$script_dir/check-btcpay" 2>/dev/null | grep -q '^status=ok$'; then
+    toggle_item="[X] Install BTCPay Server%$script_dir/uninstall-btcpay"
+  else
+    toggle_item="[ ] Install BTCPay Server%$script_dir/install-btcpay"
+  fi
+
+  exit_label=$(exit-label)
+  exit_item="${exit_label}%kill -TERM \$PPID"
+
+  menu "BTCPay:" "$toggle_item" "$exit_item" || menu_status=$?
+  menu_status=${menu_status:-0}
+
+  if [ "$menu_status" -eq 130 ]; then
+    printf 'ESC\n' >&2
+    exit 0
+  fi
+done
