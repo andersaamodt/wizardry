@@ -28,8 +28,20 @@ USAGE
   ;;
 esac
 
+site_autorebuild_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+site_autorebuild_imp_dir=$(
+  CDPATH= cd -- "$site_autorebuild_dir/../.imps/sys" 2>/dev/null && pwd -P || printf ''
+)
+if [ -n "$site_autorebuild_imp_dir" ]; then
+  PATH="$site_autorebuild_imp_dir:$PATH"
+fi
+if [ -n "${WIZARDRY_DIR:-}" ] && [ -d "$WIZARDRY_DIR/spells/.imps/sys" ]; then
+  PATH="$WIZARDRY_DIR/spells/.imps/sys:$PATH"
+fi
+
 set -eu
 . env-clear
+unset site_autorebuild_dir site_autorebuild_imp_dir
 
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
 
@@ -276,7 +288,8 @@ calc_signature() {
     printf '%s\n' 'missing'
     return 0
   fi
-  tmp_file=$(mktemp "${TMPDIR:-/tmp}/site-autorebuild-signature.XXXXXX")
+  tmp_paths=$(mktemp "${TMPDIR:-/tmp}/site-autorebuild-signature-paths.XXXXXX")
+  tmp_manifest=$(mktemp "${TMPDIR:-/tmp}/site-autorebuild-signature-manifest.XXXXXX")
   find "$target_dir" -type f \
     ! -path '*/.git/*' \
     ! -path '*/.stversions/*' \
@@ -285,15 +298,21 @@ calc_signature() {
     ! -name '.DS_Store' \
     ! -name '.log' \
     ! -name '*.sync-conflict-*' \
-    -print 2>/dev/null | sort > "$tmp_file"
+    -print 2>/dev/null | sort > "$tmp_paths"
+
+  while IFS= read -r content_file; do
+    [ -n "$content_file" ] || continue
+    cksum "$content_file" 2>/dev/null || true
+  done < "$tmp_paths" > "$tmp_manifest"
+
   if command -v shasum >/dev/null 2>&1; then
-    signature=$(shasum -a 256 "$tmp_file" | awk '{print $1}')
+    signature=$(shasum -a 256 "$tmp_manifest" | awk '{print $1}')
   elif command -v sha256sum >/dev/null 2>&1; then
-    signature=$(sha256sum "$tmp_file" | awk '{print $1}')
+    signature=$(sha256sum "$tmp_manifest" | awk '{print $1}')
   else
-    signature=$(cksum "$tmp_file" | awk '{print $1 ":" $2}')
+    signature=$(cksum "$tmp_manifest" | awk '{print $1 ":" $2}')
   fi
-  rm -f "$tmp_file"
+  rm -f "$tmp_paths" "$tmp_manifest"
   printf '%s\n' "$signature"
 }
 
@@ -405,7 +424,8 @@ run_change_pass() {
         printf "%s\n" "missing"
         exit 0
       fi
-      tmp_file=$(mktemp "${TMPDIR:-/tmp}/site-autorebuild-signature.XXXXXX")
+      tmp_paths=$(mktemp "${TMPDIR:-/tmp}/site-autorebuild-signature-paths.XXXXXX")
+      tmp_manifest=$(mktemp "${TMPDIR:-/tmp}/site-autorebuild-signature-manifest.XXXXXX")
       find "$target_dir" -type f \
         ! -path "*/.git/*" \
         ! -path "*/.stversions/*" \
@@ -414,15 +434,19 @@ run_change_pass() {
         ! -name ".DS_Store" \
         ! -name ".log" \
         ! -name "*.sync-conflict-*" \
-        -print 2>/dev/null | sort > "$tmp_file"
+        -print 2>/dev/null | sort > "$tmp_paths"
+      while IFS= read -r content_file; do
+        [ -n "$content_file" ] || continue
+        cksum "$content_file" 2>/dev/null || true
+      done < "$tmp_paths" > "$tmp_manifest"
       if command -v shasum >/dev/null 2>&1; then
-        sig=$(shasum -a 256 "$tmp_file" | awk "{print \\$1}")
+        sig=$(shasum -a 256 "$tmp_manifest" | awk "{print \\$1}")
       elif command -v sha256sum >/dev/null 2>&1; then
-        sig=$(sha256sum "$tmp_file" | awk "{print \\$1}")
+        sig=$(sha256sum "$tmp_manifest" | awk "{print \\$1}")
       else
-        sig=$(cksum "$tmp_file" | awk "{print \\$1 \":" \\$2}")
+        sig=$(cksum "$tmp_manifest" | awk "{print \\$1 \":" \\$2}")
       fi
-      rm -f "$tmp_file"
+      rm -f "$tmp_paths" "$tmp_manifest"
       printf "%s\n" "$sig"
     ' sh "$content_dir" 2>/dev/null || printf '%s\n' 'missing')
   else

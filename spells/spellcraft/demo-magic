@@ -493,7 +493,12 @@ demo_level() {
         printf 'Spells at this level: %d\n' "$spell_count"
         
         # Show first few spells
-        first_spells=$(printf '%s' "$spell_list" | tr ' ' '\n' | head -5 | sed 's/:.*//; s/^/  • /')
+        first_spells=$(
+          printf '%s' "$spell_list" |
+            tr ' ' '\n' |
+            head -5 |
+            sed 's/:.*//; s/^/  • /'
+        )
         printf '%s\n' "$first_spells"
         
         remaining=$((spell_count - 5))
@@ -755,30 +760,41 @@ if [ "${WIZARDRY_DEMO_IN_BWRAP-0}" -ne 1 ] && [ "${WIZARDRY_DEMO_NO_BWRAP-0}" -n
       # bwrap not available - offer to install
       printf 'demo-magic: bubblewrap (bwrap) not found\n' >&2
       printf 'demo-magic: Running demos in an isolated sandbox is recommended for safety.\n' >&2
-      
-      # Check if we can install it
-      if command -v pkg-install >/dev/null 2>&1; then
-        if command -v ask-yn >/dev/null 2>&1; then
-          if ask-yn "Install bubblewrap now?" yes; then
-            printf 'Installing bubblewrap...\n' >&2
-            if pkg-install bubblewrap 2>/dev/null || pkg-install bwrap 2>/dev/null; then
+
+      demo_interactive=0
+      if { [ -t 0 ] || [ -t 1 ] || [ -t 2 ]; } \
+        && [ -r /dev/tty ] && [ -w /dev/tty ]; then
+        demo_interactive=1
+      fi
+
+      # Check if we can install it interactively. In non-interactive runs,
+      # continue without sandbox rather than looping on failed prompts.
+      if [ "$demo_interactive" -eq 1 ] \
+        && [ "${WIZARDRY_DEMO_BWRAP_INSTALL_ATTEMPTED-0}" -ne 1 ] \
+        && command -v pkg-install >/dev/null 2>&1 \
+        && command -v ask-yn >/dev/null 2>&1; then
+        if ask-yn "Install bubblewrap now?" yes; then
+          printf 'Installing bubblewrap...\n' >&2
+          if pkg-install bubblewrap 2>/dev/null || pkg-install bwrap 2>/dev/null; then
+            if command -v bwrap >/dev/null 2>&1; then
               printf 'Bubblewrap installed successfully. Re-running demo-magic...\n' >&2
-              exec "$0" "$@"
-            else
-              printf 'demo-magic: failed to install bubblewrap\n' >&2
+              exec env WIZARDRY_DEMO_BWRAP_INSTALL_ATTEMPTED=1 "$0" "$@"
             fi
+            printf 'demo-magic: bubblewrap still unavailable after install attempt\n' >&2
+          else
+            printf 'demo-magic: failed to install bubblewrap\n' >&2
           fi
         fi
       fi
-      
-      # Either install failed or user declined - ask to continue
-      if command -v ask-yn >/dev/null 2>&1; then
+
+      # Either install failed/declined or this is non-interactive.
+      if [ "$demo_interactive" -eq 1 ] && command -v ask-yn >/dev/null 2>&1; then
         if ! ask-yn "Continue without sandbox?" no; then
           printf 'demo-magic: aborting\n' >&2
           exit 1
         fi
       else
-        printf 'demo-magic: continuing without sandbox (set WIZARDRY_DEMO_NO_BWRAP=1 to skip this check)\n' >&2
+        printf 'demo-magic: non-interactive mode, continuing without sandbox (set WIZARDRY_DEMO_NO_BWRAP=1 to silence this)\n' >&2
       fi
     fi
   fi

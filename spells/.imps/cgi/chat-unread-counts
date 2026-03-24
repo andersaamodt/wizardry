@@ -94,7 +94,7 @@ count_unread_in_room() {
   # The client will filter based on its localStorage read timestamp
   
   # Count non-log messages (exclude "log:" messages)
-  unread_count=$(grep -v '^\[[^]]*\] log:' "$log_file" 2>/dev/null | wc -l)
+  unread_count=$(grep -v '^\[[^]]*\] log:' "$log_file" 2>/dev/null | wc -l | awk '{print $1}')
   
   echo "$unread_count"
 }

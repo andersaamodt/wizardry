@@ -152,7 +152,18 @@ SH
   # Run install-menu in background
   env PATH="$tmp:$PATH" INSTALL_MENU_ROOT="$install_root" INSTALL_MENU_DIRS="test" MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/require.log" "$ROOT_DIR/spells/menu/install-menu" &
   menu_pid=$!
-  sleep 0.5
+
+  # Wait briefly for the first menu render so this test validates behavior,
+  # not scheduler timing. If rendering is slow, we still terminate gracefully.
+  waited=0
+  while [ "$waited" -lt 20 ]; do
+    if [ -s "$tmp/log" ]; then
+      break
+    fi
+    sleep 0.1
+    waited=$((waited + 1))
+  done
+
   kill -TERM "$menu_pid" 2>/dev/null || true
   wait "$menu_pid" 2>/dev/null || true
   

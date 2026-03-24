@@ -112,7 +112,7 @@ fi
 
 # If not loaded from script_dir, try function or PATH
 if [ -z "${RESET-}" ]; then
-        if has colors; then
+        if command -v colors >/dev/null 2>&1; then
                 colors_path=$(command -v colors 2>/dev/null || printf '')
                 if [ -n "$colors_path" ] && [ -f "$colors_path" ]; then
                         # shellcheck disable=SC1090

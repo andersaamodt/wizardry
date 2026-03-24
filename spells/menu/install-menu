@@ -130,12 +130,12 @@ while :; do
     set --
     for name in $entries; do
         status_cmd=""
-        if has "${name}-status"; then
-            status_cmd="${name}-status"
-        elif [ -x "$install_dir/$name-status" ] && [ ! -d "$install_dir/$name-status" ]; then
+        if [ -x "$install_dir/$name-status" ] && [ ! -d "$install_dir/$name-status" ]; then
             status_cmd="$install_dir/$name-status"
         elif [ -x "$install_dir/$name/$name-status" ] && [ ! -d "$install_dir/$name/$name-status" ]; then
             status_cmd="$install_dir/$name/$name-status"
+        elif command -v "${name}-status" >/dev/null 2>&1; then
+            status_cmd="${name}-status"
         fi
 
         if [ -n "$status_cmd" ]; then
@@ -144,13 +144,7 @@ while :; do
             status="${GREY}coming soon${RESET}"
         fi
 
-        if has "${name}-menu"; then
-            cmd="${name}-menu"
-            # Special handling for mud-menu which must be sourced
-            if [ "$name" = "mud" ]; then
-                cmd=". mud-menu"
-            fi
-        elif [ -x "$install_dir/$name-menu" ] && [ ! -d "$install_dir/$name-menu" ]; then
+        if [ -x "$install_dir/$name-menu" ] && [ ! -d "$install_dir/$name-menu" ]; then
             cmd="$install_dir/$name-menu"
             # Special handling for mud-menu which must be sourced
             if [ "$name" = "mud" ]; then
@@ -168,6 +162,12 @@ while :; do
             cmd="$install_dir/$name/$name"
         elif [ -x "$install_dir/$name/install-$name" ] && [ -f "$install_dir/$name/install-$name" ]; then
             cmd="$install_dir/$name/install-$name"
+        elif command -v "${name}-menu" >/dev/null 2>&1; then
+            cmd="${name}-menu"
+            # Special handling for mud-menu which must be sourced
+            if [ "$name" = "mud" ]; then
+                cmd=". mud-menu"
+            fi
         else
             cmd='printf "This entry is not ready yet.\n"'
         fi
@@ -200,7 +200,7 @@ while :; do
     import_arcanum_cmd=""
     if [ -x "$install_dir/import-arcanum" ]; then
         import_arcanum_cmd="$install_dir/import-arcanum"
-    elif has import-arcanum; then
+    elif command -v import-arcanum >/dev/null 2>&1; then
         import_arcanum_cmd="import-arcanum"
     fi
     

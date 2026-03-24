@@ -10,8 +10,8 @@ if [ -z "$prompt" ]; then
 fi
 
 # Try to find ask-text in PATH first
-if has ask-text; then
-        ask_text_helper=$(command -v ask-text)
+if command -v ask-text >/dev/null 2>&1; then
+        ask_text_helper=$(command -v ask-text 2>/dev/null || printf '')
 else
         # Fall back to finding in same directory as calling script
         # Get parent script's directory from stack
@@ -40,4 +40,9 @@ else
 fi
 
 # Call ask-text with the prompt and return result
-"$ask_text_helper" "$prompt"
+response=$("$ask_text_helper" "$prompt")
+if [ -z "$response" ]; then
+        printf '%s\n' "prompt-with-fallback: empty input" >&2
+        exit 1
+fi
+printf '%s\n' "$response"
