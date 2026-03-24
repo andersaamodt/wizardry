@@ -137,6 +137,37 @@ strip_dynamic_title_block() {
   mv "$tmp" "$file"
 }
 
+append_local_static_cache_bust() {
+  html_file=$1
+  cache_token=${2-}
+  [ -f "$html_file" ] || return 0
+  [ -n "$cache_token" ] || return 0
+
+  tmp_html=$(temp-file html-cache-busted)
+  sed -E \
+    -e "s#(href|src)=\"(/static/[^\"]+\\.(css|js))(\\?v=[^\"]*)?\"#\1=\"\2?v=$cache_token\"#g" \
+    -e "s#(href|src)='(/static/[^']+\\.(css|js))(\\?v=[^']*)?'#\1='\2?v=$cache_token'#g" \
+    "$html_file" > "$tmp_html"
+  if cmp -s "$html_file" "$tmp_html"; then
+    rm -f "$tmp_html"
+    return 0
+  fi
+  mv "$tmp_html" "$html_file"
+}
+
+compute_static_asset_cache_token() {
+  static_root=$1
+  if [ ! -d "$static_root" ]; then
+    printf '0\n'
+    return 0
+  fi
+  find "$static_root" -type f \
+    \( -name '*.css' -o -name '*.js' \) \
+    ! -name '._*' | sort | while IFS= read -r asset_file; do
+    cksum "$asset_file"
+  done | cksum | awk '{print $1}'
+}
+
 prune_stale_build_pages() {
   build_pages_dir=$1
   site_pages_dir=$2
@@ -645,6 +676,10 @@ build_site() {
     info "Copying static files to build/static/..."
     cp -r "$site_dir/site/static"/* "$site_dir/build/static/" 2>/dev/null || true
   fi
+  build_cache_token=$(compute_static_asset_cache_token "$site_dir/build/static")
+  if [ -z "$build_cache_token" ]; then
+    build_cache_token=0
+  fi
 
   prune_stale_build_pages "$site_dir/build/pages" "$site_dir/site/pages"
 
@@ -780,6 +815,10 @@ BLOG_FOOTER
 
   generate_blog_feeds_and_sitemap
   prerender_blog_dynamic_sections
+
+  find "$site_dir/build/pages" -type f -name '*.html' ! -name '._*' | while IFS= read -r html_page; do
+    append_local_static_cache_bust "$html_page" "$build_cache_token"
+  done
 
   date -u +%Y-%m-%dT%H:%M:%SZ > "$site_dir/build/.wizardry-build-stamp"
   chmod 644 "$site_dir/build/.wizardry-build-stamp" 2>/dev/null || true

@@ -361,10 +361,62 @@ EOF
   rm -rf "$test_web_root" "$stub_dir"
 }
 
+test_build_adds_cache_bust_for_local_static_assets() {
+  skip-if-compiled || return $?
+
+  test_web_root=$(temp-dir web-build-root)
+  stub_dir=$(make_build_stub_dir)
+  site_name="cachebust"
+  site_dir="$test_web_root/$site_name"
+
+  WEB_WIZARDRY_ROOT="$test_web_root" WIZARDRY_DIR="$ROOT_DIR" run_spell spells/web/create-from-template "$site_name" demo
+  assert_success
+
+  cat > "$site_dir/site/pages/cache-test.md" <<'EOF'
+# Cache Test
+
+<script src="/static/app.js"></script>
+<script src="/static/already.js?v=keep"></script>
+<link rel="stylesheet" href="/static/style.css" />
+EOF
+
+  PATH="$stub_dir:$PATH" WEB_WIZARDRY_ROOT="$test_web_root" WIZARDRY_DIR="$ROOT_DIR" \
+    run_spell spells/web/build "$site_name" --full
+  assert_success
+
+  html_file="$site_dir/build/pages/cache-test.html"
+  [ -f "$html_file" ] || {
+    TEST_FAILURE_REASON="cache-test page should be built"
+    rm -rf "$test_web_root" "$stub_dir"
+    return 1
+  }
+
+  if ! grep -Eq 'src="/static/app\.js\?v=[0-9]+"' "$html_file"; then
+    TEST_FAILURE_REASON="build should append cache bust token to local static JS"
+    rm -rf "$test_web_root" "$stub_dir"
+    return 1
+  fi
+
+  if ! grep -Eq 'href="/static/style\.css\?v=[0-9]+"' "$html_file"; then
+    TEST_FAILURE_REASON="build should append cache bust token to local static CSS"
+    rm -rf "$test_web_root" "$stub_dir"
+    return 1
+  fi
+
+  if ! grep -Eq 'src="/static/already\.js\?v=[0-9]+"' "$html_file"; then
+    TEST_FAILURE_REASON="build should normalize existing static cache tokens"
+    rm -rf "$test_web_root" "$stub_dir"
+    return 1
+  fi
+
+  rm -rf "$test_web_root" "$stub_dir"
+}
+
 run_test_case "build --help works" test_build_help
 run_test_case "build generates output for every template" test_build_generates_html_for_every_template
 run_test_case "build cache falls back to site data cache" test_build_cache_falls_back_to_site_data_only
 run_test_case "build runs site pre-build hook" test_build_runs_site_pre_build_hook
+run_test_case "build appends cache bust tokens to local static assets" test_build_adds_cache_bust_for_local_static_assets
 if [ -d "$ROOT_DIR/web/blog" ]; then
   run_test_case "blog build renders nested posts and feeds" test_build_blog_generates_posts_and_feeds
 fi
