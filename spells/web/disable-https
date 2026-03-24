@@ -26,16 +26,16 @@ if [ -z "$site_name" ]; then
   die 2 "disable-https: SITENAME required"
 fi
 
-WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
-SITES_DIR="$WEB_ROOT"
-SITE_DIR="$SITES_DIR/$site_name"
+web_root=${WEB_WIZARDRY_ROOT:-$HOME/sites}
+sites_dir="$web_root"
+site_dir="$sites_dir/$site_name"
 
-if [ ! -d "$SITE_DIR" ]; then
+if [ ! -d "$site_dir" ]; then
   die "disable-https: site '$site_name' not found"
 fi
 
 site_user_default="$(printf '%s' "$site_name" | tr 'A-Z' 'a-z' | tr '.-' '__')"
-site_user=$(config-get "$SITE_DIR/site.conf" site-user 2>/dev/null || printf '')
+site_user=$(config-get "$site_dir/site.conf" site-user 2>/dev/null || printf '')
 [ -z "$site_user" ] && site_user="$site_user_default"
 if [ -n "$site_user" ] && [ "$(id -un)" != "$site_user" ] && [ -z "${WIZARDRY_SITE_USER_REEXEC-}" ]; then
   if has sudo; then
@@ -52,11 +52,11 @@ fi
 step "Disabling HTTPS for $site_name..."
 
 # Update site.conf to disable HTTPS
-config-set "$SITE_DIR/site.conf" https "false"
+config-set "$site_dir/site.conf" https "false"
 
 # Regenerate nginx config without HTTPS
-domain=$(config-get "$SITE_DIR/site.conf" domain 2>/dev/null || echo "localhost")
-port=$(config-get "$SITE_DIR/site.conf" port 2>/dev/null || echo "8080")
+domain=$(config-get "$site_dir/site.conf" domain 2>/dev/null || echo "localhost")
+port=$(config-get "$site_dir/site.conf" port 2>/dev/null || echo "8080")
 
 info "Reconfiguring nginx for HTTP only..."
 configure-nginx "$site_name" --port "$port" --domain "$domain"

@@ -23,17 +23,17 @@ if [ -z "$site_name" ]; then
   die 2 "enable-site-daemon: SITENAME required"
 fi
 
-WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
-SITES_DIR="$WEB_ROOT"
-SITE_DIR="$SITES_DIR/$site_name"
+web_root=${WEB_WIZARDRY_ROOT:-$HOME/sites}
+sites_dir="$web_root"
+site_dir="$sites_dir/$site_name"
 
-if [ ! -d "$SITE_DIR" ]; then
+if [ ! -d "$site_dir" ]; then
   die "enable-site-daemon: site '$site_name' not found"
 fi
 
 repair-site-daemon "$site_name"
 
-run_priv() {
+enable_run_priv() {
   if [ "$(id -u)" -eq 0 ]; then
     "$@"
     return
@@ -49,7 +49,7 @@ unit="wizardry-site-${site_name}.service"
 plist="/Library/LaunchDaemons/org.wizardry.web.${site_name}.plist"
 
 if has systemctl; then
-  run_priv systemctl enable "$unit"
+  enable_run_priv systemctl enable "$unit"
   success "Daemon enabled on startup for $site_name"
   exit 0
 fi

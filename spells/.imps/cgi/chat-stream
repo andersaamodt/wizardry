@@ -5,6 +5,9 @@
 # Uses avatar directories as single source of truth (no redundant .members file)
 # Gapless connection: continuous tail -f stream with timestamp filtering prevents message loss
 
+# Explicit permissive mode before streaming headers.
+set +eu
+
 # Send SSE headers with CORS support FIRST (before set -eu)
 # This ensures headers are always output even if script fails early
 printf 'Status: 200 OK\r\n'

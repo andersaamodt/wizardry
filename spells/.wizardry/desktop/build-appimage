@@ -32,6 +32,7 @@ USAGE
 esac
 
 set -eu
+. env-clear
 
 app_name=${1-}
 

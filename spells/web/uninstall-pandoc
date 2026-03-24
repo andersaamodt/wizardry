@@ -12,18 +12,19 @@ USAGE
 esac
 
 set -eu
+. env-clear
 
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
 
-say() {
+pandoc_uninstall_say() {
   printf '%s\n' "$1"
 }
 
-has_cmd() {
+pandoc_uninstall_has_cmd() {
   command -v "$1" >/dev/null 2>&1
 }
 
-run_privileged() {
+pandoc_uninstall_run_privileged() {
   if "$@" 2>/dev/null; then
     return 0
   fi
@@ -35,7 +36,7 @@ run_privileged() {
     "$@"
     return 0
   fi
-  if has_cmd sudo; then
+  if pandoc_uninstall_has_cmd sudo; then
     sudo "$@"
     return 0
   fi
@@ -44,25 +45,25 @@ run_privileged() {
 
 removed=0
 
-if has_cmd apt-get; then
-  run_privileged env DEBIAN_FRONTEND=noninteractive apt-get remove -y pandoc >/dev/null 2>&1 || true
+if pandoc_uninstall_has_cmd apt-get; then
+  pandoc_uninstall_run_privileged env DEBIAN_FRONTEND=noninteractive apt-get remove -y pandoc >/dev/null 2>&1 || true
   removed=1
-elif has_cmd dnf; then
-  run_privileged dnf remove -y pandoc >/dev/null 2>&1 || true
+elif pandoc_uninstall_has_cmd dnf; then
+  pandoc_uninstall_run_privileged dnf remove -y pandoc >/dev/null 2>&1 || true
   removed=1
-elif has_cmd brew; then
+elif pandoc_uninstall_has_cmd brew; then
   brew uninstall pandoc >/dev/null 2>&1 || true
   removed=1
 fi
 
-if has_cmd pandoc; then
-  say "uninstall-pandoc: pandoc is still present on PATH" >&2
+if pandoc_uninstall_has_cmd pandoc; then
+  pandoc_uninstall_say "uninstall-pandoc: pandoc is still present on PATH" >&2
   exit 1
 fi
 
 if [ "$removed" -eq 0 ]; then
-  say "pandoc is not installed"
+  pandoc_uninstall_say "pandoc is not installed"
   exit 0
 fi
 
-say "Uninstalled pandoc"
+pandoc_uninstall_say "Uninstalled pandoc"

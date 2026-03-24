@@ -13,17 +13,18 @@ USAGE
 esac
 
 set -eu
+. env-clear
 
 PATH=/opt/homebrew/opt/e2fsprogs/sbin:/opt/homebrew/opt/e2fsprogs/bin:/usr/local/opt/e2fsprogs/sbin:/usr/local/opt/e2fsprogs/bin:/opt/homebrew/opt/xfsprogs/bin:/usr/local/opt/xfsprogs/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
 
-has_cmd() {
+check_fs_has_cmd() {
   command -v "$1" >/dev/null 2>&1
 }
 
 present=''
 missing=''
 for tool in resize2fs e2image xfs_growfs; do
-  if has_cmd "$tool"; then
+  if check_fs_has_cmd "$tool"; then
     present="$present $tool"
   else
     missing="$missing $tool"

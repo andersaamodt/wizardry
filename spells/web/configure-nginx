@@ -62,16 +62,16 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
-SITES_DIR="$WEB_ROOT"
-SITE_DIR="$SITES_DIR/$site_name"
+web_root=${WEB_WIZARDRY_ROOT:-$HOME/sites}
+sites_dir="$web_root"
+site_dir="$sites_dir/$site_name"
 
-if [ ! -d "$SITE_DIR" ]; then
+if [ ! -d "$site_dir" ]; then
   die "configure-nginx: site '$site_name' not found"
 fi
 
 site_user_default="$(printf '%s' "$site_name" | tr 'A-Z' 'a-z' | tr '.-' '__')"
-site_user=$(config-get "$SITE_DIR/site.conf" site-user 2>/dev/null || printf '')
+site_user=$(config-get "$site_dir/site.conf" site-user 2>/dev/null || printf '')
 [ -z "$site_user" ] && site_user="$site_user_default"
 
 # Note: configure-nginx runs as actual user to modify both nginx.conf and site.conf
@@ -81,71 +81,71 @@ site_user=$(config-get "$SITE_DIR/site.conf" site-user 2>/dev/null || printf '')
 
 # Read existing values from site.conf if options were not provided
 # This preserves existing configuration when rebuilding nginx.conf
-if [ "$port" = "8080" ] && [ -f "$SITE_DIR/site.conf" ]; then
+if [ "$port" = "8080" ] && [ -f "$site_dir/site.conf" ]; then
   # No --port option was given, use existing port from config
-  existing_port=$(config-get "$SITE_DIR/site.conf" port 2>/dev/null || echo "")
+  existing_port=$(config-get "$site_dir/site.conf" port 2>/dev/null || echo "")
   if [ -n "$existing_port" ]; then
     port=$existing_port
   fi
 fi
 
-if [ "$domain" = "localhost" ] && [ -f "$SITE_DIR/site.conf" ]; then
+if [ "$domain" = "localhost" ] && [ -f "$site_dir/site.conf" ]; then
   # No --domain option was given, use existing domain from config
-  existing_domain=$(config-get "$SITE_DIR/site.conf" domain 2>/dev/null || echo "")
+  existing_domain=$(config-get "$site_dir/site.conf" domain 2>/dev/null || echo "")
   if [ -n "$existing_domain" ]; then
     domain=$existing_domain
   fi
 fi
 
-if [ "$use_https" = "false" ] && [ -f "$SITE_DIR/site.conf" ]; then
+if [ "$use_https" = "false" ] && [ -f "$site_dir/site.conf" ]; then
   # No --https option was given, use existing https setting from config
-  existing_https=$(config-get "$SITE_DIR/site.conf" https 2>/dev/null || echo "")
+  existing_https=$(config-get "$site_dir/site.conf" https 2>/dev/null || echo "")
   if [ "$existing_https" = "true" ]; then
     use_https=true
   fi
 fi
 
 # Create nginx config directory
-NGINX_CONF_DIR="$SITE_DIR/nginx"
-mkdir -p "$NGINX_CONF_DIR"
+nginx_conf_dir="$site_dir/nginx"
+mkdir -p "$nginx_conf_dir"
 
 # Ensure nginx temp directories exist with proper permissions
 # nginx/ is owned by actual user, but may have stale permissions from old sites
 # Call fix-site-security to fix ownership/permissions before creating
-if [ ! -d "$NGINX_CONF_DIR/temp/client_body" ] || \
-   [ ! -d "$NGINX_CONF_DIR/temp/proxy" ] || \
-   [ ! -d "$NGINX_CONF_DIR/temp/fastcgi" ] || \
-   [ ! -d "$NGINX_CONF_DIR/temp/uwsgi" ] || \
-   [ ! -d "$NGINX_CONF_DIR/temp/scgi" ]; then
+if [ ! -d "$nginx_conf_dir/temp/client_body" ] || \
+   [ ! -d "$nginx_conf_dir/temp/proxy" ] || \
+   [ ! -d "$nginx_conf_dir/temp/fastcgi" ] || \
+   [ ! -d "$nginx_conf_dir/temp/uwsgi" ] || \
+   [ ! -d "$nginx_conf_dir/temp/scgi" ]; then
   # Fix permissions first (handles stale ownership from old wizardry versions)
   has fix-site-security && fix-site-security "$site_name" >/dev/null 2>&1 || true
   # Now create temp directories (fix-site-security may have already created them)
-  mkdir -p "$NGINX_CONF_DIR/temp/client_body" 2>/dev/null || true
-  mkdir -p "$NGINX_CONF_DIR/temp/proxy" 2>/dev/null || true
-  mkdir -p "$NGINX_CONF_DIR/temp/fastcgi" 2>/dev/null || true
-  mkdir -p "$NGINX_CONF_DIR/temp/uwsgi" 2>/dev/null || true
-  mkdir -p "$NGINX_CONF_DIR/temp/scgi" 2>/dev/null || true
+  mkdir -p "$nginx_conf_dir/temp/client_body" 2>/dev/null || true
+  mkdir -p "$nginx_conf_dir/temp/proxy" 2>/dev/null || true
+  mkdir -p "$nginx_conf_dir/temp/fastcgi" 2>/dev/null || true
+  mkdir -p "$nginx_conf_dir/temp/uwsgi" 2>/dev/null || true
+  mkdir -p "$nginx_conf_dir/temp/scgi" 2>/dev/null || true
 fi
 
 # Path to CGI scripts (site-specific first, then shared)
 WIZARDRY_DIR=${WIZARDRY_DIR:-$HOME/.wizardry}
-CGI_DIR="$WIZARDRY_DIR/spells/.imps/cgi"
-SITE_CGI_DIR=$(config-get "$SITE_DIR/site.conf" cgi-dir 2>/dev/null || printf '')
-if [ -z "$SITE_CGI_DIR" ]; then
-  SITE_CGI_DIR="$SITE_DIR/cgi"
-elif [ "${SITE_CGI_DIR#/*}" = "$SITE_CGI_DIR" ]; then
-  SITE_CGI_DIR="$SITE_DIR/$SITE_CGI_DIR"
+cgi_dir="$WIZARDRY_DIR/spells/.imps/cgi"
+site_cgi_dir=$(config-get "$site_dir/site.conf" cgi-dir 2>/dev/null || printf '')
+if [ -z "$site_cgi_dir" ]; then
+  site_cgi_dir="$site_dir/cgi"
+elif [ "${site_cgi_dir#/*}" = "$site_cgi_dir" ]; then
+  site_cgi_dir="$site_dir/$site_cgi_dir"
 fi
 
 # Copy mime.types to local directory if not exists
 # nginx/ is owned by actual user, so we can write directly
-MIME_TYPES="$NGINX_CONF_DIR/mime.types"
-if [ ! -f "$MIME_TYPES" ]; then
+mime_types="$nginx_conf_dir/mime.types"
+if [ ! -f "$mime_types" ]; then
   if [ -f /etc/nginx/mime.types ]; then
-    cp /etc/nginx/mime.types "$MIME_TYPES"
+    cp /etc/nginx/mime.types "$mime_types"
   else
     # Create minimal mime.types if system one doesn't exist
-    cat > "$MIME_TYPES" <<'MIMETYPES'
+    cat > "$mime_types" <<'MIMETYPES'
 types {
     text/html                                        html htm shtml;
     text/css                                         css;
@@ -166,36 +166,36 @@ MIMETYPES
 fi
 
 # Generate nginx configuration
-NGINX_CONF="$NGINX_CONF_DIR/nginx.conf"
+nginx_conf="$nginx_conf_dir/nginx.conf"
 
 step "Generating nginx configuration for $site_name"
 
-cat > "$NGINX_CONF" <<EOF
+cat > "$nginx_conf" <<EOF
 # nginx configuration for $site_name
 # Generated by web-wizardry
 # Config version: 4
 
 worker_processes 1;
 daemon off;
-error_log $SITE_DIR/nginx/error.log warn;
-pid $SITE_DIR/nginx/nginx.pid;
+error_log $site_dir/nginx/error.log warn;
+pid $site_dir/nginx/nginx.pid;
 
 events {
     worker_connections 1024;
 }
 
 http {
-    include $NGINX_CONF_DIR/mime.types;
+    include $nginx_conf_dir/mime.types;
     default_type application/octet-stream;
     
     # Use local temp directories instead of system paths
-    client_body_temp_path $NGINX_CONF_DIR/temp/client_body;
-    proxy_temp_path $NGINX_CONF_DIR/temp/proxy;
-    fastcgi_temp_path $NGINX_CONF_DIR/temp/fastcgi;
-    uwsgi_temp_path $NGINX_CONF_DIR/temp/uwsgi;
-    scgi_temp_path $NGINX_CONF_DIR/temp/scgi;
+    client_body_temp_path $nginx_conf_dir/temp/client_body;
+    proxy_temp_path $nginx_conf_dir/temp/proxy;
+    fastcgi_temp_path $nginx_conf_dir/temp/fastcgi;
+    uwsgi_temp_path $nginx_conf_dir/temp/uwsgi;
+    scgi_temp_path $nginx_conf_dir/temp/scgi;
     
-    access_log $SITE_DIR/nginx/access.log;
+    access_log $site_dir/nginx/access.log;
     
     sendfile on;
     keepalive_timeout 65;
@@ -208,7 +208,7 @@ http {
         # Accept configured domain and any .onion address (for Tor hidden services)
         server_name $domain *.onion;
         
-        root $SITE_DIR/build;
+        root $site_dir/build;
 
         # Agent runs can take minutes; keep FastCGI timeouts high globally.
         fastcgi_connect_timeout 30s;
@@ -241,14 +241,14 @@ http {
         
         # Serve static files
         location /static/ {
-            alias $SITE_DIR/build/static/;
+            alias $site_dir/build/static/;
         }
         
         # SSE endpoint - requires unbuffered streaming
         location ~ ^/cgi/chat-stream$ {
             # Resolve site-specific CGI first, then shared CGI
-            set \$site_cgi "$SITE_CGI_DIR/chat-stream";
-            set \$shared_cgi "$CGI_DIR/chat-stream";
+            set \$site_cgi "$site_cgi_dir/chat-stream";
+            set \$shared_cgi "$cgi_dir/chat-stream";
             set \$cgi_path \$shared_cgi;
             if (-f \$site_cgi) {
                 set \$cgi_path \$site_cgi;
@@ -273,7 +273,7 @@ http {
             fastcgi_send_timeout 300s;
             
             # FastCGI configuration
-            fastcgi_pass unix:$SITE_DIR/nginx/fcgiwrap.sock;
+            fastcgi_pass unix:$site_dir/nginx/fcgiwrap.sock;
             fastcgi_param SCRIPT_FILENAME \$cgi_path;
             fastcgi_param QUERY_STRING \$query_string;
             fastcgi_param REQUEST_METHOD \$request_method;
@@ -295,8 +295,8 @@ http {
         location ~ ^/cgi/(.+)$ {
             # Resolve site-specific CGI first, then shared CGI
             set \$cgi_script \$1;
-            set \$site_cgi "$SITE_CGI_DIR/\$cgi_script";
-            set \$shared_cgi "$CGI_DIR/\$cgi_script";
+            set \$site_cgi "$site_cgi_dir/\$cgi_script";
+            set \$shared_cgi "$cgi_dir/\$cgi_script";
             set \$cgi_path \$shared_cgi;
             if (-f \$site_cgi) {
                 set \$cgi_path \$site_cgi;
@@ -311,7 +311,7 @@ http {
             fastcgi_read_timeout 900s;
             
             # FastCGI configuration
-            fastcgi_pass unix:$SITE_DIR/nginx/fcgiwrap.sock;
+            fastcgi_pass unix:$site_dir/nginx/fcgiwrap.sock;
             fastcgi_param SCRIPT_FILENAME \$cgi_path;
             fastcgi_param QUERY_STRING \$query_string;
             fastcgi_param REQUEST_METHOD \$request_method;
@@ -333,9 +333,9 @@ http {
 EOF
 
 # Update site config
-config-set "$SITE_DIR/site.conf" port "$port"
-config-set "$SITE_DIR/site.conf" domain "$domain"
-config-set "$SITE_DIR/site.conf" https "$use_https"
+config-set "$site_dir/site.conf" port "$port"
+config-set "$site_dir/site.conf" domain "$domain"
+config-set "$site_dir/site.conf" https "$use_https"
 
 # Update Tor hidden service port if Tor hosting is enabled for this site
 if is-tor-installed; then
@@ -385,7 +385,7 @@ if is-tor-installed; then
   fi
 fi
 
-success "nginx configuration written to $NGINX_CONF"
+success "nginx configuration written to $nginx_conf"
 info "Port: $port"
 info "Domain: $domain"
 

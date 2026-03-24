@@ -23,30 +23,30 @@ if [ -z "$site_name" ]; then
   die 2 "stop-site: SITENAME required"
 fi
 
-WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
-SITES_DIR="$WEB_ROOT"
-SITE_DIR="$SITES_DIR/$site_name"
+web_root=${WEB_WIZARDRY_ROOT:-$HOME/sites}
+sites_dir="$web_root"
+site_dir="$sites_dir/$site_name"
 
-if [ ! -d "$SITE_DIR" ]; then
+if [ ! -d "$site_dir" ]; then
   die "stop-site: site '$site_name' not found"
 fi
 
 # Check if nginx is running
-if [ ! -f "$SITE_DIR/nginx/nginx.pid" ]; then
+if [ ! -f "$site_dir/nginx/nginx.pid" ]; then
   warn "stop-site: site '$site_name' is not running (no PID file)"
   exit 0
 fi
 
-pid=$(cat "$SITE_DIR/nginx/nginx.pid" 2>/dev/null || echo "")
+pid=$(cat "$site_dir/nginx/nginx.pid" 2>/dev/null || echo "")
 if [ -z "$pid" ]; then
   warn "stop-site: could not read PID file"
-  rm -f "$SITE_DIR/nginx/nginx.pid"
+  rm -f "$site_dir/nginx/nginx.pid"
   exit 0
 fi
 
 if ! kill -0 "$pid" 2>/dev/null; then
   warn "stop-site: site '$site_name' is not running (stale PID file)"
-  rm -f "$SITE_DIR/nginx/nginx.pid"
+  rm -f "$site_dir/nginx/nginx.pid"
   exit 0
 fi
 
@@ -96,6 +96,6 @@ else
 fi
 
 # Clean up PID file
-rm -f "$SITE_DIR/nginx/nginx.pid"
+rm -f "$site_dir/nginx/nginx.pid"
 
 success "Site '$site_name' stopped"

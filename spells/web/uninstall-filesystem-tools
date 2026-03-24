@@ -13,18 +13,19 @@ USAGE
 esac
 
 set -eu
+. env-clear
 
 PATH=/opt/homebrew/opt/e2fsprogs/sbin:/opt/homebrew/opt/e2fsprogs/bin:/usr/local/opt/e2fsprogs/sbin:/usr/local/opt/e2fsprogs/bin:/opt/homebrew/opt/xfsprogs/bin:/usr/local/opt/xfsprogs/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
 
-say() {
+uninstall_fs_say() {
   printf '%s\n' "$1"
 }
 
-has_cmd() {
+uninstall_fs_has_cmd() {
   command -v "$1" >/dev/null 2>&1
 }
 
-run_privileged() {
+uninstall_fs_run_privileged() {
   if "$@" 2>/dev/null; then
     return 0
   fi
@@ -36,7 +37,7 @@ run_privileged() {
     "$@"
     return 0
   fi
-  if has_cmd sudo; then
+  if uninstall_fs_has_cmd sudo; then
     sudo "$@"
     return 0
   fi
@@ -44,35 +45,35 @@ run_privileged() {
 }
 
 all_absent() {
-  ! has_cmd resize2fs && ! has_cmd xfs_growfs
+  ! uninstall_fs_has_cmd resize2fs && ! uninstall_fs_has_cmd xfs_growfs
 }
 
 if all_absent; then
-  say "Filesystem tools are already absent"
+  uninstall_fs_say "Filesystem tools are already absent"
   exit 0
 fi
 
 removed=0
 
-if has_cmd apt-get; then
-  run_privileged env DEBIAN_FRONTEND=noninteractive apt-get remove -y e2fsprogs xfsprogs >/dev/null 2>&1 || true
+if uninstall_fs_has_cmd apt-get; then
+  uninstall_fs_run_privileged env DEBIAN_FRONTEND=noninteractive apt-get remove -y e2fsprogs xfsprogs >/dev/null 2>&1 || true
   removed=1
-elif has_cmd dnf; then
-  run_privileged dnf remove -y e2fsprogs xfsprogs >/dev/null 2>&1 || true
+elif uninstall_fs_has_cmd dnf; then
+  uninstall_fs_run_privileged dnf remove -y e2fsprogs xfsprogs >/dev/null 2>&1 || true
   removed=1
-elif has_cmd brew; then
+elif uninstall_fs_has_cmd brew; then
   brew uninstall e2fsprogs xfsprogs >/dev/null 2>&1 || true
   removed=1
 fi
 
 if all_absent; then
-  say "Uninstalled filesystem tools"
+  uninstall_fs_say "Uninstalled filesystem tools"
   exit 0
 fi
 
 if [ "$removed" -eq 0 ]; then
-  say "uninstall-filesystem-tools: no supported package manager found." >&2
+  uninstall_fs_say "uninstall-filesystem-tools: no supported package manager found." >&2
 else
-  say "uninstall-filesystem-tools: filesystem tools are still present on PATH" >&2
+  uninstall_fs_say "uninstall-filesystem-tools: filesystem tools are still present on PATH" >&2
 fi
 exit 1

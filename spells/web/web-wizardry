@@ -61,12 +61,12 @@ trap 'exit 130' INT
 trap 'exit 0' TERM
 
 # Default web root directory
-WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
-SITES_DIR="$WEB_ROOT"
+web_root=${WEB_WIZARDRY_ROOT:-$HOME/sites}
+sites_dir="$web_root"
 
 # Ensure web root exists
-if [ ! -d "$WEB_ROOT" ]; then
-  mkdir -p "$WEB_ROOT"
+if [ ! -d "$web_root" ]; then
+  mkdir -p "$web_root"
 fi
 
 # Handle command-line arguments
@@ -94,8 +94,8 @@ case "$cmd" in
       site-status "$site_name"
     else
       # Show all sites
-      if [ -d "$SITES_DIR" ]; then
-        for site in "$SITES_DIR"/*; do
+      if [ -d "$sites_dir" ]; then
+        for site in "$sites_dir"/*; do
           [ -d "$site" ] || continue
           name=$(basename "$site")
           printf '%s: ' "$name"
@@ -213,8 +213,8 @@ while true; do
   site_count=0
   
   # Add existing sites as menu items first
-  if [ -d "$SITES_DIR" ]; then
-    for site in "$SITES_DIR"/*; do
+  if [ -d "$sites_dir" ]; then
+    for site in "$sites_dir"/*; do
       [ -d "$site" ] || continue
       name=$(basename "$site")
       set -- "$@" "${name}%site-menu \"${name}\""

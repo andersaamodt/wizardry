@@ -35,16 +35,16 @@ if [ -z "$site_name" ]; then
   die 2 "change-site-port: SITENAME required"
 fi
 
-WEB_ROOT="${WIZARDRY_SITES_DIR}"
-SITES_DIR="$WEB_ROOT"
-SITE_DIR="$SITES_DIR/$site_name"
+web_root="${WIZARDRY_SITES_DIR}"
+sites_dir="$web_root"
+site_dir="$sites_dir/$site_name"
 
-if [ ! -d "$SITE_DIR" ]; then
+if [ ! -d "$site_dir" ]; then
   die "change-site-port: site '$site_name' not found"
 fi
 
 site_user_default="$(printf '%s' "$site_name" | tr 'A-Z' 'a-z' | tr '.-' '__')"
-site_user=$(config-get "$SITE_DIR/site.conf" site-user 2>/dev/null || printf '')
+site_user=$(config-get "$site_dir/site.conf" site-user 2>/dev/null || printf '')
 [ -z "$site_user" ] && site_user="$site_user_default"
 interactive_input=0
 if [ -t 0 ] || [ -r /dev/tty ]; then
@@ -58,7 +58,7 @@ if [ -n "$site_user" ] && [ "$(id -un)" != "$site_user" ] && \
 fi
 
 # Get current port
-current_port=$(config-get "$SITE_DIR/site.conf" port 2>/dev/null || true)
+current_port=$(config-get "$site_dir/site.conf" port 2>/dev/null || true)
 [ -z "$current_port" ] && current_port=8080
 
 # Get new port from argument or prompt
@@ -99,8 +99,8 @@ step "Changing port from $current_port to $new_port for site '$site_name'"
 # Check if site is currently running
 is_serving=0
 nginx_pid=""
-if [ -f "$SITE_DIR/nginx/nginx.pid" ]; then
-  nginx_pid=$(cat "$SITE_DIR/nginx/nginx.pid" 2>/dev/null || echo "")
+if [ -f "$site_dir/nginx/nginx.pid" ]; then
+  nginx_pid=$(cat "$site_dir/nginx/nginx.pid" 2>/dev/null || echo "")
   if [ -n "$nginx_pid" ] && kill -0 "$nginx_pid" 2>/dev/null; then
     is_serving=1
   fi
@@ -108,12 +108,12 @@ fi
 
 # Update site.conf
 step "Updating site configuration..."
-config-set "$SITE_DIR/site.conf" port "$new_port"
+config-set "$site_dir/site.conf" port "$new_port"
 
 # Regenerate nginx.conf with new port
 step "Regenerating nginx configuration..."
-domain=$(config-get "$SITE_DIR/site.conf" domain 2>/dev/null || echo "localhost")
-use_https=$(config-get "$SITE_DIR/site.conf" https 2>/dev/null || echo "false")
+domain=$(config-get "$site_dir/site.conf" domain 2>/dev/null || echo "localhost")
+use_https=$(config-get "$site_dir/site.conf" https 2>/dev/null || echo "false")
 
 if [ "$use_https" = "true" ]; then
   configure-nginx "$site_name" --port "$new_port" --domain "$domain" --https

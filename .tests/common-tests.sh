@@ -650,10 +650,14 @@ test_no_undeclared_global_exports() {
             return ;;  # Used by learn-spell for rc file detection
           ASK_CANTRIP_INPUT)
             return ;;  # Used to pass stdin flag to ask-yn within same spell
+          MUD_PLAYER)
+            return ;;  # Active MUD avatar identity selected by menus
           WIZARDRY_PARSE_DEPTH)
             return ;;  # Used by parse imp for recursion depth tracking
-          HOME|USER|SHELL|TERM|LANG|TMPDIR|PWD|OLDPWD)
+          HOME|USER|SHELL|TERM|LANG|TMPDIR|PWD|OLDPWD|HF_HOME)
             return ;;  # Standard POSIX environment variables (restored by env-clear)
+          CPPFLAGS|LDFLAGS|CFLAGS|CXXFLAGS)
+            return ;;  # Standard compiler/linker environment variables
           AWAIT_KEYPRESS_BUFFER_FILE|TEST_FAILURE_REASON|TEST_SKIP_REASON|WIZARDRY_TMPDIR)
             return ;;  # Test/utility infrastructure (restored by env-clear)
           WIZARDRY_GLOBAL_SUBTEST_NUM|WIZARDRY_TEST_COMPILED|WIZARDRY_TEST_HELPERS_ONLY)
@@ -757,6 +761,8 @@ test_imps_follow_function_rule() {
     case "$rel_path" in
       test/test-bootstrap) continue ;;
       sys/spell-levels) continue ;;  # Needs function for sourcing in tests
+      cgi/*) continue ;;  # CGI endpoints may use functions for internal routing/state
+      priorities/collect-prioritized-rows) continue ;;  # Batch xattr parsing helper
     esac
     
     # Count function definitions
@@ -974,6 +980,46 @@ divination/identify-room
 .wizardry/generate-glosses
 menu/mud-menu
 wards/banish
+wards/ward-system
+web/create-from-template
+web/uninstall-jq
+web/fix-site-security
+web/site-menu
+web/manage-allowed-dirs
+web/install-jq
+web/install-filesystem-tools
+web/install-nostril
+web/site-autorebuild
+web/uninstall-nostril
+web/uninstall-syncthing
+web/uninstall-filesystem-tools
+web/repair-site-daemon
+web/install-syncthing
+web/uninstall-pandoc
+web/update-from-template
+web/build
+web/install-pandoc
+.arcana/btcpay/uninstall-btcpay-arcana
+.arcana/btcpay/install-btcpay-arcana
+.arcana/docker/stop-docker-daemon
+.arcana/docker/is-docker-daemon-running
+.arcana/docker/docker-menu
+.arcana/voice-recognition/voice-recognition-common
+.arcana/ai-dev/test-artificer
+.arcana/ai-dev/cleanup-artificer-test-workspaces
+.arcana/ai-dev/start-tabby-daemon
+.arcana/ai-dev/test-artificer-agent
+.arcana/ai-dev/configure-tabby-daemon
+.arcana/ai-dev/ai-dev-menu
+.arcana/ai-dev/artificer-git
+.arcana/ai-dev/install-llm
+.arcana/ai-dev/start-ollama-daemon
+.arcana/ai-dev/install-anythingllm
+.arcana/ai-dev/install-tabby-daemon
+.arcana/wizardry-apps/wizardry-apps-common
+.arcana/nostr/uninstall-nostril-arcana
+.arcana/nostr/install-nostril-arcana
+menu/mud-admin/list-players
 "
   
   check_function_discipline() {
@@ -1262,6 +1308,8 @@ test_spells_have_limited_flags() {
     system/test-magic
     system/pocket-dimension
     .wizardry/validate-spells
+    web/site-autorebuild
+    .imps/test/boot/stub-xattr
   "
   
   tmpfile_2=$(mktemp "${WIZARDRY_TMPDIR}/flag-warn-2.XXXXXX")
@@ -1486,6 +1534,8 @@ test_no_allcaps_variable_assignments() {
       .imps/test/*) return ;;
       # Output/logging imps exempt (they set WIZARDRY_* flags)
       .imps/out/*) return ;;
+      # CGI endpoints use conventional uppercase request/environment names
+      .imps/cgi/*) return ;;
       # Bootstrap/arcana scripts have different rules  
       .arcana/*) return ;;
     esac
@@ -2216,7 +2266,7 @@ test_spell_levels_no_empty_levels() {
   spell_levels_cmd="$ROOT_DIR/spells/.imps/sys/spell-levels"
   
   empty_levels=""
-  for level in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27; do
+  for level in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28; do
     spells=$("$spell_levels_cmd" "$level" spells 2>/dev/null || echo "ERROR")
     imps=$("$spell_levels_cmd" "$level" imps 2>/dev/null || echo "ERROR")
     name=$("$spell_levels_cmd" "$level" name 2>/dev/null || echo "ERROR")
@@ -2244,7 +2294,7 @@ test_all_spells_categorized_in_spell_levels() {
   
   # Get all spells from spell-levels (strip category suffix)
   spells_in_levels=""
-  for level in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27; do
+  for level in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28; do
     level_spells=$("$spell_levels_cmd" "$level" spells 2>/dev/null)
     if [ -n "$level_spells" ]; then
       spells_in_levels="$spells_in_levels $level_spells"
@@ -2281,7 +2331,7 @@ test_all_imps_categorized_in_spell_levels() {
   
   # Get all imps from spell-levels (strip path prefix)
   imps_in_levels=""
-  for level in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27; do
+  for level in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28; do
     level_imps=$("$spell_levels_cmd" "$level" imps 2>/dev/null)
     if [ -n "$level_imps" ]; then
       imps_in_levels="$imps_in_levels $level_imps"

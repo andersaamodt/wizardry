@@ -32,39 +32,42 @@ USAGE
   ;;
 --stop)
   # Stop listening mode
-  _listen_stop_only=1
+  listen_stop_only=1
   ;;
 *)
-  _listen_stop_only=0
+  listen_stop_only=0
   ;;
 esac
 
+# Explicit permissive mode for this sourced-only spell.
+set +eu
+
 # Uncastable pattern - detect if sourced (recommended) or executed
-_listen_sourced=0
+listen_sourced=0
 if eval '[ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; then
   case "${ZSH_EVAL_CONTEXT-}" in
-    *:file) _listen_sourced=1 ;;
+    *:file) listen_sourced=1 ;;
   esac
 elif eval '[ -n "${BASH_SOURCE:-}" ]' 2>/dev/null; then
   # In bash, if BASH_SOURCE[0] != $0, we're sourced
   if eval '[ "${BASH_SOURCE[0]}" != "$0" ]' 2>/dev/null; then
-    _listen_sourced=1
+    listen_sourced=1
   fi
 else
-  _listen_base=$(basename "$0" 2>/dev/null || printf '%s\n' "$0")
-  case "$_listen_base" in
-    sh|dash|bash|zsh|ksh|mksh) _listen_sourced=1 ;;
-    listen) _listen_sourced=0 ;;
-    *) _listen_sourced=1 ;;
+  listen_base=$(basename "$0" 2>/dev/null || printf '%s\n' "$0")
+  case "$listen_base" in
+    sh|dash|bash|zsh|ksh|mksh) listen_sourced=1 ;;
+    listen) listen_sourced=0 ;;
+    *) listen_sourced=1 ;;
   esac
 fi
 
 # Store for later use
-_listen_is_sourced=$_listen_sourced
-unset _listen_sourced _listen_base
+listen_is_sourced=$listen_sourced
+unset listen_sourced listen_base
 
 # Enforce uncastable pattern - listen MUST be sourced
-if [ "$_listen_is_sourced" -eq 0 ]; then
+if [ "$listen_is_sourced" -eq 0 ]; then
   printf '%s\n' "listen: This spell must be sourced, not executed directly" >&2
   printf '%s\n' "Usage: . listen" >&2
   printf '%s\n' "       source listen" >&2
@@ -73,23 +76,23 @@ fi
 
 # Save readline editing mode to prevent breakage (when tools are available)
 if command -v grep >/dev/null 2>&1 && command -v awk >/dev/null 2>&1; then
-  _listen_set_output=$(set -o 2>/dev/null || true)
-  if [ -n "$_listen_set_output" ]; then
+  listen_set_output=$(set -o 2>/dev/null || true)
+  if [ -n "$listen_set_output" ]; then
     # Extract emacs mode
-    _listen_emacs_mode=$(printf '%s\n' "$_listen_set_output" | \
+    listen_emacs_mode=$(printf '%s\n' "$listen_set_output" | \
       grep '^emacs' 2>/dev/null | awk '{print $2}' 2>/dev/null || printf '')
     # Extract vi mode
-    _listen_vi_mode=$(printf '%s\n' "$_listen_set_output" | \
+    listen_vi_mode=$(printf '%s\n' "$listen_set_output" | \
       grep '^vi' 2>/dev/null | awk '{print $2}' 2>/dev/null || printf '')
   else
-    _listen_emacs_mode=""
-    _listen_vi_mode=""
+    listen_emacs_mode=""
+    listen_vi_mode=""
   fi
-  unset _listen_set_output
+  unset listen_set_output
 else
   # grep/awk not available (restricted PATH) - skip readline preservation
-  _listen_emacs_mode=""
-  _listen_vi_mode=""
+  listen_emacs_mode=""
+  listen_vi_mode=""
 fi
 
 # Use permissive mode for our own logic
@@ -104,25 +107,25 @@ fi
 # Get room path
 # CRITICAL: When sourced from cd hook with no args, use $PWD (not cd's inherited $1)
 # But when sourced explicitly with an argument, allow that argument
-if [ "$_listen_is_sourced" -eq 1 ]; then
+if [ "$listen_is_sourced" -eq 1 ]; then
   # When sourced, $1 might be inherited from parent function (cd)
   # Only use $1 if it looks like an absolute path, otherwise use $PWD
   case "${1-}" in
-    /*) _listen_room_path="$1" ;;  # Absolute path - use it
-    *)  _listen_room_path="$PWD" ;;  # Relative or empty - use $PWD
+    /*) listen_room_path="$1" ;;  # Absolute path - use it
+    *)  listen_room_path="$PWD" ;;  # Relative or empty - use $PWD
   esac
 else
   # When executed directly (shouldn't happen due to uncastable, but just in case)
-  _listen_room_path=${1:-$PWD}
+  listen_room_path=${1:-$PWD}
 fi
 
 # If --stop was specified, stop all listeners
-if [ "$_listen_stop_only" = "1" ]; then
+if [ "$listen_stop_only" = "1" ]; then
   # Stop listening mode - kill all listener processes
   if command -v pgrep >/dev/null 2>&1; then
     # Find all tail processes following .log files
-    pgrep -f 'tail -f.*\.log' 2>/dev/null | while read -r _listen_pid; do
-      kill "$_listen_pid" 2>/dev/null || true
+    pgrep -f 'tail -f.*\.log' 2>/dev/null | while read -r listen_pid; do
+      kill "$listen_pid" 2>/dev/null || true
     done
   fi
   
@@ -134,41 +137,41 @@ if [ "$_listen_stop_only" = "1" ]; then
   set +e
   set +u
   # Restore readline mode
-  [ "${_listen_emacs_mode:-}" = "on" ] && set -o emacs 2>/dev/null || true
-  [ "${_listen_vi_mode:-}" = "on" ] && set -o vi 2>/dev/null || true
-  unset _listen_stop_only _listen_is_sourced _listen_room_path
-  unset _listen_emacs_mode _listen_vi_mode
+  [ "${listen_emacs_mode:-}" = "on" ] && set -o emacs 2>/dev/null || true
+  [ "${listen_vi_mode:-}" = "on" ] && set -o vi 2>/dev/null || true
+  unset listen_stop_only listen_is_sourced listen_room_path
+  unset listen_emacs_mode listen_vi_mode
   return 0 2>/dev/null || exit 0
 fi
 
 # Check if directory exists
-if [ ! -d "$_listen_room_path" ]; then
-  printf '%s\n' "listen: directory does not exist: $_listen_room_path" >&2
+if [ ! -d "$listen_room_path" ]; then
+  printf '%s\n' "listen: directory does not exist: $listen_room_path" >&2
   # When sourced (e.g., by cd hook), guarantee permissive mode instead of restoring
   set +e
   set +u
   # Restore readline mode
-  [ "${_listen_emacs_mode:-}" = "on" ] && set -o emacs 2>/dev/null || true
-  [ "${_listen_vi_mode:-}" = "on" ] && set -o vi 2>/dev/null || true
-  unset _listen_stop_only _listen_room_path _listen_is_sourced
-  unset _listen_emacs_mode _listen_vi_mode
+  [ "${listen_emacs_mode:-}" = "on" ] && set -o emacs 2>/dev/null || true
+  [ "${listen_vi_mode:-}" = "on" ] && set -o vi 2>/dev/null || true
+  unset listen_stop_only listen_room_path listen_is_sourced
+  unset listen_emacs_mode listen_vi_mode
   return 1 2>/dev/null || exit 1
 fi
 
-_listen_room_log="$_listen_room_path/.log"
+listen_room_log="$listen_room_path/.log"
 
 # Create log file if it doesn't exist
-if [ ! -f "$_listen_room_log" ]; then
-  touch "$_listen_room_log" 2>/dev/null || {
+if [ ! -f "$listen_room_log" ]; then
+  touch "$listen_room_log" 2>/dev/null || {
     printf '%s\n' "listen: cannot create log file (directory may be read-only)" >&2
     # When sourced (e.g., by cd hook), guarantee permissive mode instead of restoring
     set +e
     set +u
     # Restore readline mode
-    [ "${_listen_emacs_mode:-}" = "on" ] && set -o emacs 2>/dev/null || true
-    [ "${_listen_vi_mode:-}" = "on" ] && set -o vi 2>/dev/null || true
-    unset _listen_stop_only _listen_room_path _listen_room_log _listen_is_sourced
-    unset _listen_emacs_mode _listen_vi_mode
+    [ "${listen_emacs_mode:-}" = "on" ] && set -o emacs 2>/dev/null || true
+    [ "${listen_vi_mode:-}" = "on" ] && set -o vi 2>/dev/null || true
+    unset listen_stop_only listen_room_path listen_room_log listen_is_sourced
+    unset listen_emacs_mode listen_vi_mode
     return 1 2>/dev/null || exit 1
   }
 fi
@@ -176,12 +179,11 @@ fi
 # Get terminal width for calculating multi-line messages
 # Use tput cols if available, otherwise default to 80
 if command -v tput >/dev/null 2>&1; then
-  _listen_term_width=$(tput cols 2>/dev/null || printf '80')
+  listen_term_width=$(tput cols 2>/dev/null || printf '80')
 else
-  _listen_term_width=80
+  listen_term_width=80
 fi
 
-export LISTEN_TERM_WIDTH="$_listen_term_width"
 
 # Auto-stop ALL previous listeners to prevent duplicates
 # Simple and reliable - kill everything, start fresh
@@ -190,11 +192,11 @@ if command -v pkill >/dev/null 2>&1; then
   pkill -f 'tail -f.*\.log' 2>/dev/null || true
 elif command -v pgrep >/dev/null 2>&1; then
   # Fallback: collect PIDs first, then kill them
-  _old_pids=$(pgrep -f 'tail -f.*\.log' 2>/dev/null || true)
-  for _pid in $_old_pids; do
-    kill "$_pid" 2>/dev/null || true
+  old_pids=$(pgrep -f 'tail -f.*\.log' 2>/dev/null || true)
+  for pid in $old_pids; do
+    kill "$pid" 2>/dev/null || true
   done
-  unset _old_pids _pid
+  unset old_pids pid
 fi
 
 # Start monitoring in background
@@ -202,7 +204,7 @@ fi
 # Disable job control monitoring to suppress "[N] PID" messages
 set +m
 {
-  tail -f -n 0 "$_listen_room_log" 2>/dev/null | while IFS= read -r line; do
+  tail -f -n 0 "$listen_room_log" 2>/dev/null | while IFS= read -r line; do
     # Skip empty lines
     [ -z "$line" ] && continue
     
@@ -234,7 +236,7 @@ set +m
         msg_len=${#msg_text}
         
         # Calculate number of lines needed (round up)
-        lines_needed=$(( (msg_len + LISTEN_TERM_WIDTH - 1) / LISTEN_TERM_WIDTH ))
+        lines_needed=$(( (msg_len + listen_term_width - 1) / listen_term_width ))
         [ "$lines_needed" -lt 1 ] && lines_needed=1
         
         # Strategy: Scroll display up, move cursor up to compensate, insert lines, print message
@@ -275,7 +277,7 @@ set +m
         # Fallback for lines that don't match expected format
         # Calculate length and lines needed
         msg_len=$(printf '%s' "$line" | wc -c)
-        lines_needed=$(( (msg_len + 3 + LISTEN_TERM_WIDTH - 1) / LISTEN_TERM_WIDTH ))  # +3 for "🔮 "
+        lines_needed=$(( (msg_len + 3 + listen_term_width - 1) / listen_term_width ))  # +3 for "🔮 "
         [ "$lines_needed" -lt 1 ] && lines_needed=1
         
         # Save cursor position
@@ -310,19 +312,19 @@ set +m
     esac
   done
 } &
-_listen_monitor_pid=$!
+listen_monitor_pid=$!
 # Re-enable job control
 set -m
 
 # Clean up variables and guarantee permissive mode
-unset _listen_stop_only _listen_room_path _listen_room_log _listen_is_sourced \
-  _listen_monitor_pid _listen_term_width
+unset listen_stop_only listen_room_path listen_room_log listen_is_sourced \
+  listen_monitor_pid listen_term_width
 
 # When sourced (e.g., by cd hook), guarantee permissive mode instead of restoring
 # Restoring saved opts can re-enable strict modes that break readline
 set +e
 set +u
 # Restore readline mode
-[ "${_listen_emacs_mode:-}" = "on" ] && set -o emacs 2>/dev/null || true
-[ "${_listen_vi_mode:-}" = "on" ] && set -o vi 2>/dev/null || true
-unset _listen_emacs_mode _listen_vi_mode
+[ "${listen_emacs_mode:-}" = "on" ] && set -o emacs 2>/dev/null || true
+[ "${listen_vi_mode:-}" = "on" ] && set -o vi 2>/dev/null || true
+unset listen_emacs_mode listen_vi_mode

@@ -12,18 +12,19 @@ USAGE
 esac
 
 set -eu
+. env-clear
 
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
 
-say() {
+syncthing_uninstall_say() {
   printf '%s\n' "$1"
 }
 
-has_cmd() {
+syncthing_uninstall_has_cmd() {
   command -v "$1" >/dev/null 2>&1
 }
 
-run_privileged() {
+syncthing_uninstall_run_privileged() {
   if "$@" 2>/dev/null; then
     return 0
   fi
@@ -35,33 +36,33 @@ run_privileged() {
     "$@"
     return 0
   fi
-  if has_cmd sudo; then
+  if syncthing_uninstall_has_cmd sudo; then
     sudo "$@"
     return 0
   fi
   "$@"
 }
 
-if ! has_cmd syncthing; then
-  say "Syncthing is already absent"
+if ! syncthing_uninstall_has_cmd syncthing; then
+  syncthing_uninstall_say "Syncthing is already absent"
   exit 0
 fi
 
-if has_cmd apt-get; then
-  run_privileged env DEBIAN_FRONTEND=noninteractive apt-get remove -y syncthing >/dev/null
-elif has_cmd dnf; then
-  run_privileged dnf remove -y syncthing >/dev/null
-elif has_cmd brew; then
+if syncthing_uninstall_has_cmd apt-get; then
+  syncthing_uninstall_run_privileged env DEBIAN_FRONTEND=noninteractive apt-get remove -y syncthing >/dev/null
+elif syncthing_uninstall_has_cmd dnf; then
+  syncthing_uninstall_run_privileged dnf remove -y syncthing >/dev/null
+elif syncthing_uninstall_has_cmd brew; then
   brew uninstall syncthing >/dev/null
 else
-  say "uninstall-syncthing: no supported package manager found." >&2
+  syncthing_uninstall_say "uninstall-syncthing: no supported package manager found." >&2
   exit 1
 fi
 
-if has_cmd syncthing; then
-  say "uninstall-syncthing: removal incomplete. Ensure syncthing is removed from PATH." >&2
+if syncthing_uninstall_has_cmd syncthing; then
+  syncthing_uninstall_say "uninstall-syncthing: removal incomplete. Ensure syncthing is removed from PATH." >&2
   exit 1
 fi
 
-say "Removed Syncthing"
+syncthing_uninstall_say "Removed Syncthing"
 exit 0

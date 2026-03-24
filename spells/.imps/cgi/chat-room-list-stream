@@ -2,6 +2,9 @@
 # chat-room-list-stream - SSE endpoint for real-time room list updates
 # Monitors chatrooms directory and sends updates when rooms are created/deleted
 
+# Explicit permissive mode before streaming headers.
+set +eu
+
 # Send SSE headers with CORS support FIRST (before set -eu)
 printf 'Status: 200 OK\r\n'
 printf 'Content-Type: text/event-stream\r\n'

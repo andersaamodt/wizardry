@@ -96,8 +96,7 @@ while true; do
   if [ -z "${MUD_PLAYER-}" ] && [ -f "$mud_config_file" ]; then
     saved_player=$(config-get "$mud_config_file" player 2>/dev/null || printf '')
     if [ -n "$saved_player" ] && validate-player-name "$saved_player" 2>/dev/null; then
-      MUD_PLAYER=$saved_player
-      export MUD_PLAYER
+      export MUD_PLAYER="$saved_player"
     fi
     unset saved_player
   fi

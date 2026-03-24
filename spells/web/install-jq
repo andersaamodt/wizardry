@@ -12,18 +12,19 @@ USAGE
 esac
 
 set -eu
+. env-clear
 
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
 
-say() {
+jq_say() {
   printf '%s\n' "$1"
 }
 
-has_cmd() {
+jq_has_cmd() {
   command -v "$1" >/dev/null 2>&1
 }
 
-run_privileged() {
+jq_run_privileged() {
   if "$@" 2>/dev/null; then
     return 0
   fi
@@ -35,34 +36,34 @@ run_privileged() {
     "$@"
     return 0
   fi
-  if has_cmd sudo; then
+  if jq_has_cmd sudo; then
     sudo "$@"
     return 0
   fi
   "$@"
 }
 
-if has_cmd jq; then
-  say "jq is already installed"
+if jq_has_cmd jq; then
+  jq_say "jq is already installed"
   exit 0
 fi
 
-if has_cmd apt-get; then
-  run_privileged apt-get update -y >/dev/null
-  run_privileged env DEBIAN_FRONTEND=noninteractive apt-get install -y jq >/dev/null
-elif has_cmd dnf; then
-  run_privileged dnf install -y jq >/dev/null
-elif has_cmd brew; then
+if jq_has_cmd apt-get; then
+  jq_run_privileged apt-get update -y >/dev/null
+  jq_run_privileged env DEBIAN_FRONTEND=noninteractive apt-get install -y jq >/dev/null
+elif jq_has_cmd dnf; then
+  jq_run_privileged dnf install -y jq >/dev/null
+elif jq_has_cmd brew; then
   brew install jq >/dev/null
 else
-  say "install-jq: no supported package manager found." >&2
+  jq_say "install-jq: no supported package manager found." >&2
   exit 1
 fi
 
-if has_cmd jq; then
-  say "Installed jq"
+if jq_has_cmd jq; then
+  jq_say "Installed jq"
   exit 0
 fi
 
-say "install-jq: installation incomplete. Ensure jq is on PATH." >&2
+jq_say "install-jq: installation incomplete. Ensure jq is on PATH." >&2
 exit 1

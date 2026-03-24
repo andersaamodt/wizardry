@@ -52,20 +52,19 @@ fi
 
 # Get config file location
 spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
-CONFIG_FILE="$spell_home/.mud"
+config_file="$spell_home/.mud"
 
 # Use temp file imp for selection tracking
-SELECTION_FILE=$(temp-file mud-menu-selection)
-export SELECTION_FILE
+selection_file=$(temp-file mud-menu-selection)
 # Catch Ctrl-C, TERM, and EXIT signals to clean up properly
 # For sourced scripts: INT (Ctrl-C) returns 130, TERM returns 0, EXIT always cleans up
-trap 'cleanup-file "$SELECTION_FILE" 2>/dev/null || true' EXIT
-trap 'cleanup-file "$SELECTION_FILE" 2>/dev/null || true; return 130' INT
-trap 'cleanup-file "$SELECTION_FILE" 2>/dev/null || true; return 0' TERM
+trap 'cleanup-file "$selection_file" 2>/dev/null || true' EXIT
+trap 'cleanup-file "$selection_file" 2>/dev/null || true; return 130' INT
+trap 'cleanup-file "$selection_file" 2>/dev/null || true; return 0' TERM
 
 # Ensure spellbook directory and config file exist
 mkdir -p "$spell_home"
-touch "$CONFIG_FILE"
+touch "$config_file"
 
 # Check if a MUD config feature is enabled
 is_feature_enabled() {
@@ -81,7 +80,7 @@ is_feature_enabled() {
   esac
   
   # Get the value using config-get
-  value=$(config-get "$CONFIG_FILE" "$feature" 2>/dev/null || printf '')
+  value=$(config-get "$config_file" "$feature" 2>/dev/null || printf '')
   
   # If no value set, use default
   if [ -z "$value" ]; then
@@ -100,8 +99,8 @@ while true; do
   unset menu_status
   
   # Read last selected position from temp file, default to 1
-  if [ -f "$SELECTION_FILE" ]; then
-    start_selection=$(cat "$SELECTION_FILE" 2>/dev/null || printf '1')
+  if [ -f "$selection_file" ]; then
+    start_selection=$(cat "$selection_file" 2>/dev/null || printf '1')
     # Handle empty file
     if [ -z "$start_selection" ]; then
       start_selection=1
@@ -113,44 +112,44 @@ while true; do
   
   # Build parse toggle
   if is_feature_enabled "parse-enabled"; then
-    parse_toggle="[X] Parse (natural language commands)%toggle-parse; echo 3 > \"$SELECTION_FILE\""
+    parse_toggle="[X] Parse (natural language commands)%toggle-parse; echo 3 > \"$selection_file\""
   else
-    parse_toggle="[ ] Parse (natural language commands)%toggle-parse; echo 3 > \"$SELECTION_FILE\""
+    parse_toggle="[ ] Parse (natural language commands)%toggle-parse; echo 3 > \"$selection_file\""
   fi
   
   # Build cd hook toggle label based on current state
   if is_feature_enabled "cd-look"; then
-    cd_hook="[X] Look on directory change (cd hook)%. toggle-cd; echo 5 > \"$SELECTION_FILE\""
+    cd_hook="[X] Look on directory change (cd hook)%. toggle-cd; echo 5 > \"$selection_file\""
   else
-    cd_hook="[ ] Look on directory change (cd hook)%. toggle-cd; echo 5 > \"$SELECTION_FILE\""
+    cd_hook="[ ] Look on directory change (cd hook)%. toggle-cd; echo 5 > \"$selection_file\""
   fi
   
   # Build cd-listen toggle
   if is_feature_enabled "cd-listen"; then
-    cd_listen="[X] Listen on directory change (cd hook)%. toggle-listen; echo 6 > \"$SELECTION_FILE\""
+    cd_listen="[X] Listen on directory change (cd hook)%. toggle-listen; echo 6 > \"$selection_file\""
   else
-    cd_listen="[ ] Listen on directory change (cd hook)%. toggle-listen; echo 6 > \"$SELECTION_FILE\""
+    cd_listen="[ ] Listen on directory change (cd hook)%. toggle-listen; echo 6 > \"$selection_file\""
   fi
   
   # Build avatar toggle
   if is_feature_enabled "avatar"; then
-    avatar="[X] Avatar (HP/MP, inventory)%toggle-avatar; echo 7 > \"$SELECTION_FILE\""
+    avatar="[X] Avatar (HP/MP, inventory)%toggle-avatar; echo 7 > \"$selection_file\""
   else
-    avatar="[ ] Avatar (HP/MP, inventory)%toggle-avatar; echo 7 > \"$SELECTION_FILE\""
+    avatar="[ ] Avatar (HP/MP, inventory)%toggle-avatar; echo 7 > \"$selection_file\""
   fi
   
   # Build touch hook toggle
   if is_feature_enabled "touch-hook"; then
-    touch_hook="[X] On-touch triggers (touch hook)%toggle-touch-hook; echo 8 > \"$SELECTION_FILE\""
+    touch_hook="[X] On-touch triggers (touch hook)%toggle-touch-hook; echo 8 > \"$selection_file\""
   else
-    touch_hook="[ ] On-touch triggers (touch hook)%toggle-touch-hook; echo 8 > \"$SELECTION_FILE\""
+    touch_hook="[ ] On-touch triggers (touch hook)%toggle-touch-hook; echo 8 > \"$selection_file\""
   fi
   
   # Build show/hide MUD in main menu toggle
   if is_feature_enabled "mud-enabled"; then
-    mud_menu="[X] Show MUD in main menu%toggle-mud-menu; echo 4 > \"$SELECTION_FILE\""
+    mud_menu="[X] Show MUD in main menu%toggle-mud-menu; echo 4 > \"$selection_file\""
   else
-    mud_menu="[ ] Show MUD in main menu%toggle-mud-menu; echo 4 > \"$SELECTION_FILE\""
+    mud_menu="[ ] Show MUD in main menu%toggle-mud-menu; echo 4 > \"$selection_file\""
   fi
   
   # Detect tor hidden service configuration status early (needed for all_enabled check)
@@ -205,10 +204,10 @@ while true; do
   
   if [ "$all_enabled" -eq 1 ]; then
     # When disabling, copy_onion and separator will disappear, moving toggle_all from position 10 to 8
-    toggle_all="Disable all MUD features%toggle-all-mud --disable; echo 8 > \"$SELECTION_FILE\""
+    toggle_all="Disable all MUD features%toggle-all-mud --disable; echo 8 > \"$selection_file\""
   else
     # When enabling, copy_onion and separator will appear, keeping toggle_all at position 10
-    toggle_all="Enable all MUD features%toggle-all-mud --enable; echo 10 > \"$SELECTION_FILE\""
+    toggle_all="Enable all MUD features%toggle-all-mud --enable; echo 10 > \"$selection_file\""
   fi
   
   # Build tor hidden service toggle based on current state
@@ -216,12 +215,12 @@ while true; do
     # remove-tor-hidden-service already restarts tor, so no need to restart again
     tor_cmd="remove-tor-hidden-service -y"
     # When disabling, copy_onion and separator will disappear, moving tor from position 9 to 7
-    tor="[X] Tor hosting%$tor_cmd; echo 7 > \"$SELECTION_FILE\""
+    tor="[X] Tor hosting%$tor_cmd; echo 7 > \"$selection_file\""
   else
     # setup-tor already restarts tor, so no need to restart again
     tor_cmd="setup-tor -y"
     # When enabling, copy_onion and separator will appear, keeping tor at 9
-    tor="[ ] Tor hosting%$tor_cmd; echo 9 > \"$SELECTION_FILE\""
+    tor="[ ] Tor hosting%$tor_cmd; echo 9 > \"$selection_file\""
   fi
   
   # Build copy .onion address option if tor is configured
@@ -237,7 +236,7 @@ while true; do
       hostname_file="$hostname_dir/hostname"
       copy_cmd="clip-copy \"\$(sudo cat \"$hostname_file\" 2>/dev/null"
       copy_cmd="$copy_cmd || cat \"$hostname_file\")\""
-      copy_onion="Copy .onion address%$copy_cmd; echo 1 > \"$SELECTION_FILE\""
+      copy_onion="Copy .onion address%$copy_cmd; echo 1 > \"$selection_file\""
       separator="---"
     fi
   fi

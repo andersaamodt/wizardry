@@ -29,6 +29,7 @@ USAGE
 esac
 
 set -eu
+. env-clear
 
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
 
@@ -124,7 +125,7 @@ else
   }
 fi
 
-run_privileged() {
+autorebuild_run_privileged() {
   if [ "$(id -u 2>/dev/null || printf '1')" -eq 0 ]; then
     "$@"
     return 0
@@ -149,11 +150,11 @@ run_as_user() {
     return 0
   fi
   if command -v runuser >/dev/null 2>&1; then
-    run_privileged runuser -u "$target_user" -- "$@"
+    autorebuild_run_privileged runuser -u "$target_user" -- "$@"
     return 0
   fi
   if command -v sudo >/dev/null 2>&1; then
-    run_privileged sudo -u "$target_user" "$@"
+    autorebuild_run_privileged sudo -u "$target_user" "$@"
     return 0
   fi
   "$@"
@@ -317,8 +318,8 @@ resolve_managed_current_target() {
 
 ensure_state_dir() {
   if [ "$mode" = managed ]; then
-    run_privileged install -d -m 755 "$state_dir"
-    run_privileged chown "$site_user:$site_user" "$state_dir" 2>/dev/null || true
+    autorebuild_run_privileged install -d -m 755 "$state_dir"
+    autorebuild_run_privileged chown "$site_user:$site_user" "$state_dir" 2>/dev/null || true
   else
     mkdir -p "$state_dir" "$(dirname "$log_file")"
   fi
@@ -486,7 +487,7 @@ managed_cron_present() {
     printf '%s\n' no
     return 0
   fi
-  if run_privileged grep -q "$cron_begin" "$cron_file" 2>/dev/null; then
+  if autorebuild_run_privileged grep -q "$cron_begin" "$cron_file" 2>/dev/null; then
     printf '%s\n' yes
     return 0
   fi
@@ -521,7 +522,7 @@ emit_status() {
   fi
   script_installed=no
   if [ "$mode" = managed ]; then
-    if run_privileged test -x "$spell_exec_path" >/dev/null 2>&1; then
+    if autorebuild_run_privileged test -x "$spell_exec_path" >/dev/null 2>&1; then
       script_installed=yes
     fi
   else
@@ -585,16 +586,16 @@ enable_local() {
 }
 
 enable_managed() {
-  run_privileged test -d "$site_root" >/dev/null 2>&1 || {
+  autorebuild_run_privileged test -d "$site_root" >/dev/null 2>&1 || {
     printf '%s\n' "site-autorebuild: managed site root not found: $site_root" >&2
     exit 1
   }
-  run_privileged test -x "$spell_exec_path" >/dev/null 2>&1 || {
+  autorebuild_run_privileged test -x "$spell_exec_path" >/dev/null 2>&1 || {
     printf '%s\n' "site-autorebuild: managed spell not found on server runtime: $spell_exec_path" >&2
     exit 1
   }
   ensure_state_dir
-  run_privileged sh -eu -c '
+  autorebuild_run_privileged sh -eu -c '
     cron_file=$1
     cron_begin=$2
     cron_end=$3
@@ -612,9 +613,9 @@ enable_managed() {
     install -m 644 "$tmp_file" "$cron_file"
     rm -f "$tmp_file"
   ' sh "$cron_file" "$cron_begin" "$cron_end" "$site_user" "$spell_exec_path" "$content_root" "$log_file"
-  run_privileged touch "$log_file"
-  run_privileged chown "$site_user:$site_user" "$log_file" 2>/dev/null || true
-  run_privileged sh -eu -c 'nohup /bin/sh "$1" watch-daemon --managed "$2" "$3" >/dev/null 2>&1 &' sh "$spell_exec_path" "$site_user" "$content_root"
+  autorebuild_run_privileged touch "$log_file"
+  autorebuild_run_privileged chown "$site_user:$site_user" "$log_file" 2>/dev/null || true
+  autorebuild_run_privileged sh -eu -c 'nohup /bin/sh "$1" watch-daemon --managed "$2" "$3" >/dev/null 2>&1 &' sh "$spell_exec_path" "$site_user" "$content_root"
 }
 
 disable_local() {
@@ -629,8 +630,8 @@ disable_local() {
 }
 
 disable_managed() {
-  if run_privileged test -f "$cron_file" >/dev/null 2>&1; then
-    run_privileged rm -f "$cron_file"
+  if autorebuild_run_privileged test -f "$cron_file" >/dev/null 2>&1; then
+    autorebuild_run_privileged rm -f "$cron_file"
   fi
   stop_watcher
 }

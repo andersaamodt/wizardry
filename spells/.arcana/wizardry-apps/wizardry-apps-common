@@ -2,6 +2,21 @@
 
 # Shared helpers for the wizardry-apps arcanum.
 
+case "${1-}" in
+--help|--usage|-h)
+  case "$0" in
+    */wizardry-apps-common)
+      cat <<'USAGE'
+Usage: wizardry-apps-common
+
+Shared helper library for wizardry-apps arcana spells.
+USAGE
+      exit 0
+      ;;
+  esac
+  ;;
+esac
+
 wizardry_apps_repo_url=${WIZARDRY_APPS_REPO_URL:-https://github.com/andersaamodt/wizardry-apps.git}
 wizardry_apps_dir=${WIZARDRY_APPS_DIR:-$HOME/git/wizardry-apps}
 

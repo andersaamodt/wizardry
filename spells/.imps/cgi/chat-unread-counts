@@ -3,6 +3,9 @@
 # Lightweight endpoint that streams only unread counts (not full messages)
 # Monitors all chat room directories and sends updates when counts change
 
+# Explicit permissive mode before streaming headers.
+set +eu
+
 # Send SSE headers with CORS support FIRST (before set -eu)
 printf 'Status: 200 OK\r\n'
 printf 'Content-Type: text/event-stream\r\n'

@@ -28,6 +28,7 @@ USAGE
 esac
 
 set -eu
+. env-clear
 
 # Use WIZARDRY_DIR from environment
 wizardry_dir=${WIZARDRY_DIR:-$HOME/.wizardry}

@@ -23,15 +23,15 @@ if [ -z "$site_name" ]; then
   die 2 "disable-site-daemon: SITENAME required"
 fi
 
-WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
-SITES_DIR="$WEB_ROOT"
-SITE_DIR="$SITES_DIR/$site_name"
+web_root=${WEB_WIZARDRY_ROOT:-$HOME/sites}
+sites_dir="$web_root"
+site_dir="$sites_dir/$site_name"
 
-if [ ! -d "$SITE_DIR" ]; then
+if [ ! -d "$site_dir" ]; then
   die "disable-site-daemon: site '$site_name' not found"
 fi
 
-run_priv() {
+disable_run_priv() {
   if [ "$(id -u)" -eq 0 ]; then
     "$@"
     return
@@ -47,14 +47,14 @@ unit="wizardry-site-${site_name}.service"
 plist="/Library/LaunchDaemons/org.wizardry.web.${site_name}.plist"
 
 if has systemctl; then
-  run_priv systemctl disable "$unit"
+  disable_run_priv systemctl disable "$unit"
   success "Daemon disabled on startup for $site_name"
   exit 0
 fi
 
 if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
-  run_priv launchctl unload -w "$plist" >/dev/null 2>&1 || true
-  run_priv rm -f "$plist"
+  disable_run_priv launchctl unload -w "$plist" >/dev/null 2>&1 || true
+  disable_run_priv rm -f "$plist"
   success "Daemon disabled on startup for $site_name"
   exit 0
 fi

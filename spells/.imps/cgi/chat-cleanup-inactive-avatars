@@ -3,8 +3,7 @@
 # This should be called periodically (e.g., on message send or page view)
 # to clean up avatars that haven't been active for >5 minutes
 
-# Note: Not using set -eu because we want to continue even if individual commands fail
-# All commands have appropriate error handling with || true or || echo
+set -eu
 
 # Takes room directory as argument
 room_dir=${1:-}

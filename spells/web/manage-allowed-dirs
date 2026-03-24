@@ -24,17 +24,17 @@ if [ -z "$site_name" ]; then
   die 2 "manage-allowed-dirs: SITENAME required"
 fi
 
-WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
-SITES_DIR="$WEB_ROOT"
-SITE_DIR="$SITES_DIR/$site_name"
-ALLOWLIST_FILE="$SITE_DIR/site.allowlist"
+web_root=${WEB_WIZARDRY_ROOT:-$HOME/sites}
+sites_dir="$web_root"
+site_dir="$sites_dir/$site_name"
+allowlist_file="$site_dir/site.allowlist"
 
-if [ ! -d "$SITE_DIR" ]; then
+if [ ! -d "$site_dir" ]; then
   die "manage-allowed-dirs: site '$site_name' not found"
 fi
 
 site_user_default="$(printf '%s' "$site_name" | tr 'A-Z' 'a-z' | tr '.-' '__')"
-site_user=$(config-get "$SITE_DIR/site.conf" site-user 2>/dev/null || printf '')
+site_user=$(config-get "$site_dir/site.conf" site-user 2>/dev/null || printf '')
 [ -z "$site_user" ] && site_user="$site_user_default"
 if [ -n "$site_user" ] && [ "$(id -un)" != "$site_user" ] && [ -z "${WIZARDRY_SITE_USER_REEXEC-}" ]; then
   if has sudo; then
@@ -43,24 +43,24 @@ if [ -n "$site_user" ] && [ "$(id -un)" != "$site_user" ] && [ -z "${WIZARDRY_SI
 fi
 
 ensure_allowlist_file() {
-  if [ -f "$ALLOWLIST_FILE" ]; then
+  if [ -f "$allowlist_file" ]; then
     return 0
   fi
-  cat > "$ALLOWLIST_FILE" <<'EOF'
+  cat > "$allowlist_file" <<'EOF'
 # List additional absolute paths this site may access.
 # One path per line. Lines starting with # are ignored.
 EOF
 }
 
 list_allowlist_entries() {
-  if [ ! -f "$ALLOWLIST_FILE" ]; then
+  if [ ! -f "$allowlist_file" ]; then
     return 0
   fi
   while IFS= read -r line || [ -n "$line" ]; do
     line=$(printf '%s' "$line" | sed 's/#.*$//' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
     [ -z "$line" ] && continue
     printf '%s\n' "$line"
-  done < "$ALLOWLIST_FILE"
+  done < "$allowlist_file"
 }
 
 add_allowlist_entry() {
@@ -86,7 +86,7 @@ add_allowlist_entry() {
     warn "Path already allowlisted"
     return 1
   fi
-  printf '%s\n' "$new_path" >> "$ALLOWLIST_FILE"
+  printf '%s\n' "$new_path" >> "$allowlist_file"
   success "Allowlisted: $new_path"
   fix-site-security "$site_name"
 }
@@ -105,15 +105,15 @@ remove_allowlist_entry() {
   esac
 
   temp_file=$(temp-file allowlist)
-  if [ -f "$ALLOWLIST_FILE" ]; then
+  if [ -f "$allowlist_file" ]; then
     while IFS= read -r line || [ -n "$line" ]; do
       trimmed=$(printf '%s' "$line" | sed 's/#.*$//' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
       if [ -n "$trimmed" ] && [ "$trimmed" = "$remove_path" ]; then
         continue
       fi
       printf '%s\n' "$line" >> "$temp_file"
-    done < "$ALLOWLIST_FILE"
-    mv "$temp_file" "$ALLOWLIST_FILE"
+    done < "$allowlist_file"
+    mv "$temp_file" "$allowlist_file"
   else
     cleanup-file "$temp_file"
   fi

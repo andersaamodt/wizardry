@@ -20,12 +20,12 @@ case "$level" in
   1)
     name='Banish & Validation Infrastructure'
     spells='banish:wards validate-spells:.wizardry'
-    imps='cond/empty cond/full cond/given cond/gone cond/has cond/has-ancestor cond/is cond/is-path cond/is-posint cond/lacks cond/newer cond/no cond/nonempty cond/older cond/there cond/within-range cond/yes out/debug out/die out/disable-palette out/fail out/first-of out/heading-section out/heading-separator out/heading-simple out/info out/ok out/or-else out/print-fail out/print-pass out/quiet out/step out/success out/usage-error out/warn sys/spell-levels text/count-words text/pluralize'
+    imps='cond/empty cond/full cond/given cond/gone cond/has cond/has-ancestor cond/is cond/is-path cond/is-posint cond/lacks cond/newer cond/no cond/nonempty cond/older cond/there cond/validate-mud-handle cond/within-range cond/yes out/debug out/die out/disable-palette out/fail out/first-of out/heading-section out/heading-separator out/heading-simple out/info out/ok out/or-else out/print-fail out/print-pass out/quiet out/step out/success out/usage-error out/warn sys/spell-levels text/count-words text/pluralize'
     ;;
   2)
     name='Installation Infrastructure'
     spells=''
-    imps='declare-globals fs/cleanup-dir fs/cleanup-file fs/temp-dir fs/temp-file input/read-line input/tty-raw input/tty-restore input/tty-save paths/abs-path paths/ensure-dir paths/file-name paths/here paths/norm-path paths/parent paths/path paths/script-dir paths/strip-trailing-slashes paths/temp paths/tilde-path str/contains str/differs str/ends str/equals str/lower str/matches str/seeks str/starts str/trim str/upper sys/any sys/ask-install-wizardry sys/clear-traps sys/clipboard-available sys/env-clear sys/env-or sys/invoke-thesaurus sys/invoke-wizardry sys/must sys/need sys/nix-rebuild sys/nix-shell-add sys/nix-shell-remove sys/nix-shell-status sys/now sys/on sys/on-exit sys/require sys/require-wizardry sys/where'
+    imps='declare-globals fs/cleanup-dir fs/cleanup-file fs/temp-dir fs/temp-file input/read-line input/tty-raw input/tty-restore input/tty-save paths/abs-path paths/ensure-dir paths/file-name paths/here paths/norm-path paths/parent paths/path paths/script-dir paths/strip-trailing-slashes paths/temp paths/tilde-path str/contains str/differs str/ends str/equals str/lower str/matches str/seeks str/starts str/trim str/upper sys/add-pkgin-to-path sys/any sys/ask-install-wizardry sys/clear-traps sys/clipboard-available sys/env-clear sys/env-or sys/invoke-thesaurus sys/invoke-wizardry sys/must sys/need sys/nix-rebuild sys/nix-shell-add sys/nix-shell-remove sys/nix-shell-status sys/now sys/on sys/on-exit sys/require sys/require-wizardry sys/where'
     ;;
   3)
     name='Glossary & Parsing'
@@ -35,17 +35,17 @@ case "$level" in
   4)
     name='Menu System'
     spells='await-keypress colors main-menu:menu menu'
-    imps='menu/category-title menu/cursor-blink menu/exit-label menu/fathom-cursor menu/fathom-terminal menu/is-installable menu/is-integer menu/is-submenu menu/move-cursor'
+    imps='menu/category-title menu/cursor-blink menu/exit-label menu/fathom-cursor menu/fathom-terminal menu/is-installable menu/is-integer menu/is-submenu menu/move-cursor term/clear-line term/redraw-prompt'
     ;;
   5)
     name='Extended Attributes'
     spells='disenchant:enchant enchant:enchant enchantment-to-yaml:enchant yaml-to-enchantment:enchant'
-    imps=''
+    imps='app/app-validate'
     ;;
   6)
     name='Task Priorities'
     spells='deprioritize:priorities get-card:priorities get-new-priority:priorities get-priority:priorities priorities:menu prioritize:priorities upvote:priorities'
-    imps=''
+    imps='priorities/collect-prioritized-rows'
     ;;
   7)
     name='Navigation'
@@ -70,7 +70,7 @@ case "$level" in
   11)
     name='Basic Cantrips'
     spells='ask ask-number ask-text ask-yn browse list-files max-length memorize move'
-    imps='input/choose-input input/require-command input/validate-command input/validate-name input/validate-number input/validate-path input/validate-player-name lex/and lex/and-then lex/disambiguate lex/from lex/into lex/or lex/to'
+    imps='input/choose-input input/prompt-with-fallback input/require-command input/validate-command input/validate-name input/validate-number input/validate-path input/validate-player-name lex/and lex/and-then lex/disambiguate lex/from lex/into lex/or lex/to'
     ;;
   12)
     name='System Configuration'
@@ -95,7 +95,7 @@ case "$level" in
   16)
     name='Advanced MUD Features'
     spells='boot-player:mud choose-player:mud decorate:mud greater-heal:mud heal:mud lesser-heal:mud listen:mud magic-missile:mud resurrect:mud say:mud shocking-grasp:mud stats:mud'
-    imps='hook/touch-hook mud/damage-file mud/deal-damage mud/get-life mud/incarnate mud/move-avatar mud/trigger-on-touch'
+    imps='fmt/format-timestamp hook/touch-hook mud/colorize-player-name mud/create-avatar mud/damage-file mud/deal-damage mud/get-life mud/incarnate mud/move-avatar mud/mud-defaults mud/trigger-on-touch out/log-timestamp'
     ;;
   17)
     name='Cryptography'
@@ -155,7 +155,7 @@ case "$level" in
   28)
     name='Web Services & CGI'
     spells='build:web change-site-port:web configure-nginx:web create-from-template:web create-site:web create-site-prompt:web delete-site:web diagnose-sse:web https:web rename-site:web serve-site:web site-autorebuild:web site-menu:web site-status:web stop-site:web template-menu:web update-from-template:web web-wizardry:web'
-    imps='cgi/blog-index cgi/blog-search cgi/blog-tags cgi/calc cgi/cgi-env cgi/chat-cleanup-inactive-avatars cgi/chat-count-avatars cgi/chat-create-avatar cgi/chat-create-room cgi/chat-delete-avatar cgi/chat-delete-room cgi/chat-get-messages cgi/chat-list-avatars cgi/chat-list-rooms cgi/chat-log-if-unique cgi/chat-move-avatar cgi/chat-rename-avatar cgi/chat-send-message cgi/chat-stream cgi/color-picker cgi/counter cgi/counter-reset cgi/debug-test cgi/drag-drop-upload cgi/echo-text cgi/example-cgi cgi/file-info cgi/get-query-param cgi/get-site-data-dir cgi/http-cors cgi/http-end-headers cgi/http-error cgi/http-header cgi/http-ok-html cgi/http-ok-json cgi/http-status cgi/list-system-files cgi/parse-query cgi/poll-vote cgi/random-quote cgi/reverse-text cgi/save-note cgi/sse-error cgi/sse-event cgi/sse-event-id cgi/sse-padding cgi/sse-retry cgi/sse-start cgi/system-info cgi/temperature-convert cgi/upload-image cgi/url-decode cgi/validate-room-name cgi/validate-username cgi/word-count'
+    imps='cgi/blog-get-config cgi/blog-index cgi/blog-list-drafts cgi/blog-save-post cgi/blog-search cgi/blog-set-theme cgi/blog-tags cgi/blog-theme.css cgi/blog-update-config cgi/calc cgi/cgi-env cgi/chat-cleanup-inactive-avatars cgi/chat-count-avatars cgi/chat-create-avatar cgi/chat-create-room cgi/chat-delete-avatar cgi/chat-delete-room cgi/chat-get-messages cgi/chat-list-avatars cgi/chat-list-rooms cgi/chat-log-if-unique cgi/chat-move-avatar cgi/chat-rename-avatar cgi/chat-room-list-stream cgi/chat-send-message cgi/chat-stream cgi/chat-unread-counts cgi/color-picker cgi/counter cgi/counter-reset cgi/debug-test cgi/drag-drop-upload cgi/echo-text cgi/example-cgi cgi/file-info cgi/get-query-param cgi/get-site-data-dir cgi/http-cors cgi/http-end-headers cgi/http-error cgi/http-header cgi/http-ok-html cgi/http-ok-json cgi/http-status cgi/list-system-files cgi/parse-query cgi/poll-vote cgi/random-quote cgi/reverse-text cgi/save-note cgi/sse-error cgi/sse-event cgi/sse-event-id cgi/sse-padding cgi/sse-retry cgi/sse-start cgi/ssh-auth-bind-webauthn cgi/ssh-auth-check-session cgi/ssh-auth-list-delegates cgi/ssh-auth-login cgi/ssh-auth-register cgi/ssh-auth-register-mud cgi/ssh-auth-revoke-delegate cgi/system-info cgi/temperature-convert cgi/upload-image cgi/url-decode cgi/validate-room-name cgi/validate-username cgi/word-count'
     ;;
   *)
     exit 1

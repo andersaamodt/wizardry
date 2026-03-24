@@ -13,18 +13,19 @@ USAGE
 esac
 
 set -eu
+. env-clear
 
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
 
-say() {
+jq_uninstall_say() {
   printf '%s\n' "$1"
 }
 
-has_cmd() {
+jq_uninstall_has_cmd() {
   command -v "$1" >/dev/null 2>&1
 }
 
-run_privileged() {
+jq_uninstall_run_privileged() {
   if "$@" 2>/dev/null; then
     return 0
   fi
@@ -36,14 +37,14 @@ run_privileged() {
     "$@"
     return 0
   fi
-  if has_cmd sudo; then
+  if jq_uninstall_has_cmd sudo; then
     sudo "$@"
     return 0
   fi
   "$@"
 }
 
-remove_known_binary() {
+remove_known_jq_binary() {
   removed=1
   for candidate in \
     "$(command -v jq 2>/dev/null || printf '')" \
@@ -53,33 +54,33 @@ remove_known_binary() {
   do
     [ -n "$candidate" ] || continue
     [ -f "$candidate" ] || continue
-    run_privileged rm -f "$candidate"
+    jq_uninstall_run_privileged rm -f "$candidate"
   done
 }
 
 removed=0
 
-if has_cmd apt-get; then
-  run_privileged env DEBIAN_FRONTEND=noninteractive apt-get remove -y jq >/dev/null 2>&1 || true
+if jq_uninstall_has_cmd apt-get; then
+  jq_uninstall_run_privileged env DEBIAN_FRONTEND=noninteractive apt-get remove -y jq >/dev/null 2>&1 || true
   removed=1
-elif has_cmd dnf; then
-  run_privileged dnf remove -y jq >/dev/null 2>&1 || true
+elif jq_uninstall_has_cmd dnf; then
+  jq_uninstall_run_privileged dnf remove -y jq >/dev/null 2>&1 || true
   removed=1
-elif has_cmd brew; then
+elif jq_uninstall_has_cmd brew; then
   brew uninstall jq >/dev/null 2>&1 || true
   removed=1
 fi
 
-remove_known_binary || true
+remove_known_jq_binary || true
 
-if has_cmd jq; then
-  say "uninstall-jq: jq is still present on PATH" >&2
+if jq_uninstall_has_cmd jq; then
+  jq_uninstall_say "uninstall-jq: jq is still present on PATH" >&2
   exit 1
 fi
 
 if [ "$removed" -eq 0 ]; then
-  say "jq is not installed"
+  jq_uninstall_say "jq is not installed"
   exit 0
 fi
 
-say "Uninstalled jq"
+jq_uninstall_say "Uninstalled jq"

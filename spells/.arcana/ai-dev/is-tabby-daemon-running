@@ -2,6 +2,17 @@
 
 # Check if the Tabby daemon container is running.
 
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: is-tabby-daemon-running
+
+Returns success when the Tabby daemon container is running.
+USAGE
+  exit 0
+  ;;
+esac
+
 set -eu
 . env-clear
 

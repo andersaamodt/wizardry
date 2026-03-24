@@ -15,18 +15,19 @@ USAGE
 esac
 
 set -eu
+. env-clear
 
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
 
-say() {
+nostril_uninstall_say() {
   printf '%s\n' "$1"
 }
 
-has_cmd() {
+nostril_uninstall_has_cmd() {
   command -v "$1" >/dev/null 2>&1
 }
 
-run_privileged() {
+nostril_uninstall_run_privileged() {
   if "$@" 2>/dev/null; then
     return 0
   fi
@@ -38,14 +39,14 @@ run_privileged() {
     "$@"
     return 0
   fi
-  if has_cmd sudo; then
+  if nostril_uninstall_has_cmd sudo; then
     sudo "$@"
     return 0
   fi
   "$@"
 }
 
-remove_known_binary() {
+nostril_uninstall_remove_known_binary() {
   binary_name=$1
   removed_any=1
   for candidate in \
@@ -56,23 +57,23 @@ remove_known_binary() {
   do
     [ -n "$candidate" ] || continue
     [ -f "$candidate" ] || continue
-    run_privileged rm -f "$candidate"
+    nostril_uninstall_run_privileged rm -f "$candidate"
   done
 }
 
 removed_any=0
-remove_known_binary nostril || true
-remove_known_binary nostril-query || true
-remove_known_binary nak || true
+nostril_uninstall_remove_known_binary nostril || true
+nostril_uninstall_remove_known_binary nostril-query || true
+nostril_uninstall_remove_known_binary nak || true
 
-if has_cmd nostril || has_cmd nostril-query || has_cmd nak; then
-  say "uninstall-nostril: Nostr server tooling is still present on PATH" >&2
+if nostril_uninstall_has_cmd nostril || nostril_uninstall_has_cmd nostril-query || nostril_uninstall_has_cmd nak; then
+  nostril_uninstall_say "uninstall-nostril: Nostr server tooling is still present on PATH" >&2
   exit 1
 fi
 
 if [ "$removed_any" -eq 0 ]; then
-  say "Nostr server tooling is not installed"
+  nostril_uninstall_say "Nostr server tooling is not installed"
   exit 0
 fi
 
-say "Uninstalled Nostr server tooling"
+nostril_uninstall_say "Uninstalled Nostr server tooling"

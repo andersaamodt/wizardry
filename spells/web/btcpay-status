@@ -14,6 +14,7 @@ USAGE
 esac
 
 set -eu
+. env-clear
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 arcana_status="$script_dir/../.arcana/btcpay/btcpay-status-arcana"

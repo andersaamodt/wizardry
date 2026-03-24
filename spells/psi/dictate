@@ -98,10 +98,10 @@ audio_file=$(temp-file dictate-audio.wav)
 transcript_file=$(temp-file dictate-text.txt)
 python_err_file=$(temp-file dictate-python.err)
 
-cleanup() {
+dictate_cleanup() {
   rm -f "$audio_file" "$transcript_file" "$python_err_file"
 }
-trap cleanup EXIT HUP INT TERM
+trap dictate_cleanup EXIT HUP INT TERM
 
 os_name=$(uname -s 2>/dev/null || printf 'unknown')
 
@@ -133,13 +133,14 @@ if [ ! -s "$audio_file" ]; then
   die "dictate: no audio captured"
 fi
 
-if ! DICTATE_AUDIO_PATH="$audio_file" \
-  DICTATE_BACKEND="$backend" \
-  DICTATE_MODEL="$model_name" \
-  DICTATE_LANGUAGE="$language" \
-  HF_HOME="${WIZARDRY_VOICE_RECOGNITION_HF_HOME:-$HOME/.wizardry/voice-recognition/huggingface}" \
-  HF_HUB_OFFLINE=1 \
-  TRANSFORMERS_OFFLINE=1 \
+if ! env \
+  "DICTATE_AUDIO_PATH=$audio_file" \
+  "DICTATE_BACKEND=$backend" \
+  "DICTATE_MODEL=$model_name" \
+  "DICTATE_LANGUAGE=$language" \
+  "HF_HOME=${WIZARDRY_VOICE_RECOGNITION_HF_HOME:-${XDG_CACHE_HOME:-$HOME/.cache}/wizardry/voice-recognition/huggingface}" \
+  "HF_HUB_OFFLINE=1" \
+  "TRANSFORMERS_OFFLINE=1" \
   "$python_bin" >"$transcript_file" 2>"$python_err_file" <<'PY'
 import os
 import sys
