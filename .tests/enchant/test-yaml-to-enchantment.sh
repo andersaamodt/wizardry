@@ -79,7 +79,7 @@ test_reports_missing_helpers() {
   stub_dir=$(make_stub_dir)
   # Keep only core tools and wizardry imps in PATH.
   # Intentionally omit attr/xattr/setfattr so missing-helper behavior is deterministic.
-  link_tools "$stub_dir" sh awk cat sed grep head tail dirname pwd
+  link_tools "$stub_dir" sh awk cat cut env sed grep head tail dirname pwd mktemp mv rm
 
   tmpfile="$WIZARDRY_TMPDIR/headered-missing"
   cat >"$tmpfile" <<'FILE'
@@ -108,7 +108,7 @@ STUB
 exit 1
 STUB
   chmod +x "$stub_dir/attr" "$stub_dir/setfattr" "$stub_dir/xattr"
-  link_tools "$stub_dir" sh awk cat sed grep head tail dirname pwd
+  link_tools "$stub_dir" sh awk cat cut env sed grep head tail dirname pwd mktemp mv rm
 
   tmpfile="$WIZARDRY_TMPDIR/headered-fail"
   cat >"$tmpfile" <<'FILE'

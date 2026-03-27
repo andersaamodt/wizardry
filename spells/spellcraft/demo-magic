@@ -1,636 +1,647 @@
 #!/bin/sh
 
-# Demonstrate wizardry spells at specified levels with narrated output.
-# Each demo level corresponds to a banish level and demonstrates the spells
-# that are validated and tested by that banish level.
+# Guided demonstration of wizardry, level by level.
+# Safe live casts run against disposable fixtures; host-mutating spells are named
+# and described, but left uncast unless their behavior is safely contained.
 
-# Demo a single level using spell-levels data
 demo_level() {
   level=$1
-  
-  # Get level name and spell list using spell-levels imp
   level_name=$(spell-levels "$level" name)
   spell_list=$(spell-levels "$level" spells)
   imp_list=$(spell-levels "$level" imps)
-  
+  demonstrated=""
+
   printf '\n'
   printf '=== Level %d: %s ===\n' "$level" "$level_name"
   printf '\n'
-  
-  # Add level-specific narration and demonstrations
+
   case "$level" in
     0)
-      printf 'The wizard examines the foundation of reality itself...\n'
-      printf '\n'
-      
-      # Actually run detect-posix
-      if command -v detect-posix >/dev/null 2>&1; then
-        printf 'The wizard casts detect-posix...\n'
-        detect-posix 2>&1 | head -5
-        printf '\n'
+      printf 'Foundations first: shell, platform, and POSIX discipline.\n'
+
+      detect_posix_output=$(detect-posix 2>&1 || true)
+      if [ -n "$detect_posix_output" ]; then
+        printf 'detect-posix:\n'
+        printf '%s\n' "$detect_posix_output" | sed -n '1,3p'
+        demonstrated="$demonstrated detect-posix"
       fi
-      
-      # Run detect-distro
-      if command -v detect-distro >/dev/null 2>&1; then
-        printf 'The wizard casts detect-distro...\n'
-        printf 'Distribution: %s\n' "$(detect-distro)"
-        printf '\n'
+
+      if distro_output=$(detect-distro 2>/dev/null); then
+        printf 'detect-distro -> %s\n' "$distro_output"
+        demonstrated="$demonstrated detect-distro"
       fi
-      
-      # Check infrastructure  
-      if [ -d "${WIZARDRY_DIR}/spells" ]; then
-        spell_count=$(find "${WIZARDRY_DIR}/spells" -type f -executable 2>/dev/null | wc -l)
-        printf 'The spells grimoire: %d spells inscribed\n' "$spell_count"
-      fi
-      
-      if [ -d "${WIZARDRY_DIR}/spells/.imps" ]; then
-        imp_count=$(find "${WIZARDRY_DIR}/spells/.imps" -type f 2>/dev/null | wc -l)
-        printf 'The imp summoning circles: %d imps bound\n' "$imp_count"
+
+      verify_output=$(verify-posix "$WIZARDRY_DIR/spells/spellcraft/demo-magic" 2>&1 || true)
+      if [ -n "$verify_output" ]; then
+        printf '%s\n' "$verify_output" | sed -n '1,2p'
+        demonstrated="$demonstrated verify-posix"
       fi
       ;;
-      
+
     1)
-      printf 'The wizard gathers the core components of wizardry...\n'
-      printf '\n'
-      
-      # Demonstrate validate-spells
-      if command -v validate-spells >/dev/null 2>&1; then
-        printf 'The wizard casts validate-spells on core infrastructure...\n'
-        validate-spells banish:wards validate-spells:.wizardry 2>&1 | head -3
-        printf '\n'
+      printf 'Validation comes next: every higher art depends on clean discovery.\n'
+
+      validate_output=$(validate-spells banish:wards validate-spells:.wizardry 2>&1 || true)
+      if [ -n "$validate_output" ]; then
+        printf '%s\n' "$validate_output" | sed -n '1,3p'
+        demonstrated="$demonstrated validate-spells"
       fi
-      
-      # Show core imps
-      printf 'Core imps summoned: %d foundational helpers\n' "$(printf '%s' "$imp_list" | wc -w)"
-      printf 'Including: has, there, is, say, warn, die, temp-file, and more...\n'
+
+      imp_count=$(printf '%s\n' "$imp_list" | wc -w | tr -d ' ')
+      printf 'Foundational imps at this tier: %s\n' "$imp_count"
       ;;
-      
+
     2)
-      printf 'The wizard conjures the glossary system...\n'
-      printf '\n'
-      
-      if [ -f "${WIZARDRY_DIR}/spells/.wizardry/generate-glosses" ]; then
-        printf 'The wizard has the power to cast generate-glosses...\n'
-        printf '(Glossary generation extracts help text from all spells)\n'
-      fi
+      printf 'The installation substrate stays modest: tiny helpers, clean paths, clear state.\n'
+
+      probe_dir=$(temp-dir demo-magic-level2)
+      printf 'temp-dir -> %s\n' "$probe_dir"
+      cleanup-dir "$probe_dir"
+
+      printf 'abs-path -> %s\n' "$(abs-path "$demo_workspace/scroll.txt")"
+      printf 'env-or DEMO_MAGIC_SENTINEL -> %s\n' "$(env-or DEMO_MAGIC_SENTINEL fallback-value)"
       ;;
-      
+
     3)
-      printf 'The wizard weaves interactive menus from pure thought...\n'
-      printf '\n'
-      
-      # Demonstrate fathom-terminal
-      if command -v fathom-terminal >/dev/null 2>&1; then
-        printf 'The wizard casts fathom-terminal...\n'
-        if term_size=$(fathom-terminal 2>&1); then
-          printf 'Terminal dimensions discovered: %s\n' "$term_size"
-          printf '\n'
-        else
-          printf 'Terminal dimensions unavailable (no TTY)\n'
-          printf '\n'
-        fi
+      printf 'Parsing and gloss generation give the command language its shape.\n'
+
+      if generate-glosses --quiet --output "$demo_root/glosses.sh" >/dev/null 2>&1; then
+        printf 'generate-glosses:\n'
+        sed -n '1,3p' "$demo_root/glosses.sh"
+        demonstrated="$demonstrated generate-glosses"
       fi
-      
-      # List menu capabilities
-      printf 'Menu system capabilities unlocked:\n'
-      printf '  • Interactive menu navigation\n'
-      printf '  • Terminal size detection\n'
-      printf '  • Cursor positioning\n'
-      printf '  • Keypress detection\n'
-      printf '  • Color support\n'
       ;;
-      
+
     4)
-      printf 'The wizard masters interactive menus and terminal control...\n'
-      printf '\n'
-      
-      printf 'Menu system capabilities:\n'
-      printf '  • menu - Interactive spell selection\n'
-      printf '  • fathom-terminal - Detect terminal dimensions\n'
-      printf '  • fathom-cursor - Query cursor position\n'
-      printf '  • move-cursor - Position cursor on screen\n'
-      printf '  • await-keypress - Capture user input\n'
-      printf '  • cursor-blink - Control cursor visibility\n'
-      printf '  • colors - Terminal color support\n'
-      printf '  • main-menu - Launch interactive wizardry menu\n'
-      ;;
-      
-    9)
-      printf 'The wizard masters arcane file operations...\n'
-      printf '\n'
-      
-      # Demonstrate read-magic
-      if command -v read-magic >/dev/null 2>&1; then
-        printf 'The wizard casts read-magic...\n'
-        printf '(Reads extended attributes from files)\n'
-        printf 'Reading the read-magic spell itself:\n'
-        read-magic "${WIZARDRY_DIR}/spells/arcane/read-magic" 2>&1 | head -5 || printf '  (No attributes set)\n'
-        printf '\n'
+      printf 'Menu spells stay interactive by design.\n'
+      printf 'Unattended demo-magic samples only the safe edges.\n'
+
+      colors_path=$(command -v colors 2>/dev/null || printf '')
+      if [ -n "$colors_path" ]; then
+        colors_ready=$(
+          sh -c '. "$1" >/dev/null 2>&1; printf "%s\n" "${WIZARDRY_COLORS_AVAILABLE-0}"' \
+            sh "$colors_path" 2>/dev/null || printf '0'
+        )
+        case "$colors_ready" in
+          1) printf 'colors -> palette ready\n' ;;
+          *) printf 'colors -> palette disabled by terminal policy\n' ;;
+        esac
+        demonstrated="$demonstrated colors"
       fi
-      
-      printf 'File operations available:\n'
-      printf '  • copy - Copy files with optional extended attributes\n'
-      printf '  • trash - Move files to trash instead of deleting\n'
-      printf '  • read-magic - Read extended attributes\n'
-      printf '  • forall - Execute commands on multiple files\n'
-      ;;
-      
-    10)
-      printf 'The wizard learns basic cantrips...\n'
-      printf '\n'
-      
-      # Demonstrate ask-yn (with auto-response via pipe)
-      if command -v ask-yn >/dev/null 2>&1; then
-        printf 'The wizard casts ask-yn "Is this a demonstration?" yes\n'
-        printf 'y\n' | ask-yn "Is this a demonstration?" yes 2>&1 || true
-        printf '\n'
+
+      term_size=$(fathom-terminal 2>/dev/null || printf '')
+      if [ -n "$term_size" ]; then
+        term_cols=$(printf '%s\n' "$term_size" | sed -n '1p')
+        term_rows=$(printf '%s\n' "$term_size" | sed -n '2p')
+        if [ -n "$term_rows" ]; then
+          printf 'fathom-terminal -> %sx%s\n' "$term_cols" "$term_rows"
+        else
+          printf 'fathom-terminal -> %s\n' "$term_cols"
+        fi
+        demonstrated="$demonstrated fathom-terminal"
+      else
+        printf 'fathom-terminal -> no live TTY in unattended mode\n'
       fi
-      # Demo cantrips that are available
-      printf 'Basic cantrips for everyday magic:\n'
-      printf '  • ask, ask-yn, ask-text - Interactive prompts\n'
-      printf '  • ask-number - Numeric input with validation\n'
-      printf '  • max-length - Find longest string\n'
-      printf '  • list-files - List files in directory\n'
-      printf '  • move - Move files\n'
-      printf '  • memorize - Add spells to shell init\n'
-      printf '\n'
-      printf 'Validation helpers are now imps:\n'
-      printf '  • validate-number, validate-path, require-command\n'
       ;;
 
     5)
-      printf 'The wizard enchants files with metadata...\n'
-      printf '\n'
-      
-      # Demonstrate enchant
-      if [ -f "${WIZARDRY_DIR}/spells/enchant/enchant" ]; then
-        printf 'Extended attribute spells:\n'
-        printf '  • enchant - Add magical properties to files\n'
-        printf '  • disenchant - Remove enchantments\n'
-        printf '  • enchantment-to-yaml - Export metadata\n'
-        printf '  • yaml-to-enchantment - Import metadata\n'
-        printf '\n'
-        printf 'These spells work with filesystem extended attributes,\n'
-        printf 'storing rich metadata alongside files.\n'
-      fi
-      ;;
-      
-    6)
-      printf 'The wizard manages task priorities...\n'
-      printf '\n'
-      
-      printf 'Priority management system:\n'
-      printf '  • get-priority - View item priority\n'
-      printf '  • prioritize - Set item priority\n'
-      printf '  • deprioritize - Reduce item priority\n'
-      printf '  • upvote - Increase priority\n'
-      printf '  • get-card - Get priority card data\n'
-      printf '  • get-new-priority - Calculate new priority value\n'
-      printf '  • priorities - Interactive priority management menu\n'
-      printf '\n'
-      printf 'Enables tracking and sorting tasks by importance.\n'
-      ;;
-      
-    7)
-      printf 'The wizard learns translocation magic...\n'
-      printf '\n'
-      
-      printf 'Navigation spells allow instant travel between marked locations:\n'
-      printf '  • mark-location - Mark current directory for later return\n'
-      printf '  • jump-to-marker - Return to a marked location\n'
-      printf '\n'
-      printf 'Example usage:\n'
-      printf '  $ mark-location home\n'
-      printf '  $ cd /tmp\n'
-      printf '  $ jump-to-marker home  # Returns to original location\n'
-      ;;
-      
-    8)
-      printf 'The wizard masters the MUD realm...\n'
-      printf '\n'
-      
-      printf 'MUD Basics provide the foundation for the Multi-User Dungeon:\n'
-      printf '  • check-cd-hook - Hook for directory changes\n'
-      printf '  • look - Examine current location\n'
-      printf '\n'
-      printf 'Extended attributes enable magical properties on files and folders.\n'
-      ;;
-      
-    11)
-      printf 'The wizard advances in the cantrip arts...\n'
-      printf '\n'
-      
-      # Demonstrate ask-number  
-      if command -v ask-number >/dev/null 2>&1; then
-        printf 'The wizard casts ask-number...\n'
-        printf '7\n' | ask-number "Pick a lucky number" 2>&1 | head -3 || true
-        printf '\n'
-      fi
-      
-      printf 'Advanced cantrips:\n'
-      printf '  • ask-number - Interactive numeric input with validation\n'
-      printf '  • memorize - Add spells to shell initialization for persistence\n'
-      ;;
-      
-    12)
-      printf 'The wizard configures the system...\n'
-      printf '\n'
-      
-      # Demonstrate package-managers
-      if command -v package-managers >/dev/null 2>&1; then
-        printf 'The wizard casts package-managers...\n'
-        package-managers 2>&1 | head -5
-        printf '\n'
-      fi
-      
-      printf 'System configuration capabilities:\n'
-      printf '  • config - Read/write configuration values\n'
-      printf '  • logs - View system logs\n'
-      printf '  • package-managers - Detect and use system package managers\n'
-      ;;
-      
-    13)
-      printf 'The wizard establishes the testing framework...\n'
-      printf '\n'
-      
-      if [ -f "${WIZARDRY_DIR}/spells/.wizardry/test-magic" ]; then
-        test_count=$(find "${WIZARDRY_DIR}/.tests" -name "test-*.sh" 2>/dev/null | wc -l)
-        printf 'The wizard casts test-magic...\n'
-        printf 'Testing infrastructure ready: %d test suites available\n' "$test_count"
-        printf '\n'
-        printf 'Testing framework enables:\n'
-        printf '  • Automated spell validation\n'
-        printf '  • Regression prevention\n'
-        printf '  • Quality assurance\n'
-      fi
-      ;;
-      
-    14)
-      printf 'The wizard learns system maintenance...\n'
-      printf '\n'
-      
-      printf 'System maintenance spells:\n'
-      printf '  • update-wizardry - Update wizardry to latest version\n'
-      printf '  • update-all - Update all system packages\n'
-      printf '  • kill-process - Gracefully terminate processes\n'
-      printf '\n'
-      printf 'Example: update-wizardry pulls latest changes from repository\n'
-      ;;
-      
-    15)
-      printf 'The wizard demonstrates the demonstration itself...\n'
-      printf 'Recursion: demo-magic demonstrating demo-magic!\n'
-      printf '\n'
-      printf 'The demo-magic spell you are currently experiencing\n'
-      printf 'is itself a Level 14 spell, demonstrating self-reference.\n'
-      ;;
-      
-    16)
-      printf 'The wizard practices divination...\n'
-      printf '\n'
-      
-      # Demonstrate detect-rc-file
-      if command -v detect-rc-file >/dev/null 2>&1; then
-        printf 'The wizard casts detect-rc-file...\n'
-        rc_file=$(detect-rc-file 2>&1 || true)
-        if [ -n "$rc_file" ]; then
-          printf 'Shell RC file detected: %s\n' "$rc_file"
-        fi
-        printf '\n'
-      fi
-      
-      printf 'Divination spells reveal hidden knowledge:\n'
-      printf '  • detect-rc-file - Find shell initialization file\n'
-      printf '  • detect-magic - Discover wizardry installations\n'
-      printf '  • identify-room - Determine current location context\n'
-      ;;
-      
-    17)
-      printf 'The wizard enhances the MUD realm...\n'
-      printf '\n'
-      
-      printf 'Advanced MUD features:\n'
-      printf '  • decorate - Add descriptions and names to locations\n'
-      printf '  • choose-player - Choose active player identity\n'
-      printf '\n'
-      printf 'These spells extend the MUD metaphor, allowing rich\n'
-      printf 'environmental storytelling and multi-user scenarios.\n'
-      ;;
-      
-    18)
-      printf 'The wizard delves into cryptography...\n'
-      printf '\n'
-      
-      # Demonstrate hash with a simple example
-      # Use the crypto/hash spell, not the shell builtin
-      if command -v sha256sum >/dev/null 2>&1 || command -v shasum >/dev/null 2>&1; then
-        printf 'The wizard casts hash to compute file checksums...\n'
-        # Create a small temp file for demonstration
-        demo_file="${TMPDIR:-/tmp}/wizardry-demo-$$"
-        printf 'demo content\n' > "$demo_file"
-        if command -v sha256sum >/dev/null 2>&1; then
-          hash_result=$(sha256sum "$demo_file" 2>&1 | head -1)
-          hash_result=${hash_result:-'Hash: 0xABCD1234 (example)'}
-        else
-          hash_result=$(shasum -a 256 "$demo_file" 2>&1 | head -1)
-          hash_result=${hash_result:-'Hash: 0xABCD1234 (example)'}
-        fi
-        printf '%s\n' "$hash_result" | head -1
-        rm -f "$demo_file"
-        printf '\n'
-      fi
-      
-      printf 'Cryptographic spells:\n'
-      printf '  • hash - Generate cryptographic hashes\n'
-      printf '  • evoke-hash - Hash with specific algorithm\n'
-      printf '  • hashchant - Verify hash integrity\n'
-      ;;
-      
-    19)
-      printf 'The wizard opens portals to remote realms...\n'
-      printf '\n'
-      
-      printf 'SSH and remote access capabilities:\n'
-      printf '  • validate-ssh-key - Verify SSH key validity\n'
-      printf '  • enchant-portkey - Create SSH connection bookmark\n'
-      printf '  • follow-portkey - Connect via saved portkey\n'
-      printf '  • open-portal - Establish SSH tunnel\n'
-      printf '  • reload-ssh/restart-ssh - Manage SSH daemon\n'
-      printf '\n'
-      printf 'These spells make remote system access effortless.\n'
-      ;;
-      
-    20)
-      printf 'The wizard develops psychic abilities...\n'
-      printf '\n'
-      
-      printf 'PSI (Process & System Info) spells:\n'
-      printf '  • dictate - Dictate prose from microphone input\n'
-      printf '  • list-contacts - Show available process contacts\n'
-      printf '  • read-contact - Read process information\n'
-      printf '\n'
-      printf 'Access system and process information telepathically.\n'
-      ;;
-      
-    22)
-      printf 'The wizard becomes a spellcrafter...\n'
-      printf '\n'
-      
-      # Demonstrate lint-magic
-      if command -v lint-magic >/dev/null 2>&1; then
-        printf 'The wizard casts lint-magic on demo-magic itself...\n'
-        lint-magic "${WIZARDRY_DIR}/spells/spellcraft/demo-magic" 2>&1 | head -3 || true
-        printf '\n'
-      fi
-      
-      printf 'Spellcraft development tools:\n'
-      printf '  • scribe-spell - Create new spells\n'
-      printf '  • lint-magic - Validate spell code quality\n'
-      printf '  • compile-spell - Compile spells (when applicable)\n'
-      printf '  • learn/forget - Manage spell knowledge\n'
-      printf '  • doppelganger - Clone and modify spells\n'
-      printf '\n'
-      printf 'Complete toolkit for spell development and maintenance.\n'
-      ;;
-      
-    23)
-      printf 'The wizard constructs menu infrastructure...\n'
-      printf '\n'
-      
-      printf 'Core menu system:\n'
-      printf '  • spellbook - Browse available spells\n'
-      printf '  • cast - Execute spells from menu\n'
-      printf '  • spell-menu - Interactive spell selection\n'
-      printf '\n'
-      printf 'Foundation for all wizardry menu interfaces.\n'
-      ;;
-      
-    24)
-      printf 'The wizard builds system menus...\n'
-      printf '\n'
-      
-      printf 'Configuration and management menus:\n'
-      printf '  • system-menu - System administration\n'
-      printf '  • install-menu - Installation options\n'
-      printf '  • synonym-menu - Command alias management\n'
-      printf '  • thesaurus - Synonym dictionary\n'
-      printf '\n'
-      printf 'High-level interfaces for system configuration.\n'
-      ;;
-      
-    25)
-      printf 'The wizard administers the MUD realm...\n'
-      printf '\n'
-      
-      printf 'MUD administration:\n'
-      printf '  • mud-menu - MUD navigation interface\n'
-      printf '  • mud-settings - Configure MUD behavior\n'
-      printf '  • mud-admin-menu - Administrative controls\n'
-      printf '  • Player management: add-ssh-player, new-player, set-player\n'
-      printf '\n'
-      printf 'Complete suite for multi-user dungeon administration.\n'
-      ;;
-      
-    26)
-      printf 'The wizard creates specialized menus...\n'
-      printf '\n'
-      
-      printf 'Domain-specific interfaces:\n'
-      printf '  • network-menu - Network configuration\n'
-      printf '  • services-menu - Service management\n'
-      printf '  • shutdown-menu - System shutdown options\n'
-      printf '  • priority-menu - Priority management interface\n'
-      printf '  • users-menu - User administration\n'
-      printf '\n'
-      printf 'Specialized menus for specific system domains.\n'
-      ;;
-      
-    27)
-      printf 'The wizard masters service management...\n'
-      printf '\n'
-      
-      printf 'System service spells:\n'
-      printf '  • install-service-template - Create new service\n'
-      printf '  • enable-service/disable-service - Control startup\n'
-      printf '  • start-service/stop-service/restart-service - Service control\n'
-      printf '  • service-status - Check service state\n'
-      printf '  • is-service-installed - Verify installation\n'
-      printf '\n'
-      printf 'Complete systemd/service management toolkit.\n'
+      printf 'Extended attributes are exercised on a disposable scroll, end to end.\n'
 
-      printf '\n'
-      printf 'The wizard peers into the arcana...\n'
-      printf '\n'
-      if [ -d "${WIZARDRY_DIR}/spells/.arcana" ]; then
-        arcana_count=$(find "${WIZARDRY_DIR}/spells/.arcana" -type f 2>/dev/null | wc -l)
-        printf 'The arcana vault is accessible!\n'
-        printf 'Third-party extensions found: %d items\n' "$arcana_count"
-      else
-        printf 'The arcana vault remains sealed.\n'
-        printf 'No third-party extensions are currently installed.\n'
-      fi
-      printf '\n'
-      printf 'Level 27 is reserved for optional extensions,\n'
-      printf 'third-party integrations, and experimental spells.\n'
-      ;;
-      
-    *)
-      # For other levels, show a summary
-      printf 'The wizard channels level %d energies...\n' "$level"
-      printf '\n'
-      
-      # Count and display spells
-      if [ -n "$spell_list" ]; then
-        spell_count=$(printf '%s' "$spell_list" | wc -w)
-        printf 'Spells at this level: %d\n' "$spell_count"
-        
-        # Show first few spells
-        first_spells=$(
-          printf '%s' "$spell_list" |
-            tr ' ' '\n' |
-            head -5 |
-            sed 's/:.*//; s/^/  • /'
-        )
-        printf '%s\n' "$first_spells"
-        
-        remaining=$((spell_count - 5))
-        if [ "$remaining" -gt 0 ]; then
-          printf '  ... and %d more\n' "$remaining"
+      scroll="$demo_workspace/scroll.txt"
+      printf 'A short scroll for metadata.\n' > "$scroll"
+
+      if enchant "$scroll" mood=calm >/dev/null 2>&1; then
+        demonstrated="$demonstrated enchant"
+        mood_value=$(read-magic "$scroll" mood 2>/dev/null || printf '')
+        printf 'xattr round-trip -> mood=%s\n' "${mood_value:-missing}"
+
+        if enchantment-to-yaml "$scroll" >/dev/null 2>&1; then
+          demonstrated="$demonstrated enchantment-to-yaml"
+          printf 'enchantment-to-yaml:\n'
+          sed -n '1,4p' "$scroll"
         fi
-        printf '\n'
+
+        if yaml-to-enchantment "$scroll" >/dev/null 2>&1; then
+          demonstrated="$demonstrated yaml-to-enchantment"
+          mood_value=$(read-magic "$scroll" user.mood 2>/dev/null || printf '')
+          printf 'yaml-to-enchantment -> mood=%s\n' "${mood_value:-missing}"
+        fi
+
+        if disenchant "$scroll" mood >/dev/null 2>&1; then
+          demonstrated="$demonstrated disenchant"
+          if read-magic "$scroll" user.mood >/dev/null 2>&1; then
+            printf 'disenchant -> attribute still present\n'
+          else
+            printf 'disenchant -> attribute cleared\n'
+          fi
+        fi
+      else
+        printf 'xattr round-trip held back: this host lacks working extended attributes.\n'
       fi
-      
-      # Count imps
-      if [ -n "$imp_list" ]; then
-        imp_count=$(printf '%s' "$imp_list" | wc -w)
-        printf 'Imps summoned: %d micro-helpers\n' "$imp_count"
+      ;;
+
+    6)
+      printf 'Priority lookup is safe to show here.\n'
+      printf 'Live reprioritization stays descriptive where file locking varies.\n'
+
+      priority_card="$demo_workspace/priority.card"
+      printf 'priority sample\n' > "$priority_card"
+      priority_hash=$(
+        {
+          printf '%s\n' "$(basename "$priority_card")"
+          cat "$priority_card"
+        } | cksum | awk '{printf "0x%X\n", $1}'
+      )
+      get_card_output=$(get-card "$priority_hash" "$demo_workspace" 2>&1 || true)
+      if [ -n "$get_card_output" ]; then
+        printf 'get-card -> %s\n' "$get_card_output"
+        demonstrated="$demonstrated get-card"
       fi
+
+      printf 'prioritize, deprioritize, upvote, and priorities stay descriptive here.\n'
+      ;;
+
+    7)
+      printf 'Navigation magic should move with intention.\n'
+      printf 'The demo records and replays a disposable route.\n'
+
+      route_path="$demo_workspace/routes/alpha/beta"
+      mkdir -p "$route_path"
+
+      mark_output=$(mark-location hearth "$route_path" 2>&1 || true)
+      if [ -n "$mark_output" ]; then
+        printf '%s\n' "$mark_output" | sed -n '1p'
+        demonstrated="$demonstrated mark-location"
+      fi
+
+      printf 'go-up -> %s\n' "$(go-up 2)"
+      demonstrated="$demonstrated go-up"
+
+      jump_script="$WIZARDRY_DIR/spells/translocation/jump-to-marker"
+      jump_output=$(
+        JUMP_TO_MARKER_SCRIPT=$jump_script sh -c '
+          jump_script=$JUMP_TO_MARKER_SCRIPT
+          cd / || exit 1
+          set -- hearth
+          . "$jump_script" >/dev/null
+          pwd -P
+        ' 2>&1 || true
+      )
+      if [ -n "$jump_output" ]; then
+        printf 'jump-to-marker -> %s\n' "$jump_output"
+        demonstrated="$demonstrated jump-to-marker"
+      fi
+
+      printf 'blink remains intentionally nondeterministic, so it stays named rather than forced.\n'
+      ;;
+
+    8)
+      printf 'Testing infrastructure proves wizardry can watch itself safely.\n'
+
+      if pocket-dimension --check >/dev/null 2>&1; then
+        printf 'pocket-dimension -> available\n'
+        demonstrated="$demonstrated pocket-dimension"
+      else
+        printf 'pocket-dimension -> unavailable on this host\n'
+      fi
+
+      wizard_eyes_output=$(
+        wizard-eyes "demo-magic keeps mutable work in disposable fixtures." 2>&1 || true
+      )
+      if [ -n "$wizard_eyes_output" ]; then
+        printf '%s\n' "$wizard_eyes_output" | sed -n '1p'
+        demonstrated="$demonstrated wizard-eyes"
+      fi
+
+      if spellbook-store add hearth "jump-to-marker hearth" >/dev/null 2>&1; then
+        printf 'spellbook-store:\n'
+        spellbook-store list 2>/dev/null | sed -n '1,2p'
+        demonstrated="$demonstrated spellbook-store"
+      fi
+      ;;
+
+    9)
+      printf 'MUD basics read places as rooms, even in a temporary directory.\n'
+
+      room="$demo_workspace/room"
+      mkdir -p "$room"
+      enchant "$room" title "Reading Nook" >/dev/null 2>&1 || true
+      enchant "$room" description "A lantern-lit archive." >/dev/null 2>&1 || true
+
+      look_output=$(look "$room" 2>&1 || true)
+      if [ -n "$look_output" ]; then
+        printf '%s\n' "$look_output" | sed -n '1,2p'
+        demonstrated="$demonstrated look"
+      fi
+
+      if SHELL=/bin/zsh check-cd-hook >/dev/null 2>&1; then
+        printf 'check-cd-hook -> installed\n'
+        demonstrated="$demonstrated check-cd-hook"
+      else
+        printf 'check-cd-hook -> not installed\n'
+      fi
+      ;;
+
+    10)
+      printf 'Arcane file operations stay inside a throwaway workshop.\n'
+
+      ops_dir="$demo_workspace/arcane"
+      rm -rf "$ops_dir"
+      mkdir -p "$ops_dir"
+      printf 'brief notes\n' > "$ops_dir/brief.md"
+      printf 'oak\n' > "$ops_dir/oak.txt"
+      printf 'ash\n' > "$ops_dir/ash.txt"
+
+      if enchant "$ops_dir/oak.txt" sigil=oak >/dev/null 2>&1; then
+        sigil_value=$(read-magic "$ops_dir/oak.txt" sigil 2>/dev/null || printf '')
+        printf 'read-magic -> sigil=%s\n' "${sigil_value:-missing}"
+        demonstrated="$demonstrated read-magic"
+      fi
+
+      if file-to-folder "$ops_dir/brief.md" >/dev/null 2>&1; then
+        printf 'file-to-folder:\n'
+        find "$ops_dir/brief.md" -maxdepth 2 -print | sort
+        demonstrated="$demonstrated file-to-folder"
+      fi
+
+      forall_output=$(cd "$ops_dir" && forall file 2>&1 || true)
+      if [ -n "$forall_output" ]; then
+        printf 'forall:\n'
+        printf '%s\n' "$forall_output" | sed -n '1,4p'
+        demonstrated="$demonstrated forall"
+      fi
+
+      jump_trash_script="$WIZARDRY_DIR/spells/arcane/jump-trash"
+      jump_trash_output=$(
+        sh -c 'cd / || exit 1; . "$1" >/dev/null; pwd -P' sh "$jump_trash_script" 2>&1 || true
+      )
+      if [ -n "$jump_trash_output" ]; then
+        printf 'jump-trash -> %s\n' "$jump_trash_output"
+        demonstrated="$demonstrated jump-trash"
+      fi
+
+      printf 'copy and trash stay withheld so the demo never reaches real clipboard or trash.\n'
+      ;;
+
+    11)
+      printf 'Basic cantrips should feel small, legible, and immediate.\n'
+
+      ask_yn_output=$(printf 'y\n' | ask-yn "Proceed with cantrips?" yes 2>&1 || true)
+      if [ -n "$ask_yn_output" ]; then
+        printf '%s\n' "$ask_yn_output" | sed -n '1p'
+        demonstrated="$demonstrated ask-yn"
+      fi
+
+      ask_number_output=$(printf '7\n' | ask-number "Lucky?" 1 9 2>&1 || true)
+      if [ -n "$ask_number_output" ]; then
+        printf 'ask-number -> %s\n' "$ask_number_output"
+        demonstrated="$demonstrated ask-number"
+      fi
+
+      max_output=$(max-length -v "arcane rune wizardry" 2>&1 || true)
+      if [ -n "$max_output" ]; then
+        printf '%s\n' "$max_output" | sed -n '1,2p'
+        demonstrated="$demonstrated max-length"
+      fi
+
+      list_output=$(list-files "$demo_workspace" -t f 2>&1 || true)
+      if [ -n "$list_output" ]; then
+        printf 'list-files:\n'
+        printf '%s\n' "$list_output" | sed -n '1,3p'
+        demonstrated="$demonstrated list-files"
+      fi
+
+      printf 'browse, move, and memorize stay descriptive because they cross into host or GUI state.\n'
+      ;;
+
+    12)
+      printf 'Configuration spells should be direct, atomic, and reversible.\n'
+
+      config_file="$demo_workspace/demo.conf"
+      config set "$config_file" theme amber >/dev/null
+      printf 'config get -> %s\n' "$(config get "$config_file" theme)"
+      if config has "$config_file" theme >/dev/null 2>&1; then
+        printf 'config has -> present\n'
+      fi
+      config del "$config_file" theme >/dev/null
+      if config has "$config_file" theme >/dev/null 2>&1; then
+        printf 'config del -> still present\n'
+      else
+        printf 'config del -> removed\n'
+      fi
+      demonstrated="$demonstrated config"
+
+      package_manager_output=$(package-managers 2>&1 || true)
+      if [ -n "$package_manager_output" ]; then
+        printf '%s\n' "$package_manager_output" | sed -n '1,2p'
+        demonstrated="$demonstrated package-managers"
+      fi
+
+      printf 'learn-spellbook and logs are not pointed at the real shell or system logs here.\n'
+      ;;
+
+    13)
+      printf 'System maintenance spells mutate the host.\n'
+      printf 'Demo-magic names them and stops there.\n'
+      printf 'Held back: update-wizardry, update-all, kill-process.\n'
+      ;;
+
+    14)
+      printf 'This tier holds demo-magic itself and the teaching wrapper around casts.\n'
+      printf 'The spell currently speaking is demo-magic itself.\n'
+      demonstrated="$demonstrated demo-magic"
+
+      wizard_cast_output=$(wizard-cast printf 'spark\n' 2>&1 || true)
+      if [ -n "$wizard_cast_output" ]; then
+        printf '%s\n' "$wizard_cast_output" | sed -n '1,2p'
+        demonstrated="$demonstrated wizard-cast"
+      fi
+      ;;
+
+    15)
+      printf 'Divination gathers signals from the fixture workspace.\n'
+
+      detect_magic_output=$(detect-magic "$demo_workspace" 2>&1 || true)
+      if [ -n "$detect_magic_output" ]; then
+        printf '%s\n' "$detect_magic_output" | sed -n '1,3p'
+        demonstrated="$demonstrated detect-magic"
+      fi
+
+      rc_output=$(SHELL=/bin/zsh detect-rc-file 2>&1 || true)
+      if [ -n "$rc_output" ]; then
+        printf 'detect-rc-file:\n'
+        printf '%s\n' "$rc_output" | sed -n '1,3p'
+        demonstrated="$demonstrated detect-rc-file"
+      fi
+
+      room_output=$(identify-room "${TMPDIR:-/tmp}" 2>&1 || true)
+      if [ -n "$room_output" ]; then
+        printf 'identify-room:\n'
+        printf '%s\n' "$room_output" | sed -n '1,2p'
+        demonstrated="$demonstrated identify-room"
+      fi
+      ;;
+
+    16)
+      printf 'Advanced MUD features add state and character sheets inside the sandboxed fiction.\n'
+
+      sanctum="$demo_workspace/sanctum"
+      mkdir -p "$sanctum"
+      if decorate "$sanctum" "A lantern-lit archive." >/dev/null 2>&1; then
+        printf 'decorate -> description applied\n'
+        demonstrated="$demonstrated decorate"
+      fi
+
+      avatar="$demo_workspace/avatar"
+      : > "$avatar"
+      enchant "$avatar" max_life=100 >/dev/null 2>&1 || true
+      enchant "$avatar" damage=15 >/dev/null 2>&1 || true
+      enchant "$avatar" mana=42 >/dev/null 2>&1 || true
+      enchant "$avatar" max_mana=50 >/dev/null 2>&1 || true
+      enchant "$avatar" experience=7 >/dev/null 2>&1 || true
+      stats_output=$(stats "$avatar" 2>&1 || true)
+      if [ -n "$stats_output" ]; then
+        printf '%s\n' "$stats_output" | sed -n '1,5p'
+        demonstrated="$demonstrated stats"
+      fi
+
+      printf 'Combat and resurrection spells are named but left dormant in unattended mode.\n'
+      ;;
+
+    17)
+      printf 'Cryptography gets a live checksum and, when possible, a reversible search.\n'
+
+      hash_output=$("$WIZARDRY_DIR/spells/crypto/hash" hash 2>&1 || true)
+      hash_value=$(printf '%s\n' "$hash_output" | sed -n '2p')
+      if [ -n "$hash_value" ]; then
+        printf 'hash -> %s\n' "$hash_value"
+        demonstrated="$demonstrated hash"
+      fi
+
+      hash_card="$demo_workspace/hash-card.txt"
+      printf 'cipher text\n' > "$hash_card"
+      hashchant_output=$(hashchant "$hash_card" 2>&1 || true)
+      hashchant_value=$(
+        printf '%s\n' "$hashchant_output" |
+          sed -n 's/.*\(0x[0-9A-F][0-9A-F]*\).*/\1/p' |
+          sed -n '1p'
+      )
+      if [ -n "$hashchant_value" ]; then
+        printf 'hashchant -> %s\n' "$hashchant_value"
+        demonstrated="$demonstrated hashchant"
+      fi
+
+      if [ -n "$hashchant_value" ]; then
+        evoke_output=$(evoke-hash "$hashchant_value" "$demo_workspace" 2>&1 || true)
+        case "$evoke_output" in
+          ''|No\ file\ found*)
+            printf 'evoke-hash held back: this host did not persist the hash attribute.\n'
+            ;;
+          *)
+            printf 'evoke-hash -> %s\n' "$evoke_output"
+            demonstrated="$demonstrated evoke-hash"
+            ;;
+        esac
+      fi
+      ;;
+
+    18)
+      printf 'Remote-access magic starts with input validation before any network side effects.\n'
+
+      ssh_demo_key="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMagicDemoKey wizard@example"
+      if validate-ssh-key "$ssh_demo_key" >/dev/null 2>&1; then
+        printf 'validate-ssh-key -> valid ed25519 public key\n'
+        demonstrated="$demonstrated validate-ssh-key"
+      fi
+
+      printf 'Portkeys and portals stay descriptive because they depend on real remote endpoints.\n'
+      ;;
+
+    19)
+      printf 'Security wards are intentionally conservative here.\n'
+      printf 'Held back: ssh-barrier writes a real sshd_config.\n'
+      printf 'It does not yet honor a disposable override path through env-clear.\n'
+      ;;
+
+    20)
+      printf 'Task state is exercised directly.\n'
+      printf 'PSI and dictation stay descriptive because they read host state or audio devices.\n'
+
+      task_file="$demo_workspace/checklist.txt"
+      printf 'ritual\n' > "$task_file"
+
+      if check "$task_file" >/dev/null 2>&1; then
+        printf 'get-checked -> %s\n' "$(get-checked "$task_file" 2>/dev/null || printf '?')"
+        demonstrated="$demonstrated check get-checked"
+      fi
+
+      if uncheck "$task_file" >/dev/null 2>&1; then
+        printf 'get-checked -> %s\n' "$(get-checked "$task_file" 2>/dev/null || printf '?')"
+        demonstrated="$demonstrated uncheck"
+      fi
+      ;;
+
+    21)
+      printf 'Spellcraft tools should verify and explain themselves with minimal ceremony.\n'
+
+      lint_output=$(lint-magic "$WIZARDRY_DIR/spells/spellcraft/demo-magic" 2>&1 || true)
+      if [ -n "$lint_output" ]; then
+        printf '%s\n' "$lint_output" | sed -n '1,5p'
+        demonstrated="$demonstrated lint-magic"
+      fi
+
+      compile_output=$(compile-spell hash 2>&1 || true)
+      if [ -n "$compile_output" ]; then
+        printf 'compile-spell:\n'
+        printf '%s\n' "$compile_output" | sed -n '1,4p'
+        demonstrated="$demonstrated compile-spell"
+      fi
+      ;;
+
+    22)
+      printf 'Core menu infrastructure is safest to sample through its view and discovery paths.\n'
+
+      spellbook_help=$(spellbook --help 2>&1 || true)
+      if [ -n "$spellbook_help" ]; then
+        printf '%s\n' "$spellbook_help" | sed -n '1,3p'
+        demonstrated="$demonstrated spellbook"
+      fi
+
+      cast_dir=$(cast --dir 2>&1 || true)
+      if [ -n "$cast_dir" ]; then
+        printf 'cast --dir -> %s\n' "$cast_dir"
+        demonstrated="$demonstrated cast"
+      fi
+      ;;
+
+    23)
+      printf 'System and configuration menus are sampled through their stable help surfaces.\n'
+
+      system_menu_help=$(system-menu --help 2>&1 || true)
+      if [ -n "$system_menu_help" ]; then
+        printf '%s\n' "$system_menu_help" | sed -n '1,2p'
+        demonstrated="$demonstrated system-menu"
+      fi
+
+      thesaurus_help=$(thesaurus --help 2>&1 || true)
+      if [ -n "$thesaurus_help" ]; then
+        printf '%s\n' "$thesaurus_help" | sed -n '1,4p'
+        demonstrated="$demonstrated thesaurus"
+      fi
+      ;;
+
+    24)
+      printf 'MUD administration menus are present.\n'
+      printf 'Sourced shells stay descriptive in unattended mode.\n'
+
+      mud_menu_help=$(mud-menu --help 2>&1 || true)
+      if [ -n "$mud_menu_help" ]; then
+        printf '%s\n' "$mud_menu_help" | sed -n '1,3p'
+        demonstrated="$demonstrated mud"
+      fi
+      ;;
+
+    25)
+      printf 'Domain-specific menus expose focused surfaces for services and networks.\n'
+
+      services_menu_help=$(services-menu --help 2>&1 || true)
+      if [ -n "$services_menu_help" ]; then
+        printf '%s\n' "$services_menu_help" | sed -n '1,2p'
+        demonstrated="$demonstrated services-menu"
+      fi
+
+      network_menu_help=$(network-menu --help 2>&1 || true)
+      if [ -n "$network_menu_help" ]; then
+        printf '%s\n' "$network_menu_help" | sed -n '1,2p'
+        demonstrated="$demonstrated network-menu"
+      fi
+      ;;
+
+    26)
+      printf 'Service management is represented through its non-mutating inspection surfaces.\n'
+
+      service_status_help=$(service-status --help 2>&1 || true)
+      if [ -n "$service_status_help" ]; then
+        printf '%s\n' "$service_status_help" | sed -n '1,2p'
+        demonstrated="$demonstrated service-status"
+      fi
+
+      service_installed_help=$(is-service-installed --help 2>&1 || true)
+      if [ -n "$service_installed_help" ]; then
+        printf '%s\n' "$service_installed_help" | sed -n '1,2p'
+        demonstrated="$demonstrated is-service-installed"
+      fi
+      ;;
+
+    27)
+      printf 'Arcana stays optional by design.\n'
+      printf 'Extensions remain visible without being forced into the core ritual.\n'
+
+      arcana_count=$(
+        find "$WIZARDRY_DIR/spells/.arcana" -type f 2>/dev/null |
+          awk 'END { print NR + 0 }'
+      )
+      printf 'Arcana files present -> %s\n' "$arcana_count"
+
+      import_help=$(import-arcanum --help 2>&1 || true)
+      if [ -n "$import_help" ]; then
+        printf '%s\n' "$import_help" | sed -n '1,4p'
+        demonstrated="$demonstrated import-arcanum"
+      fi
+      ;;
+
+    28)
+      printf 'Web services are sampled through a throwaway site tree.\n'
+
+      site_dir="$HOME/sites/demo-site"
+      mkdir -p "$site_dir/build/pages"
+      printf '<h1>Demo</h1>\n' > "$site_dir/build/pages/index.html"
+      site_status_output=$(site-status demo-site 2>&1 || true)
+      if [ -n "$site_status_output" ]; then
+        printf 'site-status -> %s\n' "$site_status_output"
+        demonstrated="$demonstrated site-status"
+      fi
+
+      printf 'Template creation, builds, and serving stay descriptive unless local templates are installed.\n'
       ;;
   esac
-  
-  # Show spell coverage for transparency
+
   if [ -n "$spell_list" ]; then
     printf '\n'
     printf '%s\n' '---'
-    
-    # List spells at this level (remove directory suffix)
-    spell_names=$(printf '%s' "$spell_list" | tr ' ' '\n' | sed 's/:.*$//')
-    spell_count=$(printf '%s' "$spell_names" | grep '.' | wc -l || printf '0')
-    
-    # Track which spells were mentioned in demonstrations
-    demonstrated=""
+
+    spell_names=$(printf '%s\n' "$spell_list" | tr ' ' '\n' | sed '/^$/d; s/:.*//')
+    spell_count=$(printf '%s\n' "$spell_names" | awk 'NF { c++ } END { print c + 0 }')
     not_demonstrated=""
-    
-    # shellcheck disable=SC2086
+
     for spell_name in $spell_names; do
-      # Check if this spell was specifically demonstrated (not just listed)
-      case "$level" in
-        0)
-          case "$spell_name" in
-            detect-posix|detect-distro|verify-posix) demonstrated="$demonstrated $spell_name" ;;
-            *) not_demonstrated="$not_demonstrated $spell_name" ;;
-          esac
-          ;;
-        1)
-          case "$spell_name" in
-            validate-spells) demonstrated="$demonstrated $spell_name" ;;
-            *) not_demonstrated="$not_demonstrated $spell_name" ;;
-          esac
-          ;;
-        3)
-          case "$spell_name" in
-            fathom-terminal) demonstrated="$demonstrated $spell_name" ;;
-            *) not_demonstrated="$not_demonstrated $spell_name" ;;
-          esac
-          ;;
-        4)
-          case "$spell_name" in
-            look) demonstrated="$demonstrated $spell_name" ;;
-            *) not_demonstrated="$not_demonstrated $spell_name" ;;
-          esac
-          ;;
-        7)
-          case "$spell_name" in
-            read-magic) demonstrated="$demonstrated $spell_name" ;;
-            *) not_demonstrated="$not_demonstrated $spell_name" ;;
-          esac
-          ;;
-        8)
-          case "$spell_name" in
-            ask-yn) demonstrated="$demonstrated $spell_name" ;;
-            *) not_demonstrated="$not_demonstrated $spell_name" ;;
-          esac
-          ;;
-        9)
-          case "$spell_name" in
-            validate-number) demonstrated="$demonstrated $spell_name" ;;
-            *) not_demonstrated="$not_demonstrated $spell_name" ;;
-          esac
-          ;;
-        10)
-          case "$spell_name" in
-            ask-number) demonstrated="$demonstrated $spell_name" ;;
-            *) not_demonstrated="$not_demonstrated $spell_name" ;;
-          esac
-          ;;
-        12)
-          case "$spell_name" in
-            package-managers) demonstrated="$demonstrated $spell_name" ;;
-            *) not_demonstrated="$not_demonstrated $spell_name" ;;
-          esac
-          ;;
-        16)
-          case "$spell_name" in
-            detect-rc-file) demonstrated="$demonstrated $spell_name" ;;
-            *) not_demonstrated="$not_demonstrated $spell_name" ;;
-          esac
-          ;;
-        18)
-          case "$spell_name" in
-            hash) demonstrated="$demonstrated $spell_name" ;;
-            *) not_demonstrated="$not_demonstrated $spell_name" ;;
-          esac
-          ;;
-        24)
-          case "$spell_name" in
-            lint-magic) demonstrated="$demonstrated $spell_name" ;;
-            *) not_demonstrated="$not_demonstrated $spell_name" ;;
-          esac
-          ;;
-        *)
-          # For levels without live demonstrations, all are just described
-          not_demonstrated="$not_demonstrated $spell_name"
-          ;;
+      case " $demonstrated " in
+        *" $spell_name "*) : ;;
+        *) not_demonstrated="$not_demonstrated $spell_name" ;;
       esac
     done
-    
-    # Display coverage summary
-    demonstrated_count=$(printf '%s' "$demonstrated" | wc -w)
-    not_demonstrated_count=$(printf '%s' "$not_demonstrated" | wc -w)
-    
-    if [ "$demonstrated_count" -gt 0 ]; then
-      printf 'Spells demonstrated live: %d/%d\n' "$demonstrated_count" "$spell_count"
-      if [ "$not_demonstrated_count" -gt 0 ]; then
-        # Format the list nicely
-        not_demo_list=$(printf '%s' "$not_demonstrated" | tr -s ' ' | sed 's/^ //; s/ /, /g')
-        printf 'Described (not executed): %s\n' "$not_demo_list"
-      fi
-    else
-      if [ "$spell_count" -gt 0 ]; then
-        printf 'Spells at this level: %d (described, not executed live)\n' "$spell_count"
-      fi
+
+    demonstrated_count=$(printf '%s\n' "$demonstrated" | wc -w | tr -d ' ')
+    printf 'Live casts: %s/%s\n' "$demonstrated_count" "$spell_count"
+
+    if [ -n "$not_demonstrated" ]; then
+      not_demo_list=$(printf '%s\n' "$not_demonstrated" | tr -s ' ' | sed 's/^ //; s/ /, /g')
+      printf 'Described or held back: %s\n' "$not_demo_list"
     fi
+  elif [ -n "$imp_list" ]; then
+    printf '\n'
+    printf '%s\n' '---'
+    printf 'Imps available at this level: %s\n' "$(printf '%s\n' "$imp_list" | wc -w | tr -d ' ')"
   fi
-  
-  # Explicit success return to avoid propagating non-zero exit codes from internal commands
+
   return 0
 }
 
-# Detect WIZARDRY_DIR if not set (for direct execution)
+# Detect WIZARDRY_DIR when the spell is executed directly.
 if [ -z "${WIZARDRY_DIR-}" ]; then
-  # Try to detect from script location
-  if command -v dirname >/dev/null 2>&1 && command -v cd >/dev/null 2>&1 \
-     && command -v pwd >/dev/null 2>&1; then
+  if command -v dirname >/dev/null 2>&1 \
+    && command -v cd >/dev/null 2>&1 \
+    && command -v pwd >/dev/null 2>&1; then
     script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || script_dir=""
     if [ -n "$script_dir" ]; then
       wiz_root=$(CDPATH= cd -- "$script_dir/../.." 2>/dev/null && pwd -P) || wiz_root=""
@@ -640,132 +651,123 @@ if [ -z "${WIZARDRY_DIR-}" ]; then
       fi
     fi
   fi
-  
-  # Fallback to standard location
+
   if [ -z "${WIZARDRY_DIR-}" ] && [ -n "${HOME-}" ] && [ -d "${HOME}/.wizardry/spells" ]; then
     WIZARDRY_DIR="${HOME}/.wizardry"
     export WIZARDRY_DIR
   fi
 fi
 
-# Main script logic (unwrapped from demo_magic function)
+demo_levels_path=""
+demo_max_level=28
+if [ -n "${WIZARDRY_DIR-}" ] && [ -x "${WIZARDRY_DIR}/spells/.imps/sys/spell-levels" ]; then
+  demo_levels_path="${WIZARDRY_DIR}/spells/.imps/sys/spell-levels"
+  demo_probe_level=0
+  demo_max_level=0
+  while "$demo_levels_path" "$demo_probe_level" name >/dev/null 2>&1; do
+    demo_max_level=$demo_probe_level
+    demo_probe_level=$((demo_probe_level + 1))
+  done
+fi
+
 case "${1-}" in
---help|--usage|-h)
-  cat <<'USAGE'
+  --help|--usage|-h)
+    cat <<USAGE
 Usage: demo-magic [LEVEL|all]
 
-Demonstrate wizardry features by running checks on spells and narrating results.
-Each level demonstrates spells validated by the corresponding banish level.
+Guide wizardry level by level with real casts against disposable fixtures.
+Host-mutating or strongly interactive spells are named and described, but kept
+uncast unless the behavior is safely contained.
 
 Arguments:
-  LEVEL         Demonstration level (0-27)
-  all           Demonstrate all levels (default)
-                Level 0: POSIX & platform foundation
-                Level 1: Wizardry installation
-                Level 2: Glossary system
-                Level 3: Menu system
-                Level 4+: Higher-level spells (see SPELL_LEVELS.md)
+  LEVEL               Run levels 0 through LEVEL
+  all                 Run every level (default)
+
+Options:
+  --demo-in-pocket    Internal flag used after pocket-dimension re-exec
+  --help, --usage, -h Show this help text
+
+Current level range: 0-$demo_max_level
 USAGE
-  exit 0
-  ;;
+    exit 0
+    ;;
 esac
 
 set -eu
 . env-clear
 
-# Add imps to PATH for spell demonstrations
-if [ -n "${WIZARDRY_DIR-}" ]; then
-  # Build imp path
-  imp_path="${WIZARDRY_DIR}/spells/.imps/sys"
-  imp_path="$imp_path:${WIZARDRY_DIR}/spells/.imps/cond"
-  imp_path="$imp_path:${WIZARDRY_DIR}/spells/.imps/out"
-  imp_path="$imp_path:${WIZARDRY_DIR}/spells/.imps/fs"
-  imp_path="$imp_path:${WIZARDRY_DIR}/spells/.imps/str"
-  imp_path="$imp_path:${WIZARDRY_DIR}/spells/.imps/paths"
-  imp_path="$imp_path:${WIZARDRY_DIR}/spells/.imps/text"
-  imp_path="$imp_path:${WIZARDRY_DIR}/spells/.imps/input"
-  imp_path="$imp_path:${WIZARDRY_DIR}/spells/.imps/lex"
-  imp_path="$imp_path:${WIZARDRY_DIR}/spells/.imps/menu"
-  imp_path="$imp_path:${WIZARDRY_DIR}/spells/.imps/pkg"
-  imp_path="$imp_path:${WIZARDRY_DIR}/spells/.imps/test"
-  imp_path="$imp_path:${WIZARDRY_DIR}/spells/.imps/lang"
-  PATH="$imp_path:$PATH"
-  export PATH
+if [ -z "${WIZARDRY_DIR-}" ] || [ ! -d "${WIZARDRY_DIR}/spells" ]; then
+  printf '%s\n' "demo-magic: WIZARDRY_DIR is not set to a wizardry installation" >&2
+  exit 1
 fi
 
-# Add spell directories to PATH for demonstrations
-if [ -n "${WIZARDRY_DIR-}" ]; then
-  PATH="$WIZARDRY_DIR/spells/.wizardry:$PATH"
-  for dir in "$WIZARDRY_DIR"/spells/*; do
-    [ -d "$dir" ] || continue
-    PATH="$dir:$PATH"
-  done
-  export PATH
-fi
+imp_path="${WIZARDRY_DIR}/spells/.imps/sys"
+imp_path="$imp_path:${WIZARDRY_DIR}/spells/.imps/cond"
+imp_path="$imp_path:${WIZARDRY_DIR}/spells/.imps/out"
+imp_path="$imp_path:${WIZARDRY_DIR}/spells/.imps/fs"
+imp_path="$imp_path:${WIZARDRY_DIR}/spells/.imps/str"
+imp_path="$imp_path:${WIZARDRY_DIR}/spells/.imps/paths"
+imp_path="$imp_path:${WIZARDRY_DIR}/spells/.imps/text"
+imp_path="$imp_path:${WIZARDRY_DIR}/spells/.imps/input"
+imp_path="$imp_path:${WIZARDRY_DIR}/spells/.imps/lex"
+imp_path="$imp_path:${WIZARDRY_DIR}/spells/.imps/menu"
+imp_path="$imp_path:${WIZARDRY_DIR}/spells/.imps/pkg"
+imp_path="$imp_path:${WIZARDRY_DIR}/spells/.imps/test"
+imp_path="$imp_path:${WIZARDRY_DIR}/spells/.imps/lang"
+PATH="$imp_path:$PATH"
 
-# Note: validate-spells is now a flat-file spell in PATH, not a function
+PATH="${WIZARDRY_DIR}/spells/.wizardry:$PATH"
+for dir in "$WIZARDRY_DIR"/spells/*; do
+  [ -d "$dir" ] || continue
+  PATH="$dir:$PATH"
+done
+export PATH
 
-# Parse internal/demo flags and level argument
-demo_level=27  # Default to all levels
+demo_target_level=$demo_max_level
 demo_in_pocket=0
+
 while [ "$#" -gt 0 ]; do
   case "${1-}" in
     --demo-in-pocket)
       demo_in_pocket=1
       shift
       ;;
+    all)
+      demo_target_level=$demo_max_level
+      shift
+      ;;
+    [0-9]|[0-9][0-9])
+      demo_target_level=$1
+      shift
+      ;;
+    -*)
+      printf 'demo-magic: unknown option: %s\n' "$1" >&2
+      exit 2
+      ;;
     *)
-      break
+      printf 'demo-magic: invalid level: %s\n' "$1" >&2
+      exit 2
       ;;
   esac
 done
 
-if [ "$#" -gt 0 ]; then
-  case "$1" in
-    all)
-      demo_level=27
-      shift
-      ;;
-    [0-9]|[0-9][0-9])
-      demo_level=$1
-      shift
-      ;;
-    *)
-      printf 'demo-magic: invalid level: %s\n' "$1" >&2
-      cat <<'USAGE' >&2
-Usage: demo-magic [LEVEL|all]
-
-Demonstrate wizardry features by running checks on spells and narrating results.
-Each level demonstrates spells validated by the corresponding banish level.
-
-Arguments:
-  LEVEL         Demonstration level (0-27)
-  all           Demonstrate all levels (default)
-                Level 0: POSIX & platform foundation
-                Level 1: Wizardry installation
-                Level 2: Glossary system
-                Level 3: Menu system
-                Level 4+: Higher-level spells (see SPELL_LEVELS.md)
-USAGE
-      exit 2
-      ;;
-  esac
+if [ "$demo_target_level" -gt "$demo_max_level" ]; then
+  printf 'demo-magic: level %s is out of range (0-%s)\n' "$demo_target_level" "$demo_max_level" >&2
+  exit 2
 fi
 
-# Sandbox with pocket-dimension if not in GitHub Actions and not already sandboxed.
 # Keep WIZARDRY_DEMO_NO_BWRAP for backward compatibility with existing callers.
 if [ "$demo_in_pocket" -ne 1 ] \
   && [ "${WIZARDRY_DEMO_NO_BWRAP-0}" -ne 1 ] \
   && [ "${WIZARDRY_DEMO_NO_SANDBOX-0}" -ne 1 ]; then
-  # Skip sandboxing in GitHub Actions (already isolated).
   if [ -z "${GITHUB_ACTIONS-}" ] || [ "${GITHUB_ACTIONS}" != "true" ]; then
     if command -v pocket-dimension >/dev/null 2>&1 && pocket-dimension --check >/dev/null 2>&1; then
-      # Re-exec inside pocket-dimension (Linux uses bwrap, macOS uses sandbox-exec when available).
-      exec pocket-dimension -- "$0" --demo-in-pocket "$@"
+      exec pocket-dimension -- "$0" --demo-in-pocket "$demo_target_level"
     fi
 
     printf 'demo-magic: pocket-dimension sandbox unavailable\n' >&2
-    printf 'demo-magic: Running demos in an isolated sandbox is recommended for safety.\n' >&2
+    printf '%s\n' "demo-magic: disposable fixtures still contain every mutable cast." >&2
+    printf '%s\n' "demo-magic: sandboxing remains preferred." >&2
 
     demo_interactive=0
     if { [ -t 0 ] || [ -t 1 ] || [ -t 2 ]; } \
@@ -773,7 +775,6 @@ if [ "$demo_in_pocket" -ne 1 ] \
       demo_interactive=1
     fi
 
-    # On Linux, optionally offer bubblewrap install for pocket-dimension.
     if [ "$demo_interactive" -eq 1 ] \
       && [ "${WIZARDRY_DEMO_BWRAP_INSTALL_ATTEMPTED-0}" -ne 1 ] \
       && command -v ask-yn >/dev/null 2>&1 \
@@ -786,7 +787,7 @@ if [ "$demo_in_pocket" -ne 1 ] \
           if command -v pocket-dimension >/dev/null 2>&1 \
             && pocket-dimension --check >/dev/null 2>&1; then
             printf 'Bubblewrap installed successfully. Re-running demo-magic...\n' >&2
-            exec env WIZARDRY_DEMO_BWRAP_INSTALL_ATTEMPTED=1 "$0" "$@"
+            exec env WIZARDRY_DEMO_BWRAP_INSTALL_ATTEMPTED=1 "$0" "$demo_target_level"
           fi
           printf 'demo-magic: pocket-dimension still unavailable after install attempt\n' >&2
         else
@@ -795,7 +796,6 @@ if [ "$demo_in_pocket" -ne 1 ] \
       fi
     fi
 
-    # Either install failed/declined or this is non-interactive.
     if [ "$demo_interactive" -eq 1 ] && command -v ask-yn >/dev/null 2>&1; then
       if ! ask-yn "Continue without sandbox?" no; then
         printf 'demo-magic: aborting\n' >&2
@@ -803,32 +803,53 @@ if [ "$demo_in_pocket" -ne 1 ] \
       fi
     else
       printf '%s\n' "demo-magic: non-interactive mode, continuing without sandbox" >&2
-      printf '%s\n' "demo-magic: set WIZARDRY_DEMO_NO_SANDBOX=1 or WIZARDRY_DEMO_NO_BWRAP=1 to silence this" >&2
+      printf '%s\n' "demo-magic: set WIZARDRY_DEMO_NO_SANDBOX=1" >&2
+      printf '%s\n' "demo-magic: or WIZARDRY_DEMO_NO_BWRAP=1 to silence this" >&2
     fi
   fi
 fi
 
-printf '\n'
-printf '╔═══════════════════════════════════════════════════════════╗\n'
-printf '║         WIZARDRY DEMONSTRATION OF MAGICAL ARTS            ║\n'
-printf '╚═══════════════════════════════════════════════════════════╝\n'
-printf '\n'
-printf 'A circle of chalk flares into view.\n'
-printf 'The apprentice wizard prepares to demonstrate mastery.\n'
+demo_root=$(temp-dir demo-magic)
+trap 'rm -rf "$demo_root"' EXIT HUP INT TERM
+demo_home="$demo_root/home"
+demo_spellbook="$demo_root/spellbook"
+demo_workspace="$demo_root/workspace"
 
-# Run all levels from 0 to target level
+mkdir -p \
+  "$demo_home" \
+  "$demo_home/.Trash" \
+  "$demo_home/.local/share/Trash/files" \
+  "$demo_home/sites" \
+  "$demo_spellbook" \
+  "$demo_workspace" \
+  "$demo_workspace/routes/alpha/beta" \
+  "$demo_workspace/room" \
+  "$demo_workspace/sanctum"
+
+printf '# >>> wizardry cd cantrip >>>\n' > "$demo_home/.zshrc"
+printf 'seed scroll\n' > "$demo_workspace/scroll.txt"
+printf 'seed note\n' > "$demo_workspace/source.txt"
+
+HOME=$demo_home
+SPELLBOOK_DIR=$demo_spellbook
+XDG_DATA_HOME=$demo_home/.local/share
+export HOME SPELLBOOK_DIR XDG_DATA_HOME
+
+printf '\n'
+printf 'Wizardry Demo\n'
+printf '=============\n'
+printf 'Disposable fixtures: %s\n' "$demo_root"
+printf 'Every mutable cast below runs inside that throwaway workspace.\n'
+printf 'Strongly interactive or host-mutating spells are named, but held back.\n'
+
 current_level=0
-while [ "$current_level" -le "$demo_level" ]; do
+while [ "$current_level" -le "$demo_target_level" ]; do
   demo_level "$current_level"
   current_level=$((current_level + 1))
 done
 
 printf '\n'
-printf '═══════════════════════════════════════════════════════════\n'
-printf '\n'
-printf 'The demonstration concludes.\n'
-printf 'The circle closes. Wizardry stands ready.\n'
+printf 'The circle clears.\n'
+printf 'Disposable fixtures removed on exit.\n'
 printf 'DEMO_MAGIC_COMPLETE\n'
-
-# End of script - explicit exit 0 to ensure success
 exit 0
