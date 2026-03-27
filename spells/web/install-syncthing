@@ -34,7 +34,7 @@ syncthing_run_privileged() {
   if "$@" 2>/dev/null; then
     return 0
   fi
-  if type run_sudo_cmd >/dev/null 2>&1; then
+  if command -v run_sudo_cmd >/dev/null 2>&1; then
     run_sudo_cmd "$@"
     return 0
   fi
@@ -54,7 +54,7 @@ install_syncthing_target_bin_dir() {
     printf '%s\n' /usr/local/bin
     return 0
   fi
-  if syncthing_has_cmd sudo || type run_sudo_cmd >/dev/null 2>&1; then
+  if syncthing_has_cmd sudo || command -v run_sudo_cmd >/dev/null 2>&1; then
     printf '%s\n' /usr/local/bin
     return 0
   fi

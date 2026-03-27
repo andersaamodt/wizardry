@@ -28,7 +28,7 @@ syncthing_uninstall_run_privileged() {
   if "$@" 2>/dev/null; then
     return 0
   fi
-  if type run_sudo_cmd >/dev/null 2>&1; then
+  if command -v run_sudo_cmd >/dev/null 2>&1; then
     run_sudo_cmd "$@"
     return 0
   fi
