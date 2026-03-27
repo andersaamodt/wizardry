@@ -76,12 +76,11 @@ user.beta: moon"
 }
 
 test_reports_missing_helpers() {
-  # Skip this test if real xattr helpers are available (realistic CI scenario)
-  if command -v attr >/dev/null 2>&1 || command -v xattr >/dev/null 2>&1 || command -v setfattr >/dev/null 2>&1; then
-    export TEST_SKIP_REASON="Test only runs when xattr tools unavailable (unrealistic in modern systems)"
-    return 222
-  fi
-  
+  stub_dir=$(make_stub_dir)
+  # Keep only core tools and wizardry imps in PATH.
+  # Intentionally omit attr/xattr/setfattr so missing-helper behavior is deterministic.
+  link_tools "$stub_dir" sh awk cat sed grep head tail dirname pwd
+
   tmpfile="$WIZARDRY_TMPDIR/headered-missing"
   cat >"$tmpfile" <<'FILE'
 ---
@@ -89,23 +88,27 @@ user.alpha: sky
 ---
 spell
 FILE
-  run_spell "spells/enchant/yaml-to-enchantment" "$tmpfile"
+  restricted_path="$stub_dir:$WIZARDRY_IMPS_PATH"
+  PATH="$restricted_path" run_spell "spells/enchant/yaml-to-enchantment" "$tmpfile"
   assert_failure && assert_error_contains "requires attr, setfattr, or xattr"
 }
 
 test_fails_on_attribute_error() {
-  # Skip this test if real xattr helpers are available (realistic CI scenario)
-  if command -v attr >/dev/null 2>&1 || command -v xattr >/dev/null 2>&1 || command -v setfattr >/dev/null 2>&1; then
-    export TEST_SKIP_REASON="Test only runs when xattr tools unavailable (unrealistic in modern systems)"
-    return 222
-  fi
-  
   stub_dir=$(make_stub_dir)
   cat >"$stub_dir/attr" <<'STUB'
 #!/bin/sh
 exit 1
 STUB
-  chmod +x "$stub_dir/attr"
+  cat >"$stub_dir/setfattr" <<'STUB'
+#!/bin/sh
+exit 1
+STUB
+  cat >"$stub_dir/xattr" <<'STUB'
+#!/bin/sh
+exit 1
+STUB
+  chmod +x "$stub_dir/attr" "$stub_dir/setfattr" "$stub_dir/xattr"
+  link_tools "$stub_dir" sh awk cat sed grep head tail dirname pwd
 
   tmpfile="$WIZARDRY_TMPDIR/headered-fail"
   cat >"$tmpfile" <<'FILE'
@@ -115,8 +118,8 @@ user.alpha: fail
 body
 FILE
 
-  # Put stub first in PATH so it's used instead of real attr
-  PATH="$stub_dir:$PATH" run_spell "spells/enchant/yaml-to-enchantment" "$tmpfile"
+  restricted_path="$stub_dir:$WIZARDRY_IMPS_PATH"
+  PATH="$restricted_path" run_spell "spells/enchant/yaml-to-enchantment" "$tmpfile"
   assert_failure && assert_error_contains "failed to set attribute"
 }
 

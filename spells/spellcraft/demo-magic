@@ -145,8 +145,19 @@ demo_level() {
         printf 'y\n' | ask-yn "Is this a demonstration?" yes 2>&1 || true
         printf '\n'
       fi
+      # Demo cantrips that are available
+      printf 'Basic cantrips for everyday magic:\n'
+      printf '  • ask, ask-yn, ask-text - Interactive prompts\n'
+      printf '  • ask-number - Numeric input with validation\n'
+      printf '  • max-length - Find longest string\n'
+      printf '  • list-files - List files in directory\n'
+      printf '  • move - Move files\n'
+      printf '  • memorize - Add spells to shell init\n'
+      printf '\n'
+      printf 'Validation helpers are now imps:\n'
+      printf '  • validate-number, validate-path, require-command\n'
       ;;
-      
+
     5)
       printf 'The wizard enchants files with metadata...\n'
       printf '\n'
@@ -203,23 +214,6 @@ demo_level() {
       printf '  • look - Examine current location\n'
       printf '\n'
       printf 'Extended attributes enable magical properties on files and folders.\n'
-      ;;
-      
-    10)
-      printf 'The wizard learns basic cantrips...\n'
-      printf '\n'
-      
-      # Demo cantrips that are available
-      printf 'Basic cantrips for everyday magic:\n'
-      printf '  • ask, ask-yn, ask-text - Interactive prompts\n'
-      printf '  • ask-number - Numeric input with validation\n'
-      printf '  • max-length - Find longest string\n'
-      printf '  • list-files - List files in directory\n'
-      printf '  • move - Move files\n'
-      printf '  • memorize - Add spells to shell init\n'
-      printf '\n'
-      printf 'Validation helpers are now imps:\n'
-      printf '  • validate-number, validate-path, require-command\n'
       ;;
       
     11)
@@ -463,12 +457,10 @@ demo_level() {
       printf '  • is-service-installed - Verify installation\n'
       printf '\n'
       printf 'Complete systemd/service management toolkit.\n'
-      ;;
-      
-    27)
+
+      printf '\n'
       printf 'The wizard peers into the arcana...\n'
       printf '\n'
-      
       if [ -d "${WIZARDRY_DIR}/spells/.arcana" ]; then
         arcana_count=$(find "${WIZARDRY_DIR}/spells/.arcana" -type f 2>/dev/null | wc -l)
         printf 'The arcana vault is accessible!\n'

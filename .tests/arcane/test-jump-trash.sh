@@ -119,9 +119,6 @@ STUB
 }
 
 test_unknown_option() {
-  # SKIP: jump-trash doesn't validate options, just ignores them
-  TEST_SKIP_REASON="option validation not implemented"
-  return 222
   skip-if-compiled || return $?
   run_spell "spells/arcane/jump-trash" --unknown
   assert_failure && assert_error_contains "unknown option"

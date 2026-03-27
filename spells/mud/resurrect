@@ -8,7 +8,7 @@ case "${1-}" in
 Usage: resurrect
 
 Resurrect yourself if you are dead. This spell can only be cast in your home
-directory or the directory designated by 'jump 1'.
+directory, your avatar directory, or the directory designated by 'jump 1'.
 
 When you resurrect, your health is restored to 1 HP.
 
@@ -50,15 +50,26 @@ if [ "$dead" != "1" ]; then
   exit 0
 fi
 
-# Check if we're in home directory, jump 1 location, or avatar directory
+# Check if we're in home directory, avatar directory, or jump 1 location
 current_dir=$(pwd -P)
 home_dir=$(cd "$HOME" && pwd -P)
 avatar_dir=$(cd "$(dirname "$avatar_path")" && pwd -P)
+jump_one_dir=''
 
-# TODO: Check jump 1 location when jump spell exists
-# For now, check home or avatar directory
-if [ "$current_dir" != "$home_dir" ] && [ "$current_dir" != "$avatar_dir" ]; then
-  printf '%s\n' "resurrect: you can only resurrect in your home directory" >&2
+markers_dir="$spell_home/.markers"
+if [ -f "$markers_dir/1" ]; then
+  jump_one_path=$(cat "$markers_dir/1" 2>/dev/null || printf '')
+  case "$jump_one_path" in
+    /*)
+      if [ -d "$jump_one_path" ]; then
+        jump_one_dir=$(cd "$jump_one_path" 2>/dev/null && pwd -P || printf '')
+      fi
+      ;;
+  esac
+fi
+
+if [ "$current_dir" != "$home_dir" ] && [ "$current_dir" != "$avatar_dir" ] && [ "$current_dir" != "$jump_one_dir" ]; then
+  printf '%s\n' "resurrect: you can only resurrect in your home directory, avatar directory, or jump marker 1" >&2
   exit 1
 fi
 

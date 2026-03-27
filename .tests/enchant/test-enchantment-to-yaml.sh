@@ -88,18 +88,26 @@ STUB
 }
 
 test_reports_missing_helpers() {
-  # Skip this test if real xattr helpers are available (realistic CI scenario)
-  # The WIZARDRY_TEST_HELPERS_ONLY mechanism artificially blocks system tools,
-  # but we want to test realistic environments where wizardry uses available tools
-  if command -v attr >/dev/null 2>&1 || command -v xattr >/dev/null 2>&1 || command -v setfattr >/dev/null 2>&1; then
-    export TEST_SKIP_REASON="Test only runs when xattr tools unavailable (unrealistic in modern systems)"
-    return 222
-  fi
-  
+  stub_dir=$(make_stub_dir)
+  cat >"$stub_dir/list-attributes" <<'STUB'
+#!/bin/sh
+printf '%s\n' 'user.alpha'
+STUB
+  cat >"$stub_dir/get-attribute" <<'STUB'
+#!/bin/sh
+printf '%s' 'azure'
+STUB
+  chmod +x "$stub_dir/list-attributes" "$stub_dir/get-attribute"
+
+  # Keep only core tools and wizardry imps in PATH.
+  # Intentionally omit attr/xattr/setfattr so missing-helper behavior is deterministic.
+  link_tools "$stub_dir" sh mktemp cat mv awk sed grep head tail dirname pwd
+
   target="$WIZARDRY_TMPDIR/yaml-missing"
   printf 'content\n' >"$target"
 
-  run_spell "spells/enchant/enchantment-to-yaml" "$target"
+  restricted_path="$stub_dir:$WIZARDRY_IMPS_PATH"
+  PATH="$restricted_path" run_spell "spells/enchant/enchantment-to-yaml" "$target"
   assert_failure && assert_error_contains "requires one of attr, xattr, or setfattr"
 }
 
