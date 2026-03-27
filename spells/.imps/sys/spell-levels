@@ -45,7 +45,7 @@ case "$level" in
   6)
     name='Task Priorities'
     spells='deprioritize:priorities get-card:priorities get-new-priority:priorities get-priority:priorities priorities:menu prioritize:priorities upvote:priorities'
-    imps='priorities/collect-prioritized-rows'
+    imps='fs/with-lock priorities/collect-prioritized-rows'
     ;;
   7)
     name='Navigation'

@@ -28,6 +28,16 @@ if [ ! -e "$file" ]; then
   exit 1
 fi
 
+directory=$(dirname "$file")
+if [ "$directory" = "." ]; then
+  directory=$(pwd -P)
+fi
+
+priority_lock_file="$directory/.wizardry-priorities.lock"
+if [ "${WIZARDRY_PRIORITY_LOCK_HELD-0}" -ne 1 ]; then
+  exec with-lock "$priority_lock_file" env WIZARDRY_PRIORITY_LOCK_HELD=1 "$0" "$file"
+fi
+
 # Remove echelon and priority attributes from file
 disenchant "$file" user.echelon >/dev/null 2>&1 || true
 disenchant "$file" user.priority >/dev/null 2>&1 || true

@@ -713,8 +713,21 @@ fi
 
 # Note: validate-spells is now a flat-file spell in PATH, not a function
 
-# Parse level argument
+# Parse internal/demo flags and level argument
 demo_level=27  # Default to all levels
+demo_in_pocket=0
+while [ "$#" -gt 0 ]; do
+  case "${1-}" in
+    --demo-in-pocket)
+      demo_in_pocket=1
+      shift
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
 if [ "$#" -gt 0 ]; then
   case "$1" in
     all)
@@ -747,55 +760,58 @@ USAGE
   esac
 fi
 
-# Sandbox with bwrap if not in GitHub Actions and not already sandboxed
-if [ "${WIZARDRY_DEMO_IN_BWRAP-0}" -ne 1 ] && [ "${WIZARDRY_DEMO_NO_BWRAP-0}" -ne 1 ]; then
-  # Skip bwrap in GitHub Actions (already isolated)
+# Sandbox with pocket-dimension if not in GitHub Actions and not already sandboxed.
+# Keep WIZARDRY_DEMO_NO_BWRAP for backward compatibility with existing callers.
+if [ "$demo_in_pocket" -ne 1 ] \
+  && [ "${WIZARDRY_DEMO_NO_BWRAP-0}" -ne 1 ] \
+  && [ "${WIZARDRY_DEMO_NO_SANDBOX-0}" -ne 1 ]; then
+  # Skip sandboxing in GitHub Actions (already isolated).
   if [ -z "${GITHUB_ACTIONS-}" ] || [ "${GITHUB_ACTIONS}" != "true" ]; then
-    if command -v bwrap >/dev/null 2>&1; then
-      # Re-exec with bwrap sandbox
-      exec bwrap --unshare-user --ro-bind / / --dev-bind /dev /dev --bind /proc /proc \
-        --bind /tmp /tmp --setenv PATH "$PATH" --setenv WIZARDRY_DEMO_IN_BWRAP 1 -- \
-        "$0" "$@"
-    else
-      # bwrap not available - offer to install
-      printf 'demo-magic: bubblewrap (bwrap) not found\n' >&2
-      printf 'demo-magic: Running demos in an isolated sandbox is recommended for safety.\n' >&2
+    if command -v pocket-dimension >/dev/null 2>&1 && pocket-dimension --check >/dev/null 2>&1; then
+      # Re-exec inside pocket-dimension (Linux uses bwrap, macOS uses sandbox-exec when available).
+      exec pocket-dimension -- "$0" --demo-in-pocket "$@"
+    fi
 
-      demo_interactive=0
-      if { [ -t 0 ] || [ -t 1 ] || [ -t 2 ]; } \
-        && [ -r /dev/tty ] && [ -w /dev/tty ]; then
-        demo_interactive=1
-      fi
+    printf 'demo-magic: pocket-dimension sandbox unavailable\n' >&2
+    printf 'demo-magic: Running demos in an isolated sandbox is recommended for safety.\n' >&2
 
-      # Check if we can install it interactively. In non-interactive runs,
-      # continue without sandbox rather than looping on failed prompts.
-      if [ "$demo_interactive" -eq 1 ] \
-        && [ "${WIZARDRY_DEMO_BWRAP_INSTALL_ATTEMPTED-0}" -ne 1 ] \
-        && command -v pkg-install >/dev/null 2>&1 \
-        && command -v ask-yn >/dev/null 2>&1; then
-        if ask-yn "Install bubblewrap now?" yes; then
-          printf 'Installing bubblewrap...\n' >&2
-          if pkg-install bubblewrap 2>/dev/null || pkg-install bwrap 2>/dev/null; then
-            if command -v bwrap >/dev/null 2>&1; then
-              printf 'Bubblewrap installed successfully. Re-running demo-magic...\n' >&2
-              exec env WIZARDRY_DEMO_BWRAP_INSTALL_ATTEMPTED=1 "$0" "$@"
-            fi
-            printf 'demo-magic: bubblewrap still unavailable after install attempt\n' >&2
-          else
-            printf 'demo-magic: failed to install bubblewrap\n' >&2
+    demo_interactive=0
+    if { [ -t 0 ] || [ -t 1 ] || [ -t 2 ]; } \
+      && [ -r /dev/tty ] && [ -w /dev/tty ]; then
+      demo_interactive=1
+    fi
+
+    # On Linux, optionally offer bubblewrap install for pocket-dimension.
+    if [ "$demo_interactive" -eq 1 ] \
+      && [ "${WIZARDRY_DEMO_BWRAP_INSTALL_ATTEMPTED-0}" -ne 1 ] \
+      && command -v ask-yn >/dev/null 2>&1 \
+      && command -v pkg-install >/dev/null 2>&1; then
+      demo_platform=$(uname -s 2>/dev/null || printf 'unknown')
+      if [ "$demo_platform" = "Linux" ] \
+        && ask-yn "Install bubblewrap now for pocket-dimension?" yes; then
+        printf 'Installing bubblewrap...\n' >&2
+        if pkg-install bubblewrap 2>/dev/null || pkg-install bwrap 2>/dev/null; then
+          if command -v pocket-dimension >/dev/null 2>&1 \
+            && pocket-dimension --check >/dev/null 2>&1; then
+            printf 'Bubblewrap installed successfully. Re-running demo-magic...\n' >&2
+            exec env WIZARDRY_DEMO_BWRAP_INSTALL_ATTEMPTED=1 "$0" "$@"
           fi
+          printf 'demo-magic: pocket-dimension still unavailable after install attempt\n' >&2
+        else
+          printf 'demo-magic: failed to install bubblewrap\n' >&2
         fi
       fi
+    fi
 
-      # Either install failed/declined or this is non-interactive.
-      if [ "$demo_interactive" -eq 1 ] && command -v ask-yn >/dev/null 2>&1; then
-        if ! ask-yn "Continue without sandbox?" no; then
-          printf 'demo-magic: aborting\n' >&2
-          exit 1
-        fi
-      else
-        printf 'demo-magic: non-interactive mode, continuing without sandbox (set WIZARDRY_DEMO_NO_BWRAP=1 to silence this)\n' >&2
+    # Either install failed/declined or this is non-interactive.
+    if [ "$demo_interactive" -eq 1 ] && command -v ask-yn >/dev/null 2>&1; then
+      if ! ask-yn "Continue without sandbox?" no; then
+        printf 'demo-magic: aborting\n' >&2
+        exit 1
       fi
+    else
+      printf '%s\n' "demo-magic: non-interactive mode, continuing without sandbox" >&2
+      printf '%s\n' "demo-magic: set WIZARDRY_DEMO_NO_SANDBOX=1 or WIZARDRY_DEMO_NO_BWRAP=1 to silence this" >&2
     fi
   fi
 fi

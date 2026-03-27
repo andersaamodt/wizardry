@@ -56,9 +56,30 @@ test_removes_priority() {
   fi
 }
 
+test_uses_with_lock() {
+  tmpdir=$(make_tempdir)
+  testfile="$tmpdir/lock-target.txt"
+  lock_log="$tmpdir/with-lock.log"
+  printf 'lock target\n' > "$testfile"
+
+  cat >"$tmpdir/with-lock" <<'SH'
+#!/bin/sh
+printf '%s\n' "$1" > "$LOCK_LOG"
+shift
+"$@"
+SH
+  chmod +x "$tmpdir/with-lock"
+
+  run_cmd env LOCK_LOG="$lock_log" PATH="$tmpdir:$PATH" \
+    "$ROOT_DIR/spells/priorities/deprioritize" "$testfile"
+  assert_success || return 1
+  assert_file_contains "$lock_log" ".wizardry-priorities.lock" || return 1
+}
+
 run_test_case "deprioritize shows usage" test_help
 run_test_case "deprioritize requires file argument" test_requires_argument
 run_test_case "deprioritize fails on missing file" test_fails_on_missing_file
 run_test_case "deprioritize removes priority from file" test_removes_priority
+run_test_case "deprioritize uses with-lock" test_uses_with_lock
 
 finish_tests

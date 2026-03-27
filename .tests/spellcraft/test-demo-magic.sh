@@ -15,15 +15,15 @@ test_help() {
   assert_output_contains "Usage: demo-magic" || return 1
 }
 
-test_noninteractive_without_bwrap_does_not_loop() {
-  if command -v bwrap >/dev/null 2>&1; then
-    test_skip "requires environment without bwrap"
-    return 0
-  fi
-
-  run_cmd "$ROOT_DIR/spells/spellcraft/demo-magic" 0
+test_no_sandbox_flag_works_noninteractive() {
+  run_cmd env WIZARDRY_DEMO_NO_SANDBOX=1 "$ROOT_DIR/spells/spellcraft/demo-magic" 0
   assert_success || return 1
-  assert_error_contains "non-interactive mode, continuing without sandbox" || return 1
+  assert_output_contains "Level 0: POSIX & Platform Foundation" || return 1
+}
+
+test_demo_in_pocket_flag_skips_resandbox() {
+  run_cmd "$ROOT_DIR/spells/spellcraft/demo-magic" --demo-in-pocket 0
+  assert_success || return 1
   assert_output_contains "Level 0: POSIX & Platform Foundation" || return 1
 }
 
@@ -76,7 +76,8 @@ test_default_level() {
 }
 
 run_test_case "demo-magic shows help" test_help
-run_test_case "demo-magic non-interactive bwrap fallback" test_noninteractive_without_bwrap_does_not_loop
+run_test_case "demo-magic no-sandbox flag works in non-interactive mode" test_no_sandbox_flag_works_noninteractive
+run_test_case "demo-magic internal pocket flag avoids resandbox loops" test_demo_in_pocket_flag_skips_resandbox
 run_test_case "demo-magic level 0 demonstrates actual spells" test_level_0
 run_test_case "demo-magic level 1 runs validate-spells" test_level_1
 run_test_case "demo-magic level 3 runs fathom-terminal" test_level_3

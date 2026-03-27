@@ -1,0 +1,30 @@
+#!/bin/sh
+# with-lock LOCK_FILE COMMAND [ARGS...] - run command under an exclusive file lock
+# Uses flock when available, falling back to lockf on macOS/BSD systems.
+set -eu
+
+if [ "$#" -lt 2 ]; then
+  printf '%s\n' "with-lock: usage: with-lock LOCK_FILE COMMAND [ARGS...]" >&2
+  exit 2
+fi
+
+wl_lock_file=$1
+shift
+
+wl_parent=${wl_lock_file%/*}
+if [ "$wl_parent" != "$wl_lock_file" ] && [ ! -d "$wl_parent" ]; then
+  mkdir -p "$wl_parent"
+fi
+
+: > "$wl_lock_file"
+
+if command -v flock >/dev/null 2>&1; then
+  exec flock "$wl_lock_file" "$@"
+fi
+
+if command -v lockf >/dev/null 2>&1; then
+  exec lockf "$wl_lock_file" "$@"
+fi
+
+printf '%s\n' "with-lock: no lock tool available (requires flock or lockf)" >&2
+exit 1

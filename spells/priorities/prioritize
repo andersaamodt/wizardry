@@ -85,17 +85,22 @@ if [ ! -e "$file" ]; then
   fi
 fi
 
+# Get the directory the file is in
+directory=$(dirname "$file")
+if [ "$directory" = "." ]; then
+  directory=$(pwd -P)
+fi
+
+priority_lock_file="$directory/.wizardry-priorities.lock"
+if [ "${WIZARDRY_PRIORITY_LOCK_HELD-0}" -ne 1 ]; then
+  exec with-lock "$priority_lock_file" env WIZARDRY_PRIORITY_LOCK_HELD=1 "$0" --yes "$file"
+fi
+
 # Ensure file has a content hash before setting priority
 # This allows tracking file changes and integrity
 if ! hashchant "$file"; then
   printf '%s\n' "prioritize: hashchant failed for file: $file" >&2
   exit 1
-fi
-
-# Get the directory the file is in
-directory=$(dirname "$file")
-if [ "$directory" = "." ]; then
-  directory=$(pwd -P)
 fi
 
 # Get the file's current echelon and checked status in one batch

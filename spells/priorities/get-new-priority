@@ -37,6 +37,11 @@ if [ "$dir" = "." ]; then
   dir=$(pwd -P)
 fi
 
+priority_lock_file="$dir/.wizardry-priorities.lock"
+if [ "${WIZARDRY_PRIORITY_LOCK_HELD-0}" -ne 1 ]; then
+  exec with-lock "$priority_lock_file" env WIZARDRY_PRIORITY_LOCK_HELD=1 "$0" "$file"
+fi
+
 # Find the highest echelon and the highest priority within that echelon in a single loop
 highest_echelon=0
 highest_priority_in_echelon=0
