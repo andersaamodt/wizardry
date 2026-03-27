@@ -697,6 +697,13 @@ USAGE
     ;;
 esac
 
+demo_exact_level=0
+case "${DEMO_MAGIC_EXACT_LEVEL-0}" in
+  1|yes|true)
+    demo_exact_level=1
+    ;;
+esac
+
 set -eu
 . env-clear
 
@@ -847,6 +854,9 @@ printf 'Every mutable cast below runs inside that throwaway workspace.\n'
 printf 'Strongly interactive or host-mutating spells are named, but held back.\n'
 
 current_level=0
+if [ "$demo_exact_level" -eq 1 ]; then
+  current_level=$demo_target_level
+fi
 while [ "$current_level" -le "$demo_target_level" ]; do
   demo_level "$current_level"
   current_level=$((current_level + 1))
