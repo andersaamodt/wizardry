@@ -140,15 +140,15 @@ fi
 autorebuild_run_privileged() {
   if [ "$(id -u 2>/dev/null || printf '1')" -eq 0 ]; then
     "$@"
-    return 0
+    return $?
   fi
   if command -v run_sudo_cmd >/dev/null 2>&1; then
     run_sudo_cmd "$@"
-    return 0
+    return $?
   fi
   if command -v sudo >/dev/null 2>&1; then
     sudo "$@"
-    return 0
+    return $?
   fi
   "$@"
 }
@@ -159,15 +159,15 @@ run_as_user() {
   current_user=$(id -un 2>/dev/null || printf '')
   if [ -n "$current_user" ] && [ "$current_user" = "$target_user" ]; then
     "$@"
-    return 0
+    return $?
   fi
   if command -v runuser >/dev/null 2>&1; then
     autorebuild_run_privileged runuser -u "$target_user" -- "$@"
-    return 0
+    return $?
   fi
   if command -v sudo >/dev/null 2>&1; then
     autorebuild_run_privileged sudo -u "$target_user" "$@"
-    return 0
+    return $?
   fi
   "$@"
 }
@@ -577,7 +577,7 @@ stop_watcher() {
 }
 
 managed_cron_present() {
-  if [ ! -f "$cron_file" ]; then
+  if ! autorebuild_run_privileged test -f "$cron_file" >/dev/null 2>&1; then
     printf '%s\n' no
     return 0
   fi
@@ -719,13 +719,15 @@ enable_managed() {
     content_root=$6
     log_file=$7
     tmp_file=$(mktemp "${TMPDIR:-/tmp}/site-autorebuild-managed-cron.XXXXXX")
+    cron_run_format="* * * * * root WIZARDRY_DIR=/home/%s/.wizardry /bin/sh %s "
+    cron_run_format="${cron_run_format}run --managed %s %s >> %s 2>&1\n"
+    cron_watch_format="@reboot root WIZARDRY_DIR=/home/%s/.wizardry /bin/sh %s "
+    cron_watch_format="${cron_watch_format}watch-daemon --managed %s %s >> %s 2>&1\n"
     {
       printf "%s\n" "$cron_begin"
-      printf "* * * * * root WIZARDRY_DIR=/home/%s/.wizardry /bin/sh %s " \
-        "run --managed %s %s >> %s 2>&1\n" \
+      printf "$cron_run_format" \
         "$site_user" "$spell_exec" "$site_user" "$content_root" "$log_file"
-      printf "@reboot root WIZARDRY_DIR=/home/%s/.wizardry /bin/sh %s " \
-        "watch-daemon --managed %s %s >> %s 2>&1\n" \
+      printf "$cron_watch_format" \
         "$site_user" "$spell_exec" "$site_user" "$content_root" "$log_file"
       printf "%s\n" "$cron_end"
     } > "$tmp_file"

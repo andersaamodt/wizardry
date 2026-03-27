@@ -1,8 +1,8 @@
 #!/bin/sh
 
 # Guided demonstration of wizardry, level by level.
-# Safe live casts run against disposable fixtures; host-mutating spells are named
-# and described, but left uncast unless their behavior is safely contained.
+# Safe live casts run against disposable fixtures; unsafe or strongly
+# interactive spells are skipped and listed per level.
 
 demo_level() {
   level=$1
@@ -74,7 +74,7 @@ demo_level() {
 
     4)
       printf 'Menu spells stay interactive by design.\n'
-      printf 'Unattended demo-magic samples only the safe edges.\n'
+      printf 'Only safe, non-interactive casts run here.\n'
 
       colors_path=$(command -v colors 2>/dev/null || printf '')
       if [ -n "$colors_path" ]; then
@@ -136,13 +136,13 @@ demo_level() {
           fi
         fi
       else
-        printf 'xattr round-trip held back: this host lacks working extended attributes.\n'
+        printf 'xattr round-trip skipped: extended attributes unavailable on this host.\n'
       fi
       ;;
 
     6)
       printf 'Priority lookup is safe to show here.\n'
-      printf 'Live reprioritization stays descriptive where file locking varies.\n'
+      printf 'Only fixture-local lookup runs live here.\n'
 
       priority_card="$demo_workspace/priority.card"
       printf 'priority sample\n' > "$priority_card"
@@ -157,8 +157,6 @@ demo_level() {
         printf 'get-card -> %s\n' "$get_card_output"
         demonstrated="$demonstrated get-card"
       fi
-
-      printf 'prioritize, deprioritize, upvote, and priorities stay descriptive here.\n'
       ;;
 
     7)
@@ -191,8 +189,6 @@ demo_level() {
         printf 'jump-to-marker -> %s\n' "$jump_output"
         demonstrated="$demonstrated jump-to-marker"
       fi
-
-      printf 'blink remains intentionally nondeterministic, so it stays named rather than forced.\n'
       ;;
 
     8)
@@ -279,8 +275,6 @@ demo_level() {
         printf 'jump-trash -> %s\n' "$jump_trash_output"
         demonstrated="$demonstrated jump-trash"
       fi
-
-      printf 'copy and trash stay withheld so the demo never reaches real clipboard or trash.\n'
       ;;
 
     11)
@@ -309,8 +303,6 @@ demo_level() {
         printf '%s\n' "$list_output" | sed -n '1,3p'
         demonstrated="$demonstrated list-files"
       fi
-
-      printf 'browse, move, and memorize stay descriptive because they cross into host or GUI state.\n'
       ;;
 
     12)
@@ -335,14 +327,11 @@ demo_level() {
         printf '%s\n' "$package_manager_output" | sed -n '1,2p'
         demonstrated="$demonstrated package-managers"
       fi
-
-      printf 'learn-spellbook and logs are not pointed at the real shell or system logs here.\n'
       ;;
 
     13)
       printf 'System maintenance spells mutate the host.\n'
-      printf 'Demo-magic names them and stops there.\n'
-      printf 'Held back: update-wizardry, update-all, kill-process.\n'
+      printf 'This tier is skipped in unattended mode.\n'
       ;;
 
     14)
@@ -408,8 +397,7 @@ demo_level() {
         printf '%s\n' "$stats_output" | sed -n '1,5p'
         demonstrated="$demonstrated stats"
       fi
-
-      printf 'Combat and resurrection spells are named but left dormant in unattended mode.\n'
+      printf 'Only fixture-local description and stat reads run here.\n'
       ;;
 
     17)
@@ -439,7 +427,7 @@ demo_level() {
         evoke_output=$(evoke-hash "$hashchant_value" "$demo_workspace" 2>&1 || true)
         case "$evoke_output" in
           ''|No\ file\ found*)
-            printf 'evoke-hash held back: this host did not persist the hash attribute.\n'
+            printf 'evoke-hash skipped: hash attribute not visible on this host.\n'
             ;;
           *)
             printf 'evoke-hash -> %s\n' "$evoke_output"
@@ -457,19 +445,17 @@ demo_level() {
         printf 'validate-ssh-key -> valid ed25519 public key\n'
         demonstrated="$demonstrated validate-ssh-key"
       fi
-
-      printf 'Portkeys and portals stay descriptive because they depend on real remote endpoints.\n'
+      printf 'Only key validation runs live here.\n'
       ;;
 
     19)
       printf 'Security wards are intentionally conservative here.\n'
-      printf 'Held back: ssh-barrier writes a real sshd_config.\n'
-      printf 'It does not yet honor a disposable override path through env-clear.\n'
+      printf 'This tier is skipped in unattended mode.\n'
       ;;
 
     20)
       printf 'Task state is exercised directly.\n'
-      printf 'PSI and dictation stay descriptive because they read host state or audio devices.\n'
+      printf 'Only reversible task-state casts run here.\n'
 
       task_file="$demo_workspace/checklist.txt"
       printf 'ritual\n' > "$task_file"
@@ -536,7 +522,7 @@ demo_level() {
 
     24)
       printf 'MUD administration menus are present.\n'
-      printf 'Shell-sourced entry points stay descriptive in unattended mode.\n'
+      printf 'Only stable help surfaces run here.\n'
 
       mud_menu_help=$(mud-menu --help 2>&1 || true)
       if [ -n "$mud_menu_help" ]; then
@@ -566,13 +552,15 @@ demo_level() {
 
       service_status_help=$(service-status --help 2>&1 || true)
       if [ -n "$service_status_help" ]; then
-        printf 'service-status --help -> %s\n' "$(printf '%s\n' "$service_status_help" | sed -n '1p')"
+        first_help_line=$(printf '%s\n' "$service_status_help" | sed -n '1p')
+        printf 'service-status --help -> %s\n' "$first_help_line"
         demonstrated="$demonstrated service-status"
       fi
 
       service_installed_help=$(is-service-installed --help 2>&1 || true)
       if [ -n "$service_installed_help" ]; then
-        printf 'is-service-installed --help -> %s\n' "$(printf '%s\n' "$service_installed_help" | sed -n '1p')"
+        first_help_line=$(printf '%s\n' "$service_installed_help" | sed -n '1p')
+        printf 'is-service-installed --help -> %s\n' "$first_help_line"
         demonstrated="$demonstrated is-service-installed"
       fi
       ;;
@@ -605,8 +593,7 @@ demo_level() {
         printf 'site-status -> %s\n' "$site_status_output"
         demonstrated="$demonstrated site-status"
       fi
-
-      printf 'Template creation, builds, and serving stay descriptive unless local templates are installed.\n'
+      printf 'Only the fixture-local site status read runs here.\n'
       ;;
   esac
 
@@ -630,7 +617,7 @@ demo_level() {
 
     if [ -n "$not_demonstrated" ]; then
       not_demo_list=$(printf '%s\n' "$not_demonstrated" | tr -s ' ' | sed 's/^ //; s/ /, /g')
-      printf 'Described or held back: %s\n' "$not_demo_list"
+      printf 'Skipped: %s\n' "$not_demo_list"
     fi
   elif [ -n "$imp_list" ]; then
     printf '\n'
@@ -680,8 +667,7 @@ case "${1-}" in
 Usage: demo-magic [LEVEL|all]
 
 Guide wizardry level by level with real casts against disposable fixtures.
-Host-mutating or strongly interactive spells are named and described, but kept
-uncast unless the behavior is safely contained.
+Unsafe or strongly interactive spells are skipped and listed per level.
 
 Arguments:
   LEVEL               Run levels 0 through LEVEL
@@ -851,7 +837,7 @@ printf 'Wizardry Demo\n'
 printf '=============\n'
 printf 'Disposable fixtures: %s\n' "$demo_root"
 printf 'Every mutable cast below runs inside that throwaway workspace.\n'
-printf 'Strongly interactive or host-mutating spells are named, but held back.\n'
+printf 'Unsafe or strongly interactive spells are skipped and listed per level.\n'
 
 current_level=0
 if [ "$demo_exact_level" -eq 1 ]; then

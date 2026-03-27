@@ -28,6 +28,20 @@ assert_output_contains_either() {
   esac
 }
 
+assert_output_not_contains() {
+  pattern=$1
+
+  case "$OUTPUT" in
+    *"$pattern"*)
+      TEST_FAILURE_REASON="did not expect output to contain '$pattern'"
+      return 1
+      ;;
+    *)
+      return 0
+      ;;
+  esac
+}
+
 test_help() {
   run_spell spells/spellcraft/demo-magic --help
   assert_success || return 1
@@ -69,21 +83,25 @@ test_default_runs_all_levels() {
   assert_output_contains "divination-scroll.txt" || return 1
   assert_output_contains "Level 17: Cryptography" || return 1
   assert_output_contains "hashchant -> 0x" || return 1
-  assert_output_contains_either "evoke-hash ->" "evoke-hash held back:" || return 1
+  assert_output_contains_either "evoke-hash ->" "evoke-hash skipped:" || return 1
   assert_output_contains "Level 20: Process & System Info (PSI)" || return 1
   assert_output_contains "get-checked -> 1" || return 1
   assert_output_contains "get-checked -> 0" || return 1
   assert_output_contains "Level 24: MUD Administration Menus" || return 1
   assert_output_contains "mud-menu --help -> Usage: . mud-menu" || return 1
-  assert_output_contains "Described or held back: add-player, mud," || return 1
+  assert_output_contains "Skipped: add-player, mud," || return 1
+  assert_output_contains "Skipped: kill-process, update-all, update-wizardry" || return 1
+  assert_output_not_contains "Described or held back:" || return 1
   assert_output_contains "Level 28: Web Services & CGI" || return 1
   assert_output_contains "site-status -> built, not serving" || return 1
   assert_output_contains "DEMO_MAGIC_COMPLETE" || return 1
 }
 
 run_test_case "demo-magic shows current help and safety model" test_help
-run_test_case "demo-magic no-sandbox flag works in non-interactive mode" test_no_sandbox_flag_works_noninteractive
-run_test_case "demo-magic internal pocket flag avoids resandbox loops" test_demo_in_pocket_flag_skips_resandbox
+run_test_case "demo-magic no-sandbox flag works in non-interactive mode" \
+  test_no_sandbox_flag_works_noninteractive
+run_test_case "demo-magic internal pocket flag avoids resandbox loops" \
+  test_demo_in_pocket_flag_skips_resandbox
 run_test_case "demo-magic full run covers live behaviors across levels" test_default_runs_all_levels
 
 finish_tests
