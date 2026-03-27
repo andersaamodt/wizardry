@@ -418,15 +418,15 @@ menu_hides_selection_wrapper_suffixes() {
   assert_success || return 1
 
   clean_output=$(printf '%s' "$OUTPUT" | socat-normalize-output)
-  case "$clean_output" in
-    *selected*)
-      :
-      ;;
-    *)
-      TEST_FAILURE_REASON="expected command execution output in transcript"
-      return 1
-      ;;
-  esac
+  if [ ! -f "$selection_file" ]; then
+    TEST_FAILURE_REASON="expected command to write selection wrapper state"
+    return 1
+  fi
+  selection_value=$(cat "$selection_file" 2>/dev/null || printf '')
+  if [ "$selection_value" != "3" ]; then
+    TEST_FAILURE_REASON="expected selection wrapper state 3, got '$selection_value'"
+    return 1
+  fi
 
   case "$clean_output" in
     *SELECTION_FILE*)
