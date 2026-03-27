@@ -230,7 +230,11 @@ wizardry_spell_path() {
     esac
   done
   if [ -d "$runtime_dir/spells" ]; then
-    for dir in "$runtime_dir/spells"/* "$runtime_dir/spells"/.* "$runtime_dir/spells"/*/* "$runtime_dir/spells"/.*/*; do
+    for dir in \
+      "$runtime_dir/spells"/* \
+      "$runtime_dir/spells"/.* \
+      "$runtime_dir/spells"/*/* \
+      "$runtime_dir/spells"/.*/*; do
       [ -d "$dir" ] || continue
       case "$dir" in
         */.|*/..|*/.DS_Store) continue ;;
@@ -353,19 +357,28 @@ managed_copy_release_tree() {
   if autorebuild_run_privileged command -v rsync >/dev/null 2>&1; then
     autorebuild_run_privileged rsync -a --delete "$source_target"/ "$destination_target"/
   else
-    autorebuild_run_privileged sh -eu -c 'cp -a "$1"/. "$2"/' sh "$source_target" "$destination_target"
+    autorebuild_run_privileged \
+      sh -eu -c 'cp -a "$1"/. "$2"/' sh \
+      "$source_target" "$destination_target"
   fi
 }
 
 managed_apply_release_permissions() {
   target_release=$1
-  autorebuild_run_privileged chown -R "$site_user:$site_user" "$target_release" 2>/dev/null || true
-  autorebuild_run_privileged chmod -R g+rX,o-rwx "$target_release" 2>/dev/null || true
+  autorebuild_run_privileged \
+    chown -R "$site_user:$site_user" "$target_release" 2>/dev/null || true
+  autorebuild_run_privileged \
+    chmod -R g+rX,o-rwx "$target_release" 2>/dev/null || true
   if autorebuild_run_privileged command -v setfacl >/dev/null 2>&1; then
-    autorebuild_run_privileged setfacl -m u:www-data:--x "$site_root" 2>/dev/null || true
-    autorebuild_run_privileged setfacl -m u:www-data:r-x "$releases_root" "$target_release" 2>/dev/null || true
-    autorebuild_run_privileged setfacl -R -m u:www-data:r-x "$target_release" 2>/dev/null || true
-    autorebuild_run_privileged setfacl -R -d -m u:www-data:r-x "$target_release" 2>/dev/null || true
+    autorebuild_run_privileged \
+      setfacl -m u:www-data:--x "$site_root" 2>/dev/null || true
+    autorebuild_run_privileged \
+      setfacl -m u:www-data:r-x "$releases_root" "$target_release" \
+      2>/dev/null || true
+    autorebuild_run_privileged \
+      setfacl -R -m u:www-data:r-x "$target_release" 2>/dev/null || true
+    autorebuild_run_privileged \
+      setfacl -R -d -m u:www-data:r-x "$target_release" 2>/dev/null || true
   fi
 }
 
@@ -439,7 +452,8 @@ run_build_once() {
       "$build_spell" "$release_name" --full; then
       managed_apply_release_permissions "$stage_target"
       autorebuild_run_privileged ln -sfn "$stage_target" "$current_link"
-      autorebuild_run_privileged chown -h "$site_user:$site_user" "$current_link" 2>/dev/null || true
+      autorebuild_run_privileged \
+        chown -h "$site_user:$site_user" "$current_link" 2>/dev/null || true
       return 0
     fi
     autorebuild_run_privileged rm -rf "$stage_target" 2>/dev/null || true
@@ -511,7 +525,8 @@ run_change_pass() {
   previous_signature=$(read_state_value "$signature_file")
   previous_target=$(read_state_value "$target_file")
 
-  if [ "$current_signature" = "$previous_signature" ] && [ "$current_target" = "$previous_target" ]; then
+  if [ "$current_signature" = "$previous_signature" ] &&
+    [ "$current_target" = "$previous_target" ]; then
     return 0
   fi
 
@@ -544,9 +559,11 @@ watcher_running() {
 
 stop_watcher() {
   if [ "$mode" = managed ]; then
-    pids=$(pgrep -u "$site_user" -f "$spell_exec_path watch-daemon --managed $site_user" 2>/dev/null || true)
+    watcher_token="$spell_exec_path watch-daemon --managed $site_user"
+    pids=$(pgrep -u "$site_user" -f "$watcher_token" 2>/dev/null || true)
   else
-    pids=$(pgrep -u "$(id -u 2>/dev/null || printf '0')" -f "$spell_exec_path watch-daemon $site_name" 2>/dev/null || true)
+    watcher_token="$spell_exec_path watch-daemon $site_name"
+    pids=$(pgrep -u "$(id -u 2>/dev/null || printf '0')" -f "$watcher_token" 2>/dev/null || true)
   fi
   for pid in $pids; do
     kill "$pid" 2>/dev/null || true
@@ -654,7 +671,8 @@ enable_local() {
     printf '%s\n' "$cleaned" | sed '/^[[:space:]]*$/d'
     printf '%s\n' "$cron_begin"
     printf '* * * * * /bin/sh %s run %s >> %s 2>&1\n' "$spell_exec_path" "$site_name" "$log_file"
-    printf '@reboot /bin/sh %s watch-daemon %s >> %s 2>&1\n' "$spell_exec_path" "$site_name" "$log_file"
+    printf '@reboot /bin/sh %s watch-daemon %s >> %s 2>&1\n' \
+      "$spell_exec_path" "$site_name" "$log_file"
     printf '%s\n' "$cron_end"
   } > "$tmp_cron"
   crontab "$tmp_cron"
@@ -683,11 +701,13 @@ enable_managed() {
   }
   ensure_state_dir
   install_managed_runtime_spell || {
-    printf '%s\n' "site-autorebuild: unable to install managed spell runtime at: $spell_exec_path" >&2
+    printf '%s\n' \
+      "site-autorebuild: unable to install managed spell runtime at: $spell_exec_path" >&2
     exit 1
   }
   autorebuild_run_privileged test -x "$spell_exec_path" >/dev/null 2>&1 || {
-    printf '%s\n' "site-autorebuild: managed spell not found on server runtime: $spell_exec_path" >&2
+    printf '%s\n' \
+      "site-autorebuild: managed spell not found on server runtime: $spell_exec_path" >&2
     exit 1
   }
   autorebuild_run_privileged sh -eu -c '
@@ -701,16 +721,24 @@ enable_managed() {
     tmp_file=$(mktemp "${TMPDIR:-/tmp}/site-autorebuild-managed-cron.XXXXXX")
     {
       printf "%s\n" "$cron_begin"
-      printf "* * * * * root WIZARDRY_DIR=/home/%s/.wizardry /bin/sh %s run --managed %s %s >> %s 2>&1\n" "$site_user" "$spell_exec" "$site_user" "$content_root" "$log_file"
-      printf "@reboot root WIZARDRY_DIR=/home/%s/.wizardry /bin/sh %s watch-daemon --managed %s %s >> %s 2>&1\n" "$site_user" "$spell_exec" "$site_user" "$content_root" "$log_file"
+      printf "* * * * * root WIZARDRY_DIR=/home/%s/.wizardry /bin/sh %s " \
+        "run --managed %s %s >> %s 2>&1\n" \
+        "$site_user" "$spell_exec" "$site_user" "$content_root" "$log_file"
+      printf "@reboot root WIZARDRY_DIR=/home/%s/.wizardry /bin/sh %s " \
+        "watch-daemon --managed %s %s >> %s 2>&1\n" \
+        "$site_user" "$spell_exec" "$site_user" "$content_root" "$log_file"
       printf "%s\n" "$cron_end"
     } > "$tmp_file"
     install -m 644 "$tmp_file" "$cron_file"
     rm -f "$tmp_file"
-  ' sh "$cron_file" "$cron_begin" "$cron_end" "$site_user" "$spell_exec_path" "$content_root" "$log_file"
+  ' sh \
+    "$cron_file" "$cron_begin" "$cron_end" "$site_user" \
+    "$spell_exec_path" "$content_root" "$log_file"
   autorebuild_run_privileged touch "$log_file"
   autorebuild_run_privileged chown "$site_user:$site_user" "$log_file" 2>/dev/null || true
-  autorebuild_run_privileged sh -eu -c 'nohup /bin/sh "$1" watch-daemon --managed "$2" "$3" >/dev/null 2>&1 &' sh "$spell_exec_path" "$site_user" "$content_root"
+  autorebuild_run_privileged sh -eu -c \
+    'nohup /bin/sh "$1" watch-daemon --managed "$2" "$3" >/dev/null 2>&1 &' \
+    sh "$spell_exec_path" "$site_user" "$content_root"
 }
 
 disable_local() {
