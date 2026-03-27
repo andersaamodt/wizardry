@@ -1,4 +1,6 @@
 #!/bin/sh
+# Install pandoc for Wizardry site conversion flows.
+# Supports package-manager and binary download installation.
 
 case "${1-}" in
 --help|--usage|-h)
@@ -100,7 +102,9 @@ pandoc_install_release_binary() {
   platform=$(pandoc_platform_suffix 2>/dev/null || true)
   [ -n "$platform" ] || return 1
 
-  release_json=$(curl -fsSL https://api.github.com/repos/jgm/pandoc/releases/latest 2>/dev/null || true)
+  release_json=$(
+    curl -fsSL https://api.github.com/repos/jgm/pandoc/releases/latest 2>/dev/null || true
+  )
   [ -n "$release_json" ] || return 1
   release_json_one_line=$(printf '%s' "$release_json" | tr '\n' ' ')
   download_url=$(printf '%s\n' "$release_json_one_line" | sed -n "s/.*\"browser_download_url\":[[:space:]]*\"\\([^\"]*pandoc-[^\"]*-${platform}\\.tar\\.gz\\)\".*/\\1/p" | head -n 1)

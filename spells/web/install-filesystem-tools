@@ -1,4 +1,6 @@
 #!/bin/sh
+# Install filesystem growth tools for web hosts.
+# Ensures required resize and filesystem utilities are available.
 
 case "${1-}" in
 --help|--usage|-h)
@@ -15,7 +17,10 @@ esac
 set -eu
 . env-clear
 
-PATH=/opt/homebrew/opt/e2fsprogs/sbin:/opt/homebrew/opt/e2fsprogs/bin:/usr/local/opt/e2fsprogs/sbin:/usr/local/opt/e2fsprogs/bin:/opt/homebrew/opt/xfsprogs/bin:/usr/local/opt/xfsprogs/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
+fs_tools_path_prefix="/opt/homebrew/opt/e2fsprogs/sbin:/opt/homebrew/opt/e2fsprogs/bin:"\
+"/usr/local/opt/e2fsprogs/sbin:/usr/local/opt/e2fsprogs/bin:"\
+"/opt/homebrew/opt/xfsprogs/bin:/usr/local/opt/xfsprogs/bin"
+PATH="$fs_tools_path_prefix:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}"
 
 fs_tools_say() {
   printf '%s\n' "$1"
@@ -54,13 +59,18 @@ fs_tools_run_privileged() {
 
 apt_space_prep() {
   fs_tools_run_privileged apt-get clean >/dev/null 2>&1 || true
-  fs_tools_run_privileged sh -eu -c 'rm -rf /var/lib/apt/lists/partial 2>/dev/null || true; find /var/lib/apt/lists -mindepth 1 -maxdepth 1 -exec rm -rf {} + 2>/dev/null || true' >/dev/null 2>&1 || true
-  fs_tools_run_privileged sh -eu -c 'find /var/cache/apt/archives -mindepth 1 -maxdepth 1 -type f -name "*.deb" -delete 2>/dev/null || true' >/dev/null 2>&1 || true
+  fs_tools_run_privileged sh -eu -c \
+    'rm -rf /var/lib/apt/lists/partial 2>/dev/null || true; find /var/lib/apt/lists -mindepth 1 -maxdepth 1 -exec rm -rf {} + 2>/dev/null || true' \
+    >/dev/null 2>&1 || true
+  fs_tools_run_privileged sh -eu -c \
+    'find /var/cache/apt/archives -mindepth 1 -maxdepth 1 -type f -name "*.deb" -delete 2>/dev/null || true' \
+    >/dev/null 2>&1 || true
 }
 
 apt_repair_state() {
   fs_tools_run_privileged dpkg --configure -a >/dev/null 2>&1 || true
-  fs_tools_run_privileged env DEBIAN_FRONTEND=noninteractive apt-get install -f -y >/dev/null 2>&1 || true
+  fs_tools_run_privileged env DEBIAN_FRONTEND=noninteractive \
+    apt-get install -f -y >/dev/null 2>&1 || true
 }
 
 install_package() {
@@ -77,7 +87,8 @@ install_package() {
     apt_space_prep
     apt_repair_state
     fs_tools_run_privileged apt-get update -y >/dev/null 2>&1 || true
-    fs_tools_run_privileged env DEBIAN_FRONTEND=noninteractive apt-get install -y --fix-broken --no-install-recommends "$package_name" >/dev/null
+    fs_tools_run_privileged env DEBIAN_FRONTEND=noninteractive \
+      apt-get install -y --fix-broken --no-install-recommends "$package_name" >/dev/null
     return 0
   fi
   if fs_tools_has_cmd dnf; then

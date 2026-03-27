@@ -1,4 +1,6 @@
 #!/bin/sh
+# Remove Syncthing when installed by supported methods.
+# Cleans package-manager and downloaded binary installations.
 
 case "${1-}" in
 --help|--usage|-h)
@@ -49,7 +51,8 @@ if ! syncthing_uninstall_has_cmd syncthing; then
 fi
 
 if syncthing_uninstall_has_cmd apt-get; then
-  syncthing_uninstall_run_privileged env DEBIAN_FRONTEND=noninteractive apt-get remove -y syncthing >/dev/null
+  syncthing_uninstall_run_privileged env DEBIAN_FRONTEND=noninteractive \
+    apt-get remove -y syncthing >/dev/null
 elif syncthing_uninstall_has_cmd dnf; then
   syncthing_uninstall_run_privileged dnf remove -y syncthing >/dev/null
 elif syncthing_uninstall_has_cmd brew; then

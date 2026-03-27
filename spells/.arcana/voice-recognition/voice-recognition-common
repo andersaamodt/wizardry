@@ -17,10 +17,14 @@ USAGE
   ;;
 esac
 
+# Keep this helper library permissive when sourced by spells.
+set +eu
+
 vr_state_home=${XDG_STATE_HOME:-$HOME/.local/state}
 vr_cache_home=${XDG_CACHE_HOME:-$HOME/.cache}
 vr_root_dir=${WIZARDRY_VOICE_RECOGNITION_DIR:-$vr_state_home/wizardry/voice-recognition}
-vr_hf_home=${WIZARDRY_VOICE_RECOGNITION_HF_HOME:-$vr_cache_home/wizardry/voice-recognition/huggingface}
+vr_hf_default="$vr_cache_home/wizardry/voice-recognition/huggingface"
+vr_hf_home=${WIZARDRY_VOICE_RECOGNITION_HF_HOME:-$vr_hf_default}
 
 vr_uname_s() {
   if [ -n "${WIZARDRY_VOICE_UNAME_S-}" ]; then

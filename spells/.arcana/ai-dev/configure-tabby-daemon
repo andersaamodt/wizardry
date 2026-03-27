@@ -37,7 +37,11 @@ ollama_models=""
 if has curl; then
   tags_json=$(curl -fsS --max-time 2 "$ollama_tags_endpoint" 2>/dev/null || printf '')
   if [ -n "$tags_json" ]; then
-    ollama_models=$(printf '%s\n' "$tags_json" | grep -o '"name":"[^"]*"' | sed 's/"name":"//; s/"$//')
+    ollama_models=$(
+      printf '%s\n' "$tags_json" |
+        grep -o '"name":"[^"]*"' |
+        sed 's/"name":"//; s/"$//'
+    )
   fi
 fi
 

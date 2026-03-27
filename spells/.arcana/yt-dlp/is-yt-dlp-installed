@@ -19,7 +19,11 @@ if command -v yt-dlp >/dev/null 2>&1; then
   exit 0
 fi
 
-for path in /usr/local/bin/yt-dlp /opt/homebrew/bin/yt-dlp /usr/bin/yt-dlp "$HOME/.local/bin/yt-dlp"; do
+for path in \
+  /usr/local/bin/yt-dlp \
+  /opt/homebrew/bin/yt-dlp \
+  /usr/bin/yt-dlp \
+  "$HOME/.local/bin/yt-dlp"; do
   if [ -x "$path" ]; then
     exit 0
   fi

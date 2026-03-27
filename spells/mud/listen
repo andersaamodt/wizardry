@@ -277,7 +277,8 @@ set +m
         # Fallback for lines that don't match expected format
         # Calculate length and lines needed
         msg_len=$(printf '%s' "$line" | wc -c)
-        lines_needed=$(( (msg_len + 3 + listen_term_width - 1) / listen_term_width ))  # +3 for "🔮 "
+        # +3 accounts for the leading icon and trailing space prefix.
+        lines_needed=$(((msg_len + 3 + listen_term_width - 1) / listen_term_width))
         [ "$lines_needed" -lt 1 ] && lines_needed=1
         
         # Save cursor position

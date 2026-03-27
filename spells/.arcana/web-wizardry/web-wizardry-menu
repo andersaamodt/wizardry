@@ -47,7 +47,8 @@ while true; do
   "$script_dir/is-web-component-installed" pandoc 2>/dev/null && pandoc_was_installed=1
   "$script_dir/is-web-component-installed" nginx 2>/dev/null && nginx_was_installed=1
   "$script_dir/is-web-component-installed" fcgiwrap 2>/dev/null && fcgiwrap_was_installed=1
-  "$script_dir/is-web-component-installed" filesystem-tools 2>/dev/null && filesystem_tools_was_installed=1
+  "$script_dir/is-web-component-installed" filesystem-tools \
+    2>/dev/null && filesystem_tools_was_installed=1
   "$script_dir/is-web-component-installed" openssl 2>/dev/null && openssl_was_installed=1
   "$script_dir/is-web-component-installed" htmx 2>/dev/null && htmx_was_installed=1
   "$script_dir/is-web-component-installed" certbot 2>/dev/null && certbot_was_installed=1

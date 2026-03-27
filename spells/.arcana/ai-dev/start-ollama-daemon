@@ -126,7 +126,12 @@ if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
   if [ "$ready" -ne 1 ]; then
     # Surface service logs to make launchd/runtime failures actionable.
     err_log=$(awk '
-      /<key>StandardErrorPath<\/key>/ { getline; gsub(/^[[:space:]]*<string>|<\/string>[[:space:]]*$/, ""); print; exit }
+      /<key>StandardErrorPath<\/key>/ {
+        getline
+        gsub(/^[[:space:]]*<string>|<\/string>[[:space:]]*$/, "")
+        print
+        exit
+      }
     ' "$plist" 2>/dev/null || printf '')
     if [ -n "$err_log" ] && [ -f "$err_log" ]; then
       printf '%s\n' "start-ollama-daemon: recent daemon stderr:" >&2

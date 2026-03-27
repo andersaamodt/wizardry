@@ -92,7 +92,8 @@ tabby_container_is_current() {
     *\"serve\"*\"--model\"*) return 1 ;;
     *\"serve\"*\"--chat-model\"*) return 1 ;;
     *\"serve\"*)
-      if docker inspect -f '{{range .Mounts}}{{println .Destination}}{{end}}' tabby 2>/dev/null | grep -qx '/data/config.toml'; then
+      if docker inspect -f '{{range .Mounts}}{{println .Destination}}{{end}}' tabby 2>/dev/null | \
+        grep -qx '/data/config.toml'; then
         return 0
       fi
       return 1

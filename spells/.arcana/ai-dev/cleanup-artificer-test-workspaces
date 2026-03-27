@@ -1,4 +1,6 @@
 #!/bin/sh
+# Clean up Artificer test workspaces for a given site.
+# Removes only temporary workspace paths created by automated tests.
 
 case "${1-}" in
 --help|--usage|-h)

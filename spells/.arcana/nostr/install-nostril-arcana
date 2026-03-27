@@ -68,10 +68,13 @@ ensure_build_deps() {
   case "$manager" in
     apt)
       run_privileged apt-get update -y >/dev/null
-      run_privileged env DEBIAN_FRONTEND=noninteractive apt-get install -y git make gcc autoconf automake libtool golang-go ca-certificates >/dev/null
+      run_privileged env DEBIAN_FRONTEND=noninteractive \
+        apt-get install -y git make gcc autoconf automake libtool golang-go ca-certificates \
+        >/dev/null
       ;;
     dnf)
-      run_privileged dnf install -y git make gcc autoconf automake libtool golang ca-certificates >/dev/null
+      run_privileged dnf install -y git make gcc autoconf automake libtool golang ca-certificates \
+        >/dev/null
       ;;
     brew)
       brew install git go autoconf automake libtool >/dev/null
@@ -134,7 +137,9 @@ install_nak_release_binary() {
   platform=$(platform_suffix 2>/dev/null || true)
   [ -n "$platform" ] || return 1
 
-  release_json=$(curl -fsSL https://api.github.com/repos/fiatjaf/nak/releases/latest 2>/dev/null || true)
+  release_json=$(
+    curl -fsSL https://api.github.com/repos/fiatjaf/nak/releases/latest 2>/dev/null || true
+  )
   [ -n "$release_json" ] || return 1
   release_json_one_line=$(printf '%s' "$release_json" | tr '\n' ' ')
   download_url=$(printf '%s\n' "$release_json_one_line" | sed -n "s/.*\"browser_download_url\":[[:space:]]*\"\\([^\"]*nak-[^\"]*-${platform}\\)\".*/\\1/p" | head -n 1)
@@ -165,7 +170,8 @@ install_nak_binary() {
   build_root="${XDG_CACHE_HOME:-$HOME/.cache}/wizardry/nak"
   build_bin="$build_root/bin"
   mkdir -p "$build_bin"
-  GOBIN="$build_bin" GO111MODULE=on go install github.com/fiatjaf/nak@latest >/dev/null 2>&1 || return 1
+  GOBIN="$build_bin" GO111MODULE=on \
+    go install github.com/fiatjaf/nak@latest >/dev/null 2>&1 || return 1
   [ -f "$build_bin/nak" ] || return 1
   install_built_binary "$build_bin/nak" nak
   has_cmd nak

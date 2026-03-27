@@ -1,4 +1,6 @@
 #!/bin/sh
+# Run end-to-end smoke checks against an Artificer deployment.
+# Validates core API paths and workspace creation behavior.
 
 case "${1-}" in
 --help|--usage|-h)

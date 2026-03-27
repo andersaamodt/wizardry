@@ -23,12 +23,15 @@ repo_dir="$btcpay_root/btcpayserver-docker"
 is_installed=false
 is_running=false
 
-if [ -x "$repo_dir/btcpay-setup.sh" ] || [ -x "$repo_dir/btcpay-up.sh" ] || [ -f "$repo_dir/docker-compose-generator/docker-fragments/opt-btcpayserver.yml" ]; then
+if [ -x "$repo_dir/btcpay-setup.sh" ] || \
+  [ -x "$repo_dir/btcpay-up.sh" ] || \
+  [ -f "$repo_dir/docker-compose-generator/docker-fragments/opt-btcpayserver.yml" ]; then
   is_installed=true
 fi
 
 if command -v docker >/dev/null 2>&1; then
-  if docker ps --format '{{.Names}}' 2>/dev/null | grep -Eiq 'btcpay|nbxplorer|generated_btcpay'; then
+  btcpay_name_pattern='btcpay|nbxplorer|generated_btcpay'
+  if docker ps --format '{{.Names}}' 2>/dev/null | grep -Eiq "$btcpay_name_pattern"; then
     is_running=true
   fi
 fi

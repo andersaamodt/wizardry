@@ -33,14 +33,22 @@ run_with_priv() {
   fi
 }
 
-command -v pkgin >/dev/null 2>&1 && run_with_priv pkgin -y remove yt-dlp >/dev/null 2>&1 || true
-command -v apt-get >/dev/null 2>&1 && run_with_priv apt-get -y remove yt-dlp >/dev/null 2>&1 || true
-command -v pacman >/dev/null 2>&1 && run_with_priv pacman --noconfirm -R yt-dlp >/dev/null 2>&1 || true
-command -v dnf >/dev/null 2>&1 && run_with_priv dnf -y remove yt-dlp >/dev/null 2>&1 || true
-command -v yum >/dev/null 2>&1 && run_with_priv yum -y remove yt-dlp >/dev/null 2>&1 || true
-command -v zypper >/dev/null 2>&1 && run_with_priv zypper -n remove yt-dlp >/dev/null 2>&1 || true
-command -v brew >/dev/null 2>&1 && brew uninstall yt-dlp >/dev/null 2>&1 || true
-command -v python3 >/dev/null 2>&1 && python3 -m pip uninstall -y yt-dlp >/dev/null 2>&1 || true
+command -v pkgin >/dev/null 2>&1 && \
+  run_with_priv pkgin -y remove yt-dlp >/dev/null 2>&1 || true
+command -v apt-get >/dev/null 2>&1 && \
+  run_with_priv apt-get -y remove yt-dlp >/dev/null 2>&1 || true
+command -v pacman >/dev/null 2>&1 && \
+  run_with_priv pacman --noconfirm -R yt-dlp >/dev/null 2>&1 || true
+command -v dnf >/dev/null 2>&1 && \
+  run_with_priv dnf -y remove yt-dlp >/dev/null 2>&1 || true
+command -v yum >/dev/null 2>&1 && \
+  run_with_priv yum -y remove yt-dlp >/dev/null 2>&1 || true
+command -v zypper >/dev/null 2>&1 && \
+  run_with_priv zypper -n remove yt-dlp >/dev/null 2>&1 || true
+command -v brew >/dev/null 2>&1 && \
+  brew uninstall yt-dlp >/dev/null 2>&1 || true
+command -v python3 >/dev/null 2>&1 && \
+  python3 -m pip uninstall -y yt-dlp >/dev/null 2>&1 || true
 
 rm -f "$HOME/.local/bin/yt-dlp" >/dev/null 2>&1 || true
 

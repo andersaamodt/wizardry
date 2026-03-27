@@ -26,7 +26,11 @@ if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
   fi
 fi
 
-for path in /usr/local/bin/docker /opt/homebrew/bin/docker /usr/bin/docker "$HOME/.local/bin/docker"; do
+for path in \
+  /usr/local/bin/docker \
+  /opt/homebrew/bin/docker \
+  /usr/bin/docker \
+  "$HOME/.local/bin/docker"; do
   if [ -x "$path" ]; then
     exit 0
   fi

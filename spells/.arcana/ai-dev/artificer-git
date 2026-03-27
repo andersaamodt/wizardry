@@ -1,4 +1,7 @@
 #!/bin/sh
+# Manage Git operations for Artificer workspaces.
+# Provides repository metadata, branch, diff, and commit helpers.
+
 set -eu
 
 usage() {
@@ -91,7 +94,10 @@ EOFINFO
 
   ahead=0
   behind=0
-  upstream_counts=$(cd "$ws" && git rev-list --left-right --count @{upstream}...HEAD 2>/dev/null || true)
+  upstream_counts=$(
+    cd "$ws" &&
+      git rev-list --left-right --count @{upstream}...HEAD 2>/dev/null || true
+  )
   if [ -n "$upstream_counts" ]; then
     behind=$(printf '%s' "$upstream_counts" | awk '{print $1+0}')
     ahead=$(printf '%s' "$upstream_counts" | awk '{print $2+0}')
@@ -214,7 +220,10 @@ git_diff() {
         continue
       fi
       # no-index returns exit 1 when differences are present; ignore that.
-      file_diff=$(cd "$ws" && git --no-pager diff --no-index --no-color /dev/null "$rel_path" 2>/dev/null || true)
+      file_diff=$(
+        cd "$ws" &&
+          git --no-pager diff --no-index --no-color /dev/null "$rel_path" 2>/dev/null || true
+      )
       if [ -n "$file_diff" ]; then
         printf '%s\n' "$file_diff"
       else

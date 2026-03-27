@@ -552,7 +552,9 @@ render_row() {
                 if [ "$cmd_len" -le "$max_command_length" ]; then
                         truncated_command="$display_command"
                 else
-                        truncated_command=$(printf '%s' "$display_command" | cut -c -"$max_command_length")
+                        truncated_command=$(
+                                printf '%s' "$display_command" | cut -c -"$max_command_length"
+                        )
                 fi
         fi
 

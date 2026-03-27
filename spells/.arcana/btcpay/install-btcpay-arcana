@@ -96,7 +96,8 @@ ensure_git() {
   case "$manager" in
     apt)
       run_privileged apt-get update -y >/dev/null
-      run_privileged env DEBIAN_FRONTEND=noninteractive apt-get install -y git ca-certificates curl >/dev/null
+      run_privileged env DEBIAN_FRONTEND=noninteractive \
+        apt-get install -y git ca-certificates curl >/dev/null
       ;;
     dnf)
       run_privileged dnf install -y git ca-certificates curl >/dev/null
@@ -162,7 +163,8 @@ if [ -d "$repo_dir/.git" ]; then
   )
 else
   rm -rf "$repo_dir"
-  git clone --depth 1 https://github.com/btcpayserver/btcpayserver-docker.git "$repo_dir" >/dev/null 2>&1 || {
+  git clone --depth 1 https://github.com/btcpayserver/btcpayserver-docker.git "$repo_dir" \
+    >/dev/null 2>&1 || {
     say "install-btcpay: failed to clone btcpayserver-docker." >&2
     exit 1
   }

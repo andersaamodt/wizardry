@@ -1,4 +1,6 @@
 #!/bin/sh
+# Remove filesystem growth tools from the host.
+# Cleans package-manager and source-based installations.
 
 case "${1-}" in
 --help|--usage|-h)
@@ -15,7 +17,10 @@ esac
 set -eu
 . env-clear
 
-PATH=/opt/homebrew/opt/e2fsprogs/sbin:/opt/homebrew/opt/e2fsprogs/bin:/usr/local/opt/e2fsprogs/sbin:/usr/local/opt/e2fsprogs/bin:/opt/homebrew/opt/xfsprogs/bin:/usr/local/opt/xfsprogs/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
+fs_tools_path_prefix="/opt/homebrew/opt/e2fsprogs/sbin:/opt/homebrew/opt/e2fsprogs/bin:"\
+"/usr/local/opt/e2fsprogs/sbin:/usr/local/opt/e2fsprogs/bin:"\
+"/opt/homebrew/opt/xfsprogs/bin:/usr/local/opt/xfsprogs/bin"
+PATH="$fs_tools_path_prefix:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}"
 
 uninstall_fs_say() {
   printf '%s\n' "$1"
@@ -56,7 +61,8 @@ fi
 removed=0
 
 if uninstall_fs_has_cmd apt-get; then
-  uninstall_fs_run_privileged env DEBIAN_FRONTEND=noninteractive apt-get remove -y e2fsprogs xfsprogs >/dev/null 2>&1 || true
+  uninstall_fs_run_privileged env DEBIAN_FRONTEND=noninteractive \
+    apt-get remove -y e2fsprogs xfsprogs >/dev/null 2>&1 || true
   removed=1
 elif uninstall_fs_has_cmd dnf; then
   uninstall_fs_run_privileged dnf remove -y e2fsprogs xfsprogs >/dev/null 2>&1 || true

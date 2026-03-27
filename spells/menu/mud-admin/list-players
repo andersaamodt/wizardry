@@ -7,7 +7,7 @@ case "${1-}" in
   cat <<'USAGE'
 Usage: list-players
 
-Lists authorized MUD player accounts on this host from the `mud` group and
+Lists authorized MUD player accounts on this host from the 'mud' group and
 shows whether each account has an authorized SSH key installed.
 USAGE
   exit 0
@@ -23,7 +23,8 @@ group_members_line() {
   fi
 
   if command -v dscl >/dev/null 2>&1; then
-    dscl . -read /Groups/mud GroupMembership 2>/dev/null | sed 's/^GroupMembership:[[:space:]]*//' | tr ' ' ','
+    dscl . -read /Groups/mud GroupMembership 2>/dev/null | \
+      sed 's/^GroupMembership:[[:space:]]*//' | tr ' ' ','
     return 0
   fi
 
@@ -66,7 +67,8 @@ printf '%s\n' ""
 printf '%-18s %-10s %s\n' "PLAYER" "SSH KEY" "HOME"
 printf '%-18s %-10s %s\n' "------" "-------" "----"
 
-printf '%s' "$members" | tr ',' '\n' | sed 's/^ *//;s/ *$//' | awk 'NF' | sort -u | while IFS= read -r player; do
+printf '%s' "$members" | tr ',' '\n' | sed 's/^ *//;s/ *$//' | awk 'NF' | sort -u | \
+  while IFS= read -r player; do
   home=$(resolve_home "$player" 2>/dev/null || printf '?')
   has_key="no"
   if [ -n "$home" ] && [ "$home" != "?" ] && [ -s "$home/.ssh/authorized_keys" ]; then
@@ -74,4 +76,3 @@ printf '%s' "$members" | tr ',' '\n' | sed 's/^ *//;s/ *$//' | awk 'NF' | sort -
   fi
   printf '%-18s %-10s %s\n' "$player" "$has_key" "$home"
 done
-

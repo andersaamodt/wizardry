@@ -32,7 +32,12 @@ tabby)
     exit 0
   fi
   # Check in common install locations
-  for path in /usr/local/bin/tabby /opt/homebrew/bin/tabby /usr/bin/tabby "$HOME/.local/bin/tabby" "$HOME/bin/tabby"; do
+  for path in \
+    /usr/local/bin/tabby \
+    /opt/homebrew/bin/tabby \
+    /usr/bin/tabby \
+    "$HOME/.local/bin/tabby" \
+    "$HOME/bin/tabby"; do
     if [ -x "$path" ]; then
       exit 0
     fi
@@ -57,7 +62,10 @@ anythingllm)
   # AnythingLLM installs to different locations depending on platform
   if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
     # macOS: check for app bundle variants in Applications folders
-    if find /Applications "$HOME/Applications" -maxdepth 1 -type d -name "*AnythingLLM*.app" 2>/dev/null | head -1 | grep -q .; then
+    anythingllm_app_pattern="*AnythingLLM*.app"
+    if find /Applications "$HOME/Applications" -maxdepth 1 -type d \
+      -name "$anythingllm_app_pattern" 2>/dev/null | \
+      head -1 | grep -q .; then
       exit 0
     fi
   else

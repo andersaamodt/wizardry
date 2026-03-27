@@ -61,7 +61,10 @@ audio)
   (cd "$output_dir" && yt-dlp -x --audio-format mp3 --audio-quality 0 "$url")
   ;;
 subtitles)
-  (cd "$output_dir" && yt-dlp --write-subs --write-auto-subs --sub-langs "en.*,en" --convert-subs srt "$url")
+  (
+    cd "$output_dir" &&
+      yt-dlp --write-subs --write-auto-subs --sub-langs "en.*,en" --convert-subs srt "$url"
+  )
   ;;
 formats)
   yt-dlp -F "$url"

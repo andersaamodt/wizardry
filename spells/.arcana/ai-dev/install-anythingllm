@@ -110,7 +110,11 @@ extract_expected_hash() {
     return 1
   fi
 
-  hash=$(printf '%s\n' "$line" | grep -Eo '[0-9A-Fa-f]{128}|[0-9A-Fa-f]{64}|[0-9A-Fa-f]{32}' | head -1 || true)
+  hash=$(
+    printf '%s\n' "$line" |
+      grep -Eo '[0-9A-Fa-f]{128}|[0-9A-Fa-f]{64}|[0-9A-Fa-f]{32}' |
+      head -1 || true
+  )
   if [ -z "$hash" ]; then
     return 1
   fi
@@ -136,7 +140,8 @@ Darwin)
 
   cleanup_install_anythingllm() {
     if [ -n "$mount_point" ] && mount | grep -q "on $mount_point "; then
-      hdiutil detach "$mount_point" >/dev/null 2>&1 || hdiutil detach -force "$mount_point" >/dev/null 2>&1 || :
+      hdiutil detach "$mount_point" >/dev/null 2>&1 || \
+        hdiutil detach -force "$mount_point" >/dev/null 2>&1 || :
     fi
     [ -n "$dmg_file" ] && [ -f "$dmg_file" ] && rm -f "$dmg_file"
     [ -n "$checksum_file" ] && [ -f "$checksum_file" ] && rm -f "$checksum_file"
@@ -203,7 +208,10 @@ Darwin)
   fi
 
   printf '%s\n' "Mounting DMG..."
-  mount_point=$(hdiutil attach -nobrowse -readonly "$dmg_file" 2>/dev/null | awk '/\/Volumes\// { i=index($0, "/Volumes/"); if (i>0) { print substr($0, i); exit } }')
+  mount_point=$(
+    hdiutil attach -nobrowse -readonly "$dmg_file" 2>/dev/null |
+      awk '/\/Volumes\// { i=index($0, "/Volumes/"); if (i>0) { print substr($0, i); exit } }'
+  )
   if [ -z "$mount_point" ]; then
     die "install-anythingllm: failed to mount DMG"
   fi
@@ -229,7 +237,9 @@ Darwin)
   fi
 
   if has spctl; then
-    spctl --assess --type execute "$target_app" >/dev/null 2>&1 || warn "install-anythingllm: Gatekeeper assessment failed"
+    if ! spctl --assess --type execute "$target_app" >/dev/null 2>&1; then
+      warn "install-anythingllm: Gatekeeper assessment failed"
+    fi
   fi
   ;;
 Linux)
@@ -268,7 +278,10 @@ Linux)
   elif [ -f "$HOME/AnythingLLMDesktop.AppImage" ]; then
     app_target="$HOME/AnythingLLMDesktop.AppImage"
   else
-    app_target=$(find "$app_dir" "$HOME" -maxdepth 2 -type f -name "*AnythingLLM*.AppImage" 2>/dev/null | head -1 || true)
+    app_target=$(
+      find "$app_dir" "$HOME" -maxdepth 2 -type f -name "*AnythingLLM*.AppImage" 2>/dev/null |
+        head -1 || true
+    )
   fi
 
   if [ -z "$app_target" ] || [ ! -f "$app_target" ]; then
@@ -286,7 +299,9 @@ Linux)
         nix-env -iA nixpkgs.appimage-run || die "install-anythingllm: failed to install appimage-run via nix-env"
       elif has nix; then
         printf '%s\n' "Installing appimage-run with nix profile..."
-        nix profile install nixpkgs#appimage-run || die "install-anythingllm: failed to install appimage-run via nix profile"
+        if ! nix profile install nixpkgs#appimage-run; then
+          die "install-anythingllm: failed to install appimage-run via nix profile"
+        fi
       else
         die "install-anythingllm: NixOS requires appimage-run (nix-env or nix command not found)"
       fi

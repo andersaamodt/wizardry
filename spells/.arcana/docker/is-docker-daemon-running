@@ -25,7 +25,8 @@ backend_process_running() {
     fi
   fi
   if has ps; then
-    if ps ax -o command= 2>/dev/null | grep -E 'com\.docker\.backend|vpnkit|linuxkit' | grep -v grep >/dev/null 2>&1; then
+    if ps ax -o command= 2>/dev/null | \
+      grep -E 'com\.docker\.backend|vpnkit|linuxkit' | grep -v grep >/dev/null 2>&1; then
       return 0
     fi
   fi
@@ -36,7 +37,8 @@ is_socket_responding() {
   sock=$1
   [ -S "$sock" ] || return 1
   if has curl; then
-    if curl -sS --max-time 0.3 --unix-socket "$sock" http://localhost/_ping 2>/dev/null | grep -q '^OK'; then
+    if curl -sS --max-time 0.3 --unix-socket "$sock" http://localhost/_ping 2>/dev/null | \
+      grep -q '^OK'; then
       return 0
     fi
     return 1

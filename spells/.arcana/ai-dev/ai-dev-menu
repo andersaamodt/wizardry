@@ -133,7 +133,10 @@ while true; do
   fast_check "$script_dir/is-tabby-daemon-installed" && tabby_daemon_installed=1
   fast_check "$script_dir/is-tabby-daemon-enabled" && tabby_daemon_enabled=1
   fast_check "$script_dir/is-tabby-daemon-running" && tabby_daemon_running=1
-  if [ "$tabby_installed" -eq 1 ] || [ "$tabby_daemon_installed" -eq 1 ] || [ "$tabby_daemon_enabled" -eq 1 ] || [ "$tabby_daemon_running" -eq 1 ]; then
+  if [ "$tabby_installed" -eq 1 ] || \
+    [ "$tabby_daemon_installed" -eq 1 ] || \
+    [ "$tabby_daemon_enabled" -eq 1 ] || \
+    [ "$tabby_daemon_running" -eq 1 ]; then
     show_tabby_daemon_section=1
   fi
 
@@ -145,11 +148,13 @@ while true; do
     if [ "$tabby_installed" -eq 1 ]; then
       set_tabby_model_label="Set Tabby model"
       set_tabby_model_cmd="$script_dir/select-tabby-llm"
-      set -- "$@" "$set_tabby_model_label%$(wrap_cmd "$set_tabby_model_label" "$set_tabby_model_cmd")"
+      set_tabby_model_entry=$(wrap_cmd "$set_tabby_model_label" "$set_tabby_model_cmd")
+      set -- "$@" "$set_tabby_model_label%$set_tabby_model_entry"
     fi
     deploy_artificer_label="Deploy Artificer (daimon)"
     deploy_artificer_cmd="$script_dir/deploy-artificer daimon"
-    set -- "$@" "$deploy_artificer_label%$(wrap_cmd "$deploy_artificer_label" "$deploy_artificer_cmd")"
+    deploy_artificer_entry=$(wrap_cmd "$deploy_artificer_label" "$deploy_artificer_cmd")
+    set -- "$@" "$deploy_artificer_label%$deploy_artificer_entry"
     set -- "$@" "---"
   fi
 
@@ -163,7 +168,8 @@ while true; do
       daemon_install_label="[ ] ollama daemon"
       daemon_install_cmd="$script_dir/install-ollama-daemon"
     fi
-    daemon_install_toggle="$daemon_install_label%$(wrap_cmd "$daemon_install_label" "$daemon_install_cmd")"
+    daemon_install_entry=$(wrap_cmd "$daemon_install_label" "$daemon_install_cmd")
+    daemon_install_toggle="$daemon_install_label%$daemon_install_entry"
 
     # Only show start/stop and enable/disable if daemon is installed
     if [ "$ollama_daemon_installed" -eq 1 ]; then
@@ -175,7 +181,8 @@ while true; do
         daemon_start_label="[ ] ollama daemon running"
         daemon_start_cmd="$script_dir/start-ollama-daemon"
       fi
-      daemon_start_toggle="$daemon_start_label%$(wrap_cmd "$daemon_start_label" "$daemon_start_cmd")"
+      daemon_start_entry=$(wrap_cmd "$daemon_start_label" "$daemon_start_cmd")
+      daemon_start_toggle="$daemon_start_label%$daemon_start_entry"
       set -- "$@" "$daemon_start_toggle"
 
       # Enable/disable at startup toggle
@@ -186,7 +193,8 @@ while true; do
         daemon_enable_label="[ ] ollama daemon at startup"
         daemon_enable_cmd="$script_dir/enable-ollama-daemon"
       fi
-      daemon_enable_toggle="$daemon_enable_label%$(wrap_cmd "$daemon_enable_label" "$daemon_enable_cmd")"
+      daemon_enable_entry=$(wrap_cmd "$daemon_enable_label" "$daemon_enable_cmd")
+      daemon_enable_toggle="$daemon_enable_label%$daemon_enable_entry"
       set -- "$@" "$daemon_enable_toggle"
     fi
 
@@ -207,15 +215,18 @@ while true; do
       tabby_daemon_install_label="[ ] tabby daemon"
       tabby_daemon_install_cmd="$script_dir/install-tabby-daemon"
     fi
-    tabby_daemon_install_toggle="$tabby_daemon_install_label%$(wrap_cmd "$tabby_daemon_install_label" "$tabby_daemon_install_cmd")"
+    tabby_daemon_install_entry=$(wrap_cmd "$tabby_daemon_install_label" "$tabby_daemon_install_cmd")
+    tabby_daemon_install_toggle="$tabby_daemon_install_label%$tabby_daemon_install_entry"
 
     if [ "$tabby_daemon_installed" -eq 1 ]; then
       tabby_daemon_status_label="tabby daemon status"
       tabby_daemon_status_cmd="$script_dir/tabby-daemon-status"
-      set -- "$@" "$tabby_daemon_status_label%$(wrap_cmd "$tabby_daemon_status_label" "$tabby_daemon_status_cmd")"
+      tabby_daemon_status_entry=$(wrap_cmd "$tabby_daemon_status_label" "$tabby_daemon_status_cmd")
+      set -- "$@" "$tabby_daemon_status_label%$tabby_daemon_status_entry"
       tabby_daemon_repair_label="repair tabby daemon"
       tabby_daemon_repair_cmd="$script_dir/repair-tabby-daemon"
-      set -- "$@" "$tabby_daemon_repair_label%$(wrap_cmd "$tabby_daemon_repair_label" "$tabby_daemon_repair_cmd")"
+      tabby_daemon_repair_entry=$(wrap_cmd "$tabby_daemon_repair_label" "$tabby_daemon_repair_cmd")
+      set -- "$@" "$tabby_daemon_repair_label%$tabby_daemon_repair_entry"
 
       if [ "$tabby_daemon_running" -eq 1 ]; then
         tabby_daemon_running_label="[X] tabby daemon running"
@@ -224,7 +235,10 @@ while true; do
         tabby_daemon_running_label="[ ] tabby daemon running"
         tabby_daemon_running_cmd="$script_dir/start-tabby-daemon"
       fi
-      set -- "$@" "$tabby_daemon_running_label%$(wrap_cmd "$tabby_daemon_running_label" "$tabby_daemon_running_cmd")"
+      tabby_daemon_running_entry=$(
+        wrap_cmd "$tabby_daemon_running_label" "$tabby_daemon_running_cmd"
+      )
+      set -- "$@" "$tabby_daemon_running_label%$tabby_daemon_running_entry"
 
       if [ "$tabby_daemon_enabled" -eq 1 ]; then
         tabby_daemon_enabled_label="[X] tabby daemon at startup"
@@ -233,7 +247,10 @@ while true; do
         tabby_daemon_enabled_label="[ ] tabby daemon at startup"
         tabby_daemon_enabled_cmd="$script_dir/enable-tabby-daemon"
       fi
-      set -- "$@" "$tabby_daemon_enabled_label%$(wrap_cmd "$tabby_daemon_enabled_label" "$tabby_daemon_enabled_cmd")"
+      tabby_daemon_enabled_entry=$(
+        wrap_cmd "$tabby_daemon_enabled_label" "$tabby_daemon_enabled_cmd"
+      )
+      set -- "$@" "$tabby_daemon_enabled_label%$tabby_daemon_enabled_entry"
     fi
 
     # Daemon install/uninstall appears last in this section.

@@ -9,7 +9,7 @@ Usage: player-status
 
 Shows:
   - whether your current UNIX user is a MUD player account on this host
-  - whether `MUD_PLAYER` is set
+  - whether 'MUD_PLAYER' is set
   - whether the selected/local player key exists in ~/.ssh
 USAGE
   exit 0
@@ -58,4 +58,3 @@ printf '%-38s %s\n' "Logged in as player account on host:" "$logged_in_player"
 printf '%-38s %s\n' "Current user has local player key:" "$current_user_key"
 printf '%-38s %s\n' "Selected player identity (MUD_PLAYER):" "$selected_player_display"
 printf '%-38s %s\n' "Selected identity key present in ~/.ssh:" "$selected_player_key"
-

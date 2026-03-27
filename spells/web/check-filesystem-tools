@@ -1,4 +1,6 @@
 #!/bin/sh
+# Check availability of filesystem growth tools.
+# Verifies e2fsprogs and xfsprogs helper binaries.
 
 case "${1-}" in
 --help|--usage|-h)
@@ -15,7 +17,10 @@ esac
 set -eu
 . env-clear
 
-PATH=/opt/homebrew/opt/e2fsprogs/sbin:/opt/homebrew/opt/e2fsprogs/bin:/usr/local/opt/e2fsprogs/sbin:/usr/local/opt/e2fsprogs/bin:/opt/homebrew/opt/xfsprogs/bin:/usr/local/opt/xfsprogs/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
+fs_tools_path_prefix="/opt/homebrew/opt/e2fsprogs/sbin:/opt/homebrew/opt/e2fsprogs/bin:"\
+"/usr/local/opt/e2fsprogs/sbin:/usr/local/opt/e2fsprogs/bin:"\
+"/opt/homebrew/opt/xfsprogs/bin:/usr/local/opt/xfsprogs/bin"
+PATH="$fs_tools_path_prefix:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}"
 
 check_fs_has_cmd() {
   command -v "$1" >/dev/null 2>&1

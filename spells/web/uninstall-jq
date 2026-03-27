@@ -1,4 +1,6 @@
 #!/bin/sh
+# Remove jq when it was installed by Wizardry-supported methods.
+# Cleans package-manager and known local binary installs.
 
 case "${1-}" in
 --help|--usage|-h)
@@ -61,7 +63,8 @@ remove_known_jq_binary() {
 removed=0
 
 if jq_uninstall_has_cmd apt-get; then
-  jq_uninstall_run_privileged env DEBIAN_FRONTEND=noninteractive apt-get remove -y jq >/dev/null 2>&1 || true
+  jq_uninstall_run_privileged env DEBIAN_FRONTEND=noninteractive \
+    apt-get remove -y jq >/dev/null 2>&1 || true
   removed=1
 elif jq_uninstall_has_cmd dnf; then
   jq_uninstall_run_privileged dnf remove -y jq >/dev/null 2>&1 || true

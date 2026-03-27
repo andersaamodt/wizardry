@@ -1,4 +1,6 @@
 #!/bin/sh
+# Deploy the Artificer template stack to a target site.
+# Optionally skip smoke tests during deployment.
 
 case "${1-}" in
 --help|--usage|-h)

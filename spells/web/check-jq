@@ -1,4 +1,6 @@
 #!/bin/sh
+# Check whether jq is installed and callable.
+# Used by web spells that process JSON in shell.
 
 case "${1-}" in
 --help|--usage|-h)

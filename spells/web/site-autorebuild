@@ -395,14 +395,17 @@ run_build_once() {
     }
     release_name=${current_target##*/}
     spell_path=$(wizardry_spell_path "$runtime_dir")
-    run_as_user "$site_user" env HOME="$site_root" PATH="$spell_path" WEB_WIZARDRY_ROOT="$releases_root" WIZARDRY_DIR="$runtime_dir" "$build_spell" "$release_name" --full
+    run_as_user "$site_user" env HOME="$site_root" PATH="$spell_path" \
+      WEB_WIZARDRY_ROOT="$releases_root" WIZARDRY_DIR="$runtime_dir" \
+      "$build_spell" "$release_name" --full
     return 0
   fi
 
   wizardry_dir=${WIZARDRY_DIR:-$HOME/.wizardry}
   build_spell=$wizardry_dir/spells/web/build
   if [ -x "$build_spell" ]; then
-    env WEB_WIZARDRY_ROOT="$releases_root" WIZARDRY_DIR="$wizardry_dir" "$build_spell" "$site_name" --full
+    env WEB_WIZARDRY_ROOT="$releases_root" WIZARDRY_DIR="$wizardry_dir" \
+      "$build_spell" "$site_name" --full
     return 0
   fi
   if command -v build >/dev/null 2>&1; then

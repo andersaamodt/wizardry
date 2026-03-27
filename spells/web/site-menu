@@ -258,11 +258,16 @@ while true; do
       requirement_id=${requirement_line%%=*}
       requirement_id=$(printf '%s' "$requirement_id" | tr -d '[:space:]')
       [ -n "$requirement_id" ] || continue
-      label=$(requirement_meta_value "$requirement_id" label 2>/dev/null || printf '%s' "$requirement_id")
-      install_label=$(requirement_meta_value "$requirement_id" install_label 2>/dev/null || printf 'Install %s' "$label")
-      uninstall_label=$(requirement_meta_value "$requirement_id" uninstall_label 2>/dev/null || printf 'Uninstall %s' "$label")
-      install_spell=$(requirement_meta_value "$requirement_id" install_spell 2>/dev/null || printf '')
-      uninstall_spell=$(requirement_meta_value "$requirement_id" uninstall_spell 2>/dev/null || printf '')
+      label=$(requirement_meta_value "$requirement_id" label 2>/dev/null || \
+        printf '%s' "$requirement_id")
+      install_label=$(requirement_meta_value "$requirement_id" install_label 2>/dev/null || \
+        printf 'Install %s' "$label")
+      uninstall_label=$(requirement_meta_value "$requirement_id" uninstall_label 2>/dev/null || \
+        printf 'Uninstall %s' "$label")
+      install_spell=$(requirement_meta_value "$requirement_id" install_spell 2>/dev/null || \
+        printf '')
+      uninstall_spell=$(requirement_meta_value "$requirement_id" uninstall_spell 2>/dev/null || \
+        printf '')
       requirement_state=$(requirement_status "$requirement_id" 2>/dev/null || printf 'bad')
       if [ "$requirement_state" = "ok" ] && [ -n "$uninstall_spell" ]; then
         uninstall_cmd_wrapped=$(wrap_cmd "$uninstall_label" "$uninstall_spell")

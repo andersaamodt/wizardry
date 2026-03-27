@@ -49,7 +49,10 @@ if ! has docker; then
   exit 1
 fi
 
-restart_policy=$(run_with_timeout_capture docker container inspect -f '{{.HostConfig.RestartPolicy.Name}}' tabby || printf '')
+inspect_fmt='{{.HostConfig.RestartPolicy.Name}}'
+restart_policy=$(
+  run_with_timeout_capture docker container inspect -f "$inspect_fmt" tabby || printf ''
+)
 if [ -n "$restart_policy" ] && [ "$restart_policy" != "no" ]; then
   exit 0
 fi

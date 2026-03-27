@@ -39,7 +39,8 @@ if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
 
   cleanup_install_docker() {
     if [ -n "$mount_point" ] && mount | grep -q "on $mount_point "; then
-      hdiutil detach "$mount_point" >/dev/null 2>&1 || hdiutil detach -force "$mount_point" >/dev/null 2>&1 || :
+      hdiutil detach "$mount_point" >/dev/null 2>&1 || \
+        hdiutil detach -force "$mount_point" >/dev/null 2>&1 || :
     fi
     [ -f "$dmg_file" ] && rm -f "$dmg_file"
   }
@@ -55,7 +56,10 @@ if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
   fi
 
   printf '%s\n' "Mounting DMG..."
-  mount_point=$(hdiutil attach -nobrowse -readonly "$dmg_file" 2>/dev/null | awk '/\/Volumes\// { i=index($0, "/Volumes/"); if (i>0) { print substr($0, i); exit } }')
+  mount_point=$(
+    hdiutil attach -nobrowse -readonly "$dmg_file" 2>/dev/null |
+      awk '/\/Volumes\// { i=index($0, "/Volumes/"); if (i>0) { print substr($0, i); exit } }'
+  )
   [ -n "$mount_point" ] || die "install-docker: failed to mount Docker Desktop DMG"
 
   app_bundle=$(find "$mount_point" -maxdepth 2 -type d -name "Docker.app" | head -1 || true)

@@ -325,7 +325,11 @@ generate_blog_feeds_and_sitemap() {
 
       body_md=$(extract_markdown_body "$post_file")
       if [ "$feed_full_text" = "true" ]; then
-        body_html=$(printf '%s\n' "$body_md" | pandoc --from markdown+raw_html --to html5 2>/dev/null || printf '<pre>%s</pre>' "$(xml_escape "$body_md")")
+        body_html=$(
+          printf '%s\n' "$body_md" |
+            pandoc --from markdown+raw_html --to html5 2>/dev/null || \
+            printf '<pre>%s</pre>' "$(xml_escape "$body_md")"
+        )
       else
         body_html=$(xml_escape "$summary")
       fi
@@ -376,7 +380,11 @@ generate_blog_feeds_and_sitemap() {
 
       body_md=$(extract_markdown_body "$post_file")
       if [ "$feed_full_text" = "true" ]; then
-        body_html=$(printf '%s\n' "$body_md" | pandoc --from markdown+raw_html --to html5 2>/dev/null || printf '<pre>%s</pre>' "$(xml_escape "$body_md")")
+        body_html=$(
+          printf '%s\n' "$body_md" |
+            pandoc --from markdown+raw_html --to html5 2>/dev/null || \
+            printf '<pre>%s</pre>' "$(xml_escape "$body_md")"
+        )
       else
         body_html=$(xml_escape "$summary")
       fi
@@ -633,7 +641,8 @@ build_site() {
   fi
 
   if [ "$site_template" = "blog" ] && [ -x "$site_dir/cgi/blog-nostr-rebuild" ]; then
-    if ! WIZARDRY_SITES_DIR="$sites_dir" WIZARDRY_SITE_NAME="$site_name" "$site_dir/cgi/blog-nostr-rebuild" >/dev/null 2>&1; then
+    if ! WIZARDRY_SITES_DIR="$sites_dir" WIZARDRY_SITE_NAME="$site_name" \
+      "$site_dir/cgi/blog-nostr-rebuild" >/dev/null 2>&1; then
       warn "build: blog Nostr derived rebuild failed; continuing with existing local files"
     fi
   fi
@@ -648,7 +657,8 @@ build_site() {
   js_lib_dir="${WIZARDRY_WEB_JS_DIR:-$default_js_lib_dir}"
   if ! mkdir -p "$js_lib_dir" 2>/dev/null; then
     warn "build: cannot write web lib cache at $js_lib_dir"
-    if [ "$js_lib_dir" != "$default_js_lib_dir" ] && mkdir -p "$default_js_lib_dir" 2>/dev/null; then
+    if [ "$js_lib_dir" != "$default_js_lib_dir" ] && \
+      mkdir -p "$default_js_lib_dir" 2>/dev/null; then
       info "build: using fallback cache: $default_js_lib_dir"
       js_lib_dir="$default_js_lib_dir"
     else
@@ -686,13 +696,16 @@ build_site() {
   info "Converting Markdown to HTML..."
   built_count=0
   if [ -d "$site_dir/site/pages" ]; then
-    md_file_count=$(find "$site_dir/site/pages" -type f -name '*.md' ! -name '._*' 2>/dev/null | wc -l)
+    md_file_count=$(
+      find "$site_dir/site/pages" -type f -name '*.md' ! -name '._*' 2>/dev/null | wc -l
+    )
     if [ "$md_file_count" -eq 0 ]; then
       warn "No Markdown files found in $site_dir/site/pages/"
       warn "Create .md files there to build HTML pages."
     fi
 
-    find "$site_dir/site/pages" -type f -name '*.md' ! -name '._*' | sort | while IFS= read -r md_file; do
+    find "$site_dir/site/pages" -type f -name '*.md' ! -name '._*' | sort | \
+      while IFS= read -r md_file; do
       rel_path=${md_file#"$site_dir/site/pages/"}
       rel_html=${rel_path%.md}.html
       html_file="$site_dir/build/pages/$rel_html"
@@ -816,7 +829,8 @@ BLOG_FOOTER
   generate_blog_feeds_and_sitemap
   prerender_blog_dynamic_sections
 
-  find "$site_dir/build/pages" -type f -name '*.html' ! -name '._*' | while IFS= read -r html_page; do
+  find "$site_dir/build/pages" -type f -name '*.html' ! -name '._*' | \
+    while IFS= read -r html_page; do
     append_local_static_cache_bust "$html_page" "$build_cache_token"
   done
 

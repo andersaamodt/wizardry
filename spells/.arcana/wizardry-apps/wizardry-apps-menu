@@ -41,7 +41,8 @@ while :; do
   web_templates_installed=0
   apps_installed=0
 
-  "$script_dir/is-wizardry-apps-component-installed" web-templates >/dev/null 2>&1 && web_templates_installed=1
+  "$script_dir/is-wizardry-apps-component-installed" web-templates \
+    >/dev/null 2>&1 && web_templates_installed=1
   "$script_dir/is-wizardry-apps-component-installed" apps >/dev/null 2>&1 && apps_installed=1
 
   if [ "$web_templates_installed" -eq 1 ]; then

@@ -1,4 +1,6 @@
 #!/bin/sh
+# Install jq for shell JSON processing.
+# Prefers package-manager installation with safe fallbacks.
 
 case "${1-}" in
 --help|--usage|-h)

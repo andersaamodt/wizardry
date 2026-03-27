@@ -1,4 +1,6 @@
 #!/bin/sh
+# Check whether Syncthing is installed and callable.
+# Used by web synchronization setup flows.
 
 case "${1-}" in
 --help|--usage|-h)

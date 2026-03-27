@@ -86,7 +86,9 @@ if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
     daemon_user=$LOGNAME
   fi
   
-  daemon_home=$(awk -F: -v u="$daemon_user" '$1==u {print $6; exit}' /etc/passwd 2>/dev/null || printf '')
+  daemon_home=$(
+    awk -F: -v u="$daemon_user" '$1==u {print $6; exit}' /etc/passwd 2>/dev/null || printf ''
+  )
   [ -z "$daemon_home" ] && daemon_home="${HOME:-/var/root}"
   ollama_state_dir="$daemon_home/.ollama"
   

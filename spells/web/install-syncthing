@@ -1,4 +1,6 @@
 #!/bin/sh
+# Install Syncthing for content synchronization.
+# Supports package-manager and binary installation paths.
 
 case "${1-}" in
 --help|--usage|-h)
@@ -69,7 +71,8 @@ install_binary() {
 }
 
 install_systemd_override() {
-  [ -f /lib/systemd/system/syncthing@.service ] || [ -f /usr/lib/systemd/system/syncthing@.service ] || return 0
+  [ -f /lib/systemd/system/syncthing@.service ] || \
+    [ -f /usr/lib/systemd/system/syncthing@.service ] || return 0
   target_bin_dir=$(install_syncthing_target_bin_dir)
   target_bin="$target_bin_dir/syncthing"
   [ -x "$target_bin" ] || return 0
@@ -119,7 +122,9 @@ install_syncthing_release_binary() {
   platform=$(install_syncthing_platform_suffix 2>/dev/null || true)
   [ -n "$platform" ] || return 1
 
-  release_json=$(curl -fsSL https://api.github.com/repos/syncthing/syncthing/releases/latest 2>/dev/null || true)
+  release_json=$(
+    curl -fsSL https://api.github.com/repos/syncthing/syncthing/releases/latest 2>/dev/null || true
+  )
   [ -n "$release_json" ] || return 1
   release_json_one_line=$(printf '%s' "$release_json" | tr '\n' ' ')
   case "$platform" in
@@ -159,7 +164,9 @@ install_syncthing_release_binary() {
       }
       ;;
   esac
-  binary_path=$(find "$tmp_dir" -mindepth 2 -maxdepth 2 -type f -path '*/syncthing' -perm -111 | head -n 1)
+  binary_path=$(
+    find "$tmp_dir" -mindepth 2 -maxdepth 2 -type f -path '*/syncthing' -perm -111 | head -n 1
+  )
   [ -n "$binary_path" ] || {
     rm -rf "$tmp_dir"
     return 1
@@ -185,7 +192,8 @@ fi
 
 if syncthing_has_cmd apt-get; then
   syncthing_run_privileged apt-get update -y >/dev/null
-  syncthing_run_privileged env DEBIAN_FRONTEND=noninteractive apt-get install -y syncthing >/dev/null
+  syncthing_run_privileged env DEBIAN_FRONTEND=noninteractive \
+    apt-get install -y syncthing >/dev/null
 elif syncthing_has_cmd dnf; then
   syncthing_run_privileged dnf install -y syncthing >/dev/null
 elif syncthing_has_cmd brew; then

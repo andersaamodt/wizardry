@@ -17,6 +17,9 @@ USAGE
   ;;
 esac
 
+# Keep this helper library permissive when sourced by spells.
+set +eu
+
 wizardry_apps_repo_url=${WIZARDRY_APPS_REPO_URL:-https://github.com/andersaamodt/wizardry-apps.git}
 wizardry_apps_dir=${WIZARDRY_APPS_DIR:-$HOME/git/wizardry-apps}
 
@@ -69,7 +72,11 @@ wizardry_apps_ensure_repo() {
   if [ -d "$wizardry_apps_dir/.git" ]; then
     step "Updating wizardry-apps repository..."
     git -C "$wizardry_apps_dir" fetch --depth 1 origin || die "wizardry-apps: failed to fetch updates"
-    default_branch=$(git -C "$wizardry_apps_dir" symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null || true)
+    origin_head_ref=refs/remotes/origin/HEAD
+    default_branch=$(
+      git -C "$wizardry_apps_dir" \
+        symbolic-ref --quiet --short "$origin_head_ref" 2>/dev/null || true
+    )
     if [ -n "$default_branch" ]; then
       default_branch=${default_branch#origin/}
       git -C "$wizardry_apps_dir" checkout -q "$default_branch" || true
@@ -91,7 +98,8 @@ wizardry_apps_ensure_repo() {
 wizardry_apps_install_component() {
   component=$1
   label=$(wizardry_apps_component_label "$component")
-  source_dir=$(wizardry_apps_component_source_path "$component") || die "wizardry-apps: unknown component '$component'"
+  source_dir=$(wizardry_apps_component_source_path "$component") || \
+    die "wizardry-apps: unknown component '$component'"
 
   wizardry_apps_ensure_repo
 

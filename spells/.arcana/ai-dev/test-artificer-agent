@@ -1,4 +1,6 @@
 #!/bin/sh
+# Validate core Artificer agent behavior against a live site.
+# Exercises quick mode, loop mode, and workspace command execution.
 
 case "${1-}" in
 --help|--usage|-h)
@@ -160,7 +162,10 @@ if [ -z "$model_name" ]; then
     my $models = $j->{models};
     if (ref($models) eq "ARRAY" && @{$models}) {
       my @list = @{$models};
-      my @preferred = grep { $_ =~ /(coder|code|instruct|chat|llama|qwen|mistral|deepseek)/i && $_ !~ /(embed|embedding|vision|clip)/i } @list;
+      my @preferred = grep {
+        $_ =~ /(coder|code|instruct|chat|llama|qwen|mistral|deepseek)/i &&
+          $_ !~ /(embed|embedding|vision|clip)/i
+      } @list;
       if (@preferred) {
         print $preferred[0];
       } else {

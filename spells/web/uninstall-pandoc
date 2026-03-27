@@ -1,4 +1,6 @@
 #!/bin/sh
+# Remove pandoc when installed by supported methods.
+# Cleans package-manager and downloaded binary installations.
 
 case "${1-}" in
 --help|--usage|-h)
@@ -46,7 +48,8 @@ pandoc_uninstall_run_privileged() {
 removed=0
 
 if pandoc_uninstall_has_cmd apt-get; then
-  pandoc_uninstall_run_privileged env DEBIAN_FRONTEND=noninteractive apt-get remove -y pandoc >/dev/null 2>&1 || true
+  pandoc_uninstall_run_privileged env DEBIAN_FRONTEND=noninteractive \
+    apt-get remove -y pandoc >/dev/null 2>&1 || true
   removed=1
 elif pandoc_uninstall_has_cmd dnf; then
   pandoc_uninstall_run_privileged dnf remove -y pandoc >/dev/null 2>&1 || true

@@ -59,7 +59,10 @@ fi
 
 state=$(docker inspect -f '{{.State.Status}}' tabby 2>/dev/null || printf 'unknown')
 restarting=$(docker inspect -f '{{.State.Restarting}}' tabby 2>/dev/null || printf 'unknown')
-health=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' tabby 2>/dev/null || printf 'unknown')
+health=$(
+  docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' tabby 2>/dev/null || \
+    printf 'unknown'
+)
 cmd=$(docker inspect -f '{{json .Config.Cmd}}' tabby 2>/dev/null || printf 'unknown')
 
 endpoint_status="unknown"
@@ -96,7 +99,9 @@ fi
 
 ollama_active_models=""
 if has ollama; then
-  ollama_active_models=$(ollama ps 2>/dev/null | tail -n +2 | awk '{print $1}' | sed '/^$/d' || printf '')
+  ollama_active_models=$(
+    ollama ps 2>/dev/null | tail -n +2 | awk '{print $1}' | sed '/^$/d' || printf ''
+  )
 fi
 if [ -n "$ollama_active_models" ]; then
   printf '%s\n' "ollama active models:"
@@ -107,7 +112,10 @@ fi
 
 if [ "$overall" != "running" ]; then
   # Show model download file progress when present.
-  tmp_models=$(docker exec tabby sh -lc 'find /data/models -type f -name "*.tmp" 2>/dev/null | sed -n "1,20p"' 2>/dev/null || printf '')
+  tmp_models=$(
+    docker exec tabby sh -lc 'find /data/models -type f -name "*.tmp" 2>/dev/null | sed -n "1,20p"' \
+      2>/dev/null || printf ''
+  )
   if [ -n "$tmp_models" ]; then
     printf '%s\n' "model downloads in progress:"
     printf '%s\n' "$tmp_models" | while IFS= read -r f; do
