@@ -123,15 +123,7 @@ run_test_case "install-menu prefers spells in the install root" test_install_men
 test_esc_exit_behavior() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  
-  # Create menu stub that returns exit code 0 (normal success)
-  cat >"$tmp/menu" <<'SH'
-#!/bin/sh
-printf '%s\n' "$@" >>"$MENU_LOG"
-exit 0
-SH
-  chmod +x "$tmp/menu"
-  
+  stub-menu "$tmp"
   stub-require-command "$tmp"
   
   cat >"$tmp/exit-label" <<'SH'
@@ -148,25 +140,10 @@ SH
 echo ready
 SH
   chmod +x "$install_root/test/test-status"
-  
-  # Run install-menu in background
-  env PATH="$tmp:$PATH" INSTALL_MENU_ROOT="$install_root" INSTALL_MENU_DIRS="test" MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/require.log" "$ROOT_DIR/spells/menu/install-menu" &
-  menu_pid=$!
 
-  # Wait briefly for the first menu render so this test validates behavior,
-  # not scheduler timing. If rendering is slow, we still terminate gracefully.
-  waited=0
-  while [ "$waited" -lt 20 ]; do
-    if [ -s "$tmp/log" ]; then
-      break
-    fi
-    sleep 0.1
-    waited=$((waited + 1))
-  done
+  run_cmd env PATH="$tmp:$PATH" INSTALL_MENU_ROOT="$install_root" INSTALL_MENU_DIRS="test" MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/require.log" "$ROOT_DIR/spells/menu/install-menu"
+  assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
 
-  kill -TERM "$menu_pid" 2>/dev/null || true
-  wait "$menu_pid" 2>/dev/null || true
-  
   args=$(cat "$tmp/log" 2>/dev/null || printf '')
   case "$args" in
     *'Exit%kill -TERM $PPID'*) : ;;

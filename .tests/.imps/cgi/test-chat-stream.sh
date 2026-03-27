@@ -47,6 +47,46 @@ run_with_timeout() {
   fi
 }
 
+# Capture a long-lived stream until all expected patterns appear, or time out.
+capture_stream_until_patterns() {
+  patterns_file=$1
+  shift
+
+  output_file=$(mktemp)
+  "$@" > "$output_file" 2>&1 &
+  pid=$!
+
+  attempts=0
+  while [ "$attempts" -lt 50 ]; do
+    found_all=1
+    while IFS= read -r pattern || [ -n "$pattern" ]; do
+      [ -n "$pattern" ] || continue
+      if ! grep -Fq "$pattern" "$output_file" 2>/dev/null; then
+        found_all=0
+        break
+      fi
+    done < "$patterns_file"
+
+    if [ "$found_all" -eq 1 ]; then
+      break
+    fi
+
+    if ! kill -0 "$pid" 2>/dev/null; then
+      break
+    fi
+
+    sleep 0.1
+    attempts=$((attempts + 1))
+  done
+
+  kill -TERM "-$pid" 2>/dev/null || kill -TERM "$pid" 2>/dev/null || true
+  sleep 0.1
+  kill -KILL "-$pid" 2>/dev/null || kill -KILL "$pid" 2>/dev/null || true
+
+  cat "$output_file"
+  rm -f "$output_file"
+}
+
 # Cleanup test environment
 cleanup_test_env() {
   if [ -n "${test_tmpdir:-}" ] && [ -d "$test_tmpdir" ]; then
@@ -128,13 +168,21 @@ test_chat_stream_sends_recent_messages_to_prevent_gaps() {
   printf "[2024-12-01 12:00:01] Alice: Message 1\n" > "$CHAT_DIR/TestRoom/.log"
   printf "[2024-12-01 12:00:02] Bob: Message 2\n" >> "$CHAT_DIR/TestRoom/.log"
   printf "[2024-12-01 12:00:03] Charlie: Message 3\n" >> "$CHAT_DIR/TestRoom/.log"
-  
+
+  patterns_file=$(mktemp)
+  cat > "$patterns_file" <<'EOF'
+event: message
+Alice: Message 1
+Bob: Message 2
+Charlie: Message 3
+EOF
+
   # Connect with since parameter set to recent time (should get messages >= recent_timestamp)
-  export QUERY_STRING="room=TestRoom&since=$recent_timestamp"
-  output=$(run_with_timeout chat-stream)
-  
+  output=$(capture_stream_until_patterns "$patterns_file" env QUERY_STRING="room=TestRoom&since=$recent_timestamp" chat-stream)
+
+  rm -f "$patterns_file"
   cleanup_test_env
-  
+
   # Should contain recent messages to prevent gap during connection
   printf '%s' "$output" | grep -q "event: message" && \
   printf '%s' "$output" | grep -q "Alice: Message 1" && \
@@ -152,13 +200,21 @@ test_chat_stream_handles_same_second_messages() {
   printf "[2024-12-01 12:00:05] Bob: Second in second\n" >> "$CHAT_DIR/TestRoom/.log"
   printf "[2024-12-01 12:00:05] Charlie: Third in second\n" >> "$CHAT_DIR/TestRoom/.log"
   printf "[2024-12-01 12:00:06] Dave: Next second\n" >> "$CHAT_DIR/TestRoom/.log"
-  
+
+  patterns_file=$(mktemp)
+  cat > "$patterns_file" <<'EOF'
+Alice: First in second
+Bob: Second in second
+Charlie: Third in second
+Dave: Next second
+EOF
+
   # Connect with since parameter set to that exact second
-  export QUERY_STRING="room=TestRoom&since=$base_timestamp"
-  output=$(run_with_timeout chat-stream)
-  
+  output=$(capture_stream_until_patterns "$patterns_file" env QUERY_STRING="room=TestRoom&since=$base_timestamp" chat-stream)
+
+  rm -f "$patterns_file"
   cleanup_test_env
-  
+
   # Should get ALL messages from that second (including exact match)
   printf '%s' "$output" | grep -q "Alice: First in second" && \
   printf '%s' "$output" | grep -q "Bob: Second in second" && \

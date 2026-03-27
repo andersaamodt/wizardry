@@ -20,8 +20,8 @@ Actions:
 Notes:
   - Local mode (SITENAME) manages user crontab entries.
   - Managed mode (--managed SITE_USER) manages /etc/cron.d entries and
-    rebuilds the current /home/SITE_USER/site release from
-    /home/SITE_USER/.sitedata/site[CONTENT_ROOT].
+    rebuilds from /home/SITE_USER/.sitedata/site[CONTENT_ROOT] into a staged
+    release before atomically swapping /home/SITE_USER/site.
   - Watcher priority: inotifywait, then fswatch, then cron-only fallback.
 USAGE
   exit 0
@@ -335,6 +335,40 @@ resolve_managed_current_target() {
   esac
 }
 
+managed_stage_target() {
+  stage_stamp=$(date -u +%Y%m%d%H%M%S 2>/dev/null || date +%Y%m%d%H%M%S)
+  stage_target=$releases_root/$stage_stamp
+  while autorebuild_run_privileged test -e "$stage_target"; do
+    sleep 1
+    stage_stamp=$(date -u +%Y%m%d%H%M%S 2>/dev/null || date +%Y%m%d%H%M%S)
+    stage_target=$releases_root/$stage_stamp
+  done
+  printf '%s\n' "$stage_target"
+}
+
+managed_copy_release_tree() {
+  source_target=$1
+  destination_target=$2
+  autorebuild_run_privileged install -d -m 750 -o "$site_user" -g "$site_user" "$destination_target"
+  if autorebuild_run_privileged command -v rsync >/dev/null 2>&1; then
+    autorebuild_run_privileged rsync -a --delete "$source_target"/ "$destination_target"/
+  else
+    autorebuild_run_privileged sh -eu -c 'cp -a "$1"/. "$2"/' sh "$source_target" "$destination_target"
+  fi
+}
+
+managed_apply_release_permissions() {
+  target_release=$1
+  autorebuild_run_privileged chown -R "$site_user:$site_user" "$target_release" 2>/dev/null || true
+  autorebuild_run_privileged chmod -R g+rX,o-rwx "$target_release" 2>/dev/null || true
+  if autorebuild_run_privileged command -v setfacl >/dev/null 2>&1; then
+    autorebuild_run_privileged setfacl -m u:www-data:--x "$site_root" 2>/dev/null || true
+    autorebuild_run_privileged setfacl -m u:www-data:r-x "$releases_root" "$target_release" 2>/dev/null || true
+    autorebuild_run_privileged setfacl -R -m u:www-data:r-x "$target_release" 2>/dev/null || true
+    autorebuild_run_privileged setfacl -R -d -m u:www-data:r-x "$target_release" 2>/dev/null || true
+  fi
+}
+
 ensure_state_dir() {
   if [ "$mode" = managed ]; then
     autorebuild_run_privileged install -d -m 755 "$state_dir"
@@ -393,12 +427,23 @@ run_build_once() {
       printf '%s\n' 'site-autorebuild: managed current release link is missing or invalid' >&2
       return 1
     }
-    release_name=${current_target##*/}
+    stage_target=$(managed_stage_target)
+    managed_copy_release_tree "$current_target" "$stage_target" || {
+      autorebuild_run_privileged rm -rf "$stage_target" 2>/dev/null || true
+      return 1
+    }
+    release_name=${stage_target##*/}
     spell_path=$(wizardry_spell_path "$runtime_dir")
-    run_as_user "$site_user" env HOME="$site_root" PATH="$spell_path" \
+    if run_as_user "$site_user" env HOME="$site_root" PATH="$spell_path" \
       WEB_WIZARDRY_ROOT="$releases_root" WIZARDRY_DIR="$runtime_dir" \
-      "$build_spell" "$release_name" --full
-    return 0
+      "$build_spell" "$release_name" --full; then
+      managed_apply_release_permissions "$stage_target"
+      autorebuild_run_privileged ln -sfn "$stage_target" "$current_link"
+      autorebuild_run_privileged chown -h "$site_user:$site_user" "$current_link" 2>/dev/null || true
+      return 0
+    fi
+    autorebuild_run_privileged rm -rf "$stage_target" 2>/dev/null || true
+    return 1
   fi
 
   wizardry_dir=${WIZARDRY_DIR:-$HOME/.wizardry}
@@ -471,6 +516,11 @@ run_change_pass() {
   fi
 
   run_build_once || return 1
+  if [ "$mode" = managed ]; then
+    current_target=$(resolve_managed_current_target)
+  else
+    current_target=$site_root
+  fi
   write_state_value "$signature_file" "$current_signature"
   write_state_value "$target_file" "$current_target"
   return 0
@@ -612,16 +662,34 @@ enable_local() {
   nohup /bin/sh "$spell_exec_path" watch-daemon "$site_name" >/dev/null 2>&1 &
 }
 
+install_managed_runtime_spell() {
+  source_script=$(self_script_path)
+  [ -f "$source_script" ] || return 1
+  target_dir=$(dirname "$spell_exec_path")
+  temp_target=$spell_exec_path.tmp.$$
+  autorebuild_run_privileged install -d -m 755 -o "$site_user" -g "$site_user" "$target_dir"
+  autorebuild_run_privileged cp "$source_script" "$temp_target"
+  autorebuild_run_privileged chmod 755 "$temp_target"
+  autorebuild_run_privileged chown "$site_user:$site_user" "$temp_target" 2>/dev/null || true
+  autorebuild_run_privileged mv "$temp_target" "$spell_exec_path"
+  autorebuild_run_privileged chmod 755 "$spell_exec_path"
+  autorebuild_run_privileged chown "$site_user:$site_user" "$spell_exec_path" 2>/dev/null || true
+}
+
 enable_managed() {
   autorebuild_run_privileged test -d "$site_root" >/dev/null 2>&1 || {
     printf '%s\n' "site-autorebuild: managed site root not found: $site_root" >&2
+    exit 1
+  }
+  ensure_state_dir
+  install_managed_runtime_spell || {
+    printf '%s\n' "site-autorebuild: unable to install managed spell runtime at: $spell_exec_path" >&2
     exit 1
   }
   autorebuild_run_privileged test -x "$spell_exec_path" >/dev/null 2>&1 || {
     printf '%s\n' "site-autorebuild: managed spell not found on server runtime: $spell_exec_path" >&2
     exit 1
   }
-  ensure_state_dir
   autorebuild_run_privileged sh -eu -c '
     cron_file=$1
     cron_begin=$2
