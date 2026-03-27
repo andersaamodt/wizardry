@@ -286,13 +286,12 @@ demo_level() {
     11)
       printf 'Basic cantrips should feel small, legible, and immediate.\n'
 
-      ask_yn_output=$(printf 'y\n' | ask-yn "Proceed with cantrips?" yes 2>&1 || true)
-      if [ -n "$ask_yn_output" ]; then
-        printf '%s\n' "$ask_yn_output" | sed -n '1p'
+      if printf 'y\n' | ask-yn "Proceed with cantrips?" yes >/dev/null 2>&1; then
+        printf 'ask-yn -> yes\n'
         demonstrated="$demonstrated ask-yn"
       fi
 
-      ask_number_output=$(printf '7\n' | ask-number "Lucky?" 1 9 2>&1 || true)
+      ask_number_output=$(printf '7\n' | ask-number "Lucky?" 1 9 2>/dev/null || true)
       if [ -n "$ask_number_output" ]; then
         printf 'ask-number -> %s\n' "$ask_number_output"
         demonstrated="$demonstrated ask-number"
@@ -361,9 +360,14 @@ demo_level() {
     15)
       printf 'Divination gathers signals from the fixture workspace.\n'
 
-      detect_magic_output=$(detect-magic "$demo_workspace" 2>&1 || true)
+      divination_scroll="$demo_workspace/divination-scroll.txt"
+      printf 'quiet ward\n' > "$divination_scroll"
+      enchant "$divination_scroll" aura=quiet >/dev/null 2>&1 || true
+
+      detect_magic_output=$(cd "$demo_workspace" && detect-magic 2>&1 || true)
       if [ -n "$detect_magic_output" ]; then
-        printf '%s\n' "$detect_magic_output" | sed -n '1,3p'
+        printf 'detect-magic:\n'
+        printf '%s\n' "$detect_magic_output" | sed -n '1,4p'
         demonstrated="$demonstrated detect-magic"
       fi
 
@@ -503,7 +507,7 @@ demo_level() {
 
       spellbook_help=$(spellbook --help 2>&1 || true)
       if [ -n "$spellbook_help" ]; then
-        printf '%s\n' "$spellbook_help" | sed -n '1,3p'
+        printf 'spellbook --help -> %s\n' "$(printf '%s\n' "$spellbook_help" | sed -n '1p')"
         demonstrated="$demonstrated spellbook"
       fi
 
@@ -519,25 +523,25 @@ demo_level() {
 
       system_menu_help=$(system-menu --help 2>&1 || true)
       if [ -n "$system_menu_help" ]; then
-        printf '%s\n' "$system_menu_help" | sed -n '1,2p'
+        printf 'system-menu --help -> %s\n' "$(printf '%s\n' "$system_menu_help" | sed -n '1p')"
         demonstrated="$demonstrated system-menu"
       fi
 
       thesaurus_help=$(thesaurus --help 2>&1 || true)
       if [ -n "$thesaurus_help" ]; then
-        printf '%s\n' "$thesaurus_help" | sed -n '1,4p'
+        printf 'thesaurus --help -> %s\n' "$(printf '%s\n' "$thesaurus_help" | sed -n '1p')"
         demonstrated="$demonstrated thesaurus"
       fi
       ;;
 
     24)
       printf 'MUD administration menus are present.\n'
-      printf 'Sourced shells stay descriptive in unattended mode.\n'
+      printf 'Shell-sourced entry points stay descriptive in unattended mode.\n'
 
       mud_menu_help=$(mud-menu --help 2>&1 || true)
       if [ -n "$mud_menu_help" ]; then
-        printf '%s\n' "$mud_menu_help" | sed -n '1,3p'
-        demonstrated="$demonstrated mud"
+        printf 'mud-menu --help -> %s\n' "$(printf '%s\n' "$mud_menu_help" | sed -n '1p')"
+        demonstrated="$demonstrated mud-menu"
       fi
       ;;
 
@@ -546,13 +550,13 @@ demo_level() {
 
       services_menu_help=$(services-menu --help 2>&1 || true)
       if [ -n "$services_menu_help" ]; then
-        printf '%s\n' "$services_menu_help" | sed -n '1,2p'
+        printf 'services-menu --help -> %s\n' "$(printf '%s\n' "$services_menu_help" | sed -n '1p')"
         demonstrated="$demonstrated services-menu"
       fi
 
       network_menu_help=$(network-menu --help 2>&1 || true)
       if [ -n "$network_menu_help" ]; then
-        printf '%s\n' "$network_menu_help" | sed -n '1,2p'
+        printf 'network-menu --help -> %s\n' "$(printf '%s\n' "$network_menu_help" | sed -n '1p')"
         demonstrated="$demonstrated network-menu"
       fi
       ;;
@@ -562,13 +566,13 @@ demo_level() {
 
       service_status_help=$(service-status --help 2>&1 || true)
       if [ -n "$service_status_help" ]; then
-        printf '%s\n' "$service_status_help" | sed -n '1,2p'
+        printf 'service-status --help -> %s\n' "$(printf '%s\n' "$service_status_help" | sed -n '1p')"
         demonstrated="$demonstrated service-status"
       fi
 
       service_installed_help=$(is-service-installed --help 2>&1 || true)
       if [ -n "$service_installed_help" ]; then
-        printf '%s\n' "$service_installed_help" | sed -n '1,2p'
+        printf 'is-service-installed --help -> %s\n' "$(printf '%s\n' "$service_installed_help" | sed -n '1p')"
         demonstrated="$demonstrated is-service-installed"
       fi
       ;;
@@ -585,7 +589,7 @@ demo_level() {
 
       import_help=$(import-arcanum --help 2>&1 || true)
       if [ -n "$import_help" ]; then
-        printf '%s\n' "$import_help" | sed -n '1,4p'
+        printf 'import-arcanum --help -> %s\n' "$(printf '%s\n' "$import_help" | sed -n '1p')"
         demonstrated="$demonstrated import-arcanum"
       fi
       ;;
