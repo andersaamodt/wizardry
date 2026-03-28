@@ -553,7 +553,9 @@ demo_level() {
     25)
       printf 'Domain-specific menus expose focused surfaces for services and networks.\n'
 
-      demo_help_group network-menu priority-menu profile-tests services-menu shutdown-menu users-menu
+      demo_help_group \
+        network-menu priority-menu profile-tests services-menu \
+        shutdown-menu users-menu
       ;;
 
     26)
