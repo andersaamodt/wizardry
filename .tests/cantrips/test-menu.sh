@@ -76,6 +76,7 @@ menu_respects_start_selection() {
   # The PATH includes stubs first so terminal queries get responses
   PTY_INPUT='' run_cmd env \
     PATH="$stub_dir:$PATH" \
+    PTY_SEND_DELAY=2 \
     PTY_KEYS='enter' \
     run-with-pty \
     menu --start-selection 2 "Test:" \
