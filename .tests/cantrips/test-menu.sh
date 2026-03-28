@@ -215,6 +215,52 @@ menu_restores_cursor_on_exit() {
 }
 run_test_case "menu restores cursor on exit" menu_restores_cursor_on_exit
 
+menu_hides_exit_workaround_in_command_column() {
+  if ! command -v socat >/dev/null 2>&1; then
+    test_skip "requires socat"
+    return 0
+  fi
+
+  tmpdir=$(make_tempdir)
+  stub_dir="$tmpdir/stubs"
+  mkdir -p "$stub_dir"
+
+  for stub in fathom-cursor fathom-terminal; do
+    ln -s "$ROOT_DIR/spells/.imps/test/stub-$stub" "$stub_dir/$stub"
+  done
+
+  PTY_INPUT='' run_cmd env \
+    PATH="$stub_dir:$PATH" \
+    TERM=xterm \
+    PTY_KEYS='escape' \
+    run-with-pty \
+    menu "Test:" "Exit%kill -TERM \$PPID"
+
+  assert_success || return 1
+
+  clean_output=$(printf '%s' "$OUTPUT" | socat-normalize-output)
+  case "$clean_output" in
+    *menu-exit*)
+      ;;
+    *)
+      TEST_FAILURE_REASON="expected cleaned command column to show menu-exit"
+      return 1
+      ;;
+  esac
+
+  case "$clean_output" in
+    *'kill -TERM $PPID'*)
+      TEST_FAILURE_REASON="did not expect raw exit workaround in menu output"
+      return 1
+      ;;
+    *)
+      return 0
+      ;;
+  esac
+}
+run_test_case "menu hides raw exit workaround in command column" \
+  menu_hides_exit_workaround_in_command_column
+
 # Arrow key navigation tests
 # These use run-with-pty with PTY_KEYS to send real escape sequences via socat
 menu_arrow_up_navigation() {
@@ -413,7 +459,7 @@ menu_hides_selection_wrapper_suffixes() {
     PTY_KEYS='enter' \
     run-with-pty \
     menu "Display Test:" \
-    'Toggle parse%printf selected; echo 3 > "$SELECTION_FILE"'
+    "Toggle parse%printf selected; echo 3 > \"$selection_file\""
 
   assert_success || return 1
 
@@ -445,5 +491,99 @@ menu_hides_selection_wrapper_suffixes() {
 }
 
 run_test_case "menu hides selection wrapper suffixes in command column" menu_hides_selection_wrapper_suffixes
+
+menu_prefers_primary_action_for_compound_commands() {
+  if ! command -v socat >/dev/null 2>&1; then
+    test_skip "requires socat"
+    return 0
+  fi
+
+  tmpdir=$(make_tempdir)
+  stub_dir="$tmpdir/stubs"
+  mkdir -p "$stub_dir"
+
+  for stub in fathom-cursor fathom-terminal; do
+    ln -s "$ROOT_DIR/spells/.imps/test/stub-$stub" "$stub_dir/$stub"
+  done
+
+  PTY_INPUT='' run_cmd env \
+    PATH="$stub_dir:$PATH" \
+    TERM=xterm \
+    PTY_KEYS='escape' \
+    run-with-pty \
+    menu "Display Test:" \
+    'Change other password%read -p "Enter username: " username; sudo passwd "$username"'
+
+  assert_success || return 1
+
+  clean_output=$(printf '%s' "$OUTPUT" | socat-normalize-output)
+  case "$clean_output" in
+    *sudo\ passwd\ \"*)
+      ;;
+    *)
+      TEST_FAILURE_REASON="expected display command to show the primary action"
+      return 1
+      ;;
+  esac
+  case "$clean_output" in
+    *read\ -p\ \"Enter\ username:\ \"*)
+      TEST_FAILURE_REASON="did not expect prompt setup to appear in command column"
+      return 1
+      ;;
+    *)
+      return 0
+      ;;
+  esac
+}
+
+run_test_case "menu shows the primary action for compound commands" \
+  menu_prefers_primary_action_for_compound_commands
+
+menu_hides_command_substitution_noise() {
+  if ! command -v socat >/dev/null 2>&1; then
+    test_skip "requires socat"
+    return 0
+  fi
+
+  tmpdir=$(make_tempdir)
+  stub_dir="$tmpdir/stubs"
+  mkdir -p "$stub_dir"
+
+  for stub in fathom-cursor fathom-terminal; do
+    ln -s "$ROOT_DIR/spells/.imps/test/stub-$stub" "$stub_dir/$stub"
+  done
+
+  PTY_INPUT='' run_cmd env \
+    PATH="$stub_dir:$PATH" \
+    TERM=xterm \
+    PTY_KEYS='escape' \
+    run-with-pty \
+    menu "Display Test:" \
+    'Copy onion%clip-copy "$(sudo cat /tmp/onion.txt)"'
+
+  assert_success || return 1
+
+  clean_output=$(printf '%s' "$OUTPUT" | socat-normalize-output)
+  case "$clean_output" in
+    *clip-copy*)
+      ;;
+    *)
+      TEST_FAILURE_REASON="expected command substitution action to stay readable"
+      return 1
+      ;;
+  esac
+  case "$clean_output" in
+    *'$('*|*'sudo cat /tmp/onion.txt'*)
+      TEST_FAILURE_REASON="did not expect command substitution details in command column"
+      return 1
+      ;;
+    *)
+      return 0
+      ;;
+  esac
+}
+
+run_test_case "menu hides command-substitution scaffolding" \
+  menu_hides_command_substitution_noise
 
 finish_tests

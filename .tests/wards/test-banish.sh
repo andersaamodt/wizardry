@@ -529,6 +529,28 @@ test_parameter_expansion_check() {
   assert_output_contains "Working" || return 1
 }
 
+test_terminal_type_self_heals_cleanly() {
+  tmpdir=$(make_tempdir)
+  install_dir="$tmpdir/wizardry"
+
+  copy_wizardry "$install_dir" || return 1
+
+  WIZARDRY_DIR="$install_dir" TERM=dumb WIZARDRY_LOG_LEVEL=1 \
+    run_spell "spells/wards/banish" 4 --no-tests
+  assert_success || return 1
+  assert_output_contains "Terminal type adjusted from dumb to xterm-256color" || return 1
+
+  case "$OUTPUT" in
+    *"Terminal type still minimal"*)
+      TEST_FAILURE_REASON="did not expect banish to leave the terminal type unrepaired"
+      return 1
+      ;;
+    *)
+      return 0
+      ;;
+  esac
+}
+
 run_test_case "banish checks shell type" test_shell_type_check
 run_test_case "banish checks IFS" test_ifs_check
 run_test_case "banish checks environment variables" test_environment_vars_check
@@ -542,6 +564,8 @@ run_test_case "banish checks redirections" test_redirections_check
 run_test_case "banish checks signal handling" test_signal_handling_check
 run_test_case "banish checks command substitution" test_command_substitution_check
 run_test_case "banish checks parameter expansion" test_parameter_expansion_check
+run_test_case "banish repairs minimal terminal types without a failure banner" \
+  test_terminal_type_self_heals_cleanly
 
 # Test via source-then-invoke pattern
 

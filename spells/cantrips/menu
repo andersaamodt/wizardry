@@ -407,6 +407,16 @@ format_command_for_display() {
                         ;;
         esac
         case "$simplified_cmd" in
+                *"&& exit 0")
+                        simplified_cmd=${simplified_cmd%"&& exit 0"}
+                        ;;
+        esac
+        case "$simplified_cmd" in
+                *"; exit 0")
+                        simplified_cmd=${simplified_cmd%"; exit 0"}
+                        ;;
+        esac
+        case "$simplified_cmd" in
                 *'; echo '*' > "$SELECTION_FILE"')
                         simplified_cmd=${simplified_cmd%'; echo '*}
                         ;;
@@ -416,6 +426,33 @@ format_command_for_display() {
                         simplified_cmd=${simplified_cmd%"; printf '%s' "*}
                         ;;
         esac
+
+        # When menus expand the selection file path inline, hide that bookkeeping.
+        simplified_cmd=$(
+                printf '%s\n' "$simplified_cmd" | sed \
+                        -e 's/[[:space:]]*;[[:space:]]*echo .* >[[:space:]]*"[^"]*"$/ /' \
+                        -e "s/[[:space:]]*;[[:space:]]*printf '%s' .* >[[:space:]]*\"[^\"]*\"$//"
+        )
+        case "$simplified_cmd" in
+                *'; printf '*)
+                        simplified_cmd=${simplified_cmd%'; printf '*}
+                        ;;
+        esac
+
+        # Compound shell snippets should present the primary action, not prompt setup.
+        while :; do
+                case "$simplified_cmd" in
+                        *'; '*)
+                                simplified_cmd=${simplified_cmd##*'; '}
+                                ;;
+                        *' && '*)
+                                simplified_cmd=${simplified_cmd##*' && '}
+                                ;;
+                        *)
+                                break
+                                ;;
+                esac
+        done
 
         # Trim leading/trailing spaces after wrapper removal.
         while :; do
@@ -444,6 +481,13 @@ format_command_for_display() {
         fi
 
         case "$simplified_cmd" in
+                "kill -TERM \$PPID"|"exit 0")
+                        printf '%s' "menu-exit"
+                        return 0
+                        ;;
+        esac
+
+        case "$simplified_cmd" in
                 ". "*)
                         prefix=". "
                         remainder=${simplified_cmd#". "}
@@ -462,6 +506,12 @@ format_command_for_display() {
                         else
                                 trailing=${simplified_cmd#"$first_word"}
                         fi
+                        ;;
+        esac
+
+        case "$trailing" in
+                *'$('*|*'`'*)
+                        trailing=''
                         ;;
         esac
 

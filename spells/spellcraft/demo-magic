@@ -4,6 +4,30 @@
 # Safe live casts run against disposable fixtures; unsafe or strongly
 # interactive spells are skipped and listed per level.
 
+demo_help_surface() {
+  demo_spell=$1
+  shift
+
+  help_output=$("$demo_spell" "$@" --help 2>&1 || true)
+  if [ -z "$help_output" ]; then
+    return 0
+  fi
+
+  first_help_line=$(printf '%s\n' "$help_output" | sed -n '1p')
+  case "$first_help_line" in
+    Usage:*)
+      printf '%s --help -> %s\n' "$demo_spell" "$first_help_line"
+      demonstrated="$demonstrated $demo_spell"
+      ;;
+  esac
+}
+
+demo_help_group() {
+  for demo_spell in "$@"; do
+    demo_help_surface "$demo_spell"
+  done
+}
+
 demo_level() {
   level=$1
   level_name=$(spell-levels "$level" name)
@@ -88,6 +112,8 @@ demo_level() {
         esac
         demonstrated="$demonstrated colors"
       fi
+
+      demo_help_group await-keypress main-menu menu
 
       term_size=$(fathom-terminal 2>/dev/null || printf '')
       if [ -n "$term_size" ]; then
@@ -331,7 +357,9 @@ demo_level() {
 
     13)
       printf 'System maintenance spells mutate the host.\n'
-      printf 'This tier is skipped in unattended mode.\n'
+      printf 'Only their help surfaces are shown here.\n'
+
+      demo_help_group kill-process update-all update-wizardry
       ;;
 
     14)
@@ -445,12 +473,15 @@ demo_level() {
         printf 'validate-ssh-key -> valid ed25519 public key\n'
         demonstrated="$demonstrated validate-ssh-key"
       fi
+      demo_help_group close-portal enchant-portkey follow-portkey open-portal open-teletype
       printf 'Only key validation runs live here.\n'
       ;;
 
     19)
       printf 'Security wards are intentionally conservative here.\n'
-      printf 'This tier is skipped in unattended mode.\n'
+      printf 'Only the help surface is shown here.\n'
+
+      demo_help_group ssh-barrier
       ;;
 
     20)
@@ -491,6 +522,8 @@ demo_level() {
     22)
       printf 'Core menu infrastructure is safest to sample through its view and discovery paths.\n'
 
+      demo_help_group spell-menu
+
       spellbook_help=$(spellbook --help 2>&1 || true)
       if [ -n "$spellbook_help" ]; then
         printf 'spellbook --help -> %s\n' "$(printf '%s\n' "$spellbook_help" | sed -n '1p')"
@@ -507,62 +540,29 @@ demo_level() {
     23)
       printf 'System and configuration menus are sampled through their stable help surfaces.\n'
 
-      system_menu_help=$(system-menu --help 2>&1 || true)
-      if [ -n "$system_menu_help" ]; then
-        printf 'system-menu --help -> %s\n' "$(printf '%s\n' "$system_menu_help" | sed -n '1p')"
-        demonstrated="$demonstrated system-menu"
-      fi
-
-      thesaurus_help=$(thesaurus --help 2>&1 || true)
-      if [ -n "$thesaurus_help" ]; then
-        printf 'thesaurus --help -> %s\n' "$(printf '%s\n' "$thesaurus_help" | sed -n '1p')"
-        demonstrated="$demonstrated thesaurus"
-      fi
+      demo_help_group install-menu synonym-menu system-menu thesaurus
       ;;
 
     24)
       printf 'MUD administration menus are present.\n'
       printf 'Only stable help surfaces run here.\n'
 
-      mud_menu_help=$(mud-menu --help 2>&1 || true)
-      if [ -n "$mud_menu_help" ]; then
-        printf 'mud-menu --help -> %s\n' "$(printf '%s\n' "$mud_menu_help" | sed -n '1p')"
-        demonstrated="$demonstrated mud-menu"
-      fi
+      demo_help_group add-player mud mud-admin-menu mud-menu mud-settings new-player set-player
       ;;
 
     25)
       printf 'Domain-specific menus expose focused surfaces for services and networks.\n'
 
-      services_menu_help=$(services-menu --help 2>&1 || true)
-      if [ -n "$services_menu_help" ]; then
-        printf 'services-menu --help -> %s\n' "$(printf '%s\n' "$services_menu_help" | sed -n '1p')"
-        demonstrated="$demonstrated services-menu"
-      fi
-
-      network_menu_help=$(network-menu --help 2>&1 || true)
-      if [ -n "$network_menu_help" ]; then
-        printf 'network-menu --help -> %s\n' "$(printf '%s\n' "$network_menu_help" | sed -n '1p')"
-        demonstrated="$demonstrated network-menu"
-      fi
+      demo_help_group network-menu priority-menu profile-tests services-menu shutdown-menu users-menu
       ;;
 
     26)
       printf 'Service management is represented through its non-mutating inspection surfaces.\n'
 
-      service_status_help=$(service-status --help 2>&1 || true)
-      if [ -n "$service_status_help" ]; then
-        first_help_line=$(printf '%s\n' "$service_status_help" | sed -n '1p')
-        printf 'service-status --help -> %s\n' "$first_help_line"
-        demonstrated="$demonstrated service-status"
-      fi
-
-      service_installed_help=$(is-service-installed --help 2>&1 || true)
-      if [ -n "$service_installed_help" ]; then
-        first_help_line=$(printf '%s\n' "$service_installed_help" | sed -n '1p')
-        printf 'is-service-installed --help -> %s\n' "$first_help_line"
-        demonstrated="$demonstrated is-service-installed"
-      fi
+      demo_help_group \
+        disable-service enable-service install-service-template is-service-installed \
+        reload-ssh remove-service restart-service restart-ssh service-status \
+        start-service stop-service
       ;;
 
     27)
@@ -593,6 +593,11 @@ demo_level() {
         printf 'site-status -> %s\n' "$site_status_output"
         demonstrated="$demonstrated site-status"
       fi
+      demo_help_group \
+        build change-site-port configure-nginx create-from-template create-site \
+        create-site-prompt delete-site diagnose-sse https rename-site serve-site \
+        site-autorebuild site-menu stop-site template-menu update-from-template \
+        web-wizardry
       printf 'Only the fixture-local site status read runs here.\n'
       ;;
   esac
@@ -612,8 +617,15 @@ demo_level() {
       esac
     done
 
-    demonstrated_count=$(printf '%s\n' "$demonstrated" | wc -w | tr -d ' ')
-    printf 'Live casts: %s/%s\n' "$demonstrated_count" "$spell_count"
+    demonstrated_count=0
+    for spell_name in $spell_names; do
+      case " $demonstrated " in
+        *" $spell_name "*)
+          demonstrated_count=$((demonstrated_count + 1))
+          ;;
+      esac
+    done
+    printf 'Demonstrated safely: %s/%s\n' "$demonstrated_count" "$spell_count"
 
     if [ -n "$not_demonstrated" ]; then
       not_demo_list=$(printf '%s\n' "$not_demonstrated" | tr -s ' ' | sed 's/^ //; s/ /, /g')
@@ -690,6 +702,34 @@ case "${DEMO_MAGIC_EXACT_LEVEL-0}" in
     ;;
 esac
 
+demo_no_bwrap=0
+case "${WIZARDRY_DEMO_NO_BWRAP-0}" in
+  1|yes|true)
+    demo_no_bwrap=1
+    ;;
+esac
+
+demo_no_sandbox=0
+case "${WIZARDRY_DEMO_NO_SANDBOX-0}" in
+  1|yes|true)
+    demo_no_sandbox=1
+    ;;
+esac
+
+demo_bwrap_install_attempted=0
+case "${WIZARDRY_DEMO_BWRAP_INSTALL_ATTEMPTED-0}" in
+  1|yes|true)
+    demo_bwrap_install_attempted=1
+    ;;
+esac
+
+demo_in_github_actions=0
+case "${GITHUB_ACTIONS-}" in
+  true|1|yes)
+    demo_in_github_actions=1
+    ;;
+esac
+
 set -eu
 . env-clear
 
@@ -755,10 +795,14 @@ fi
 
 # Keep WIZARDRY_DEMO_NO_BWRAP for backward compatibility with existing callers.
 if [ "$demo_in_pocket" -ne 1 ] \
-  && [ "${WIZARDRY_DEMO_NO_BWRAP-0}" -ne 1 ] \
-  && [ "${WIZARDRY_DEMO_NO_SANDBOX-0}" -ne 1 ]; then
-  if [ -z "${GITHUB_ACTIONS-}" ] || [ "${GITHUB_ACTIONS}" != "true" ]; then
+  && [ "$demo_no_bwrap" -ne 1 ] \
+  && [ "$demo_no_sandbox" -ne 1 ]; then
+  if [ "$demo_in_github_actions" -ne 1 ]; then
     if command -v pocket-dimension >/dev/null 2>&1 && pocket-dimension --check >/dev/null 2>&1; then
+      if [ "$demo_exact_level" -eq 1 ]; then
+        exec env DEMO_MAGIC_EXACT_LEVEL=1 \
+          pocket-dimension -- "$0" --demo-in-pocket "$demo_target_level"
+      fi
       exec pocket-dimension -- "$0" --demo-in-pocket "$demo_target_level"
     fi
 
@@ -773,7 +817,7 @@ if [ "$demo_in_pocket" -ne 1 ] \
     fi
 
     if [ "$demo_interactive" -eq 1 ] \
-      && [ "${WIZARDRY_DEMO_BWRAP_INSTALL_ATTEMPTED-0}" -ne 1 ] \
+      && [ "$demo_bwrap_install_attempted" -ne 1 ] \
       && command -v ask-yn >/dev/null 2>&1 \
       && command -v pkg-install >/dev/null 2>&1; then
       demo_platform=$(uname -s 2>/dev/null || printf 'unknown')
@@ -784,6 +828,10 @@ if [ "$demo_in_pocket" -ne 1 ] \
           if command -v pocket-dimension >/dev/null 2>&1 \
             && pocket-dimension --check >/dev/null 2>&1; then
             printf 'Bubblewrap installed successfully. Re-running demo-magic...\n' >&2
+            if [ "$demo_exact_level" -eq 1 ]; then
+              exec env WIZARDRY_DEMO_BWRAP_INSTALL_ATTEMPTED=1 DEMO_MAGIC_EXACT_LEVEL=1 \
+                "$0" "$demo_target_level"
+            fi
             exec env WIZARDRY_DEMO_BWRAP_INSTALL_ATTEMPTED=1 "$0" "$demo_target_level"
           fi
           printf 'demo-magic: pocket-dimension still unavailable after install attempt\n' >&2
@@ -851,5 +899,4 @@ done
 printf '\n'
 printf 'The circle clears.\n'
 printf 'Disposable fixtures removed on exit.\n'
-printf 'DEMO_MAGIC_COMPLETE\n'
 exit 0
