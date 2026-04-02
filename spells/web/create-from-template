@@ -7,11 +7,7 @@ case "${1-}" in
   cat <<'USAGE'
 Usage: create-from-template SITENAME TEMPLATE
 
-Creates a new site by copying a template.
-
-Templates:
-  demo    - Interactive demo site with 15+ CGI examples
-  blog    - Personal blog with content-addressable posts
+Creates a new site by copying an available template source.
 
 Example: create-from-template mysite demo
 USAGE
@@ -32,11 +28,43 @@ template_source_candidates() {
     "$HOME/git/wizardry-apps/web"
 }
 
+external_template_candidates() {
+  template_name=$1
+  wizardry_root=${WIZARDRY_DIR:-$HOME/.wizardry}
+  wizardry_parent=$(dirname "$wizardry_root")
+
+  case "$template_name" in
+    blog)
+      printf '%s\n' \
+        "$wizardry_parent/git/blog-template" \
+        "$HOME/git/blog-template" \
+        "$wizardry_parent/git/nostr-blog" \
+        "$HOME/git/nostr-blog"
+      ;;
+    unix-settings)
+      printf '%s\n' \
+        "$wizardry_parent/git/unix-settings/hosted-web" \
+        "$HOME/git/unix-settings/hosted-web"
+      ;;
+    artificer)
+      printf '%s\n' \
+        "$wizardry_parent/git/artificer/hosted-web" \
+        "$HOME/git/artificer/hosted-web"
+      ;;
+  esac
+}
+
 resolve_template_dir() {
   template_name=$1
   for candidate in $(template_source_candidates); do
     if [ -d "$candidate/$template_name" ]; then
       printf '%s\n' "$candidate/$template_name"
+      return 0
+    fi
+  done
+  for candidate in $(external_template_candidates "$template_name"); do
+    if [ -d "$candidate/pages" ]; then
+      printf '%s\n' "$candidate"
       return 0
     fi
   done
@@ -52,6 +80,28 @@ resolve_shared_theme_dir() {
   done
   return 1
 }
+
+list_available_templates() {
+  for template_name in demo blog unix-settings artificer; do
+    if resolve_template_dir "$template_name" >/dev/null 2>&1; then
+      printf '%s\n' "$template_name"
+    fi
+  done
+}
+
+case "${1-}" in
+  --list-templates)
+    list_available_templates
+    exit 0
+    ;;
+  --resolve-template-dir)
+    if [ -z "${2-}" ]; then
+      die 2 "create-from-template: TEMPLATE required for --resolve-template-dir"
+    fi
+    resolve_template_dir "$2" || exit 1
+    exit 0
+    ;;
+esac
 
 site_name=${1-}
 template=${2-}

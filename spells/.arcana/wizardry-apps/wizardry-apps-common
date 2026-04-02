@@ -33,7 +33,13 @@ wizardry_apps_component_path() {
         printf '%s\n' "$wizardry_apps_dir/.web"
       fi
       ;;
-    apps) printf '%s\n' "$wizardry_apps_dir/.apps" ;;
+    apps)
+      if [ -d "$wizardry_apps_dir/apps" ]; then
+        printf '%s\n' "$wizardry_apps_dir/apps"
+      else
+        printf '%s\n' "$wizardry_apps_dir/.apps"
+      fi
+      ;;
     *) return 2 ;;
   esac
 }

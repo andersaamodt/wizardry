@@ -163,6 +163,65 @@ EOF
   rm -rf "$fake_wizardry_root"
 }
 
+test_create_from_template_resolves_external_repo_templates() {
+  skip-if-compiled || return $?
+
+  fake_home=$(temp-dir wizardry-home)
+  fake_wizardry_root="$fake_home/.wizardry"
+  fake_git_root="$fake_home/git"
+  test_web_root=$(temp-dir web-wizardry-test)
+
+  mkdir -p "$fake_wizardry_root"
+  mkdir -p "$fake_git_root/nostr-blog/pages" "$fake_git_root/nostr-blog/static"
+  mkdir -p "$fake_git_root/unix-settings/hosted-web/pages" \
+    "$fake_git_root/unix-settings/hosted-web/static" \
+    "$fake_git_root/unix-settings/hosted-web/cgi"
+
+  cat > "$fake_git_root/nostr-blog/pages/index.md" <<'EOF'
+# External Blog
+EOF
+  cat > "$fake_git_root/nostr-blog/static/style.css" <<'EOF'
+body { color: #222; }
+EOF
+  cat > "$fake_git_root/unix-settings/hosted-web/pages/index.md" <<'EOF'
+# UNIX Settings
+EOF
+  cat > "$fake_git_root/unix-settings/hosted-web/static/style.css" <<'EOF'
+body { color: #111; }
+EOF
+  cat > "$fake_git_root/unix-settings/hosted-web/cgi/unix-roster" <<'EOF'
+#!/bin/sh
+printf 'Content-Type: text/plain\n\nok\n'
+EOF
+  chmod +x "$fake_git_root/unix-settings/hosted-web/cgi/unix-roster"
+
+  HOME="$fake_home" WIZARDRY_DIR="$fake_wizardry_root" WEB_WIZARDRY_ROOT="$test_web_root" \
+    run_spell spells/web/create-from-template blogsite blog
+  assert_success || return 1
+
+  HOME="$fake_home" WIZARDRY_DIR="$fake_wizardry_root" WEB_WIZARDRY_ROOT="$test_web_root" \
+    run_spell spells/web/create-from-template settings unix-settings
+  assert_success || return 1
+
+  [ -f "$test_web_root/blogsite/site/pages/index.md" ] || {
+    TEST_FAILURE_REASON="external blog template index not copied"
+    rm -rf "$fake_home" "$test_web_root"
+    return 1
+  }
+  [ -f "$test_web_root/settings/site/pages/index.md" ] || {
+    TEST_FAILURE_REASON="external unix-settings template index not copied"
+    rm -rf "$fake_home" "$test_web_root"
+    return 1
+  }
+  [ -x "$test_web_root/settings/cgi/unix-roster" ] || {
+    TEST_FAILURE_REASON="external unix-settings CGI payload not copied"
+    rm -rf "$fake_home" "$test_web_root"
+    return 1
+  }
+
+  rm -rf "$fake_home" "$test_web_root"
+}
+
 run_test_case "create-from-template shows help" test_help
 if [ -d "$ROOT_DIR/web/blog" ]; then
   run_test_case "blog template has sample posts" test_blog_template_has_sample_posts
@@ -171,5 +230,6 @@ elif [ -d "$ROOT_DIR/spells/web/blog" ] || [ -d "$(dirname "$ROOT_DIR")/git/wiza
 fi
 run_test_case "all templates create expected site structure" test_all_web_templates_create_expected_structure
 run_test_case "create-from-template resolves templates from web" test_create_from_template_uses_web_directory
+run_test_case "create-from-template resolves external repo templates" test_create_from_template_resolves_external_repo_templates
 
 finish_tests

@@ -188,11 +188,57 @@ EOF
   rm -rf "$test_web_root" "$fake_wizardry_root"
 }
 
+test_update_resolves_external_repo_templates() {
+  skip-if-compiled || return $?
+
+  fake_home=$(temp-dir wizardry-home)
+  fake_wizardry_root="$fake_home/.wizardry"
+  fake_git_root="$fake_home/git"
+  test_web_root=$(temp-dir web-wizardry-test)
+  template_root="$fake_git_root/unix-settings/hosted-web"
+
+  mkdir -p "$fake_wizardry_root"
+  mkdir -p "$template_root/pages" "$template_root/static"
+  cat > "$template_root/pages/index.md" <<'EOF'
+# external template v1
+EOF
+  cat > "$template_root/static/style.css" <<'EOF'
+body { color: #111; }
+EOF
+
+  HOME="$fake_home" WIZARDRY_DIR="$fake_wizardry_root" WEB_WIZARDRY_ROOT="$test_web_root" \
+    run_spell spells/web/create-from-template settings unix-settings
+  assert_success || return 1
+
+  echo "custom line" >> "$test_web_root/settings/site/pages/index.md"
+  cat > "$template_root/pages/index.md" <<'EOF'
+# external template v2
+EOF
+
+  HOME="$fake_home" WIZARDRY_DIR="$fake_wizardry_root" WEB_WIZARDRY_ROOT="$test_web_root" \
+    run_spell spells/web/update-from-template settings --force
+  assert_success || return 1
+
+  if grep -q "custom line" "$test_web_root/settings/site/pages/index.md"; then
+    TEST_FAILURE_REASON="update-from-template did not overwrite from external template"
+    rm -rf "$fake_home" "$test_web_root"
+    return 1
+  fi
+  if ! grep -q "external template v2" "$test_web_root/settings/site/pages/index.md"; then
+    TEST_FAILURE_REASON="updated external template content not copied"
+    rm -rf "$fake_home" "$test_web_root"
+    return 1
+  fi
+
+  rm -rf "$fake_home" "$test_web_root"
+}
+
 run_test_case "update-from-template shows help" test_help
 run_test_case "update-from-template updates files from template" test_updates_from_template
 run_test_case "update-from-template preserves uploads" test_preserves_uploads
 run_test_case "update-from-template fails for nonexistent site" test_fails_for_nonexistent_site
 run_test_case "update-from-template resolves templates from web" test_update_uses_web_template_directory
 run_test_case "update-from-template refreshes requirements file" test_update_refreshes_requirements_file
+run_test_case "update-from-template resolves external repo templates" test_update_resolves_external_repo_templates
 
 finish_tests
