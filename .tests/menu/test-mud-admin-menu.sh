@@ -87,7 +87,7 @@ SH
 test_shows_help() {
   run_spell "spells/menu/mud-admin-menu" --help
   assert_success || return 1
-  assert_error_contains "Usage:" || return 1
+  assert_error_contains "Usage: mud-admin-menu" || return 1
 }
 
 run_test_case "mud-admin shows usage" test_shows_help

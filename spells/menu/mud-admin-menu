@@ -5,7 +5,7 @@
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE' >&2
-Usage: mud-admin
+Usage: mud-admin-menu
 
 Opens the MUD admin menu so you can manage authorized players, review shared rooms, and oversee your hosted server.
 USAGE

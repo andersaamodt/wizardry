@@ -5,9 +5,8 @@
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage:
-  site-autorebuild [ACTION] SITENAME
-  site-autorebuild [ACTION] --managed SITE_USER [CONTENT_ROOT]
+Usage: site-autorebuild [ACTION] SITENAME
+       site-autorebuild [ACTION] --managed SITE_USER [CONTENT_ROOT]
 
 Actions:
   status        Show current auto-rebuild state (default)

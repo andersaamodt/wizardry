@@ -114,7 +114,7 @@ test_default_runs_all_levels() {
   assert_output_contains "service-status --help -> Usage: service-status UNIT" || return 1
   assert_output_not_contains "Described or held back:" || return 1
   assert_output_contains "Level 28: Web Services & CGI" || return 1
-  assert_output_contains "site-autorebuild --help -> Usage:" || return 1
+  assert_output_contains "site-autorebuild --help -> Usage: site-autorebuild" || return 1
   assert_output_contains "site-status -> built, not serving" || return 1
   assert_output_contains "The circle clears." || return 1
   assert_output_contains "Disposable fixtures removed on exit." || return 1

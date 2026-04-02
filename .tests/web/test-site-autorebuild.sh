@@ -11,7 +11,7 @@ done
 test_site_autorebuild_help() {
   run_cmd sh "$ROOT_DIR/spells/web/site-autorebuild" --help
   assert_success
-  assert_output_contains "Usage:"
+  assert_output_contains "Usage: site-autorebuild"
   assert_output_contains "watch-daemon"
 }
 
