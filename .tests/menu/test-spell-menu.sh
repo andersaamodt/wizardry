@@ -4,6 +4,7 @@
 # - shows usage with --help
 # - requires minimum 3 arguments
 # - --cast executes the given command
+# - --install learns the given spell
 
 set -eu
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
@@ -75,9 +76,26 @@ test_cast_action_executes_command() {
   esac
 }
 
+test_install_action_learns_spell() {
+  skip-if-compiled || return $?
+  stub_dir=$(make_stub_dir)
+  stub-memorize-command "$stub_dir"
+  cat >"$stub_dir/learn" <<'SH'
+#!/bin/sh
+printf '%s\n' "$*" >"$LEARN_LOG"
+SH
+  chmod +x "$stub_dir/learn"
+
+  PATH="$stub_dir:$PATH" run_cmd env LEARN_LOG="$stub_dir/log" \
+    "$ROOT_DIR/spells/menu/spell-menu" --install testspell
+  assert_success || return 1
+  assert_file_contains "$stub_dir/log" "testspell"
+}
+
 run_test_case "spell-menu shows usage with --help" test_shows_usage_with_help
 run_test_case "spell-menu requires minimum arguments" test_requires_minimum_arguments
 run_test_case "spell-menu --cast executes command" test_cast_action_executes_command
+run_test_case "spell-menu --install learns the spell" test_install_action_learns_spell
 
 # Test ESC and Exit behavior - menu exits properly when escape status returned
 test_esc_exit_behavior() {

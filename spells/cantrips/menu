@@ -439,6 +439,16 @@ format_command_for_display() {
                         ;;
         esac
 
+        # Wrapped menu actions sometimes capture a primary command into a
+        # variable before refreshing the menu. Show the captured action itself.
+        captured_action=$(
+                printf '%s\n' "$simplified_cmd" | sed -n \
+                        's/^[A-Za-z_][A-Za-z0-9_]*=\$(\([^)]*\))[[:space:]]*&&[[:space:]]*kill -TERM \$PPID[[:space:]]*&&[[:space:]].*$/\1/p'
+        )
+        if [ -n "$captured_action" ]; then
+                simplified_cmd=$captured_action
+        fi
+
         # Compound shell snippets should present the primary action, not prompt setup.
         while :; do
                 case "$simplified_cmd" in
@@ -480,6 +490,13 @@ format_command_for_display() {
                 simplified_cmd=$raw_cmd
         fi
 
+        simplified_cmd=$(
+                printf '%s\n' "$simplified_cmd" | sed \
+                        -e 's/"\(\$[A-Za-z_][A-Za-z0-9_]*\)"/\1/g' \
+                        -e 's/"\([A-Za-z0-9_./:-][A-Za-z0-9_./:-]*\)"/\1/g' \
+                        -e "s/'\\([A-Za-z0-9_./:-][A-Za-z0-9_./:-]*\\)'/\\1/g"
+        )
+
         case "$simplified_cmd" in
                 "kill -TERM \$PPID"|"exit 0")
                         printf '%s' "menu-exit"
@@ -489,7 +506,7 @@ format_command_for_display() {
 
         case "$simplified_cmd" in
                 ". "*)
-                        prefix=". "
+                        prefix='source '
                         remainder=${simplified_cmd#". "}
                         first_word=${remainder%% *}
                         if [ "$first_word" = "$remainder" ]; then

@@ -7,12 +7,14 @@ case "${1-}" in
 cat <<'USAGE'
 Usage: spell-menu <spell-name>
        spell-menu --cast <command>
+       spell-menu --install <spell-name>
 
 Display an action menu for a spell with options to cast, memorize,
 get help, or erase.
 
 Options:
   --cast <command>   Execute command directly without showing menu
+  --install <spell>  Learn the named installable spell into your spellbook
 USAGE
 exit 0
 ;;
@@ -39,16 +41,30 @@ if [ "${1-}" = "--cast" ]; then
       exit $?
 fi
 
+if [ "${1-}" = "--install" ]; then
+      shift
+      if [ "$#" -eq 0 ]; then
+            printf 'spell-menu: --install requires a spell name\n' >&2
+            exit 1
+      fi
+      install_name=$1
+      install_path=$(command -v "$install_name" 2>/dev/null) || install_path=$install_name
+      learn "$install_path"
+      exit $?
+fi
+
 if [ "$#" -lt 1 ]; then
       cat <<'USAGE' >&2
 Usage: spell-menu <spell-name>
        spell-menu --cast <command>
+       spell-menu --install <spell-name>
 
 Display an action menu for a spell with options to cast, memorize,
 get help, or erase.
 
 Options:
   --cast <command>   Execute command directly without showing menu
+  --install <spell>  Learn the named installable spell into your spellbook
 USAGE
       exit 1
 fi

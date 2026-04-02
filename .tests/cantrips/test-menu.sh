@@ -519,7 +519,7 @@ menu_prefers_primary_action_for_compound_commands() {
 
   clean_output=$(printf '%s' "$OUTPUT" | socat-normalize-output)
   case "$clean_output" in
-    *sudo\ passwd\ \"*)
+    *sudo\ passwd\ \$username*)
       ;;
     *)
       TEST_FAILURE_REASON="expected display command to show the primary action"
@@ -539,6 +539,194 @@ menu_prefers_primary_action_for_compound_commands() {
 
 run_test_case "menu shows the primary action for compound commands" \
   menu_prefers_primary_action_for_compound_commands
+
+menu_shows_inner_action_for_menu_refresh_wrappers() {
+  if ! command -v socat >/dev/null 2>&1; then
+    test_skip "requires socat"
+    return 0
+  fi
+
+  tmpdir=$(make_tempdir)
+  stub_dir="$tmpdir/stubs"
+  mkdir -p "$stub_dir"
+
+  for stub in fathom-cursor fathom-terminal; do
+    ln -s "$ROOT_DIR/spells/.imps/test/stub-$stub" "$stub_dir/$stub"
+  done
+
+  PTY_INPUT='' run_cmd env \
+    PATH="$stub_dir:$PATH" \
+    TERM=xterm \
+    PTY_KEYS='escape' \
+    run-with-pty \
+    menu "Display Test:" \
+    'Edit priority%new_path=$(rename-interactive "/tmp/file") && kill -TERM $PPID && priority-menu "$new_path"'
+
+  assert_success || return 1
+
+  clean_output=$(printf '%s' "$OUTPUT" | socat-normalize-output)
+  case "$clean_output" in
+    *rename-interactive\ /tmp/file*)
+      ;;
+    *)
+      TEST_FAILURE_REASON="expected captured action to show the wrapped command"
+      return 1
+      ;;
+  esac
+  case "$clean_output" in
+    *priority-menu*|*'kill -TERM $PPID'*)
+      TEST_FAILURE_REASON="did not expect menu refresh wrappers in command column"
+      return 1
+      ;;
+    *)
+      return 0
+      ;;
+  esac
+}
+
+run_test_case "menu shows inner action for wrapped refresh commands" \
+  menu_shows_inner_action_for_menu_refresh_wrappers
+
+menu_shows_sourced_commands_readably() {
+  if ! command -v socat >/dev/null 2>&1; then
+    test_skip "requires socat"
+    return 0
+  fi
+
+  tmpdir=$(make_tempdir)
+  stub_dir="$tmpdir/stubs"
+  mkdir -p "$stub_dir"
+
+  for stub in fathom-cursor fathom-terminal; do
+    ln -s "$ROOT_DIR/spells/.imps/test/stub-$stub" "$stub_dir/$stub"
+  done
+
+  PTY_INPUT='' run_cmd env \
+    PATH="$stub_dir:$PATH" \
+    TERM=xterm \
+    PTY_KEYS='escape' \
+    run-with-pty \
+    menu "Display Test:" \
+    'Open MUD%. mud'
+
+  assert_success || return 1
+
+  clean_output=$(printf '%s' "$OUTPUT" | socat-normalize-output)
+  case "$clean_output" in
+    *source\ mud*)
+      ;;
+    *)
+      TEST_FAILURE_REASON="expected sourced spell to display as source <spell>"
+      return 1
+      ;;
+  esac
+  case "$clean_output" in
+    *'. mud'*)
+      TEST_FAILURE_REASON="did not expect raw dot-source syntax in command column"
+      return 1
+      ;;
+    *)
+      return 0
+      ;;
+  esac
+}
+
+run_test_case "menu renders sourced commands readably" \
+  menu_shows_sourced_commands_readably
+
+menu_hides_shell_quotes_for_simple_arguments() {
+  if ! command -v socat >/dev/null 2>&1; then
+    test_skip "requires socat"
+    return 0
+  fi
+
+  tmpdir=$(make_tempdir)
+  stub_dir="$tmpdir/stubs"
+  mkdir -p "$stub_dir"
+
+  for stub in fathom-cursor fathom-terminal; do
+    ln -s "$ROOT_DIR/spells/.imps/test/stub-$stub" "$stub_dir/$stub"
+  done
+
+  PTY_INPUT='' run_cmd env \
+    PATH="$stub_dir:$PATH" \
+    TERM=xterm \
+    PTY_KEYS='escape' \
+    run-with-pty \
+    menu "Display Test:" \
+    'Edit synonym%edit-synonym '\''foo'\'' --word "$new_word"'
+
+  assert_success || return 1
+
+  clean_output=$(printf '%s' "$OUTPUT" | socat-normalize-output)
+  case "$clean_output" in
+    *edit-synonym\ foo\ --word\ \$new_word*)
+      ;;
+    *)
+      TEST_FAILURE_REASON="expected simple quoted arguments to render cleanly"
+      return 1
+      ;;
+  esac
+  case "$clean_output" in
+    *"'"*foo*"'"*|*'"$new_word"'*)
+      TEST_FAILURE_REASON="did not expect simple shell quotes in command column"
+      return 1
+      ;;
+    *)
+      return 0
+      ;;
+  esac
+}
+
+run_test_case "menu hides simple shell quotes in command column" \
+  menu_hides_shell_quotes_for_simple_arguments
+
+menu_keeps_primary_action_after_prompt_capture() {
+  if ! command -v socat >/dev/null 2>&1; then
+    test_skip "requires socat"
+    return 0
+  fi
+
+  tmpdir=$(make_tempdir)
+  stub_dir="$tmpdir/stubs"
+  mkdir -p "$stub_dir"
+
+  for stub in fathom-cursor fathom-terminal; do
+    ln -s "$ROOT_DIR/spells/.imps/test/stub-$stub" "$stub_dir/$stub"
+  done
+
+  PTY_INPUT='' run_cmd env \
+    PATH="$stub_dir:$PATH" \
+    TERM=xterm \
+    PTY_KEYS='escape' \
+    run-with-pty \
+    menu "Display Test:" \
+    'Change password%username=$(ask-text "Enter username:") && sudo passwd "$username"'
+
+  assert_success || return 1
+
+  clean_output=$(printf '%s' "$OUTPUT" | socat-normalize-output)
+  case "$clean_output" in
+    *sudo\ passwd\ \$username*)
+      ;;
+    *)
+      TEST_FAILURE_REASON="expected prompt capture to keep the substantive action"
+      return 1
+      ;;
+  esac
+  case "$clean_output" in
+    *ask-text*)
+      TEST_FAILURE_REASON="did not expect prompt helper to replace the real action"
+      return 1
+      ;;
+    *)
+      return 0
+      ;;
+  esac
+}
+
+run_test_case "menu keeps the primary action after prompt capture" \
+  menu_keeps_primary_action_after_prompt_capture
 
 menu_hides_command_substitution_noise() {
   if ! command -v socat >/dev/null 2>&1; then
