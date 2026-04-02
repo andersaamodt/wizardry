@@ -78,24 +78,45 @@ group_exists() {
 }
 
 ensure_site_group() {
-  if [ "$(uname -s 2>/dev/null)" != "Darwin" ] || ! has dscl; then
-    return 0
-  fi
   if group_exists "$site_group"; then
     return 0
   fi
 
-  max_gid=$(dscl . -list /Groups PrimaryGroupID 2>/dev/null | awk '{print $2}' | sort -n | tail -1)
-  case "$max_gid" in
-    ''|*[!0-9]*) max_gid=500 ;;
-  esac
-  gid=$((max_gid + 1))
+  if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has dscl; then
+    max_gid=$(dscl . -list /Groups PrimaryGroupID 2>/dev/null | awk '{print $2}' | sort -n | tail -1)
+    case "$max_gid" in
+      ''|*[!0-9]*) max_gid=500 ;;
+    esac
+    gid=$((max_gid + 1))
 
-  fix_security_run_priv dscl . -create "/Groups/$site_group"
-  fix_security_run_priv dscl . -create "/Groups/$site_group" PrimaryGroupID "$gid"
-  fix_security_run_priv dscl . -create "/Groups/$site_group" RealName "Wizardry Site $site_name"
-  fix_security_run_priv dscl . -create "/Groups/$site_group" GroupMembership "$site_user"
-  fix_security_run_priv dscl . -create "/Users/$site_user" PrimaryGroupID "$gid"
+    fix_security_run_priv dscl . -create "/Groups/$site_group"
+    fix_security_run_priv dscl . -create "/Groups/$site_group" PrimaryGroupID "$gid"
+    fix_security_run_priv dscl . -create "/Groups/$site_group" RealName "Wizardry Site $site_name"
+    fix_security_run_priv dscl . -create "/Groups/$site_group" GroupMembership "$site_user"
+    fix_security_run_priv dscl . -create "/Users/$site_user" PrimaryGroupID "$gid"
+    return 0
+  fi
+
+  if has groupadd; then
+    fix_security_run_priv groupadd "$site_group"
+    return 0
+  fi
+
+  if has addgroup; then
+    if addgroup --help 2>&1 | grep -q -- '--system'; then
+      fix_security_run_priv addgroup --system "$site_group"
+    else
+      fix_security_run_priv addgroup "$site_group"
+    fi
+    return 0
+  fi
+
+  if has pw; then
+    fix_security_run_priv pw groupadd "$site_group"
+    return 0
+  fi
+
+  die "fix-site-security: unable to create group '$site_group'"
 }
 
 ensure_staff_membership() {
@@ -104,6 +125,29 @@ ensure_staff_membership() {
   fi
   fix_security_run_priv dscl . -append /Groups/staff GroupMembership "$site_user" \
     >/dev/null 2>&1 || true
+}
+
+assign_site_user_primary_group() {
+  current_group=$(id -gn "$site_user" 2>/dev/null || printf '')
+  if [ -n "$current_group" ] && [ "$current_group" = "$site_group" ]; then
+    return 0
+  fi
+
+  if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has dscl; then
+    return 0
+  fi
+
+  if has usermod; then
+    fix_security_run_priv usermod -g "$site_group" "$site_user"
+    return 0
+  fi
+
+  if has pw; then
+    fix_security_run_priv pw usermod "$site_user" -g "$site_group"
+    return 0
+  fi
+
+  die "fix-site-security: unable to assign primary group '$site_group' to '$site_user'"
 }
 
 ensure_site_user() {
@@ -205,6 +249,7 @@ apply_allowlist() {
 
 ensure_site_user
 ensure_site_group
+assign_site_user_primary_group
 ensure_staff_membership
 if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && ! group_exists "$site_group"; then
   site_group=staff

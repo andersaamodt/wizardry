@@ -13,6 +13,46 @@ test_fix_site_security_help() {
   assert_output_contains "Usage: fix-site-security"
 }
 
+write_fix_security_identity_stubs() {
+  stub_dir=$1
+  stub_site_user=$2
+
+  cat > "$stub_dir/id" <<EOF
+#!/bin/sh
+if [ "\${1-}" = "-u" ]; then
+  if [ "\$#" -eq 1 ]; then
+    printf '%s\n' '0'
+    exit 0
+  fi
+  if [ "\${2-}" = "$stub_site_user" ]; then
+    printf '%s\n' '1001'
+    exit 0
+  fi
+fi
+if [ "\${1-}" = "-un" ]; then
+  printf '%s\n' 'builder'
+  exit 0
+fi
+if [ "\${1-}" = "-gn" ] && [ "\${2-}" = "$stub_site_user" ]; then
+  printf '%s\n' "$stub_site_user"
+  exit 0
+fi
+exec /usr/bin/id "\$@"
+EOF
+
+  cat > "$stub_dir/getent" <<EOF
+#!/bin/sh
+if [ "\${1-}" = "group" ] && [ "\${2-}" = "$stub_site_user" ]; then
+  printf '%s\n' '$stub_site_user:x:1001:'
+  exit 0
+fi
+exit 2
+EOF
+
+  ln -sf /usr/bin/true "$stub_dir/chown"
+  chmod +x "$stub_dir/id" "$stub_dir/getent"
+}
+
 test_fix_site_security_sets_site_user() {
   skip-if-compiled || return $?
 
@@ -54,6 +94,123 @@ EOF
   rm -rf "$web_root" "$stub_dir"
 }
 
+test_fix_site_security_repairs_missing_linux_private_group() {
+  skip-if-compiled || return $?
+
+  web_root=$(temp-dir web-wizardry-test)
+  site_dir="$web_root/mysite"
+  mkdir -p "$site_dir/site" "$web_root/.sitedata/mysite"
+  cat > "$site_dir/site.conf" <<EOF
+# Site configuration for mysite
+site-name=mysite
+site-user=
+EOF
+
+  stub_dir=$(temp-dir web-wizardry-stub)
+  state_dir=$(temp-dir web-wizardry-state)
+
+  cat > "$stub_dir/sudo" <<'EOF'
+#!/bin/sh
+case "$1" in
+  chown) exit 0 ;;
+esac
+exec "$@"
+EOF
+  cat > "$stub_dir/useradd" <<'EOF'
+#!/bin/sh
+state_dir=${TEST_STATE_DIR:?}
+case "${1-}" in
+  --help|-h)
+    printf '%s\n' 'usage: useradd [-m] [-s shell] login'
+    exit 0
+    ;;
+esac
+  printf '%s\n' "$*" >> "$state_dir/useradd.log"
+  : > "$state_dir/user.created"
+  exit 0
+EOF
+  cat > "$stub_dir/groupadd" <<'EOF'
+#!/bin/sh
+state_dir=${TEST_STATE_DIR:?}
+printf '%s\n' "$*" >> "$state_dir/groupadd.log"
+: > "$state_dir/group.created"
+exit 0
+EOF
+  cat > "$stub_dir/usermod" <<'EOF'
+#!/bin/sh
+state_dir=${TEST_STATE_DIR:?}
+printf '%s\n' "$*" >> "$state_dir/usermod.log"
+: > "$state_dir/group.assigned"
+exit 0
+EOF
+  cat > "$stub_dir/getent" <<'EOF'
+#!/bin/sh
+state_dir=${TEST_STATE_DIR:?}
+if [ "${1-}" = "group" ] && [ "${2-}" = "ww_mysite" ]; then
+  if [ -f "$state_dir/group.created" ]; then
+    printf '%s\n' 'ww_mysite:x:1001:'
+    exit 0
+  fi
+  exit 2
+fi
+exit 2
+EOF
+  cat > "$stub_dir/id" <<'EOF'
+#!/bin/sh
+state_dir=${TEST_STATE_DIR:?}
+if [ "${1-}" = "-u" ] && [ "${2-}" = "ww_mysite" ]; then
+  if [ -f "$state_dir/user.created" ]; then
+    printf '%s\n' '1001'
+    exit 0
+  fi
+  exit 1
+fi
+if [ "${1-}" = "-gn" ] && [ "${2-}" = "ww_mysite" ]; then
+  if [ -f "$state_dir/group.assigned" ]; then
+    printf '%s\n' 'ww_mysite'
+  else
+    printf '%s\n' 'nogroup'
+  fi
+  exit 0
+fi
+if [ "${1-}" = "-un" ]; then
+  printf '%s\n' 'builder'
+  exit 0
+fi
+exec /usr/bin/id "$@"
+EOF
+  chmod +x "$stub_dir/sudo" "$stub_dir/useradd" "$stub_dir/groupadd" \
+    "$stub_dir/usermod" "$stub_dir/getent" "$stub_dir/id"
+  stub-uname-linux "$stub_dir"
+
+  PATH="$stub_dir:$PATH" TEST_STATE_DIR="$state_dir" WEB_WIZARDRY_ROOT="$web_root" \
+    run_spell spells/web/fix-site-security mysite
+  assert_success
+
+  if [ ! -f "$state_dir/groupadd.log" ]; then
+    TEST_FAILURE_REASON="groupadd was not called for missing site group"
+    rm -rf "$web_root" "$stub_dir" "$state_dir"
+    return 1
+  fi
+  if ! grep -q '^ww_mysite$' "$state_dir/groupadd.log"; then
+    TEST_FAILURE_REASON="groupadd did not create the expected site group"
+    rm -rf "$web_root" "$stub_dir" "$state_dir"
+    return 1
+  fi
+  if [ ! -f "$state_dir/usermod.log" ]; then
+    TEST_FAILURE_REASON="usermod was not called to assign the site primary group"
+    rm -rf "$web_root" "$stub_dir" "$state_dir"
+    return 1
+  fi
+  if ! grep -q '^-g ww_mysite ww_mysite$' "$state_dir/usermod.log"; then
+    TEST_FAILURE_REASON="usermod did not assign the expected primary group"
+    rm -rf "$web_root" "$stub_dir" "$state_dir"
+    return 1
+  fi
+
+  rm -rf "$web_root" "$stub_dir" "$state_dir"
+}
+
 test_fix_site_security_sitedata_writable() {
   skip-if-compiled || return $?
 
@@ -71,20 +228,8 @@ EOF
   touch "$sitedata_dir/chatrooms/testroom/.log"
 
   stub_dir=$(temp-dir web-wizardry-stub)
-  cat > "$stub_dir/sudo" <<'EOF'
-#!/bin/sh
-# Pass through to real commands but skip chown since we can't create users in test
-case "$1" in
-  chown) exit 0 ;;
-  *) exec "$@" ;;
-esac
-EOF
-  cat > "$stub_dir/useradd" <<'EOF'
-#!/bin/sh
-exit 0
-EOF
+  write_fix_security_identity_stubs "$stub_dir" "$(id -un)"
   stub-uname-linux "$stub_dir"
-  chmod +x "$stub_dir/sudo" "$stub_dir/useradd"
 
   PATH="$stub_dir:$PATH" WEB_WIZARDRY_ROOT="$web_root" run_spell spells/web/fix-site-security mysite
   assert_success
@@ -115,18 +260,8 @@ site-user=ww_mysite
 EOF
 
   stub_dir=$(temp-dir web-wizardry-stub)
-  cat > "$stub_dir/sudo" <<'EOF'
-#!/bin/sh
-case "$1" in
-  chown) exit 0 ;;
-  *) exec "$@" ;;
-esac
-EOF
-  cat > "$stub_dir/useradd" <<'EOF'
-#!/bin/sh
-exit 0
-EOF
-  chmod +x "$stub_dir/sudo" "$stub_dir/useradd"
+  write_fix_security_identity_stubs "$stub_dir" "ww_mysite"
+  stub-uname-linux "$stub_dir"
 
   PATH="$stub_dir:$PATH" WEB_WIZARDRY_ROOT="$web_root" run_spell spells/web/fix-site-security mysite
   assert_success
@@ -155,20 +290,8 @@ EOF
   touch "$nginx_dir/nginx.conf"
 
   stub_dir=$(temp-dir web-wizardry-stub)
-  cat > "$stub_dir/sudo" <<'EOF'
-#!/bin/sh
-# Pass through everything except chown in tests.
-case "$1" in
-  chown) exit 0 ;;
-  *) exec "$@" ;;
-esac
-EOF
-  cat > "$stub_dir/useradd" <<'EOF'
-#!/bin/sh
-exit 0
-EOF
+  write_fix_security_identity_stubs "$stub_dir" "$(id -un)"
   stub-uname-linux "$stub_dir"
-  chmod +x "$stub_dir/sudo" "$stub_dir/useradd"
 
   PATH="$stub_dir:$PATH" WEB_WIZARDRY_ROOT="$web_root" \
     run_spell spells/web/fix-site-security mysite
@@ -195,6 +318,8 @@ EOF
 
 run_test_case "fix-site-security --help works" test_fix_site_security_help
 run_test_case "fix-site-security sets site-user" test_fix_site_security_sets_site_user
+run_test_case "fix-site-security repairs missing Linux private groups" \
+  test_fix_site_security_repairs_missing_linux_private_group
 run_test_case "fix-site-security makes sitedata files writable" test_fix_site_security_sitedata_writable
 run_test_case "fix-site-security makes nginx runtime paths group-writable" \
   test_fix_site_security_nginx_is_group_writable
