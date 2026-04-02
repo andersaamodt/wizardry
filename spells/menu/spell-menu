@@ -7,14 +7,12 @@ case "${1-}" in
 cat <<'USAGE'
 Usage: spell-menu <spell-name>
        spell-menu --cast <command>
-       spell-menu --install <spell-name>
 
 Display an action menu for a spell with options to cast, memorize,
 get help, or erase.
 
 Options:
   --cast <command>   Execute command directly without showing menu
-  --install <spell>  Learn the named installable spell into your spellbook
 USAGE
 exit 0
 ;;
@@ -41,30 +39,16 @@ if [ "${1-}" = "--cast" ]; then
       exit $?
 fi
 
-if [ "${1-}" = "--install" ]; then
-      shift
-      if [ "$#" -eq 0 ]; then
-            printf 'spell-menu: --install requires a spell name\n' >&2
-            exit 1
-      fi
-      install_name=$1
-      install_path=$(command -v "$install_name" 2>/dev/null) || install_path=$install_name
-      learn "$install_path"
-      exit $?
-fi
-
 if [ "$#" -lt 1 ]; then
       cat <<'USAGE' >&2
 Usage: spell-menu <spell-name>
        spell-menu --cast <command>
-       spell-menu --install <spell-name>
 
 Display an action menu for a spell with options to cast, memorize,
 get help, or erase.
 
 Options:
   --cast <command>   Execute command directly without showing menu
-  --install <spell>  Learn the named installable spell into your spellbook
 USAGE
       exit 1
 fi
@@ -158,31 +142,12 @@ while :; do
               fi
       fi
       
-      # Check if installable (inline from is_installable)
-      is_install=0
-      if has is-installable; then
-              if is-installable "$command"; then
-                      is_install=1
-              fi
-      else
-              test_spell_path=$(command -v "$command" 2>/dev/null) || test_spell_path=$command
-              if [ -r "$test_spell_path" ] && grep -Eq '^[[:space:]]*install[[:space:]]*\(\)' "$test_spell_path" 2>/dev/null; then
-                      is_install=1
-              fi
-      fi
-      
       # Build menu items based on spell type
       if [ "$is_custom" -eq 1 ]; then
               if [ -n "$help_item" ]; then
                       set -- "Cast now%$escaped_command" "$cast_toggle" "$help_item" "Erase spell%erase-spell '$name' && kill -TERM \$PPID" "$exit_item"
               else
                       set -- "Cast now%$escaped_command" "$cast_toggle" "Erase spell%erase-spell '$name' && kill -TERM \$PPID" "$exit_item"
-              fi
-      elif [ "$is_install" -eq 1 ]; then
-              if [ -n "$help_item" ]; then
-                      set -- "Cast now%$escaped_command" "$cast_toggle" "Learn%spell-menu --install '$escaped_command'" "$help_item" "$exit_item"
-              else
-                      set -- "Cast now%$escaped_command" "$cast_toggle" "Learn%spell-menu --install '$escaped_command'" "$exit_item"
               fi
       else
               if [ -n "$help_item" ]; then

@@ -35,7 +35,7 @@ case "$level" in
   4)
     name='Menu System'
     spells='await-keypress colors main-menu:menu menu'
-    imps='menu/category-title menu/cursor-blink menu/exit-label menu/fathom-cursor menu/fathom-terminal menu/is-installable menu/is-integer menu/is-submenu menu/move-cursor term/clear-line term/redraw-prompt'
+    imps='menu/category-title menu/cursor-blink menu/exit-label menu/fathom-cursor menu/fathom-terminal menu/is-integer menu/is-submenu menu/move-cursor term/clear-line term/redraw-prompt'
     ;;
   5)
     name='Extended Attributes'
