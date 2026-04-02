@@ -222,7 +222,13 @@ http {
         # Using an exact-match block avoids "/" being treated as a
         # directory and returning 403 when autoindex is disabled.
         location = / {
-            try_files /pages/index.html =404;
+            try_files /pages/index.html /pages/blog.html =404;
+        }
+
+        # Serve pretty post URLs directly via CGI so post pages render
+        # in a single server response (no client-side route repair).
+        location ~ ^/posts/([A-Za-z0-9-]+)/?$ {
+            rewrite ^/posts/([A-Za-z0-9-]+)/?$ /cgi/blog-open-post?path=posts/$1 last;
         }
 
         # Deep-link routing:
@@ -230,7 +236,7 @@ http {
         # - map extensionless paths (e.g. /oeuvre) to /pages/<slug>.html
         # - finally fall back to the app shell for SPA-like routes
         location / {
-            try_files \$uri \$uri/ /pages\$uri /pages\$uri.html /pages\$uri/index.html /pages/index.html;
+            try_files \$uri \$uri/ /pages\$uri /pages\$uri.html /pages\$uri/index.html /pages/index.html /pages/blog.html;
         }
         
         # Serve pages
