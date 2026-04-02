@@ -69,6 +69,18 @@ SH
       return 1
       ;;
   esac
+  printf '%s' "$args" | grep -F 'web-wizardry create-from-template "mysite" demo' \
+    >/dev/null 2>&1 || {
+    TEST_FAILURE_REASON="template-menu did not use clean demo template command: $args"
+    rm -rf "$tmp" "$fake_home"
+    return 1
+  }
+  printf '%s' "$args" | grep -F 'web-wizardry create-from-template "mysite" unix-settings' \
+    >/dev/null 2>&1 || {
+    TEST_FAILURE_REASON="template-menu did not use clean unix-settings template command: $args"
+    rm -rf "$tmp" "$fake_home"
+    return 1
+  }
 
   rm -rf "$tmp" "$fake_home"
 }

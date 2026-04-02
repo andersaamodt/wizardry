@@ -17,6 +17,8 @@ esac
 set -eu
 . env-clear
 
+kernel=$(uname -s 2>/dev/null || printf 'unknown')
+
 # Load color palette (colors handles terminal capability detection internally)
 # shellcheck source=/dev/null
 . "$(command -v colors)"
@@ -42,7 +44,7 @@ if has systemctl; then
       fi
       ;;
   esac
-elif has pmset; then
+elif [ "$kernel" = "Darwin" ] && has pmset; then
   sleep_available="Sleep%sudo pmset sleepnow"
 fi
 
@@ -67,7 +69,9 @@ fi
 
 # Detect whether loginctl is available for graceful logout (systemd only)
 logout_cmd=""
-if has loginctl; then
+if [ "$kernel" = "Darwin" ] && has osascript; then
+  logout_cmd="osascript -e 'tell application \"System Events\" to log out'"
+elif has loginctl; then
   logout_cmd="loginctl terminate-user \"\$USER\""
 else
   logout_cmd="pkill -TERM -u \"\$USER\""
@@ -81,12 +85,17 @@ trap 'exit 0' TERM
 
 shutdown_menu_display_menu() {
   # Graceful restart/shutdown give processes time to clean up
-  restart_item="Restart%sudo shutdown -r +0"
-  shutdown_item="Shutdown%sudo shutdown -h +0"
+  restart_item="Restart%sudo shutdown -r now"
+  shutdown_item="Shutdown%sudo shutdown -h now"
   logout_item="Logout%$logout_cmd"
   # Force operations bypass graceful shutdown procedures
-  force_restart_item="Force restart%sudo reboot -f"
-  force_shutdown_item="Force shutdown%sudo poweroff -f"
+  if [ "$kernel" = "Darwin" ]; then
+    force_restart_item="Force restart%sudo reboot -q"
+    force_shutdown_item="Force shutdown%sudo halt -q"
+  else
+    force_restart_item="Force restart%sudo reboot -f"
+    force_shutdown_item="Force shutdown%sudo poweroff -f"
+  fi
   force_logout_item="Force logout%pkill -KILL -u \"\$USER\""
   # Exit button kills this menu script via TERM signal
   # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)

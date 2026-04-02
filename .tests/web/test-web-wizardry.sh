@@ -12,7 +12,9 @@ test_web_wizardry_help() {
   assert_success
   assert_output_contains "Usage: web-wizardry"
   assert_output_contains "create"
+  assert_output_contains "create-from-template"
   assert_output_contains "build"
+  assert_output_contains "rebuild"
   assert_output_contains "autorebuild"
 }
 
@@ -79,9 +81,89 @@ test_web_wizardry_autorebuild_requires_site() {
   assert_error_contains "autorebuild requires SITENAME argument"
 }
 
+test_web_wizardry_create_from_template_requires_args() {
+  run_spell spells/web/web-wizardry create-from-template
+  assert_status 2
+  assert_error_contains "create-from-template requires SITENAME and TEMPLATE"
+}
+
+test_web_wizardry_rebuild_requires_site() {
+  run_spell spells/web/web-wizardry rebuild
+  assert_status 2
+  assert_error_contains "rebuild requires SITENAME argument"
+}
+
+test_web_wizardry_create_from_template_runs_build() {
+  skip-if-compiled || return $?
+
+  tmp=$(make_tempdir)
+  cat >"$tmp/create-from-template" <<'SH'
+#!/bin/sh
+printf 'create:%s:%s\n' "$1" "$2" >>"$WEB_WIZARDRY_LOG"
+SH
+  chmod +x "$tmp/create-from-template"
+
+  cat >"$tmp/build" <<'SH'
+#!/bin/sh
+printf 'build:%s\n' "$1" >>"$WEB_WIZARDRY_LOG"
+SH
+  chmod +x "$tmp/build"
+
+  run_cmd env PATH="$tmp:$PATH" WEB_WIZARDRY_LOG="$tmp/log" \
+    "$ROOT_DIR/spells/web/web-wizardry" create-from-template mysite demo
+  assert_success || return 1
+
+  output=$(cat "$tmp/log")
+  case "$output" in
+    *"create:mysite:demo"*"\n"*|"create:mysite:demo"*"build:mysite"*) : ;;
+    *)
+      TEST_FAILURE_REASON="create-from-template flow did not call expected commands: $output"
+      return 1
+      ;;
+  esac
+}
+
+test_web_wizardry_rebuild_runs_full_build_and_restart() {
+  skip-if-compiled || return $?
+
+  tmp=$(make_tempdir)
+  cat >"$tmp/build" <<'SH'
+#!/bin/sh
+printf 'build:%s:%s\n' "$1" "${2-}" >>"$WEB_WIZARDRY_LOG"
+SH
+  chmod +x "$tmp/build"
+
+  cat >"$tmp/restart-site" <<'SH'
+#!/bin/sh
+printf 'restart:%s\n' "$1" >>"$WEB_WIZARDRY_LOG"
+SH
+  chmod +x "$tmp/restart-site"
+
+  run_cmd env PATH="$tmp:$PATH" WEB_WIZARDRY_LOG="$tmp/log" \
+    "$ROOT_DIR/spells/web/web-wizardry" rebuild mysite
+  assert_success || return 1
+
+  output=$(cat "$tmp/log")
+  case "$output" in
+    *"build:mysite:--full"*"\n"*|"build:mysite:--full"*"restart:mysite"*) : ;;
+    *)
+      TEST_FAILURE_REASON="rebuild flow did not call expected commands: $output"
+      return 1
+      ;;
+  esac
+}
+
 run_test_case "web-wizardry --help works" test_web_wizardry_help
 run_test_case "web-wizardry can create site" test_web_wizardry_create_site
 run_test_case "web-wizardry can show status" test_web_wizardry_status
 run_test_case "web-wizardry autorebuild validates sitename" test_web_wizardry_autorebuild_requires_site
+run_test_case "web-wizardry create-from-template validates arguments" \
+  test_web_wizardry_create_from_template_requires_args
+run_test_case "web-wizardry rebuild validates sitename" \
+  test_web_wizardry_rebuild_requires_site
+run_test_case "web-wizardry create-from-template builds the site" \
+  test_web_wizardry_create_from_template_runs_build
+run_test_case "web-wizardry rebuild runs full build and restart" \
+  test_web_wizardry_rebuild_runs_full_build_and_restart
 
 finish_tests

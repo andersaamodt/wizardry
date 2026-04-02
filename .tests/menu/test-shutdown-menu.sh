@@ -36,11 +36,20 @@ SH
   run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/shutdown-menu"
   assert_success
   args=$(cat "$tmp/log")
-  # Logout command varies: loginctl terminate-user on systemd, pkill -TERM otherwise
-  case "$args" in
-    *"Restart / Shutdown:"*"Restart%sudo shutdown -r +0"*"Shutdown%sudo shutdown -h +0"*"Logout%loginctl terminate-user"*"Force restart%sudo reboot -f"*"Force shutdown%sudo poweroff -f"*"Force logout%pkill -KILL"*'Back%kill -TERM $PPID' ) : ;;
-    *"Restart / Shutdown:"*"Restart%sudo shutdown -r +0"*"Shutdown%sudo shutdown -h +0"*"Logout%pkill -TERM"*"Force restart%sudo reboot -f"*"Force shutdown%sudo poweroff -f"*"Force logout%pkill -KILL"*'Back%kill -TERM $PPID' ) : ;;
-    *) TEST_FAILURE_REASON="expected shutdown actions missing: $args"; return 1 ;;
+  case "$(uname -s 2>/dev/null || printf unknown)" in
+    Darwin)
+      case "$args" in
+        *"Restart / Shutdown:"*"Restart%sudo shutdown -r now"*"Shutdown%sudo shutdown -h now"*"Logout%osascript -e 'tell application \"System Events\" to log out'"*"Force restart%sudo reboot -q"*"Force shutdown%sudo halt -q"*"Force logout%pkill -KILL"*'Back%kill -TERM $PPID' ) : ;;
+        *) TEST_FAILURE_REASON="expected macOS shutdown actions missing: $args"; return 1 ;;
+      esac
+      ;;
+    *)
+      case "$args" in
+        *"Restart / Shutdown:"*"Restart%sudo shutdown -r now"*"Shutdown%sudo shutdown -h now"*"Logout%loginctl terminate-user"*"Force restart%sudo reboot -f"*"Force shutdown%sudo poweroff -f"*"Force logout%pkill -KILL"*'Back%kill -TERM $PPID' ) : ;;
+        *"Restart / Shutdown:"*"Restart%sudo shutdown -r now"*"Shutdown%sudo shutdown -h now"*"Logout%pkill -TERM"*"Force restart%sudo reboot -f"*"Force shutdown%sudo poweroff -f"*"Force logout%pkill -KILL"*'Back%kill -TERM $PPID' ) : ;;
+        *) TEST_FAILURE_REASON="expected shutdown actions missing: $args"; return 1 ;;
+      esac
+      ;;
   esac
 }
 

@@ -24,6 +24,9 @@ set -eu
 if ! require menu "The Users menu needs the 'menu' command to present options."; then
   exit 1
 fi
+if ! require ask-text "The Users menu needs the 'ask-text' command for prompts."; then
+  exit 1
+fi
 
 # Catch Ctrl-C and TERM signal to exit 1 cleanly
 # Catch Ctrl-C and TERM signal to exit cleanly
@@ -32,21 +35,42 @@ trap 'exit 130' INT
 trap 'exit 0' TERM
 
 users_menu_display_menu() {
+  kernel=$(uname -s 2>/dev/null || printf 'unknown')
+
   change_my_password="Change my password%passwd"
-  list_users="List all users%cut -d: -f1 /etc/passwd"
-  change_other_password="Change other user's password%read -p \"Enter username: \" username; sudo passwd \$username"
-  view_my_groups="View my group memberships%groups"
-  view_other_groups="View other user's group membership%read -p \"Enter username: \" username; groups \$username"
-  list_groups="List all groups%cut -d: -f1 /etc/group"
-  create_group="Create new group%read -p \"Enter new group name: \" groupname; sudo groupadd \$groupname"
-  delete_group="Delete group%read -p \"Enter group to delete: \" groupname; sudo groupdel \$groupname"
-  join_group="Join group%read -p \"Enter group name to join: \" groupname; sudo usermod -a -G \$groupname \$USER"
-  leave_group="Leave group%read -p \"Enter group name to leave: \" group; sudo gpasswd -d \$USER \$group"
-  list_users_in_group="List users in group%read -p \"Enter group name to list members: \" group; getent group \$group"
-  add_user_to_group="Add other user to group%read -p \"Enter username: \" username; read -p \"Enter group name to add them to: \" group; sudo usermod -a -G \$group \$username"
-  remove_user_from_group="Remove other user from group%read -p \"Enter username: \" username; read -p \"Enter group to remove them from: \" group; sudo gpasswd -d \$username \$group"
-  create_user="Create new user%read -p \"Enter new username: \" username; sudo useradd \$username; printf \"The new user needs a password (use 'Change other user's password').\""
-  delete_user="Delete user%read -p \"Enter username of user to delete: \" username; sudo userdel \$username"
+  view_my_groups="View my group memberships%id -Gn"
+  change_other_password="Change another user's password%username=\$(ask-text 'Enter username:') && sudo passwd \"\$username\""
+  view_other_groups="View another user's groups%username=\$(ask-text 'Enter username:') && id -Gn \"\$username\""
+
+  case "$kernel" in
+    Darwin)
+      list_users="List local users%dscl . -list /Users"
+      list_groups="List local groups%dscl . -list /Groups"
+      create_group="Create new group%groupname=\$(ask-text 'Enter new group name:') && sudo dseditgroup -o create \"\$groupname\""
+      delete_group="Delete group%groupname=\$(ask-text 'Enter group to delete:') && sudo dseditgroup -o delete \"\$groupname\""
+      join_group="Join group%groupname=\$(ask-text 'Enter group name to join:') && sudo dseditgroup -o edit -a \"$USER\" -t user \"\$groupname\""
+      leave_group="Leave group%groupname=\$(ask-text 'Enter group name to leave:') && sudo dseditgroup -o edit -d \"$USER\" -t user \"\$groupname\""
+      list_users_in_group="List users in group%groupname=\$(ask-text 'Enter group name to inspect:') && dscl . -read \"/Groups/\$groupname\" GroupMembership"
+      add_user_to_group="Add another user to a group%username=\$(ask-text 'Enter username:') && groupname=\$(ask-text 'Enter group name:') && sudo dseditgroup -o edit -a \"\$username\" -t user \"\$groupname\""
+      remove_user_from_group="Remove another user from a group%username=\$(ask-text 'Enter username:') && groupname=\$(ask-text 'Enter group name:') && sudo dseditgroup -o edit -d \"\$username\" -t user \"\$groupname\""
+      create_user="Create new user%username=\$(ask-text 'Enter new username:') && sudo sysadminctl -addUser \"\$username\" -password -"
+      delete_user="Delete user%username=\$(ask-text 'Enter username of user to delete:') && sudo sysadminctl -deleteUser \"\$username\" -keepHome"
+      ;;
+    *)
+      list_users="List all users%cut -d: -f1 /etc/passwd"
+      list_groups="List all groups%cut -d: -f1 /etc/group"
+      create_group="Create new group%groupname=\$(ask-text 'Enter new group name:') && sudo groupadd \"\$groupname\""
+      delete_group="Delete group%groupname=\$(ask-text 'Enter group to delete:') && sudo groupdel \"\$groupname\""
+      join_group="Join group%groupname=\$(ask-text 'Enter group name to join:') && sudo usermod -a -G \"\$groupname\" \"$USER\""
+      leave_group="Leave group%groupname=\$(ask-text 'Enter group name to leave:') && sudo gpasswd -d \"$USER\" \"\$groupname\""
+      list_users_in_group="List users in group%groupname=\$(ask-text 'Enter group name to inspect:') && getent group \"\$groupname\""
+      add_user_to_group="Add another user to a group%username=\$(ask-text 'Enter username:') && groupname=\$(ask-text 'Enter group name:') && sudo usermod -a -G \"\$groupname\" \"\$username\""
+      remove_user_from_group="Remove another user from a group%username=\$(ask-text 'Enter username:') && groupname=\$(ask-text 'Enter group name:') && sudo gpasswd -d \"\$username\" \"\$groupname\""
+      create_user="Create new user%username=\$(ask-text 'Enter new username:') && sudo useradd \"\$username\" && printf 'The new user still needs a password. Use Change another user''s password.\\n'"
+      delete_user="Delete user%username=\$(ask-text 'Enter username of user to delete:') && sudo userdel \"\$username\""
+      ;;
+  esac
+
   # Exit button kills this menu script via TERM signal
   # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
   exit_label=$(exit-label)

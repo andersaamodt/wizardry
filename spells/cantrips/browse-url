@@ -1,0 +1,60 @@
+#!/bin/sh
+
+# Open the OS's default GUI web browser at the specified URL.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: browse-url URL
+
+Open the OS's default web browser at the specified URL.
+
+Examples:
+  browse-url http://localhost:8080
+  browse-url https://example.com
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+if [ "$#" -ne 1 ]; then
+  die "browse-url: requires exactly one URL argument"
+fi
+
+url=$1
+
+case $url in
+  http://*|https://*)
+    :
+    ;;
+  *)
+    die "browse-url: URL must start with http:// or https://"
+    ;;
+esac
+
+kernel=$(uname -s 2>/dev/null || printf 'unknown')
+case $kernel in
+  Darwin)
+    open "$url"
+    ;;
+  Linux)
+    if command -v xdg-open >/dev/null 2>&1; then
+      xdg-open "$url" >/dev/null 2>&1 &
+    else
+      die "browse-url: xdg-open not found. Please install xdg-utils."
+    fi
+    ;;
+  MINGW*|MSYS*|CYGWIN*)
+    if command -v explorer >/dev/null 2>&1; then
+      explorer "$url"
+    else
+      die "browse-url: explorer not found."
+    fi
+    ;;
+  *)
+    die "browse-url: unsupported platform: $kernel"
+    ;;
+esac

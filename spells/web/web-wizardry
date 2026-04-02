@@ -12,7 +12,10 @@ UNIX-centric websites with interactivity backed by POSIX shell scripts.
 
 Commands:
   create SITENAME    Create a new website
+  create-from-template SITENAME TEMPLATE
+                    Create a website from a named template and build it
   build SITENAME     Build a website
+  rebuild SITENAME   Build everything and restart the site server
   serve SITENAME     Start serving a website
   stop SITENAME      Stop serving a website
   status [SITENAME]  Show website status
@@ -80,12 +83,31 @@ case "$cmd" in
     create-site "$site_name"
     exit 0
     ;;
+  create-from-template)
+    site_name=${2-}
+    template_name=${3-}
+    if [ -z "$site_name" ] || [ -z "$template_name" ]; then
+      die 2 "web-wizardry: create-from-template requires SITENAME and TEMPLATE"
+    fi
+    create-from-template "$site_name" "$template_name"
+    build "$site_name"
+    exit 0
+    ;;
   build)
     site_name=${2-}
     if [ -z "$site_name" ]; then
       die 2 "web-wizardry: build requires SITENAME argument"
     fi
     build "$site_name"
+    exit 0
+    ;;
+  rebuild)
+    site_name=${2-}
+    if [ -z "$site_name" ]; then
+      die 2 "web-wizardry: rebuild requires SITENAME argument"
+    fi
+    build "$site_name" --full
+    restart-site "$site_name"
     exit 0
     ;;
   status)

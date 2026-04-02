@@ -199,18 +199,13 @@ while true; do
   # Conditional: Open in browser (serving only)
   open_browser_option=""
   if [ "$is_serving" -eq 1 ]; then
-    open_browser_cmd="command -v xdg-open >/dev/null 2>&1"
-    open_browser_cmd="$open_browser_cmd && xdg-open http://localhost:$port"
-    open_browser_cmd="$open_browser_cmd || command -v open >/dev/null 2>&1"
-    open_browser_cmd="$open_browser_cmd && open http://localhost:$port"
-    open_browser_cmd="$open_browser_cmd || printf 'Visit: http://localhost:$port\n'"
+    open_browser_cmd="browse-url \"http://localhost:$port\""
     open_browser_cmd_wrapped=$(wrap_cmd "Open in browser" "$open_browser_cmd")
     open_browser_option="Open in browser%$open_browser_cmd_wrapped"
   fi
   
   # Always: Build all & restart server
-  build_restart_cmd="build \"$site_name\" --full"
-  build_restart_cmd="$build_restart_cmd && restart-site \"$site_name\""
+  build_restart_cmd="web-wizardry rebuild \"$site_name\""
   build_restart_cmd_wrapped=$(wrap_cmd "Build all & restart server" \
     "$build_restart_cmd")
   
@@ -292,19 +287,12 @@ while true; do
   fi
   
   # Always: Open site directory
-  open_dir_cmd="printf '%s' 'Open site directory' > \"$selection_file\"; "
-  open_dir_cmd="${open_dir_cmd}cd \"$site_dir\" && exec \$SHELL"
   open_dir_cmd_wrapped=$(wrap_cmd "Open site directory" \
-    "$open_dir_cmd")
+    "browse \"$site_dir\"")
   
   # Always: Open site data
-  open_data_cmd="[ -d \"$site_data_dir\" ]"
-  open_data_cmd="$open_data_cmd && printf '%s' 'Open site data' > \"$selection_file\""
-  open_data_cmd="$open_data_cmd && cd \"$site_data_dir\" && exec \$SHELL"
-  open_data_cmd="$open_data_cmd || { printf 'No site data yet"
-  open_data_cmd="$open_data_cmd (will be created when needed)\\n';"
-  open_data_cmd="$open_data_cmd read -r dummy; }"
-  open_data_cmd_wrapped=$(wrap_cmd "Open site data" "$open_data_cmd")
+  open_data_cmd_wrapped=$(wrap_cmd "Open site data" \
+    "browse \"$site_data_dir\"")
   
   # Conditional: Restart server (serving only)
   restart_server_option=""

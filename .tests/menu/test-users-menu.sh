@@ -64,10 +64,19 @@ SH
   run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/users-menu"
   assert_success
   args=$(cat "$tmp/log")
-  # Verify key user management actions are present
-  case "$args" in
-    *"Users Menu:"*"Change my password%passwd"*"List all users%"*"View my group memberships%groups"*'Exit%kill -TERM $PPID' ) : ;;
-    *) TEST_FAILURE_REASON="expected user actions missing: $args"; return 1 ;;
+  case "$(uname -s 2>/dev/null || printf unknown)" in
+    Darwin)
+      case "$args" in
+        *"Users Menu:"*"Change my password%passwd"*"List local users%dscl . -list /Users"*"View my group memberships%id -Gn"*'Exit%kill -TERM $PPID' ) : ;;
+        *) TEST_FAILURE_REASON="expected macOS user actions missing: $args"; return 1 ;;
+      esac
+      ;;
+    *)
+      case "$args" in
+        *"Users Menu:"*"Change my password%passwd"*"List all users%cut -d: -f1 /etc/passwd"*"View my group memberships%id -Gn"*'Exit%kill -TERM $PPID' ) : ;;
+        *) TEST_FAILURE_REASON="expected user actions missing: $args"; return 1 ;;
+      esac
+      ;;
   esac
 }
 
@@ -84,10 +93,51 @@ SH
   run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/users-menu"
   assert_success
   args=$(cat "$tmp/log")
-  # Verify group management actions are present
-  case "$args" in
-    *"List all groups%"*"Create new group%"*"Delete group%"*"Join group%"*"Leave group%"* ) : ;;
-    *) TEST_FAILURE_REASON="group management actions missing: $args"; return 1 ;;
+  case "$(uname -s 2>/dev/null || printf unknown)" in
+    Darwin)
+      printf '%s' "$args" | grep -F 'List local groups%dscl . -list /Groups' >/dev/null 2>&1 || {
+        TEST_FAILURE_REASON="macOS list groups action missing: $args"
+        return 1
+      }
+      printf '%s' "$args" | grep -F "Create new group%groupname=\$(ask-text 'Enter new group name:') && sudo dseditgroup -o create \"\$groupname\"" >/dev/null 2>&1 || {
+        TEST_FAILURE_REASON="macOS create group action missing: $args"
+        return 1
+      }
+      printf '%s' "$args" | grep -F "Delete group%groupname=\$(ask-text 'Enter group to delete:') && sudo dseditgroup -o delete \"\$groupname\"" >/dev/null 2>&1 || {
+        TEST_FAILURE_REASON="macOS delete group action missing: $args"
+        return 1
+      }
+      printf '%s' "$args" | grep -F "Join group%groupname=\$(ask-text 'Enter group name to join:') && sudo dseditgroup -o edit -a \"$USER\" -t user \"\$groupname\"" >/dev/null 2>&1 || {
+        TEST_FAILURE_REASON="macOS join group action missing: $args"
+        return 1
+      }
+      printf '%s' "$args" | grep -F "Leave group%groupname=\$(ask-text 'Enter group name to leave:') && sudo dseditgroup -o edit -d \"$USER\" -t user \"\$groupname\"" >/dev/null 2>&1 || {
+        TEST_FAILURE_REASON="macOS leave group action missing: $args"
+        return 1
+      }
+      ;;
+    *)
+      printf '%s' "$args" | grep -F 'List all groups%cut -d: -f1 /etc/group' >/dev/null 2>&1 || {
+        TEST_FAILURE_REASON="list groups action missing: $args"
+        return 1
+      }
+      printf '%s' "$args" | grep -F "Create new group%groupname=\$(ask-text 'Enter new group name:') && sudo groupadd \"\$groupname\"" >/dev/null 2>&1 || {
+        TEST_FAILURE_REASON="create group action missing: $args"
+        return 1
+      }
+      printf '%s' "$args" | grep -F "Delete group%groupname=\$(ask-text 'Enter group to delete:') && sudo groupdel \"\$groupname\"" >/dev/null 2>&1 || {
+        TEST_FAILURE_REASON="delete group action missing: $args"
+        return 1
+      }
+      printf '%s' "$args" | grep -F "Join group%groupname=\$(ask-text 'Enter group name to join:') && sudo usermod -a -G \"\$groupname\" \"$USER\"" >/dev/null 2>&1 || {
+        TEST_FAILURE_REASON="join group action missing: $args"
+        return 1
+      }
+      printf '%s' "$args" | grep -F "Leave group%groupname=\$(ask-text 'Enter group name to leave:') && sudo gpasswd -d \"$USER\" \"\$groupname\"" >/dev/null 2>&1 || {
+        TEST_FAILURE_REASON="leave group action missing: $args"
+        return 1
+      }
+      ;;
   esac
 }
 
@@ -112,12 +162,12 @@ SH
     TEST_FAILURE_REASON="Delete user action missing"
     return 1
   }
-  grep -q "Add other user to group%" "$tmp/log" || {
-    TEST_FAILURE_REASON="Add other user to group action missing"
+  grep -q "Add another user to a group%" "$tmp/log" || {
+    TEST_FAILURE_REASON="Add another user to a group action missing"
     return 1
   }
-  grep -q "Remove other user from group%" "$tmp/log" || {
-    TEST_FAILURE_REASON="Remove other user from group action missing"
+  grep -q "Remove another user from a group%" "$tmp/log" || {
+    TEST_FAILURE_REASON="Remove another user from a group action missing"
     return 1
   }
 }
