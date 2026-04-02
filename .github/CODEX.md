@@ -101,8 +101,15 @@ script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/prefix.XXXXXX")
 ```
 
+## Repository Hygiene
+
+- Keep repos continuously push-ready; do not treat cleanup as a separate final phase.
+- Runtime state, logs, assay output, compiled artifacts, and private notes belong outside tracked source trees by default.
+- Read `.github/PUSH_READY_CHECKLIST.md` before adding new storage paths, generated outputs, or release tooling.
+
 ## References
 
 - See `.AGENTS.md` for detailed style guide
 - See `README.md` for project principles
 - See `.github/` for topic-specific guidance
+- See `.github/PUSH_READY_CHECKLIST.md` for canonical repo-hygiene and publish-surface rules

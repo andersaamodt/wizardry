@@ -46,6 +46,14 @@ Tests are the fastest path to working code for several reasons:
 
 **Never claim code works without running actual tests.** Manual testing misses edge cases.
 
+## Repository Hygiene For Tests
+
+- Test output is operator-local runtime state, not repository content.
+- Write transient test and assay output under temp/XDG state paths, not inside the checkout, unless the file is a deliberate fixture.
+- Check in fixtures only when they are stable behavior contracts; do not check in raw run output, transcripts, or ad hoc debug captures.
+- If a test helper must create a repo-adjacent generated path, ignore it and document why it cannot live elsewhere.
+- Follow `.github/PUSH_READY_CHECKLIST.md` for final repo-hygiene and publish-surface review.
+
 ## CRITICAL: Test File Location Must Mirror Spell Structure
 
 **Test files MUST mirror the `spells/` directory structure exactly.** You CANNOT create test files without corresponding spells or imps.

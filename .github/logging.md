@@ -6,6 +6,13 @@ applyTo: "spells/**"
 
 Wizardry uses a standardized logging and output framework through the `out/` family of imps. This provides consistent messaging, error handling, and verbosity control across all spells.
 
+## Repository Hygiene For Logs
+
+- Logs are runtime state; they do not belong in tracked source trees by default.
+- Durable logs belong in user-local/XDG state locations, not under the repo checkout.
+- Debug captures, transcripts, and investigation output stay outside the repo unless intentionally published as documentation.
+- Follow `.github/PUSH_READY_CHECKLIST.md` when adding or changing log destinations.
+
 ## Log Levels
 
 Wizardry respects the `WIZARDRY_LOG_LEVEL` environment variable:
