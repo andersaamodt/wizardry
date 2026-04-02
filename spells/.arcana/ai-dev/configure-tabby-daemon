@@ -1,0 +1,152 @@
+#!/bin/sh
+
+# Generate Tabby daemon config to use Ollama-compatible HTTP providers.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: configure-tabby-daemon
+
+Writes ~/.tabby/config.toml for Tabby daemon provider configuration.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+tabby_dir="$HOME/.tabby"
+config_file="$tabby_dir/config.toml"
+selected_chat_model_file="$tabby_dir/selected-chat-model"
+
+# Tabby expects OpenAI-compatible routes; Ollama provides these at /v1.
+ollama_endpoint=${TABBY_OLLAMA_API_ENDPOINT:-http://host.docker.internal:11434/v1}
+ollama_tags_endpoint=${TABBY_OLLAMA_TAGS_ENDPOINT:-http://127.0.0.1:11434/api/tags}
+default_model=${TABBY_OLLAMA_MODEL:-}
+embedding_model=${TABBY_OLLAMA_EMBEDDING_MODEL:-}
+existing_default=""
+existing_embedding=""
+selected_chat_model=""
+
+if [ -f "$selected_chat_model_file" ]; then
+  selected_chat_model=$(sed -n '1p' "$selected_chat_model_file" 2>/dev/null || printf '')
+fi
+
+ollama_models=""
+if has curl; then
+  tags_json=$(curl -fsS --max-time 2 "$ollama_tags_endpoint" 2>/dev/null || printf '')
+  if [ -n "$tags_json" ]; then
+    ollama_models=$(
+      printf '%s\n' "$tags_json" |
+        grep -o '"name":"[^"]*"' |
+        sed 's/"name":"//; s/"$//'
+    )
+  fi
+fi
+
+is_embedding_model_name() {
+  case "$1" in
+    *embed*|*embedding*|nomic-embed-text|nomic-embed-text:*)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+first_non_embedding_model() {
+  printf '%s\n' "$ollama_models" | while IFS= read -r m; do
+    [ -n "$m" ] || continue
+    if ! is_embedding_model_name "$m"; then
+      printf '%s\n' "$m"
+      break
+    fi
+  done
+}
+
+first_embedding_model() {
+  printf '%s\n' "$ollama_models" | while IFS= read -r m; do
+    [ -n "$m" ] || continue
+    if is_embedding_model_name "$m"; then
+      printf '%s\n' "$m"
+      break
+    fi
+  done
+}
+
+if [ -f "$config_file" ]; then
+  existing_default=$(awk -F'"' '
+    /^\[model\.chat\.http\]/ { in_chat=1; next }
+    /^\[/ && !/^\[model\.chat\.http\]/ { in_chat=0 }
+    in_chat && /^[[:space:]]*model_name[[:space:]]*=/ { print $2; exit }
+  ' "$config_file" 2>/dev/null || printf '')
+  existing_embedding=$(awk -F'"' '
+    /^\[model\.embedding\.http\]/ { in_embed=1; next }
+    /^\[/ && !/^\[model\.embedding\.http\]/ { in_embed=0 }
+    in_embed && /^[[:space:]]*model_name[[:space:]]*=/ { print $2; exit }
+  ' "$config_file" 2>/dev/null || printf '')
+fi
+
+model_is_installed() {
+  candidate=$1
+  [ -n "$candidate" ] || return 1
+  printf '%s\n' "$ollama_models" | grep -qx "$candidate"
+}
+
+if [ -z "$default_model" ]; then
+  if [ -n "$selected_chat_model" ] && ! is_embedding_model_name "$selected_chat_model"; then
+    default_model="$selected_chat_model"
+  fi
+fi
+if [ -z "$default_model" ]; then
+  if [ -n "$existing_default" ] && ! is_embedding_model_name "$existing_default"; then
+    if [ -z "$ollama_models" ] || model_is_installed "$existing_default"; then
+      default_model="$existing_default"
+    fi
+  fi
+fi
+if [ -z "$default_model" ]; then
+  default_model=$(first_non_embedding_model | sed -n '1p')
+fi
+if [ -z "$default_model" ]; then
+  default_model="phi3:mini"
+fi
+
+if [ -z "$embedding_model" ]; then
+  if [ -n "$existing_embedding" ]; then
+    if [ -z "$ollama_models" ] || model_is_installed "$existing_embedding"; then
+      embedding_model="$existing_embedding"
+    fi
+  fi
+fi
+if [ -z "$embedding_model" ]; then
+  embedding_model=$(first_embedding_model | sed -n '1p')
+fi
+if [ -z "$embedding_model" ]; then
+  embedding_model="nomic-embed-text"
+fi
+
+mkdir -p "$tabby_dir"
+
+cat >"$config_file" <<EOF
+[model.completion.http]
+kind = "openai/completion"
+api_endpoint = "$ollama_endpoint"
+model_name = "$default_model"
+
+[model.chat.http]
+kind = "openai/chat"
+api_endpoint = "$ollama_endpoint"
+model_name = "$default_model"
+
+[model.embedding.http]
+kind = "openai/embedding"
+api_endpoint = "$ollama_endpoint"
+model_name = "$embedding_model"
+EOF
+
+printf '%s\n' "tabby daemon configured for ollama endpoint: $ollama_endpoint"
+printf '%s\n' "tabby completion/chat model: $default_model"
+printf '%s\n' "tabby embedding model: $embedding_model"

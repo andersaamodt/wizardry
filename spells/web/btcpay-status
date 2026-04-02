@@ -1,0 +1,27 @@
+#!/bin/sh
+
+# Report BTCPay install status text.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: btcpay-status
+
+Reports whether BTCPay Server appears installed.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+arcana_status="$script_dir/../.arcana/btcpay/btcpay-status-arcana"
+
+if [ ! -x "$arcana_status" ]; then
+  printf '%s\n' 'btcpay-status: BTCPay status spell is unavailable.' >&2
+  exit 1
+fi
+
+"$arcana_status" "$@"

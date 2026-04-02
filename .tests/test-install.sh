@@ -1512,6 +1512,89 @@ EOF
   assert_output_contains ".imps/sys is in PATH" || return 1
 }
 
+install_nested_shell_reloads_glosses() {
+  skip-if-compiled || return $?
+  # Child shells inherit exported env vars from parent shells.
+  # invoke-wizardry must still initialize glosses in the child shell.
+  tmp=$(make_tempdir)
+  test_script="$tmp/test-nested-shell.sh"
+  spellbook_dir="$tmp/spellbook"
+  home_dir="$tmp/home"
+
+  cat >"$test_script" <<'EOF'
+#!/bin/sh
+set -eu
+
+wiz_dir=$1
+spellbook_dir=$2
+home_dir=$3
+
+mkdir -p "$spellbook_dir" "$home_dir"
+
+export WIZARDRY_DIR="$wiz_dir"
+export SPELLBOOK_DIR="$spellbook_dir"
+export HOME="$home_dir"
+
+# Parent shell initialization.
+. "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry" >/dev/null 2>&1 || exit 1
+
+# Child shell should still initialize and load glosses like "jump".
+sh -c '
+  set -eu
+  . "$WIZARDRY_DIR/spells/.imps/sys/invoke-wizardry" >/dev/null 2>&1 || exit 11
+  command -v jump >/dev/null 2>&1 || exit 12
+  command -v jump-to-marker >/dev/null 2>&1 || exit 13
+'
+
+echo "nested shell glosses available"
+EOF
+
+  chmod +x "$test_script"
+
+  run_cmd sh "$test_script" "$ROOT_DIR" "$spellbook_dir" "$home_dir"
+  assert_success || return 1
+  assert_output_contains "nested shell glosses available" || return 1
+}
+
+install_invoke_thesaurus_loads_glosses() {
+  skip-if-compiled || return $?
+  # invoke-thesaurus should evaluate generate-glosses output into the current shell.
+  tmp=$(make_tempdir)
+  test_script="$tmp/test-invoke-thesaurus.sh"
+  spellbook_dir="$tmp/spellbook"
+  home_dir="$tmp/home"
+
+  cat >"$test_script" <<'EOF'
+#!/bin/sh
+set -eu
+
+wiz_dir=$1
+spellbook_dir=$2
+home_dir=$3
+
+mkdir -p "$spellbook_dir" "$home_dir"
+
+export WIZARDRY_DIR="$wiz_dir"
+export SPELLBOOK_DIR="$spellbook_dir"
+export HOME="$home_dir"
+
+# Bootstrap PATH so invoke-thesaurus can find generate-glosses.
+PATH="$WIZARDRY_DIR/spells/.wizardry:$WIZARDRY_DIR/spells/.imps/sys:$WIZARDRY_DIR/spells/.imps/lex:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+export PATH
+
+. "$WIZARDRY_DIR/spells/.imps/sys/invoke-thesaurus" >/dev/null 2>&1 || exit 1
+command -v jump >/dev/null 2>&1 || exit 2
+
+echo "invoke-thesaurus loaded jump"
+EOF
+
+  chmod +x "$test_script"
+
+  run_cmd sh "$test_script" "$ROOT_DIR" "$spellbook_dir" "$home_dir"
+  assert_success || return 1
+  assert_output_contains "invoke-thesaurus loaded jump" || return 1
+}
+
 install_invoke_wizardry_custom_location() {
   skip-if-compiled || return $?
   # Test that invoke-wizardry auto-detects its location (fixes macOS menu issue)
@@ -1631,6 +1714,8 @@ run_test_case "install rc file sources invoke-wizardry" install_rc_file_sources_
 run_test_case "install menu works after invoke-wizardry" install_menu_help_works_after_invoke
 run_test_case "install require-wizardry available" install_require_wizardry_available
 run_test_case "install imps/sys in PATH" install_imps_sys_in_path
+run_test_case "install nested shell reloads glosses" install_nested_shell_reloads_glosses
+run_test_case "install invoke-thesaurus loads glosses" install_invoke_thesaurus_loads_glosses
 run_test_case "install invoke-wizardry custom location (macOS fix)" install_invoke_wizardry_custom_location
 
 finish_tests

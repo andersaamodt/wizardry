@@ -49,57 +49,16 @@ if [ -z "$yaml_header" ]; then
   exit 1
 fi
 
-resolve_helper() {
-    helper=$1
-    if ! command -v "$helper" >/dev/null 2>&1; then
-      return 1
-    fi
-
-    helper_path=$(command -v "$helper")
-    # xattr tools (attr, xattr, setfattr, getfattr) are platform tools
-    # We should use them when available, even in test mode
-    printf '%s\n' "$helper_path"
-}
-
-has_attr=$(resolve_helper attr >/dev/null 2>&1 && echo "yes" || echo "no")
-has_setfattr=$(resolve_helper setfattr >/dev/null 2>&1 && echo "yes" || echo "no")
-has_xattr=$(resolve_helper xattr >/dev/null 2>&1 && echo "yes" || echo "no")
-
-if [ "$has_attr" = "no" ] && [ "$has_setfattr" = "no" ] && [ "$has_xattr" = "no" ]; then
-    printf '%s\n' "Error: requires attr, setfattr, or xattr to restore enchantments" >&2
-    exit 1
+if ! check-attribute-tool attr \
+  && ! check-attribute-tool setfattr \
+  && ! check-attribute-tool xattr; then
+  printf '%s\n' "Error: requires attr, setfattr, or xattr to restore enchantments" >&2
+  exit 1
 fi
 
-printf '%s' "$yaml_header" |
-    while IFS= read -r line || [ -n "$line" ]; do
-        key=${line%%:*}
-        value=${line#*:}
-        value=${value# }
-        [ -z "$key" ] && continue
-        
-        # Inline set_attr logic - only used once
-        success=0
-        if helper_path=$(resolve_helper attr); then
-            if "$helper_path" -s "$key" -V "$value" "$scroll" 2>/dev/null; then
-                success=1
-            fi
-        fi
-        if [ "$success" -eq 0 ] && helper_path=$(resolve_helper setfattr); then
-            if "$helper_path" -n "$key" -v "$value" "$scroll" 2>/dev/null; then
-                success=1
-            fi
-        fi
-        if [ "$success" -eq 0 ] && helper_path=$(resolve_helper xattr); then
-            if "$helper_path" -w "$key" "$value" "$scroll" 2>/dev/null; then
-                success=1
-            fi
-        fi
-        
-        if [ "$success" -eq 0 ]; then
-            printf '%s\n' "Error: failed to set attribute $key" >&2
-            exit 1
-        fi
-    done || exit 1
+header_tmp=$(temp-file wizardry-header) || exit 1
+trap 'rm -f "$header_tmp"' EXIT HUP INT TERM
+printf '%s\n' "$yaml_header" >"$header_tmp"
 
 body_tmp=$(temp-file wizardry-body) || exit 1
 awk '
@@ -108,3 +67,18 @@ awk '
     {print}
 ' "$scroll" >"$body_tmp"
 mv "$body_tmp" "$scroll"
+
+while IFS= read -r line || [ -n "$line" ]; do
+    key=${line%%:*}
+    value=${line#*:}
+    value=${value# }
+    [ -z "$key" ] && continue
+
+    if ! set-attribute "$key" "$value" "$scroll" >/dev/null 2>&1; then
+        printf '%s\n' "Error: failed to set attribute $key" >&2
+        exit 1
+    fi
+done <"$header_tmp"
+
+trap - EXIT HUP INT TERM
+rm -f "$header_tmp"

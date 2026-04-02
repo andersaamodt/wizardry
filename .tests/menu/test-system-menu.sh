@@ -16,11 +16,8 @@ test_system_menu_checks_requirements() {
   tmp=$(make_tempdir)
   stub-menu "$tmp"
   stub-require-command "$tmp"
-  env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/req" "$ROOT_DIR/spells/menu/system-menu" &
-  menu_pid=$!
-  sleep 0.5
-  kill -TERM "$menu_pid" 2>/dev/null || true
-  wait "$menu_pid" 2>/dev/null || true
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/req" "$ROOT_DIR/spells/menu/system-menu"
+  assert_success || return 1
   assert_path_exists "$tmp/req"
 }
 
@@ -34,11 +31,8 @@ test_system_menu_includes_test_utilities() {
 printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
-  env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/system-menu" &
-  menu_pid=$!
-  sleep 0.5
-  kill -TERM "$menu_pid" 2>/dev/null || true
-  wait "$menu_pid" 2>/dev/null || true
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/req" "$ROOT_DIR/spells/menu/system-menu"
+  assert_success || return 1
   args=$(cat "$tmp/log" 2>/dev/null || printf '')
   case "$args" in
     *"System Menu:"*"Restart...%shutdown-menu"*"Update all software%update-all -v"*"Update wizardry%update-wizardry"*"Manage services%"*"services-menu"*"Test all wizardry spells%test-magic"*'Exit%kill -TERM $PPID' ) : ;;
@@ -53,30 +47,18 @@ run_test_case "system-menu passes system actions to menu" test_system_menu_inclu
 test_esc_exit_behavior() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  
-  # Create menu stub that returns exit code 0 (normal success)
-  cat >"$tmp/menu" <<'SH'
-#!/bin/sh
-printf '%s\n' "$@" >>"$MENU_LOG"
-exit 0
-SH
-  chmod +x "$tmp/menu"
-  
+  stub-menu "$tmp"
   stub-require-command "$tmp"
-  
+
   cat >"$tmp/exit-label" <<'SH'
 #!/bin/sh
 printf '%s' "Exit"
 SH
   chmod +x "$tmp/exit-label"
-  
-  # Run system-menu in background
-  env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/system-menu" &
-  menu_pid=$!
-  sleep 0.5
-  kill -TERM "$menu_pid" 2>/dev/null || true
-  wait "$menu_pid" 2>/dev/null || true
-  
+
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/system-menu"
+  assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
+
   args=$(cat "$tmp/log" 2>/dev/null || printf '')
   case "$args" in
     *'Exit%kill -TERM $PPID'*) : ;;

@@ -37,27 +37,23 @@ if [ "$dir" = "." ]; then
   dir=$(pwd -P)
 fi
 
+priority_lock_file="$dir/.wizardry-priorities.lock"
+if [ "${WIZARDRY_PRIORITY_LOCK_HELD-0}" -ne 1 ]; then
+  exec with-lock "$priority_lock_file" env WIZARDRY_PRIORITY_LOCK_HELD=1 "$0" "$file"
+fi
+
 # Find the highest echelon and the highest priority within that echelon in a single loop
 highest_echelon=0
 highest_priority_in_echelon=0
+rows_tmp=$(mktemp "${TMPDIR:-/tmp}/get-new-priority-rows.XXXXXX")
+trap 'rm -f "$rows_tmp"' EXIT HUP INT TERM
+collect-prioritized-rows "$dir" > "$rows_tmp"
+tab=$(printf '\t')
 
-# Loop through all files in the directory
-for f in "$dir"/*; do
-  # Skip if not a file
-  [ -f "$f" ] || continue
-
-  # Read both echelon and priority in one batch call
-  attrs=$(get-attribute-batch "$f" echelon priority 2>/dev/null || true)
-  
-  file_echelon=""
-  file_priority=""
-  
-  for pair in $attrs; do
-    case "$pair" in
-      echelon=*) file_echelon="${pair#echelon=}" ;;
-      priority=*) file_priority="${pair#priority=}" ;;
-    esac
-  done
+# Loop through all prioritized rows in the directory
+while IFS="$tab" read -r row_path file_echelon file_priority _checked_value; do
+  # Preserve legacy behavior: only regular files are considered.
+  [ -f "$row_path" ] || continue
 
   # Skip if no echelon or error
   case "$file_echelon" in
@@ -83,7 +79,7 @@ for f in "$dir"/*; do
       highest_priority_in_echelon=$file_priority
     fi
   fi
-done
+done < "$rows_tmp"
 
 # If no priorities exist yet, return echelon 1, priority 1
 if [ "$highest_echelon" -eq 0 ]; then

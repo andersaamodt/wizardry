@@ -28,10 +28,17 @@ USAGE
 esac
 
 set -eu
+. env-clear
 
 # Use WIZARDRY_DIR from environment
 wizardry_dir=${WIZARDRY_DIR:-$HOME/.wizardry}
-apps_dir="$wizardry_dir/.apps"
+wizardry_apps_dir=${WIZARDRY_APPS_DIR:-$HOME/git/wizardry-apps}
+apps_dir="$wizardry_apps_dir/.apps"
+
+ensure_apps_cmd="$wizardry_dir/spells/.arcana/wizardry-apps/ensure-wizardry-apps-component"
+if [ -x "$ensure_apps_cmd" ]; then
+  "$ensure_apps_cmd" apps
+fi
 
 if [ ! -d "$apps_dir" ]; then
   printf '%s\n' "build-apps: .apps directory not found" >&2

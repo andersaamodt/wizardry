@@ -25,6 +25,13 @@ fi
 trap 'exit 130' INT
 trap 'exit 0' TERM
 
+# Ensure web templates are installed (without symlink indirection).
+WIZARDRY_DIR=${WIZARDRY_DIR:-$HOME/.wizardry}
+ensure_templates_cmd="$WIZARDRY_DIR/spells/.arcana/wizardry-apps/ensure-wizardry-apps-component"
+if [ -x "$ensure_templates_cmd" ]; then
+  "$ensure_templates_cmd" web-templates
+fi
+
 # Prompt for site name
 printf 'Enter name for new site: '
 read -r site_name
@@ -42,12 +49,34 @@ fi
 
 # Template menu
 exit_label=$(exit-label)
+available_templates=$(create-from-template --list-templates 2>/dev/null || printf '')
 
-set -- \
-  "Demo Site (Interactive CGI demos)%create-from-template \"$site_name\" demo && web-wizardry build \"$site_name\"" \
-  "UNIX Settings (Local system authority UI)%create-from-template \"$site_name\" unix-settings && web-wizardry build \"$site_name\"" \
-  "Personal Blog (Content-addressable posts)%create-from-template \"$site_name\" blog && web-wizardry build \"$site_name\"" \
-  "${exit_label}%kill -TERM \$PPID"
+if [ -z "$available_templates" ]; then
+  die "template-menu: no templates available"
+fi
+
+set --
+for template_name in $available_templates; do
+  case "$template_name" in
+    demo)
+      set -- "$@" \
+        "Demo Site (Interactive CGI demos)%create-from-template \"$site_name\" demo && web-wizardry build \"$site_name\""
+      ;;
+    blog)
+      set -- "$@" \
+        "Personal Blog (Content-addressable posts)%create-from-template \"$site_name\" blog && web-wizardry build \"$site_name\""
+      ;;
+    unix-settings)
+      set -- "$@" \
+        "UNIX Settings (Local system authority UI)%create-from-template \"$site_name\" unix-settings && web-wizardry build \"$site_name\""
+      ;;
+    artificer)
+      set -- "$@" \
+        "Artificer (Local coding assistant)%create-from-template \"$site_name\" artificer && web-wizardry build \"$site_name\""
+      ;;
+  esac
+done
+set -- "$@" "${exit_label}%kill -TERM \$PPID"
 
 menu "${BOLD}${CYAN}Select Template for '$site_name'" "$@" || menu_status=$?
 menu_status=${menu_status:-0}

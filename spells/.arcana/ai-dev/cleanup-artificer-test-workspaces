@@ -1,0 +1,149 @@
+#!/bin/sh
+# Clean up Artificer test workspaces for a given site.
+# Removes only temporary workspace paths created by automated tests.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: cleanup-artificer-test-workspaces [SITENAME]
+
+Delete Artificer workspaces created by automated tests.
+Default site: daimon
+
+Match rule:
+- workspace path starts with /tmp/artificer- or /private/tmp/artificer-
+- workspace name starts with ArtificerSmoke or ArtificerAgentTest
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+site_name="${1:-daimon}"
+site_dir="$HOME/sites/$site_name"
+if [ ! -d "$site_dir" ]; then
+  die "cleanup-artificer-test-workspaces: site '$site_name' not found"
+fi
+
+site_port=$(config-get "$site_dir/site.conf" port 2>/dev/null || echo "8080")
+base_url="http://localhost:$site_port"
+api_url="$base_url/cgi/artificer-api"
+cgi_script="$site_dir/cgi/artificer-api"
+if [ ! -x "$cgi_script" ]; then
+  cgi_script="$HOME/.wizardry/.templates/artificer/cgi/artificer-api"
+fi
+[ -x "$cgi_script" ] || die "cleanup-artificer-test-workspaces: artificer-api script not found"
+
+transport_mode="http"
+if ! curl -fsS --connect-timeout 2 --max-time 4 "$api_url?action=state" >/dev/null 2>&1; then
+  transport_mode="cgi"
+fi
+
+api_get_http() {
+  query=$1
+  curl -fsS --max-time 20 "$api_url?$query"
+}
+
+api_get_cgi() {
+  query=$1
+  REQUEST_METHOD=GET QUERY_STRING="$query" \
+    WIZARDRY_SITE_NAME="$site_name" WIZARDRY_SITES_DIR="$HOME/sites" \
+    "$cgi_script" | tail -n 1
+}
+
+api_post_http() {
+  payload=$1
+  curl -fsS --max-time 20 -X POST "$api_url" --data "$payload"
+}
+
+api_post_cgi() {
+  payload=$1
+  printf '%s' "$payload" | REQUEST_METHOD=POST QUERY_STRING="" \
+    WIZARDRY_SITE_NAME="$site_name" WIZARDRY_SITES_DIR="$HOME/sites" \
+    "$cgi_script" | tail -n 1
+}
+
+api_get() {
+  query=$1
+  if [ "$transport_mode" = "http" ]; then
+    api_get_http "$query" || api_get_cgi "$query"
+  else
+    api_get_cgi "$query" || api_get_http "$query"
+  fi
+}
+
+api_post() {
+  payload=$1
+  if [ "$transport_mode" = "http" ]; then
+    api_post_http "$payload" || api_post_cgi "$payload"
+  else
+    api_post_cgi "$payload" || api_post_http "$payload"
+  fi
+}
+
+deleted=0
+failed=0
+remaining=0
+attempt=1
+max_attempts=5
+while [ "$attempt" -le "$max_attempts" ]; do
+  state_json=$(api_get "action=state" 2>/dev/null || true)
+  workspace_ids=$(
+    printf '%s' "$state_json" | perl -MJSON::PP -e '
+      use strict;
+      use warnings;
+      local $/;
+      my $raw = <>;
+      my $j = eval { decode_json($raw) };
+      if (!$j || ref($j) ne "HASH") { exit 0; }
+      for my $ws (@{$j->{workspaces} || []}) {
+        my $id = $ws->{id} // "";
+        my $path = $ws->{path} // "";
+        my $name = $ws->{name} // "";
+        next unless length $id;
+        my $path_match = ($path =~ m{^/(?:private/)?tmp/artificer-}) ? 1 : 0;
+        my $name_match = ($name =~ /^(?:ArtificerSmoke|ArtificerAgentTest)/) ? 1 : 0;
+        next unless $path_match || $name_match;
+        print "$id\n";
+      }
+    '
+  )
+
+  if [ -z "$workspace_ids" ]; then
+    remaining=0
+    break
+  fi
+
+  remaining=0
+  old_ifs=${IFS}
+  IFS='
+'
+  for workspace_id in $workspace_ids; do
+    [ -n "$workspace_id" ] || continue
+    response=$(api_post "action=delete_workspace&workspace_id=$workspace_id" || true)
+    ok=$(printf '%s' "$response" | perl -MJSON::PP -e '
+      use strict;
+      use warnings;
+      local $/;
+      my $raw = <>;
+      my $j = eval { decode_json($raw) };
+      print(($j && $j->{success}) ? "1" : "0");
+    ')
+    if [ "$ok" = "1" ]; then
+      deleted=$((deleted + 1))
+    else
+      failed=$((failed + 1))
+      remaining=$((remaining + 1))
+    fi
+  done
+  IFS=${old_ifs}
+
+  if [ "$attempt" -lt "$max_attempts" ]; then
+    sleep 1
+  fi
+  attempt=$((attempt + 1))
+done
+
+info "Artificer test-workspace cleanup ($site_name): deleted=$deleted failed=$failed remaining=$remaining transport=$transport_mode"

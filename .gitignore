@@ -6,6 +6,8 @@ ALL_INPUT
 # Test temporary files
 .tests/__temp_test_fixtures/
 .tests/__demos/
+/voice-recognition/
 *.attrs
 .room.log
 /.log
+.log

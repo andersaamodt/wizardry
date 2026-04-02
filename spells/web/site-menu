@@ -25,43 +25,44 @@ set -eu
 . colors
 . declare-globals
 
-WEB_ROOT="${WIZARDRY_SITES_DIR}"
+web_root="${WIZARDRY_SITES_DIR}"
 
 # Try to auto-detect site from current directory if no arg given
 site_name=${1-}
 if [ -z "$site_name" ]; then
   current_dir=$(pwd -P)
 
-  # Check if current directory is within WEB_ROOT
+  # Check if current directory is within web_root
   case "$current_dir" in
-    "$WEB_ROOT"/*)
+    "$web_root"/*)
       # Extract site name from path
-      site_path="${current_dir#"$WEB_ROOT"/}"
+      site_path="${current_dir#"$web_root"/}"
       site_name="${site_path%%/*}"
 
       # Verify this is a valid site directory
-      if [ -n "$site_name" ] && [ -d "$WEB_ROOT/$site_name/site" ]; then
+      if [ -n "$site_name" ] && [ -d "$web_root/$site_name/site" ]; then
         info "Auto-detected site: $site_name"
       else
         die 2 "site-menu: not in a valid site directory. Current: $current_dir"
       fi
       ;;
     *)
-      die 2 "site-menu: SITENAME required (not in $WEB_ROOT)"
+      die 2 "site-menu: SITENAME required (not in $web_root)"
       ;;
   esac
 fi
 
-SITES_DIR="$WEB_ROOT"
-SITE_DIR="$SITES_DIR/$site_name"
-SITE_DATA_DIR="$SITES_DIR/.sitedata/$site_name"
+sites_dir="$web_root"
+site_dir="$sites_dir/$site_name"
+site_data_dir="$sites_dir/.sitedata/$site_name"
+site_template=$(config-get "$site_dir/site.conf" template 2>/dev/null || printf '')
 
-if [ ! -d "$SITE_DIR" ]; then
+if [ ! -d "$site_dir" ]; then
   die "site-menu: site '$site_name' not found"
 fi
 
-site_user_default="ww_$(printf '%s' "$site_name" | tr 'A-Z' 'a-z' | tr '-' '_')"
-site_user=$(config-get "$SITE_DIR/site.conf" site-user 2>/dev/null || printf '')
+site_user_default="ww_$(printf '%s' "$site_name" | tr 'A-Z' 'a-z' | tr '.-' '__')"
+site_user=$(config-get "$site_dir/site.conf" site-user 2>/dev/null || printf '')
 [ -z "$site_user" ] && site_user="$site_user_default"
 
 # Note: We don't re-exec as site user here - individual commands will use sudo if needed
@@ -72,18 +73,18 @@ if [ -n "$site_user" ] && ! id -u "$site_user" >/dev/null 2>&1; then
 fi
 
 # Use temp file for selection tracking (same pattern as core-menu)
-SELECTION_FILE=$(temp-file site-menu-selection)
-export SELECTION_FILE
+selection_file=$(temp-file site-menu-selection)
+export selection_file
 
 # Catch Ctrl-C and TERM signal to exit cleanly and clean up
-trap 'cleanup-file "$SELECTION_FILE" 2>/dev/null || true; exit 130' INT
-trap 'cleanup-file "$SELECTION_FILE" 2>/dev/null || true; exit 0' TERM
-trap 'cleanup-file "$SELECTION_FILE" 2>/dev/null || true' EXIT
+trap 'cleanup-file "$selection_file" 2>/dev/null || true; exit 130' INT
+trap 'cleanup-file "$selection_file" 2>/dev/null || true; exit 0' TERM
+trap 'cleanup-file "$selection_file" 2>/dev/null || true' EXIT
 
 while true; do
   # Read last selected item label from temp file
-  if [ -f "$SELECTION_FILE" ]; then
-    saved_label=$(cat "$SELECTION_FILE" 2>/dev/null || printf '')
+  if [ -f "$selection_file" ]; then
+    saved_label=$(cat "$selection_file" 2>/dev/null || printf '')
   else
     saved_label=""
   fi
@@ -100,7 +101,7 @@ while true; do
   esac
 
   # Get port from config
-  port=$(config-get "$SITE_DIR/site.conf" port 2>/dev/null || true)
+  port=$(config-get "$site_dir/site.conf" port 2>/dev/null || true)
   [ -z "$port" ] && port=8080
 
   # Check if tor hosting is enabled for this site
@@ -160,6 +161,16 @@ while true; do
     serve_on_startup_option="[ ] Serve on startup%enable-site-daemon \"$site_name\""
   fi
 
+  autorebuild_toggle_option=""
+  autorebuild_status_output=$(site-autorebuild status "$site_name" 2>/dev/null || true)
+  autorebuild_enabled=0
+  if printf '%s\n' "$autorebuild_status_output" | grep -q '^enabled=yes$'; then
+    autorebuild_enabled=1
+    autorebuild_toggle_option="[X] Auto-rebuild watcher%site-autorebuild toggle \"$site_name\""
+  else
+    autorebuild_toggle_option="[ ] Auto-rebuild watcher%site-autorebuild toggle \"$site_name\""
+  fi
+
   exit_label=$(exit-label)
 
   if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
@@ -174,14 +185,14 @@ while true; do
 
   # Helper to wrap command with selection memory
   # Saves the menu item label (not numeric index) for reliable restoration
-  # Note: $SELECTION_FILE is exported, so it expands at runtime
+  # Note: $selection_file is exported, so it expands at runtime
   wrap_cmd() {
     item_label=$1
     cmd=$2
     # Escape single quotes in label for safe embedding in shell command
     safe_label=$(printf '%s' "$item_label" | sed "s/'/'\\\\''/g")
     # Save label to file after command executes
-    printf "%s; printf '%%s' '%s' > \"\$SELECTION_FILE\"" "$cmd" "$safe_label"
+    printf "%s; printf '%%s' '%s' > \"\$selection_file\"" "$cmd" "$safe_label"
   }
 
   # Build menu - original order preserved
@@ -206,6 +217,72 @@ while true; do
   # Always: Update from template
   update_template_cmd_wrapped=$(wrap_cmd "Update from template" \
     "update-from-template \"$site_name\"")
+
+  site_requirements_file="$site_dir/wizardry-server-requirements.conf"
+  if [ ! -f "$site_requirements_file" ] && [ "$site_template" = "blog" ] && [ -f "$HOME/git/nostr-blog/wizardry-server-requirements.conf" ]; then
+    site_requirements_file="$HOME/git/nostr-blog/wizardry-server-requirements.conf"
+  fi
+  requirements_registry_dir="$WIZARDRY_DIR/spells/web/.requirements"
+
+  requirement_meta_value() {
+    requirement_id=$1
+    requirement_key=$2
+    requirement_file="$requirements_registry_dir/$requirement_id.conf"
+    [ -f "$requirement_file" ] || return 1
+    awk -F= -v key="$requirement_key" '
+      $1 == key {
+        sub(/^[^=]+=/, "")
+        print
+        exit
+      }
+    ' "$requirement_file"
+  }
+
+  requirement_status() {
+    requirement_id=$1
+    check_spell=$(requirement_meta_value "$requirement_id" check_spell 2>/dev/null || printf '')
+    [ -n "$check_spell" ] || return 1
+    [ -x "$WIZARDRY_DIR/spells/web/$check_spell" ] || return 1
+    output=$(PATH="$PATH" "$WIZARDRY_DIR/spells/web/$check_spell" 2>/dev/null || true)
+    printf '%s\n' "$output" | awk -F= '$1=="status" { print $2; exit }'
+  }
+
+  requirement_menu_items_file=$(temp-file site-requirements-menu)
+  if [ -f "$site_requirements_file" ] && [ -d "$requirements_registry_dir" ]; then
+    while IFS= read -r requirement_line; do
+      case "$requirement_line" in
+        ''|'#'*) continue ;;
+      esac
+      requirement_id=${requirement_line%%=*}
+      requirement_id=$(printf '%s' "$requirement_id" | tr -d '[:space:]')
+      [ -n "$requirement_id" ] || continue
+      label=$(requirement_meta_value "$requirement_id" label 2>/dev/null || \
+        printf '%s' "$requirement_id")
+      install_label=$(requirement_meta_value "$requirement_id" install_label 2>/dev/null || \
+        printf 'Install %s' "$label")
+      uninstall_label=$(requirement_meta_value "$requirement_id" uninstall_label 2>/dev/null || \
+        printf 'Uninstall %s' "$label")
+      install_spell=$(requirement_meta_value "$requirement_id" install_spell 2>/dev/null || \
+        printf '')
+      uninstall_spell=$(requirement_meta_value "$requirement_id" uninstall_spell 2>/dev/null || \
+        printf '')
+      requirement_state=$(requirement_status "$requirement_id" 2>/dev/null || printf 'bad')
+      if [ "$requirement_state" = "ok" ] && [ -n "$uninstall_spell" ]; then
+        uninstall_cmd_wrapped=$(wrap_cmd "$uninstall_label" "$uninstall_spell")
+        printf '%s\n' "${uninstall_label}%$uninstall_cmd_wrapped" >> "$requirement_menu_items_file"
+      elif [ -n "$install_spell" ]; then
+        install_cmd_wrapped=$(wrap_cmd "$install_label" "$install_spell")
+        printf '%s\n' "${install_label}%$install_cmd_wrapped" >> "$requirement_menu_items_file"
+      fi
+    done < "$site_requirements_file"
+  fi
+
+  mirror_nostr_option=""
+  if [ "$site_template" = "blog" ]; then
+    mirror_nostr_cmd_wrapped=$(wrap_cmd "Mirror Nostr events" \
+      "blog-nostr-mirror \"$site_name\"")
+    mirror_nostr_option="Mirror Nostr events%$mirror_nostr_cmd_wrapped"
+  fi
   
   # Conditional: Copy .onion address
   if [ -n "$copy_site_onion" ]; then
@@ -215,15 +292,15 @@ while true; do
   fi
   
   # Always: Open site directory
-  open_dir_cmd="printf '%s' 'Open site directory' > \"\$SELECTION_FILE\"; "
-  open_dir_cmd="${open_dir_cmd}cd \"$SITE_DIR\" && exec \$SHELL"
+  open_dir_cmd="printf '%s' 'Open site directory' > \"$selection_file\"; "
+  open_dir_cmd="${open_dir_cmd}cd \"$site_dir\" && exec \$SHELL"
   open_dir_cmd_wrapped=$(wrap_cmd "Open site directory" \
     "$open_dir_cmd")
   
   # Always: Open site data
-  open_data_cmd="[ -d \"$SITE_DATA_DIR\" ]"
-  open_data_cmd="$open_data_cmd && printf '%s' 'Open site data' > \"\$SELECTION_FILE\""
-  open_data_cmd="$open_data_cmd && cd \"$SITE_DATA_DIR\" && exec \$SHELL"
+  open_data_cmd="[ -d \"$site_data_dir\" ]"
+  open_data_cmd="$open_data_cmd && printf '%s' 'Open site data' > \"$selection_file\""
+  open_data_cmd="$open_data_cmd && cd \"$site_data_dir\" && exec \$SHELL"
   open_data_cmd="$open_data_cmd || { printf 'No site data yet"
   open_data_cmd="$open_data_cmd (will be created when needed)\\n';"
   open_data_cmd="$open_data_cmd read -r dummy; }"
@@ -269,6 +346,14 @@ while true; do
     startup_label=$(printf '%s' "$serve_on_startup_option" | cut -d% -f1)
     serve_on_startup_option="${startup_label}%$startup_cmd_wrapped"
   fi
+
+  if [ -n "$autorebuild_toggle_option" ]; then
+    autorebuild_cmd_wrapped=$(wrap_cmd \
+      "$(printf '%s' "$autorebuild_toggle_option" | cut -d% -f1)" \
+      "$(printf '%s' "$autorebuild_toggle_option" | cut -d% -f2-)")
+    autorebuild_label=$(printf '%s' "$autorebuild_toggle_option" | cut -d% -f1)
+    autorebuild_toggle_option="${autorebuild_label}%$autorebuild_cmd_wrapped"
+  fi
   
   # Always: Change port
   port_cmd_wrapped=$(wrap_cmd "Change port (current: $port)" \
@@ -306,7 +391,7 @@ while true; do
   # Always: Manage allowed dirs
   dirs_cmd_wrapped=$(wrap_cmd "Manage allowed dirs" \
     "manage-allowed-dirs \"$site_name\"")
-  
+
   # Always: Delete site
   delete_cmd_wrapped=$(wrap_cmd "Delete site" "delete-site \"$site_name\"")
   
@@ -317,6 +402,14 @@ while true; do
   set -- \
     ${open_browser_option:+"$open_browser_option"} \
     "Build all & restart server%$build_restart_cmd_wrapped" \
+    ${mirror_nostr_option:+"$mirror_nostr_option"}
+  if [ -f "$requirement_menu_items_file" ]; then
+    while IFS= read -r requirement_item; do
+      [ -n "$requirement_item" ] || continue
+      set -- "$@" "$requirement_item"
+    done < "$requirement_menu_items_file"
+  fi
+  set -- "$@" \
     "Update from template%$update_template_cmd_wrapped" \
     ${copy_site_onion:+"$copy_site_onion"} \
     "Open site directory%$open_dir_cmd_wrapped" \
@@ -329,6 +422,7 @@ while true; do
     "---" \
     ${tor_hosting_option:+"$tor_hosting_option"} \
     ${serve_on_startup_option:+"$serve_on_startup_option"} \
+    ${autorebuild_toggle_option:+"$autorebuild_toggle_option"} \
     "Change port (current: $port)%$port_cmd_wrapped" \
     ${https_option:+"$https_option"} \
     ${https_disable_option:+"$https_disable_option"} \
@@ -352,6 +446,10 @@ while true; do
   elif [ "$saved_label" = "[ ] Serve on startup" ] \
     && is-site-daemon-enabled "$site_name" 2>/dev/null; then
     search_label="[X] Serve on startup"
+  elif [ "$saved_label" = "[X] Auto-rebuild watcher" ] && [ "$autorebuild_enabled" -eq 0 ]; then
+    search_label="[ ] Auto-rebuild watcher"
+  elif [ "$saved_label" = "[ ] Auto-rebuild watcher" ] && [ "$autorebuild_enabled" -eq 1 ]; then
+    search_label="[X] Auto-rebuild watcher"
   fi
   
   # Find position of search_label in menu (skip separators)

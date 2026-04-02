@@ -1,0 +1,81 @@
+#!/bin/sh
+
+# Uninstall Nostr server tooling.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uninstall-nostril
+
+Removes locally installed nostril and nak binaries used for Nostr auth,
+verification, and bridge flows.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
+
+nostril_uninstall_say() {
+  printf '%s\n' "$1"
+}
+
+nostril_uninstall_has_cmd() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+nostril_uninstall_run_privileged() {
+  if "$@" 2>/dev/null; then
+    return 0
+  fi
+  if command -v run_sudo_cmd >/dev/null 2>&1; then
+    run_sudo_cmd "$@"
+    return 0
+  fi
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+    return 0
+  fi
+  if nostril_uninstall_has_cmd sudo; then
+    sudo "$@"
+    return 0
+  fi
+  "$@"
+}
+
+nostril_uninstall_remove_known_binary() {
+  binary_name=$1
+  removed_any=1
+  for candidate in \
+    "$(command -v "$binary_name" 2>/dev/null || printf '')" \
+    "${XDG_BIN_HOME:-$HOME/.local/bin}/$binary_name" \
+    "/usr/local/bin/$binary_name" \
+    "/opt/homebrew/bin/$binary_name"
+  do
+    [ -n "$candidate" ] || continue
+    [ -f "$candidate" ] || continue
+    nostril_uninstall_run_privileged rm -f "$candidate"
+  done
+}
+
+removed_any=0
+nostril_uninstall_remove_known_binary nostril || true
+nostril_uninstall_remove_known_binary nostril-query || true
+nostril_uninstall_remove_known_binary nak || true
+
+if nostril_uninstall_has_cmd nostril || \
+  nostril_uninstall_has_cmd nostril-query || \
+  nostril_uninstall_has_cmd nak; then
+  nostril_uninstall_say "uninstall-nostril: Nostr server tooling is still present on PATH" >&2
+  exit 1
+fi
+
+if [ "$removed_any" -eq 0 ]; then
+  nostril_uninstall_say "Nostr server tooling is not installed"
+  exit 0
+fi
+
+nostril_uninstall_say "Uninstalled Nostr server tooling"

@@ -1,0 +1,73 @@
+#!/bin/sh
+
+# Check if the Docker daemon is reachable.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: is-docker-daemon-running
+
+Returns success when the Docker daemon is reachable.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+backend_process_running() {
+  if has pgrep; then
+    if pgrep -f 'com.docker.backend|vpnkit|docker-credential-desktop|linuxkit' >/dev/null 2>&1; then
+      return 0
+    fi
+  fi
+  if has ps; then
+    if ps ax -o command= 2>/dev/null | \
+      grep -E 'com\.docker\.backend|vpnkit|linuxkit' | grep -v grep >/dev/null 2>&1; then
+      return 0
+    fi
+  fi
+  return 1
+}
+
+is_socket_responding() {
+  sock=$1
+  [ -S "$sock" ] || return 1
+  if has curl; then
+    if curl -sS --max-time 0.3 --unix-socket "$sock" http://localhost/_ping 2>/dev/null | \
+      grep -q '^OK'; then
+      return 0
+    fi
+    return 1
+  fi
+  # If curl is unavailable, a live socket is our best fast signal.
+  return 0
+}
+
+primary_sock=""
+if [ -S "$HOME/.docker/run/docker.sock" ]; then
+  primary_sock="$HOME/.docker/run/docker.sock"
+elif [ -S "/var/run/docker.sock" ]; then
+  primary_sock="/var/run/docker.sock"
+fi
+
+if [ -n "$primary_sock" ] && is_socket_responding "$primary_sock"; then
+  exit 0
+fi
+
+if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+  # Backend process running while ping is unavailable is treated as transitional running state.
+  if backend_process_running; then
+    exit 0
+  fi
+  exit 1
+fi
+
+if has systemctl && systemctl is-active docker >/dev/null 2>&1; then
+  exit 0
+fi
+
+exit 1

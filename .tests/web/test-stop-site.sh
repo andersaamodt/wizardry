@@ -78,7 +78,7 @@ while :; do
 done
 EOF
   chmod +x "$stub_dir/nginx-daemon"
-  "$stub_dir/nginx-daemon" -p "$site_dir" &
+  sh "$stub_dir/nginx-daemon" -p "$site_dir" &
   sleeper_pid=$!
   printf '%s\n' "$sleeper_pid" > "$site_dir/nginx/nginx.pid"
 
@@ -121,7 +121,7 @@ done
 EOF
   chmod +x "$stub_dir/non-nginx-daemon"
 
-  "$stub_dir/non-nginx-daemon" &
+  sh "$stub_dir/non-nginx-daemon" &
   sleeper_pid=$!
   printf '%s\n' "$sleeper_pid" > "$site_dir/nginx/nginx.pid"
 cat > "$stub_dir/ps" <<'EOF'

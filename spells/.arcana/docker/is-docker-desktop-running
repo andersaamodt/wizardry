@@ -1,0 +1,77 @@
+#!/bin/sh
+
+# Check if Docker Desktop UI process is running (macOS).
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: is-docker-desktop-running
+
+Returns success when Docker Desktop is running on macOS.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+if [ "$(uname -s 2>/dev/null)" != "Darwin" ]; then
+  exit 1
+fi
+
+check_timeout_tenths=${DOCKER_DESKTOP_CHECK_TIMEOUT_TENTHS:-20}
+
+run_with_timeout_capture() {
+  out_file=${TMPDIR:-/tmp}/docker-desktop-running-$$.out
+  rm -f "$out_file" 2>/dev/null || :
+  "$@" >"$out_file" 2>/dev/null &
+  cmd_pid=$!
+  ticks=0
+  while kill -0 "$cmd_pid" 2>/dev/null; do
+    ticks=$((ticks + 1))
+    if [ "$ticks" -ge "$check_timeout_tenths" ]; then
+      kill "$cmd_pid" >/dev/null 2>&1 || :
+      rm -f "$out_file" 2>/dev/null || :
+      return 124
+    fi
+    sleep 0.1
+  done
+  wait "$cmd_pid"
+  rc=$?
+  if [ "$rc" -ne 0 ]; then
+    rm -f "$out_file" 2>/dev/null || :
+    return "$rc"
+  fi
+  cat "$out_file"
+  rm -f "$out_file" 2>/dev/null || :
+}
+
+# Native app-state checks are the most reliable on macOS.
+if has osascript; then
+  if [ "$(run_with_timeout_capture osascript -e 'application "Docker" is running' || printf 'false')" = "true" ]; then
+    exit 0
+  fi
+  if [ "$(run_with_timeout_capture osascript -e 'application "Docker Desktop" is running' || printf 'false')" = "true" ]; then
+    exit 0
+  fi
+  if [ "$(run_with_timeout_capture osascript -e 'application id "com.docker.docker" is running' || printf 'false')" = "true" ]; then
+    exit 0
+  fi
+fi
+
+desktop_pattern='/Docker\.app/Contents/MacOS/Docker( Desktop)?'
+
+if has pgrep; then
+  if pgrep -f "$desktop_pattern" >/dev/null 2>&1; then
+    exit 0
+  fi
+fi
+
+if has ps; then
+  if ps ax -o command= 2>/dev/null | grep -E "$desktop_pattern" | grep -v grep >/dev/null 2>&1; then
+    exit 0
+  fi
+fi
+
+exit 1

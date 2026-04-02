@@ -28,16 +28,16 @@ if [ -z "$site_name" ]; then
   die 2 "check-https-status: SITENAME required"
 fi
 
-WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
-SITES_DIR="$WEB_ROOT"
-SITE_DIR="$SITES_DIR/$site_name"
+web_root=${WEB_WIZARDRY_ROOT:-$HOME/sites}
+sites_dir="$web_root"
+site_dir="$sites_dir/$site_name"
 
-if [ ! -d "$SITE_DIR" ]; then
+if [ ! -d "$site_dir" ]; then
   exit 2
 fi
 
-site_user_default="ww_$(printf '%s' "$site_name" | tr 'A-Z' 'a-z' | tr '-' '_')"
-site_user=$(config-get "$SITE_DIR/site.conf" site-user 2>/dev/null || printf '')
+site_user_default="ww_$(printf '%s' "$site_name" | tr 'A-Z' 'a-z' | tr '.-' '__')"
+site_user=$(config-get "$site_dir/site.conf" site-user 2>/dev/null || printf '')
 [ -z "$site_user" ] && site_user="$site_user_default"
 if [ -n "$site_user" ] && [ "$(id -un)" != "$site_user" ] && [ -z "${WIZARDRY_SITE_USER_REEXEC-}" ]; then
   if has sudo && sudo -n true >/dev/null 2>&1; then
@@ -46,11 +46,11 @@ if [ -n "$site_user" ] && [ "$(id -un)" != "$site_user" ] && [ -z "${WIZARDRY_SI
 fi
 
 # Check if HTTPS is enabled in site.conf
-https_enabled=$(config-get "$SITE_DIR/site.conf" https 2>/dev/null || echo "false")
+https_enabled=$(config-get "$site_dir/site.conf" https 2>/dev/null || echo "false")
 
 if [ "$https_enabled" = "true" ]; then
   # Also verify certificate files exist
-  cert_path=$(config-get "$SITE_DIR/site.conf" cert-path 2>/dev/null || echo "")
+  cert_path=$(config-get "$site_dir/site.conf" cert-path 2>/dev/null || echo "")
   if [ -n "$cert_path" ] && [ -f "$cert_path" ]; then
     exit 0
   fi

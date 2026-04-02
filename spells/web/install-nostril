@@ -1,0 +1,266 @@
+#!/bin/sh
+
+# Install or verify Nostr server tooling.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-nostril
+
+Ensures the nostril and nak CLIs are available for server-side Nostr auth,
+verification, and bridge flows.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
+
+say() {
+  printf '%s\n' "$1"
+}
+
+has_cmd() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+run_privileged() {
+  if "$@" 2>/dev/null; then
+    return 0
+  fi
+  if command -v run_sudo_cmd >/dev/null 2>&1; then
+    run_sudo_cmd "$@"
+    return 0
+  fi
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+    return 0
+  fi
+  if has_cmd sudo; then
+    sudo "$@"
+    return 0
+  fi
+  "$@"
+}
+
+pkg_manager() {
+  if has_cmd apt-get; then
+    printf '%s\n' apt
+    return 0
+  fi
+  if has_cmd dnf; then
+    printf '%s\n' dnf
+    return 0
+  fi
+  if has_cmd brew; then
+    printf '%s\n' brew
+    return 0
+  fi
+  printf '%s\n' none
+}
+
+ensure_build_deps() {
+  manager=$(pkg_manager)
+  case "$manager" in
+    apt)
+      run_privileged apt-get update -y >/dev/null
+      run_privileged env DEBIAN_FRONTEND=noninteractive \
+        apt-get install -y git make gcc autoconf automake libtool golang-go ca-certificates curl \
+        >/dev/null
+      ;;
+    dnf)
+      run_privileged dnf install -y \
+        git make gcc autoconf automake libtool golang ca-certificates curl >/dev/null
+      ;;
+    brew)
+      brew install git go autoconf automake libtool >/dev/null
+      ;;
+    none)
+      return 1
+      ;;
+  esac
+}
+
+install_target_bin_dir() {
+  if [ "$(id -u)" -eq 0 ]; then
+    printf '%s\n' /usr/local/bin
+    return 0
+  fi
+  if has_cmd sudo || command -v run_sudo_cmd >/dev/null 2>&1; then
+    printf '%s\n' /usr/local/bin
+    return 0
+  fi
+  printf '%s\n' "${XDG_BIN_HOME:-$HOME/.local/bin}"
+}
+
+install_built_binary() {
+  source_path=$1
+  target_name=$2
+  target_bin_dir=$(install_target_bin_dir)
+  run_privileged install -d -m 755 "$target_bin_dir"
+  run_privileged install -m 755 "$source_path" "$target_bin_dir/$target_name"
+}
+
+platform_suffix() {
+  os_name=$(uname -s 2>/dev/null || printf '')
+  arch_name=$(uname -m 2>/dev/null || printf '')
+  case "$os_name" in
+    Linux) platform_os=linux ;;
+    Darwin) platform_os=darwin ;;
+    FreeBSD) platform_os=freebsd ;;
+    *)
+      return 1
+      ;;
+  esac
+  case "$arch_name" in
+    x86_64|amd64) platform_arch=amd64 ;;
+    arm64|aarch64) platform_arch=arm64 ;;
+    riscv64) platform_arch=riscv64 ;;
+    *)
+      return 1
+      ;;
+  esac
+  printf '%s-%s\n' "$platform_os" "$platform_arch"
+}
+
+install_nak_release_binary() {
+  if has_cmd nak; then
+    return 0
+  fi
+  if ! has_cmd curl; then
+    return 1
+  fi
+  platform=$(platform_suffix 2>/dev/null || true)
+  [ -n "$platform" ] || return 1
+
+  release_json=$(
+    curl -fsSL https://api.github.com/repos/fiatjaf/nak/releases/latest 2>/dev/null || true
+  )
+  [ -n "$release_json" ] || return 1
+  release_json_one_line=$(printf '%s' "$release_json" | tr '\n' ' ')
+  download_url=$(printf '%s\n' "$release_json_one_line" | sed -n "s/.*\"browser_download_url\":[[:space:]]*\"\\([^\"]*nak-[^\"]*-${platform}\\)\".*/\\1/p" | head -n 1)
+  [ -n "$download_url" ] || return 1
+
+  tmp_bin=$(mktemp "${TMPDIR:-/tmp}/nak-release.XXXXXX")
+  curl -fsSL "$download_url" -o "$tmp_bin" || {
+    rm -f "$tmp_bin"
+    return 1
+  }
+  chmod 755 "$tmp_bin"
+  install_built_binary "$tmp_bin" nak
+  rm -f "$tmp_bin"
+  has_cmd nak
+}
+
+install_nak_binary() {
+  if has_cmd nak; then
+    return 0
+  fi
+  if install_nak_release_binary; then
+    return 0
+  fi
+  if ! has_cmd go; then
+    return 1
+  fi
+
+  build_root="${XDG_CACHE_HOME:-$HOME/.cache}/wizardry/nak"
+  build_bin="$build_root/bin"
+  mkdir -p "$build_bin"
+  env GOBIN="$build_bin" GO111MODULE=on \
+    go install github.com/fiatjaf/nak@latest >/dev/null 2>&1 || return 1
+  [ -f "$build_bin/nak" ] || return 1
+  install_built_binary "$build_bin/nak" nak
+  has_cmd nak
+}
+
+install_nostril_binary() {
+  if has_cmd nostril; then
+    return 0
+  fi
+  if ! has_cmd git || ! has_cmd make || ! has_cmd cc || ! has_cmd autoreconf; then
+    return 1
+  fi
+
+  build_root="${XDG_CACHE_HOME:-$HOME/.cache}/wizardry/nostril-src"
+  repo_dir="$build_root/nostril"
+  mkdir -p "$build_root"
+
+  if [ -d "$repo_dir/.git" ]; then
+    (
+      cd "$repo_dir"
+      git fetch --depth 1 origin >/dev/null 2>&1 || true
+      git reset --hard FETCH_HEAD >/dev/null 2>&1 || true
+      git submodule update --init --recursive >/dev/null 2>&1 || true
+    ) || return 1
+  else
+    git clone --depth 1 https://github.com/jb55/nostril.git "$repo_dir" >/dev/null 2>&1 || return 1
+    (
+      cd "$repo_dir"
+      git submodule update --init --recursive >/dev/null 2>&1
+    ) || return 1
+  fi
+
+  # nostril upstream Makefile uses `make -j` in sub-builds, which can
+  # exhaust memory on small VPS instances. Force deterministic low
+  # concurrency for those recursive invocations.
+  if [ -f "$repo_dir/Makefile" ]; then
+    sed \
+      -e 's/make -j[[:space:]]\{1,\}libsecp256k1\.la/$(MAKE) -j1 libsecp256k1.la/g' \
+      -e 's/make -j[[:space:]]\{1,\}libsodium\.la/$(MAKE) -j1 libsodium.la/g' \
+      "$repo_dir/Makefile" > "$repo_dir/Makefile.hq-tuned" 2>/dev/null || true
+    if [ -f "$repo_dir/Makefile.hq-tuned" ]; then
+      mv "$repo_dir/Makefile.hq-tuned" "$repo_dir/Makefile"
+    fi
+  fi
+
+  (
+    cd "$repo_dir"
+    env MAKEFLAGS=-j1 make nostril >/dev/null 2>&1
+  ) || return 1
+
+  [ -f "$repo_dir/nostril" ] || return 1
+  install_built_binary "$repo_dir/nostril" nostril
+  if [ -f "$repo_dir/nostril-query" ]; then
+    install_built_binary "$repo_dir/nostril-query" nostril-query
+  fi
+  has_cmd nostril
+}
+
+if has_cmd nostril && has_cmd nak; then
+  say "nostril tooling is already installed"
+  exit 0
+fi
+
+install_nostril_binary >/dev/null 2>&1 || true
+install_nak_binary >/dev/null 2>&1 || true
+
+if has_cmd nostril && has_cmd nak; then
+  say "Installed Nostr server tooling"
+  exit 0
+fi
+
+if ! ensure_build_deps; then
+  say "install-nostril: no supported package manager found for installing build dependencies." >&2
+  exit 1
+fi
+
+if ! has_cmd nostril && ! install_nostril_binary; then
+  say "install-nostril: could not install nostril." >&2
+  exit 1
+fi
+
+if ! has_cmd nak && ! install_nak_binary; then
+  say "install-nostril: could not install nak." >&2
+  exit 1
+fi
+
+if has_cmd nostril && has_cmd nak; then
+  say "Installed Nostr server tooling"
+  exit 0
+fi
+
+say "install-nostril: installation incomplete. Ensure nostril and nak are on PATH." >&2
+exit 1

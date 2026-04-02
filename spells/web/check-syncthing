@@ -1,0 +1,41 @@
+#!/bin/sh
+# Check whether Syncthing is installed and callable.
+# Used by web synchronization setup flows.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: check-syncthing
+
+Checks whether Syncthing is available for content synchronization.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
+
+check_syncthing_cli_supported() {
+  command -v syncthing >/dev/null 2>&1 || return 1
+  syncthing version 2>/dev/null | grep -Eiq '^syncthing v|^syncthing '
+  syncthing cli --help 2>/dev/null | grep -q 'Command line interface'
+}
+
+if check_syncthing_cli_supported; then
+  printf 'status=ok\n'
+  printf 'summary=%s\n' 'Syncthing with CLI support is available on PATH.'
+  exit 0
+fi
+
+if command -v syncthing >/dev/null 2>&1; then
+  printf 'status=bad\n'
+  printf 'summary=%s\n' 'Syncthing is installed, but it is too old for Headquarters automation.'
+  exit 0
+fi
+
+printf 'status=bad\n'
+printf 'summary=%s\n' 'Syncthing is not installed.'
+exit 0

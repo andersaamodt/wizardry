@@ -1,0 +1,61 @@
+#!/bin/sh
+
+# Uninstall BTCPay Server runtime and local deployment files.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uninstall-btcpay
+
+Stops BTCPay Server containers and removes the local btcpayserver-docker
+checkout in BTCPAY_BASE_DIR (defaults to ~/.btcpayserver).
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+say() {
+  printf '%s\n' "$1"
+}
+
+has_cmd() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+btcpay_root=${BTCPAY_BASE_DIR:-${HOME:-}/.btcpayserver}
+repo_dir="$btcpay_root/btcpayserver-docker"
+
+if ! check-btcpay-arcana | grep -q '^status=ok$' && [ ! -d "$repo_dir" ]; then
+  say "BTCPay Server is not installed"
+  exit 0
+fi
+
+if [ -x "$repo_dir/btcpay-down.sh" ]; then
+  set +e
+  if has_cmd timeout; then
+    timeout 600 sh -c 'cd "$1" && ./btcpay-down.sh' sh "$repo_dir" >/dev/null 2>&1
+  else
+    sh -c 'cd "$1" && ./btcpay-down.sh' sh "$repo_dir" >/dev/null 2>&1
+  fi
+  set -e
+fi
+
+if [ -d "$repo_dir" ]; then
+  rm -rf "$repo_dir"
+fi
+
+if [ -d "$btcpay_root" ] && [ -z "$(find "$btcpay_root" -mindepth 1 -maxdepth 1 2>/dev/null | head -n 1)" ]; then
+  rmdir "$btcpay_root" 2>/dev/null || true
+fi
+
+if check-btcpay-arcana | grep -q '^status=ok$'; then
+  say "uninstall-btcpay: BTCPay Server still appears installed." >&2
+  exit 1
+fi
+
+say "Uninstalled BTCPay Server"

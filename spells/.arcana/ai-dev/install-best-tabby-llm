@@ -1,0 +1,25 @@
+#!/bin/sh
+
+# Install and activate the recommended "best" Tabby model.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-best-tabby-llm
+
+Installs and activates the recommended best local model for Tabby.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+best_model=${TABBY_BEST_LLM_MODEL:-qwen2.5-coder:7b}
+
+printf '%s\n' "Installing best Tabby LLM: $best_model"
+"$script_dir/install-llm" "$best_model"
+"$script_dir/set-tabby-llm" "$best_model"
+

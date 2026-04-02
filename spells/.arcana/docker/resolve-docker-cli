@@ -1,0 +1,37 @@
+#!/bin/sh
+
+# Resolve a usable docker CLI path.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: resolve-docker-cli
+
+Prints a usable docker CLI path.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+if has docker; then
+  command -v docker
+  exit 0
+fi
+
+for path in \
+  "$HOME/.local/bin/docker" \
+  /usr/local/bin/docker \
+  /opt/homebrew/bin/docker \
+  /usr/bin/docker \
+  /Applications/Docker.app/Contents/Resources/bin/docker \
+  "$HOME/Applications/Docker.app/Contents/Resources/bin/docker"; do
+  if [ -x "$path" ]; then
+    printf '%s\n' "$path"
+    exit 0
+  fi
+done
+
+exit 1

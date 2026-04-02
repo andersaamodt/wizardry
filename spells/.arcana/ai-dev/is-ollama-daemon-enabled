@@ -1,0 +1,49 @@
+#!/bin/sh
+
+# Check if ollama daemon is enabled at boot.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: is-ollama-daemon-enabled
+
+Checks if the ollama daemon is enabled to start at boot.
+
+Returns: 0 if enabled, 1 if not enabled
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+unit="ollama.service"
+plist="/Library/LaunchDaemons/com.ollama.service.plist"
+
+if has systemctl; then
+  if systemctl is-enabled "$unit" >/dev/null 2>&1; then
+    exit 0
+  fi
+  exit 1
+fi
+
+if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
+  if [ ! -f "$plist" ]; then
+    exit 1
+  fi
+  
+  label="com.ollama.service"
+  
+  # Check if daemon is in the disabled list (disabled daemons show "=> true")
+  if launchctl print-disabled system 2>/dev/null | grep -q "\"$label\" => true"; then
+    # Daemon is disabled
+    exit 1
+  fi
+  
+  # Daemon is enabled (or not in disabled list)
+  exit 0
+fi
+
+# No daemon system available
+exit 1

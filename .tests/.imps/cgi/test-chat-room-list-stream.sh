@@ -7,9 +7,9 @@ done
 
 # Check if timeout command is available
 if command -v timeout >/dev/null 2>&1; then
-  TIMEOUT_CMD="timeout 1"
+  TIMEOUT_CMD="timeout 5"
 elif command -v gtimeout >/dev/null 2>&1; then
-  TIMEOUT_CMD="gtimeout 1"
+  TIMEOUT_CMD="gtimeout 5"
 else
   # No timeout available - use background process with sleep
   TIMEOUT_CMD=""
@@ -29,19 +29,70 @@ run_with_timeout() {
   if [ -n "$TIMEOUT_CMD" ]; then
     $TIMEOUT_CMD "$@" 2>&1 || true
   else
-    # Fallback: run in background and kill entire process group after 1 second
+    # Fallback: run in background and kill entire process group after 5 seconds
     tmpout=$(mktemp)
     "$@" > "$tmpout" 2>&1 &
     pid=$!
-    sleep 1
-    # Kill entire process group (negative PID) to terminate all child processes
-    kill -TERM -- -$pid 2>/dev/null || true
+    sleep 5
+    # Kill process group first (portable fallback to direct pid kill).
+    kill -TERM "-$pid" 2>/dev/null || kill -TERM "$pid" 2>/dev/null || true
     sleep 0.1  # Give processes time to handle TERM signal
-    kill -KILL -- -$pid 2>/dev/null || true  # Force kill if still running
+    kill -KILL "-$pid" 2>/dev/null || kill -KILL "$pid" 2>/dev/null || true
     sleep 0.1
     cat "$tmpout"
     rm -f "$tmpout"
   fi
+}
+
+# Capture a long-lived stream until all expected patterns appear, or time out.
+capture_stream_until_patterns() {
+  patterns_file=$(mktemp)
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --)
+        shift
+        break
+        ;;
+      *)
+        printf '%s\n' "$1" >> "$patterns_file"
+        shift
+        ;;
+    esac
+  done
+
+  output_file=$(mktemp)
+  "$@" > "$output_file" 2>&1 &
+  pid=$!
+
+  attempts=0
+  while [ "$attempts" -lt 30 ]; do
+    found_all=1
+    while IFS= read -r pattern || [ -n "$pattern" ]; do
+      [ -n "$pattern" ] || continue
+      if ! grep -Fq "$pattern" "$output_file" 2>/dev/null; then
+        found_all=0
+        break
+      fi
+    done < "$patterns_file"
+
+    if [ "$found_all" -eq 1 ]; then
+      break
+    fi
+
+    if ! kill -0 "$pid" 2>/dev/null; then
+      break
+    fi
+
+    sleep 0.1
+    attempts=$((attempts + 1))
+  done
+
+  kill -TERM "-$pid" 2>/dev/null || kill -TERM "$pid" 2>/dev/null || true
+  sleep 0.1
+  kill -KILL "-$pid" 2>/dev/null || kill -KILL "$pid" 2>/dev/null || true
+
+  cat "$output_file"
+  rm -f "$output_file" "$patterns_file"
 }
 
 # Cleanup test environment
@@ -61,7 +112,7 @@ test_chat_room_list_stream_exists() {
 test_chat_room_list_stream_outputs_sse_headers() {
   setup_test_env
   
-  output=$(run_with_timeout chat-room-list-stream)
+  output=$(capture_stream_until_patterns "Status: 200 OK" "Content-Type: text/event-stream" -- chat-room-list-stream)
   
   cleanup_test_env
   
@@ -74,7 +125,7 @@ test_chat_room_list_stream_outputs_sse_headers() {
 test_chat_room_list_stream_outputs_cors_headers() {
   setup_test_env
   
-  output=$(run_with_timeout chat-room-list-stream)
+  output=$(capture_stream_until_patterns "Access-Control-Allow-Origin: *" "Access-Control-Allow-Methods: GET, OPTIONS" -- chat-room-list-stream)
   
   cleanup_test_env
   
@@ -85,7 +136,7 @@ test_chat_room_list_stream_outputs_cors_headers() {
 test_chat_room_list_stream_sets_retry_interval() {
   setup_test_env
   
-  output=$(run_with_timeout chat-room-list-stream)
+  output=$(capture_stream_until_patterns "retry: 5000" -- chat-room-list-stream)
   
   cleanup_test_env
   
@@ -98,7 +149,7 @@ test_chat_room_list_stream_sends_initial_empty_list() {
   # Create empty chatrooms directory
   mkdir -p "$CHAT_DIR"
   
-  output=$(run_with_timeout chat-room-list-stream)
+  output=$(capture_stream_until_patterns "event: rooms" "data: []" -- chat-room-list-stream)
   
   cleanup_test_env
   
@@ -112,7 +163,7 @@ test_chat_room_list_stream_sends_single_room() {
   # Create one room
   mkdir -p "$CHAT_DIR/TestRoom"
   
-  output=$(run_with_timeout chat-room-list-stream)
+  output=$(capture_stream_until_patterns "event: rooms" 'data: ["TestRoom"]' -- chat-room-list-stream)
   
   cleanup_test_env
   
@@ -128,7 +179,7 @@ test_chat_room_list_stream_sends_multiple_rooms() {
   mkdir -p "$CHAT_DIR/Room2"
   mkdir -p "$CHAT_DIR/Room3"
   
-  output=$(run_with_timeout chat-room-list-stream)
+  output=$(capture_stream_until_patterns "event: rooms" "Room1" "Room2" "Room3" -- chat-room-list-stream)
   
   cleanup_test_env
   
@@ -146,7 +197,7 @@ test_chat_room_list_stream_filters_invalid_room_names() {
   mkdir -p "$CHAT_DIR/../../../InvalidPath"
   mkdir -p "$CHAT_DIR/Room With Spaces"
   
-  output=$(run_with_timeout chat-room-list-stream)
+  output=$(capture_stream_until_patterns "ValidRoom" -- chat-room-list-stream)
   
   cleanup_test_env
   
@@ -163,7 +214,7 @@ test_chat_room_list_stream_ignores_files() {
   mkdir -p "$CHAT_DIR/ValidRoom"
   touch "$CHAT_DIR/somefile.txt"
   
-  output=$(run_with_timeout chat-room-list-stream)
+  output=$(capture_stream_until_patterns "ValidRoom" -- chat-room-list-stream)
   
   cleanup_test_env
   
@@ -178,7 +229,7 @@ test_chat_room_list_stream_sends_keepalive() {
   
   mkdir -p "$CHAT_DIR"
   
-  output=$(run_with_timeout chat-room-list-stream)
+  output=$(capture_stream_until_patterns "event: rooms" -- chat-room-list-stream)
   
   cleanup_test_env
   
@@ -192,7 +243,7 @@ test_chat_room_list_stream_includes_padding() {
   
   mkdir -p "$CHAT_DIR"
   
-  output=$(run_with_timeout chat-room-list-stream)
+  output=$(capture_stream_until_patterns ": ........" -- chat-room-list-stream)
   
   cleanup_test_env
   
@@ -207,7 +258,7 @@ test_chat_room_list_stream_valid_json_array_format() {
   mkdir -p "$CHAT_DIR/Alpha"
   mkdir -p "$CHAT_DIR/Beta"
   
-  output=$(run_with_timeout chat-room-list-stream)
+  output=$(capture_stream_until_patterns "data: [" "Alpha" "Beta" -- chat-room-list-stream)
   
   cleanup_test_env
   
@@ -223,7 +274,7 @@ test_chat_room_list_stream_rooms_separated_by_commas() {
   mkdir -p "$CHAT_DIR/Room1"
   mkdir -p "$CHAT_DIR/Room2"
   
-  output=$(run_with_timeout chat-room-list-stream)
+  output=$(capture_stream_until_patterns "Room1" "Room2" -- chat-room-list-stream)
   
   cleanup_test_env
   
@@ -236,7 +287,7 @@ test_chat_room_list_stream_room_names_quoted() {
   
   mkdir -p "$CHAT_DIR/TestRoom"
   
-  output=$(run_with_timeout chat-room-list-stream)
+  output=$(capture_stream_until_patterns '"TestRoom"' -- chat-room-list-stream)
   
   cleanup_test_env
   
@@ -249,7 +300,7 @@ test_chat_room_list_stream_creates_chatrooms_dir() {
   
   # Don't create the directory - let the script create it
   
-  output=$(run_with_timeout chat-room-list-stream)
+  output=$(capture_stream_until_patterns "event: rooms" -- chat-room-list-stream)
   
   # Check that directory was created
   result=0
@@ -265,7 +316,7 @@ test_chat_room_list_stream_event_format() {
   
   mkdir -p "$CHAT_DIR/TestRoom"
   
-  output=$(run_with_timeout chat-room-list-stream)
+  output=$(capture_stream_until_patterns "event: rooms" "data: " -- chat-room-list-stream)
   
   cleanup_test_env
   

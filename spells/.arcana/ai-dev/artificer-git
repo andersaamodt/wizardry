@@ -1,0 +1,462 @@
+#!/bin/sh
+# Manage Git operations for Artificer workspaces.
+# Provides repository metadata, branch, diff, and commit helpers.
+
+set -eu
+
+usage() {
+  cat <<'USAGE'
+Usage: artificer-git <command> [args]
+
+Commands:
+  repo-info <workspace_path>
+  init <workspace_path>
+  branches <workspace_path>
+  checkout <workspace_path> <branch>
+  create-branch <workspace_path> <branch>
+  diff <workspace_path>
+  commit <workspace_path> <include_unstaged:0|1> [message]
+  push <workspace_path>
+  commit-push <workspace_path> <include_unstaged:0|1> [message]
+  open <workspace_path> <finder|terminal|textmate>
+  auth-status
+  ensure-ssh [email]
+  run <workspace_path> <command>
+USAGE
+}
+
+case "${1-}" in
+--help|--usage|-h)
+  usage
+  exit 0
+  ;;
+esac
+
+die() {
+  printf '%s\n' "$*" >&2
+  exit 1
+}
+
+require_workspace() {
+  ws=$1
+  [ -n "$ws" ] || die "workspace path required"
+  [ -d "$ws" ] || die "workspace not found: $ws"
+}
+
+is_repo() {
+  ws=$1
+  (
+    cd "$ws" &&
+      git rev-parse --is-inside-work-tree >/dev/null 2>&1
+  )
+}
+
+sum_numstat() {
+  awk '
+    {
+      a = $1
+      d = $2
+      if (a ~ /^[0-9]+$/) add += a
+      if (d ~ /^[0-9]+$/) del += d
+    }
+    END {
+      if (add == "") add = 0
+      if (del == "") del = 0
+      printf "%s|%s", add, del
+    }
+  '
+}
+
+repo_info() {
+  ws=$1
+  require_workspace "$ws"
+
+  if ! is_repo "$ws"; then
+    cat <<'EOFINFO'
+is_repo=0
+branch=
+ahead=0
+behind=0
+added=0
+deleted=0
+changes=0
+staged_changes=0
+unstaged_changes=0
+EOFINFO
+    return 0
+  fi
+
+  branch=$(cd "$ws" && git rev-parse --abbrev-ref HEAD 2>/dev/null || true)
+  if [ "$branch" = "HEAD" ]; then
+    branch=$(cd "$ws" && git symbolic-ref --short HEAD 2>/dev/null || echo "HEAD")
+  fi
+  [ -n "$branch" ] || branch="detached"
+
+  ahead=0
+  behind=0
+  upstream_counts=$(
+    cd "$ws" &&
+      git rev-list --left-right --count @{upstream}...HEAD 2>/dev/null || true
+  )
+  if [ -n "$upstream_counts" ]; then
+    behind=$(printf '%s' "$upstream_counts" | awk '{print $1+0}')
+    ahead=$(printf '%s' "$upstream_counts" | awk '{print $2+0}')
+  fi
+
+  status_porcelain=$(cd "$ws" && git status --porcelain 2>/dev/null || true)
+  status_lines=$(printf '%s\n' "$status_porcelain" | sed '/^[[:space:]]*$/d')
+  if [ -n "$status_lines" ]; then
+    changes=$(printf '%s\n' "$status_lines" | wc -l | tr -d ' ')
+    staged_changes=$(printf '%s\n' "$status_lines" | awk 'substr($0,1,1) != " " && substr($0,1,1) != "?" { c++ } END{ if (c=="") c=0; print c }')
+    unstaged_changes=$(printf '%s\n' "$status_lines" | awk 'substr($0,2,1) != " " || substr($0,1,1) == "?" { c++ } END{ if (c=="") c=0; print c }')
+  else
+    changes=0
+    staged_changes=0
+    unstaged_changes=0
+  fi
+
+  staged_numstat=$(cd "$ws" && git diff --cached --numstat 2>/dev/null || true)
+  unstaged_numstat=$(cd "$ws" && git diff --numstat 2>/dev/null || true)
+  untracked_files=$(cd "$ws" && git ls-files --others --exclude-standard 2>/dev/null || true)
+
+  staged_sums=$(printf '%s\n' "$staged_numstat" | sum_numstat)
+  unstaged_sums=$(printf '%s\n' "$unstaged_numstat" | sum_numstat)
+
+  staged_added=$(printf '%s' "$staged_sums" | awk -F'|' '{print $1+0}')
+  staged_deleted=$(printf '%s' "$staged_sums" | awk -F'|' '{print $2+0}')
+  unstaged_added=$(printf '%s' "$unstaged_sums" | awk -F'|' '{print $1+0}')
+  unstaged_deleted=$(printf '%s' "$unstaged_sums" | awk -F'|' '{print $2+0}')
+  untracked_added=0
+  while IFS= read -r rel_path; do
+    [ -n "$rel_path" ] || continue
+    file_path="$ws/$rel_path"
+    [ -f "$file_path" ] || continue
+    line_count=$(wc -l < "$file_path" 2>/dev/null | tr -d ' ' || true)
+    case "$line_count" in
+      ""|*[!0-9]*)
+        line_count=0
+        ;;
+    esac
+    if [ "$line_count" -eq 0 ]; then
+      byte_count=$(wc -c < "$file_path" 2>/dev/null | tr -d ' ' || true)
+      case "$byte_count" in
+        ""|*[!0-9]*)
+          byte_count=0
+          ;;
+      esac
+      if [ "$byte_count" -gt 0 ]; then
+        line_count=1
+      fi
+    fi
+    untracked_added=$((untracked_added + line_count))
+  done <<EOF
+$untracked_files
+EOF
+
+  added=$((staged_added + unstaged_added + untracked_added))
+  deleted=$((staged_deleted + unstaged_deleted))
+
+  printf '%s\n' "is_repo=1"
+  printf '%s\n' "branch=$branch"
+  printf '%s\n' "ahead=$ahead"
+  printf '%s\n' "behind=$behind"
+  printf '%s\n' "added=$added"
+  printf '%s\n' "deleted=$deleted"
+  printf '%s\n' "changes=$changes"
+  printf '%s\n' "staged_changes=$staged_changes"
+  printf '%s\n' "unstaged_changes=$unstaged_changes"
+}
+
+list_branches() {
+  ws=$1
+  require_workspace "$ws"
+  is_repo "$ws" || die "not a git repository"
+
+  (
+    cd "$ws" &&
+      git branch --no-color 2>/dev/null | sed 's/^* /CURRENT|/; s/^  /BRANCH|/'
+  )
+}
+
+git_diff() {
+  ws=$1
+  require_workspace "$ws"
+
+  if ! is_repo "$ws"; then
+    printf '%s\n' 'Not a git repository.'
+    return 0
+  fi
+
+  staged=$(cd "$ws" && git --no-pager diff --cached --no-color 2>/dev/null || true)
+  unstaged=$(cd "$ws" && git --no-pager diff --no-color 2>/dev/null || true)
+  untracked=$(cd "$ws" && git ls-files --others --exclude-standard 2>/dev/null || true)
+
+  if [ -z "$staged" ] && [ -z "$unstaged" ] && [ -z "$untracked" ]; then
+    printf '%s\n' 'No working tree changes.'
+    return 0
+  fi
+
+  if [ -n "$staged" ]; then
+    printf '%s\n%s\n' '### Staged' "$staged"
+  fi
+
+  if [ -n "$unstaged" ]; then
+    if [ -n "$staged" ]; then
+      printf '\n'
+    fi
+    printf '%s\n%s\n' '### Unstaged' "$unstaged"
+  fi
+
+  if [ -n "$untracked" ]; then
+    if [ -n "$staged" ] || [ -n "$unstaged" ]; then
+      printf '\n'
+    fi
+    printf '%s\n' '### Untracked'
+    printf '%s\n' "$untracked" | while IFS= read -r rel_path; do
+      [ -n "$rel_path" ] || continue
+      file_path="$ws/$rel_path"
+      if [ ! -f "$file_path" ]; then
+        printf '%s\n' "new file: $rel_path"
+        continue
+      fi
+      # no-index returns exit 1 when differences are present; ignore that.
+      file_diff=$(
+        cd "$ws" &&
+          git --no-pager diff --no-index --no-color /dev/null "$rel_path" 2>/dev/null || true
+      )
+      if [ -n "$file_diff" ]; then
+        printf '%s\n' "$file_diff"
+      else
+        printf '%s\n' "new file: $rel_path"
+      fi
+      printf '\n'
+    done
+  fi
+}
+
+auto_message() {
+  ws=$1
+  timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+  first_file=$(cd "$ws" && git status --porcelain 2>/dev/null | sed -n '1s/^.. //p')
+  if [ -n "$first_file" ]; then
+    printf 'Artificer update: %s (%s)' "$first_file" "$timestamp"
+  else
+    printf 'Artificer update (%s)' "$timestamp"
+  fi
+}
+
+do_commit() {
+  ws=$1
+  include_unstaged=$2
+  msg=${3:-}
+
+  require_workspace "$ws"
+  is_repo "$ws" || die "not a git repository"
+
+  (
+    cd "$ws"
+
+    if [ "$include_unstaged" = "1" ]; then
+      git add -A
+    fi
+
+    if git diff --cached --quiet; then
+      die "no staged changes to commit"
+    fi
+
+    commit_msg=$msg
+    if [ -z "$commit_msg" ]; then
+      commit_msg=$(auto_message "$ws")
+    fi
+
+    git commit -m "$commit_msg"
+  )
+}
+
+do_push() {
+  ws=$1
+  require_workspace "$ws"
+  is_repo "$ws" || die "not a git repository"
+
+  (
+    cd "$ws" &&
+      git push
+  )
+}
+
+open_target() {
+  ws=$1
+  target=$2
+
+  require_workspace "$ws"
+  command -v open >/dev/null 2>&1 || die "open command unavailable on this system"
+
+  case "$target" in
+    finder)
+      open "$ws"
+      ;;
+    terminal)
+      open -a Terminal "$ws"
+      ;;
+    textmate)
+      open -a TextMate "$ws"
+      ;;
+    *)
+      die "unsupported open target: $target"
+      ;;
+  esac
+}
+
+auth_status() {
+  has_gh=0
+  gh_authenticated=0
+  if command -v gh >/dev/null 2>&1; then
+    has_gh=1
+    if gh auth status -h github.com >/dev/null 2>&1; then
+      gh_authenticated=1
+    fi
+  fi
+
+  ssh_pub_path=""
+  ssh_pub_key=""
+  if [ -f "$HOME/.ssh/id_ed25519.pub" ]; then
+    ssh_pub_path="$HOME/.ssh/id_ed25519.pub"
+    ssh_pub_key=$(sed -n '1p' "$ssh_pub_path")
+  else
+    first_pub=$(ls "$HOME"/.ssh/*.pub 2>/dev/null | sed -n '1p' || true)
+    if [ -n "$first_pub" ] && [ -f "$first_pub" ]; then
+      ssh_pub_path=$first_pub
+      ssh_pub_key=$(sed -n '1p' "$ssh_pub_path")
+    fi
+  fi
+
+  ssh_pub_exists=0
+  if [ -n "$ssh_pub_key" ]; then
+    ssh_pub_exists=1
+  fi
+
+  printf '%s\n' "has_gh=$has_gh"
+  printf '%s\n' "gh_authenticated=$gh_authenticated"
+  printf '%s\n' "ssh_pub_exists=$ssh_pub_exists"
+  printf '%s\n' "ssh_pub_path=$ssh_pub_path"
+  printf '%s\n' "ssh_pub_key=$ssh_pub_key"
+}
+
+ensure_ssh() {
+  email=${1:-}
+
+  if [ -z "$email" ]; then
+    host_name=$(hostname 2>/dev/null || echo "localhost")
+    user_name=$(whoami 2>/dev/null || echo "user")
+    email="$user_name@$host_name"
+  fi
+
+  mkdir -p "$HOME/.ssh"
+
+  if [ ! -f "$HOME/.ssh/id_ed25519" ]; then
+    command -v ssh-keygen >/dev/null 2>&1 || die "ssh-keygen is required"
+    ssh-keygen -q -t ed25519 -C "$email" -N "" -f "$HOME/.ssh/id_ed25519" >/dev/null
+  fi
+
+  [ -f "$HOME/.ssh/id_ed25519.pub" ] || die "ssh public key was not created"
+  printf '%s\n' "ssh_pub_path=$HOME/.ssh/id_ed25519.pub"
+  printf '%s\n' "ssh_pub_key=$(sed -n '1p' "$HOME/.ssh/id_ed25519.pub")"
+}
+
+run_command() {
+  ws=$1
+  cmd=$2
+  require_workspace "$ws"
+  [ -n "$cmd" ] || die "command is required"
+
+  WORKSPACE_PATH=$ws COMMAND_TEXT=$cmd /bin/sh -lc '
+    command cd "$WORKSPACE_PATH" || exit 1
+    eval "$COMMAND_TEXT"
+  '
+}
+
+cmd=${1:-}
+[ -n "$cmd" ] || {
+  usage
+  exit 1
+}
+
+case "$cmd" in
+  repo-info)
+    [ "$#" -eq 2 ] || die "usage: artificer-git repo-info <workspace_path>"
+    repo_info "$2"
+    ;;
+  init)
+    [ "$#" -eq 2 ] || die "usage: artificer-git init <workspace_path>"
+    require_workspace "$2"
+    (
+      cd "$2" &&
+        git init
+    )
+    ;;
+  branches)
+    [ "$#" -eq 2 ] || die "usage: artificer-git branches <workspace_path>"
+    list_branches "$2"
+    ;;
+  checkout)
+    [ "$#" -eq 3 ] || die "usage: artificer-git checkout <workspace_path> <branch>"
+    require_workspace "$2"
+    branch_name=$3
+    [ -n "$branch_name" ] || die "branch is required"
+    (
+      cd "$2" &&
+        git checkout "$branch_name"
+    )
+    ;;
+  create-branch)
+    [ "$#" -eq 3 ] || die "usage: artificer-git create-branch <workspace_path> <branch>"
+    require_workspace "$2"
+    branch_name=$3
+    [ -n "$branch_name" ] || die "branch is required"
+    (
+      cd "$2"
+      if git switch -c "$branch_name" >/dev/null 2>&1; then
+        :
+      else
+        git checkout -b "$branch_name"
+      fi
+    )
+    ;;
+  diff)
+    [ "$#" -eq 2 ] || die "usage: artificer-git diff <workspace_path>"
+    git_diff "$2"
+    ;;
+  commit)
+    [ "$#" -ge 3 ] || die "usage: artificer-git commit <workspace_path> <include_unstaged:0|1> [message]"
+    do_commit "$2" "$3" "${4:-}"
+    ;;
+  push)
+    [ "$#" -eq 2 ] || die "usage: artificer-git push <workspace_path>"
+    do_push "$2"
+    ;;
+  commit-push)
+    [ "$#" -ge 3 ] || die "usage: artificer-git commit-push <workspace_path> <include_unstaged:0|1> [message]"
+    do_commit "$2" "$3" "${4:-}"
+    do_push "$2"
+    ;;
+  open)
+    [ "$#" -eq 3 ] || die "usage: artificer-git open <workspace_path> <finder|terminal|textmate>"
+    open_target "$2" "$3"
+    ;;
+  auth-status)
+    auth_status
+    ;;
+  ensure-ssh)
+    ensure_ssh "${2:-}"
+    ;;
+  run)
+    [ "$#" -eq 3 ] || die "usage: artificer-git run <workspace_path> <command>"
+    run_command "$2" "$3"
+    ;;
+  --help|-h|help)
+    usage
+    ;;
+  *)
+    die "unknown command: $cmd"
+    ;;
+esac

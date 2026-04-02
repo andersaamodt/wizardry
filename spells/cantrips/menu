@@ -112,7 +112,7 @@ fi
 
 # If not loaded from script_dir, try function or PATH
 if [ -z "${RESET-}" ]; then
-        if has colors; then
+        if command -v colors >/dev/null 2>&1; then
                 colors_path=$(command -v colors 2>/dev/null || printf '')
                 if [ -n "$colors_path" ] && [ -f "$colors_path" ]; then
                         # shellcheck disable=SC1090
@@ -384,6 +384,146 @@ get_row_data() {
         return 1
 }
 
+format_command_for_display() {
+        raw_cmd=$1
+
+        if [ -z "$raw_cmd" ]; then
+                printf '%s' ""
+                return 0
+        fi
+
+        # Strip internal wrapper suffixes so the command column stays readable.
+        # Menus may append these for cursor/selection bookkeeping.
+        simplified_cmd=$raw_cmd
+
+        case "$simplified_cmd" in
+                *"&& kill -TERM \$PPID")
+                        simplified_cmd=${simplified_cmd%"&& kill -TERM \$PPID"}
+                        ;;
+        esac
+        case "$simplified_cmd" in
+                *"; kill -TERM \$PPID")
+                        simplified_cmd=${simplified_cmd%"; kill -TERM \$PPID"}
+                        ;;
+        esac
+        case "$simplified_cmd" in
+                *"&& exit 0")
+                        simplified_cmd=${simplified_cmd%"&& exit 0"}
+                        ;;
+        esac
+        case "$simplified_cmd" in
+                *"; exit 0")
+                        simplified_cmd=${simplified_cmd%"; exit 0"}
+                        ;;
+        esac
+        case "$simplified_cmd" in
+                *'; echo '*' > "$SELECTION_FILE"')
+                        simplified_cmd=${simplified_cmd%'; echo '*}
+                        ;;
+        esac
+        case "$simplified_cmd" in
+                *"; printf '%s' "*' > "$SELECTION_FILE"')
+                        simplified_cmd=${simplified_cmd%"; printf '%s' "*}
+                        ;;
+        esac
+
+        # When menus expand the selection file path inline, hide that bookkeeping.
+        simplified_cmd=$(
+                printf '%s\n' "$simplified_cmd" | sed \
+                        -e 's/[[:space:]]*;[[:space:]]*echo .* >[[:space:]]*"[^"]*"$/ /' \
+                        -e "s/[[:space:]]*;[[:space:]]*printf '%s' .* >[[:space:]]*\"[^\"]*\"$//"
+        )
+        case "$simplified_cmd" in
+                *'; printf '*)
+                        simplified_cmd=${simplified_cmd%'; printf '*}
+                        ;;
+        esac
+
+        # Compound shell snippets should present the primary action, not prompt setup.
+        while :; do
+                case "$simplified_cmd" in
+                        *'; '*)
+                                simplified_cmd=${simplified_cmd##*'; '}
+                                ;;
+                        *' && '*)
+                                simplified_cmd=${simplified_cmd##*' && '}
+                                ;;
+                        *)
+                                break
+                                ;;
+                esac
+        done
+
+        # Trim leading/trailing spaces after wrapper removal.
+        while :; do
+                case "$simplified_cmd" in
+                        ' '*)
+                                simplified_cmd=${simplified_cmd# }
+                                ;;
+                        *)
+                                break
+                                ;;
+                esac
+        done
+        while :; do
+                case "$simplified_cmd" in
+                        *' ')
+                                simplified_cmd=${simplified_cmd% }
+                                ;;
+                        *)
+                                break
+                                ;;
+                esac
+        done
+
+        if [ -z "$simplified_cmd" ]; then
+                simplified_cmd=$raw_cmd
+        fi
+
+        case "$simplified_cmd" in
+                "kill -TERM \$PPID"|"exit 0")
+                        printf '%s' "menu-exit"
+                        return 0
+                        ;;
+        esac
+
+        case "$simplified_cmd" in
+                ". "*)
+                        prefix=". "
+                        remainder=${simplified_cmd#". "}
+                        first_word=${remainder%% *}
+                        if [ "$first_word" = "$remainder" ]; then
+                                trailing=''
+                        else
+                                trailing=${remainder#"$first_word"}
+                        fi
+                        ;;
+                *)
+                        prefix=''
+                        first_word=${simplified_cmd%% *}
+                        if [ "$first_word" = "$simplified_cmd" ]; then
+                                trailing=''
+                        else
+                                trailing=${simplified_cmd#"$first_word"}
+                        fi
+                        ;;
+        esac
+
+        case "$trailing" in
+                *'$('*|*'`'*)
+                        trailing=''
+                        ;;
+        esac
+
+        case "$first_word" in
+                */*)
+                        first_word=${first_word##*/}
+                        ;;
+        esac
+
+        printf '%s%s%s' "$prefix" "$first_word" "$trailing"
+}
+
 # Use start_selection if valid, otherwise default to 1
 selected=1
 case $start_selection in
@@ -456,12 +596,15 @@ render_row() {
 
         # Truncate command - keep using cut as it's actually efficient for this
         truncated_command=""
+        display_command=$(format_command_for_display "$command")
         if [ "$max_command_length" -gt 0 ] && [ -n "$command" ]; then
-                cmd_len=${#command}
+                cmd_len=${#display_command}
                 if [ "$cmd_len" -le "$max_command_length" ]; then
-                        truncated_command="$command"
+                        truncated_command="$display_command"
                 else
-                        truncated_command=$(printf '%s' "$command" | cut -c -"$max_command_length")
+                        truncated_command=$(
+                                printf '%s' "$display_command" | cut -c -"$max_command_length"
+                        )
                 fi
         fi
 

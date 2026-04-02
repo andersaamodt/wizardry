@@ -15,7 +15,8 @@ filter_enchanted_keys() {
 # Try xattr first (macOS)
 if check-attribute-tool xattr; then
   if keys=$(xattr "$file" 2>/dev/null); then
-    parsed=$(printf '%s\n' "$keys" | filter_enchanted_keys)
+    # Ignore macOS provenance metadata; it is system-generated noise.
+    parsed=$(printf '%s\n' "$keys" | sed '/^com\.apple\.provenance$/d' | awk 'NF { print }')
     if [ -n "$parsed" ]; then
       printf '%s\n' "$parsed"
       exit 0

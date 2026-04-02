@@ -1,0 +1,77 @@
+#!/bin/sh
+
+# Interactive yt-dlp command presets.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: run-yt-dlp-wizard MODE
+
+MODE:
+  default      Download using yt-dlp defaults
+  best         Download highest quality video+audio
+  audio         Download audio only (mp3)
+  subtitles     Download video with subtitles
+  formats       Show available formats
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+mode=${1-}
+if [ -z "$mode" ]; then
+  die "run-yt-dlp-wizard: MODE is required"
+fi
+
+if ! command -v yt-dlp >/dev/null 2>&1; then
+  die "run-yt-dlp-wizard: yt-dlp is not installed"
+fi
+
+printf 'Video URL: '
+IFS= read -r url
+if [ -z "$url" ]; then
+  die "run-yt-dlp-wizard: URL is required"
+fi
+
+ask_output_dir=1
+[ "$mode" = "formats" ] && ask_output_dir=0
+
+output_dir=""
+if [ "$ask_output_dir" -eq 1 ]; then
+  default_dir="${HOME}/Downloads"
+  printf 'Output directory [%s]: ' "$default_dir"
+  IFS= read -r output_dir
+  [ -n "$output_dir" ] || output_dir="$default_dir"
+  mkdir -p "$output_dir"
+fi
+
+case "$mode" in
+default)
+  (cd "$output_dir" && yt-dlp "$url")
+  ;;
+best)
+  (cd "$output_dir" && yt-dlp -f "bv*+ba/b" --merge-output-format mp4 "$url")
+  ;;
+audio)
+  (cd "$output_dir" && yt-dlp -x --audio-format mp3 --audio-quality 0 "$url")
+  ;;
+subtitles)
+  (
+    cd "$output_dir" &&
+      yt-dlp --write-subs --write-auto-subs --sub-langs "en.*,en" --convert-subs srt "$url"
+  )
+  ;;
+formats)
+  yt-dlp -F "$url"
+  ;;
+*)
+  die "run-yt-dlp-wizard: unknown mode '$mode'"
+  ;;
+esac
+
+success "yt-dlp task complete"

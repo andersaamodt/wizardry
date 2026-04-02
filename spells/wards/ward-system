@@ -1116,8 +1116,8 @@ check_level_2() {
     ward_desc "$msg" 1
     if ward_ask_fix "See how to set reasonable history limits?"; then
       printf 'Add to your shell profile (~/.bashrc, ~/.zshrc):\n'
-      printf '  export HISTSIZE=5000\n'
-      printf '  export HISTFILESIZE=5000\n'
+      printf '  HISTSIZE=5000\n'
+      printf '  HISTFILESIZE=5000\n'
     fi
   fi
 }
@@ -1811,8 +1811,8 @@ check_level_3() {
     ward_desc "$msg" 1
     if ward_ask_fix "Change to standard locale? (recommended)"; then
       printf 'Set a standard locale in your shell profile:\n'
-      printf '  export LC_ALL=en_US.UTF-8\n'
-      printf '  export LANG=en_US.UTF-8\n'
+      printf '  LC_ALL=en_US.UTF-8\n'
+      printf '  LANG=en_US.UTF-8\n'
     fi
   fi
   

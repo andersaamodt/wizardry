@@ -1,0 +1,25 @@
+#!/bin/sh
+
+# Stop Docker Desktop UI process (macOS).
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: stop-docker-desktop
+
+Stops Docker Desktop.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+if [ "$(uname -s 2>/dev/null)" != "Darwin" ]; then
+  die "stop-docker-desktop: macOS is required"
+fi
+
+"$script_dir/stop-docker-daemon"

@@ -21,6 +21,7 @@ USAGE
 esac
 
 set -eu
+. env-clear
 
 # Handle the 'all' mode - completely clear the terminal session history
 if [ "${1-}" = "all" ]; then

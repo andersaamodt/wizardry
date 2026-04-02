@@ -1,0 +1,89 @@
+#!/bin/sh
+
+# Present the Voice Recognition backend management menu.
+
+case "${1-}" in
+  --help|--usage|-h)
+    cat <<'USAGE'
+Usage: voice-recognition-menu
+
+Displays install and uninstall toggles for local dictation backends.
+USAGE
+    exit 0
+    ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+. colors
+
+if ! require menu "The voice-recognition-menu needs the 'menu' command to present options."; then
+  exit 1
+fi
+
+trap 'exit 130' INT
+trap 'exit 0' TERM
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+VR_ARCANA_DIR=$script_dir
+export VR_ARCANA_DIR
+# shellcheck source=/dev/null
+. "$script_dir/voice-recognition-common"
+
+install_ctranslate2_cmd="$script_dir/install-ctranslate2-whisper"
+uninstall_ctranslate2_cmd="$script_dir/uninstall-ctranslate2-whisper"
+install_mlx_cmd="$script_dir/install-mlx-whisper"
+uninstall_mlx_cmd="$script_dir/uninstall-mlx-whisper"
+install_parakeet_cmd="$script_dir/install-parakeet"
+uninstall_parakeet_cmd="$script_dir/uninstall-parakeet"
+install_env_prefix="WIZARDRY_LOG_LEVEL=1 "
+
+while :; do
+  unset menu_status
+
+  set --
+
+  if vr_component_installed "ctranslate2-whisper"; then
+    ctranslate2_label="[X] CTranslate2 Whisper"
+    ctranslate2_cmd="$uninstall_ctranslate2_cmd"
+  else
+    ctranslate2_label="[ ] CTranslate2 Whisper"
+    ctranslate2_cmd="${install_env_prefix}${install_ctranslate2_cmd}"
+  fi
+  set -- "$@" "$ctranslate2_label%$ctranslate2_cmd"
+
+  if vr_is_macos_apple_silicon; then
+    if vr_component_installed "mlx-whisper"; then
+      mlx_label="[X] MLX-Whisper"
+      mlx_cmd="$uninstall_mlx_cmd"
+    else
+      mlx_label="[ ] MLX-Whisper"
+      mlx_cmd="${install_env_prefix}${install_mlx_cmd}"
+    fi
+    set -- "$@" "$mlx_label%$mlx_cmd"
+  fi
+
+  if vr_has_nvidia_gpu; then
+    if vr_component_installed "parakeet"; then
+      parakeet_label="[X] Parakeet"
+      parakeet_cmd="$uninstall_parakeet_cmd"
+    else
+      parakeet_label="[ ] Parakeet"
+      parakeet_cmd="${install_env_prefix}${install_parakeet_cmd}"
+    fi
+    set -- "$@" "$parakeet_label%$parakeet_cmd"
+  fi
+
+  exit_label=$(exit-label)
+  set -- "$@" "${exit_label}%kill -TERM \$PPID"
+
+  menu "Voice Recognition:" "$@" || menu_status=$?
+  menu_status=${menu_status:-0}
+
+  if [ "$menu_status" -eq 130 ]; then
+    printf 'ESC\n' >&2
+    exit 0
+  fi
+done

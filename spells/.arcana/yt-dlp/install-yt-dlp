@@ -1,0 +1,91 @@
+#!/bin/sh
+
+# Install yt-dlp using available package managers.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-yt-dlp
+
+Installs yt-dlp using the best available method for the current platform.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+
+if "$script_dir/is-yt-dlp-installed"; then
+  success "yt-dlp is already installed"
+  exit 0
+fi
+
+run_with_priv() {
+  if command -v sudo >/dev/null 2>&1; then
+    sudo "$@"
+  else
+    "$@"
+  fi
+}
+
+installed=0
+
+if command -v pkgin >/dev/null 2>&1; then
+  if run_with_priv pkgin -y install yt-dlp >/dev/null 2>&1; then
+    installed=1
+  fi
+fi
+
+if [ "$installed" -eq 0 ] && command -v apt-get >/dev/null 2>&1; then
+  run_with_priv apt-get update >/dev/null 2>&1 || true
+  if run_with_priv apt-get -y install yt-dlp >/dev/null 2>&1; then
+    installed=1
+  fi
+fi
+
+if [ "$installed" -eq 0 ] && command -v pacman >/dev/null 2>&1; then
+  if run_with_priv pacman --noconfirm -Sy yt-dlp >/dev/null 2>&1; then
+    installed=1
+  fi
+fi
+
+if [ "$installed" -eq 0 ] && command -v dnf >/dev/null 2>&1; then
+  if run_with_priv dnf -y install yt-dlp >/dev/null 2>&1; then
+    installed=1
+  fi
+fi
+
+if [ "$installed" -eq 0 ] && command -v yum >/dev/null 2>&1; then
+  if run_with_priv yum -y install yt-dlp >/dev/null 2>&1; then
+    installed=1
+  fi
+fi
+
+if [ "$installed" -eq 0 ] && command -v zypper >/dev/null 2>&1; then
+  if run_with_priv zypper -n install yt-dlp >/dev/null 2>&1; then
+    installed=1
+  fi
+fi
+
+if [ "$installed" -eq 0 ] && command -v brew >/dev/null 2>&1; then
+  if brew install yt-dlp >/dev/null 2>&1; then
+    installed=1
+  fi
+fi
+
+if [ "$installed" -eq 0 ] && command -v python3 >/dev/null 2>&1; then
+  if python3 -m pip install --user -U yt-dlp >/dev/null 2>&1; then
+    installed=1
+  fi
+fi
+
+if ! "$script_dir/is-yt-dlp-installed"; then
+  die "install-yt-dlp: failed to install yt-dlp with available installers"
+fi
+
+success "Installed yt-dlp"

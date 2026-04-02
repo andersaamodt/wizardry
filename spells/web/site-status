@@ -23,17 +23,17 @@ if [ -z "$site_name" ]; then
   die 2 "site-status: SITENAME required"
 fi
 
-WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
-SITES_DIR="$WEB_ROOT"
-SITE_DIR="$SITES_DIR/$site_name"
+web_root=${WEB_WIZARDRY_ROOT:-$HOME/sites}
+sites_dir="$web_root"
+site_dir="$sites_dir/$site_name"
 
-if [ ! -d "$SITE_DIR" ]; then
+if [ ! -d "$site_dir" ]; then
   printf 'not found\n'
   exit 1
 fi
 
 # Check if built
-if [ -d "$SITE_DIR/build" ] && [ -f "$SITE_DIR/build/pages/index.html" ]; then
+if [ -d "$site_dir/build" ] && [ -f "$site_dir/build/pages/index.html" ]; then
   build_status="built"
 else
   build_status="not built"
@@ -60,15 +60,15 @@ is_site_nginx_pid_running() {
 
   cmd=$(ps -p "$pid" -o command= 2>/dev/null || printf '')
   case "$cmd" in
-    *nginx*"$SITE_DIR"*|*nginx*)
+    *nginx*"$site_dir"*|*nginx*)
       return 0
       ;;
   esac
   return 1
 }
 
-if [ -f "$SITE_DIR/nginx/nginx.pid" ]; then
-  pid=$(cat "$SITE_DIR/nginx/nginx.pid" 2>/dev/null || echo "")
+if [ -f "$site_dir/nginx/nginx.pid" ]; then
+  pid=$(cat "$site_dir/nginx/nginx.pid" 2>/dev/null || echo "")
   if is_site_nginx_pid_running "$pid"; then
     serve_status="serving"
   fi

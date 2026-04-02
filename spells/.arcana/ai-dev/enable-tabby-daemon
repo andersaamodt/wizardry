@@ -1,0 +1,37 @@
+#!/bin/sh
+
+# Enable automatic startup for the Tabby daemon container.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: enable-tabby-daemon
+
+Enables automatic startup for the Tabby daemon container.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+if ! has docker; then
+  die "enable-tabby-daemon: docker is not installed"
+fi
+
+if ! docker info >/dev/null 2>&1; then
+  die "enable-tabby-daemon: could not connect to the docker daemon. docker daemon must be running to enable tabby daemon startup."
+fi
+
+if ! "$script_dir/is-tabby-daemon-installed" >/dev/null 2>&1; then
+  "$script_dir/install-tabby-daemon"
+fi
+
+if ! docker update --restart unless-stopped tabby >/dev/null; then
+  die "enable-tabby-daemon: failed to enable tabby daemon startup"
+fi
+
+success "tabby daemon enabled at startup"

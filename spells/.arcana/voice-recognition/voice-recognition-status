@@ -1,0 +1,69 @@
+#!/bin/sh
+
+# Report installation status for voice-recognition components.
+
+case "${1-}" in
+  --help|--usage|-h)
+    cat <<'USAGE'
+Usage: voice-recognition-status
+
+Reports installation status for local dictation backends.
+USAGE
+    exit 0
+    ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+VR_ARCANA_DIR=$script_dir
+export VR_ARCANA_DIR
+# shellcheck source=/dev/null
+. "$script_dir/voice-recognition-common"
+
+if command -v colors >/dev/null 2>&1; then
+  # shellcheck source=/dev/null
+  . colors
+else
+  RESET=""
+  THEME_SUCCESS=""
+  THEME_WARNING=""
+  GREY=""
+fi
+
+installed=0
+total=1
+
+if vr_component_installed "ctranslate2-whisper"; then
+  installed=$((installed + 1))
+fi
+
+if vr_is_macos_apple_silicon; then
+  total=$((total + 1))
+  if vr_component_installed "mlx-whisper"; then
+    installed=$((installed + 1))
+  fi
+fi
+
+if vr_has_nvidia_gpu; then
+  total=$((total + 1))
+  if vr_component_installed "parakeet"; then
+    installed=$((installed + 1))
+  fi
+fi
+
+if [ "$installed" -eq 0 ]; then
+  color="$GREY"
+  status="not installed"
+elif [ "$installed" -eq "$total" ]; then
+  color="$THEME_SUCCESS"
+  status="installed"
+else
+  color="$THEME_WARNING"
+  status="partial install"
+fi
+
+printf '%s%s%s\n' "$color" "$status" "$RESET"

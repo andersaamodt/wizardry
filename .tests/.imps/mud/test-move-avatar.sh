@@ -12,11 +12,24 @@ test_move_avatar_exists() {
 
 test_move_avatar_no_config() {
   # Should not fail if config doesn't exist
-  test_dir=$(mktemp -d)
   move_avatar_imp="$test_root/spells/.imps/mud/move-avatar"
-  SPELLBOOK_DIR="$test_dir" output=$("$move_avatar_imp" 2>&1)
+  test_dir=$(mktemp -d)
+  old_spellbook_dir=${SPELLBOOK_DIR-}
+
+  SPELLBOOK_DIR="$test_dir"
+  export SPELLBOOK_DIR
+
+  output=$("$move_avatar_imp" 2>&1)
   status=$?
+
+  if [ -n "$old_spellbook_dir" ]; then
+    SPELLBOOK_DIR=$old_spellbook_dir
+    export SPELLBOOK_DIR
+  else
+    unset SPELLBOOK_DIR
+  fi
   rm -rf "$test_dir"
+
   [ "$status" -eq 0 ]
 }
 

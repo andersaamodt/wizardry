@@ -1,0 +1,53 @@
+#!/bin/sh
+
+# Start Docker Desktop UI process (macOS).
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: start-docker-desktop
+
+Starts Docker Desktop.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+if [ "$(uname -s 2>/dev/null)" != "Darwin" ]; then
+  die "start-docker-desktop: macOS is required"
+fi
+
+if ! "$script_dir/is-docker-installed" >/dev/null 2>&1; then
+  die "start-docker-desktop: docker is not installed"
+fi
+
+"$script_dir/start-docker-daemon" --from-desktop
+
+if "$script_dir/is-docker-desktop-running" >/dev/null 2>&1; then
+  success "Docker Desktop is already running"
+  exit 0
+fi
+
+if ! has open; then
+  die "start-docker-desktop: open command is required on macOS"
+fi
+
+printf '%s\n' "Starting Docker Desktop..."
+open -ga Docker >/dev/null 2>&1 || die "start-docker-desktop: failed to launch Docker Desktop"
+
+tries=0
+while [ "$tries" -lt 20 ]; do
+  if "$script_dir/is-docker-desktop-running" >/dev/null 2>&1; then
+    success "Docker Desktop started"
+    exit 0
+  fi
+  tries=$((tries + 1))
+  sleep 0.25
+done
+
+die "start-docker-desktop: Docker Desktop did not enter running state"

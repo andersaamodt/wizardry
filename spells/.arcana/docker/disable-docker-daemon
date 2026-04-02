@@ -1,0 +1,53 @@
+#!/bin/sh
+
+# Disable Docker daemon startup.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: disable-docker-daemon
+
+Disables Docker daemon startup.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+if ! "$script_dir/is-docker-daemon-installed" >/dev/null 2>&1; then
+  success "docker daemon is not installed"
+  exit 0
+fi
+
+if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+  launch_agent="$HOME/Library/LaunchAgents/com.wizardry.docker-desktop.plist"
+  if [ -f "$launch_agent" ]; then
+    rm -f "$launch_agent" 2>/dev/null || die "disable-docker-daemon: failed to remove startup launch agent"
+  fi
+  success "docker daemon disabled at startup"
+  exit 0
+fi
+
+run_priv() {
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+    return
+  fi
+  if has sudo; then
+    sudo "$@" && return
+    die "disable-docker-daemon: sudo command failed"
+  fi
+  die "disable-docker-daemon: root required"
+}
+
+if has systemctl; then
+  run_priv systemctl disable docker
+  success "docker daemon disabled at boot"
+  exit 0
+fi
+
+die "disable-docker-daemon: systemd is required"

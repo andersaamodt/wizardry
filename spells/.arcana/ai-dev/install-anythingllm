@@ -1,0 +1,354 @@
+#!/bin/sh
+
+# Install AnythingLLM in a cross-platform POSIX-compliant way.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-anythingllm
+
+Installs AnythingLLM without using homebrew, in a POSIX-compliant cross-platform manner.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+# Check if already installed
+if "$script_dir/is-ai-component-installed" anythingllm 2>/dev/null; then
+  success "AnythingLLM is already installed"
+  exit 0
+fi
+
+printf '%s\n' "Installing AnythingLLM..."
+
+OS=$(uname -s 2>/dev/null)
+ARCH=$(uname -m 2>/dev/null)
+
+MAC_SILICON_DMG_URL="https://cdn.anythingllm.com/latest/AnythingLLMDesktop-Silicon.dmg"
+MAC_INTEL_DMG_URL="https://cdn.anythingllm.com/latest/AnythingLLMDesktop.dmg"
+LINUX_INSTALLER_URL="https://cdn.anythingllm.com/latest/installer.sh"
+
+download_file() {
+  source_url=$1
+  target_file=$2
+
+  if has curl; then
+    curl -fL --progress-bar -o "$target_file" "$source_url" \
+      || return 1
+    return 0
+  fi
+
+  if has wget; then
+    wget -O "$target_file" "$source_url" || return 1
+    return 0
+  fi
+
+  return 1
+}
+
+to_lower() {
+  printf '%s' "$1" | tr '[:upper:]' '[:lower:]'
+}
+
+compute_hash() {
+  algo=$1
+  file=$2
+
+  case "$algo" in
+  md5)
+    if has md5; then
+      md5 -q "$file"
+      return 0
+    fi
+    if has md5sum; then
+      md5sum "$file" | awk '{print $1}'
+      return 0
+    fi
+    return 1
+    ;;
+  sha256)
+    if has shasum; then
+      shasum -a 256 "$file" | awk '{print $1}'
+      return 0
+    fi
+    if has sha256sum; then
+      sha256sum "$file" | awk '{print $1}'
+      return 0
+    fi
+    return 1
+    ;;
+  sha512)
+    if has shasum; then
+      shasum -a 512 "$file" | awk '{print $1}'
+      return 0
+    fi
+    if has sha512sum; then
+      sha512sum "$file" | awk '{print $1}'
+      return 0
+    fi
+    return 1
+    ;;
+  *)
+    return 1
+    ;;
+  esac
+}
+
+extract_expected_hash() {
+  checksum_file=$1
+  asset_name=$2
+
+  line=$(awk -v asset="$asset_name" '
+    index(tolower($0), tolower(asset)) > 0 { print; exit }
+  ' "$checksum_file")
+  if [ -z "$line" ]; then
+    return 1
+  fi
+
+  hash=$(
+    printf '%s\n' "$line" |
+      grep -Eo '[0-9A-Fa-f]{128}|[0-9A-Fa-f]{64}|[0-9A-Fa-f]{32}' |
+      head -1 || true
+  )
+  if [ -z "$hash" ]; then
+    return 1
+  fi
+
+  hash_len=${#hash}
+  case "$hash_len" in
+  32) algo="md5" ;;
+  64) algo="sha256" ;;
+  128) algo="sha512" ;;
+  *)
+    return 1
+    ;;
+  esac
+
+  printf '%s|%s\n' "$algo" "$(to_lower "$hash")"
+}
+
+case "$OS" in
+Darwin)
+  dmg_file=$(temp-file anythingllm.dmg)
+  checksum_file=""
+  mount_point=""
+
+  cleanup_install_anythingllm() {
+    if [ -n "$mount_point" ] && mount | grep -q "on $mount_point "; then
+      hdiutil detach "$mount_point" >/dev/null 2>&1 || \
+        hdiutil detach -force "$mount_point" >/dev/null 2>&1 || :
+    fi
+    [ -n "$dmg_file" ] && [ -f "$dmg_file" ] && rm -f "$dmg_file"
+    [ -n "$checksum_file" ] && [ -f "$checksum_file" ] && rm -f "$checksum_file"
+  }
+  trap cleanup_install_anythingllm EXIT INT TERM
+
+  case "$ARCH" in
+  arm64|aarch64)
+    dmg_url=$MAC_SILICON_DMG_URL
+    dmg_name=$(basename "$MAC_SILICON_DMG_URL")
+    ;;
+  x86_64|amd64)
+    dmg_url=$MAC_INTEL_DMG_URL
+    dmg_name=$(basename "$MAC_INTEL_DMG_URL")
+    ;;
+  *)
+    die "install-anythingllm: unsupported macOS architecture: $ARCH"
+    ;;
+  esac
+
+  printf '%s\n' "Downloading AnythingLLM..."
+  download_file "$dmg_url" "$dmg_file" || die "install-anythingllm: failed to download DMG"
+
+  # Try companion checksum files if published for the direct CDN artifact.
+  checksum_source_found=0
+  verified=0
+  for algo in sha256 sha512 md5; do
+    checksum_url="${dmg_url}.${algo}"
+    checksum_file=$(temp-file "anythingllm.$algo")
+    if ! download_file "$checksum_url" "$checksum_file" >/dev/null 2>&1; then
+      rm -f "$checksum_file"
+      checksum_file=""
+      continue
+    fi
+    checksum_source_found=1
+
+    expected=$(extract_expected_hash "$checksum_file" "$dmg_name" || true)
+    if [ -z "$expected" ]; then
+      if [ "$algo" = "md5" ] || [ "$algo" = "sha256" ] || [ "$algo" = "sha512" ]; then
+        raw_hash=$(grep -Eo '[0-9A-Fa-f]{128}|[0-9A-Fa-f]{64}|[0-9A-Fa-f]{32}' "$checksum_file" | head -1 || true)
+        if [ -n "$raw_hash" ]; then
+          expected="$algo|$(to_lower "$raw_hash")"
+        fi
+      fi
+    fi
+
+    if [ -n "$expected" ]; then
+      expected_algo=${expected%%|*}
+      expected_hash=${expected#*|}
+      computed_hash=$(compute_hash "$expected_algo" "$dmg_file" || true)
+      if [ -n "$computed_hash" ] && [ "$(to_lower "$computed_hash")" = "$expected_hash" ]; then
+        success "Checksum verified ($expected_algo)"
+        verified=1
+        rm -f "$checksum_file"
+        checksum_file=""
+        break
+      fi
+    fi
+    rm -f "$checksum_file"
+    checksum_file=""
+  done
+  if [ "$checksum_source_found" -eq 1 ] && [ "$verified" -ne 1 ]; then
+    warn "install-anythingllm: checksum file found but verification failed; continuing without checksum verification"
+  fi
+
+  printf '%s\n' "Mounting DMG..."
+  mount_point=$(
+    hdiutil attach -nobrowse -readonly "$dmg_file" 2>/dev/null |
+      awk '/\/Volumes\// { i=index($0, "/Volumes/"); if (i>0) { print substr($0, i); exit } }'
+  )
+  if [ -z "$mount_point" ]; then
+    die "install-anythingllm: failed to mount DMG"
+  fi
+
+  app_bundle=$(find "$mount_point" -maxdepth 2 -type d -name "*.app" | head -1 || true)
+  if [ -z "$app_bundle" ]; then
+    die "install-anythingllm: no .app bundle found inside DMG"
+  fi
+
+  app_name=$(basename "$app_bundle")
+  target_app="/Applications/$app_name"
+  printf '%s\n' "Installing $app_name to /Applications..."
+
+  if [ -w "/Applications" ]; then
+    rm -rf "$target_app" 2>/dev/null || :
+    ditto "$app_bundle" "$target_app" || die "install-anythingllm: failed to copy app to /Applications"
+  else
+    if ! has sudo; then
+      die "install-anythingllm: /Applications is not writable and sudo is unavailable"
+    fi
+    sudo rm -rf "$target_app" || true
+    sudo ditto "$app_bundle" "$target_app" || die "install-anythingllm: failed to copy app to /Applications with sudo"
+  fi
+
+  if has spctl; then
+    if ! spctl --assess --type execute "$target_app" >/dev/null 2>&1; then
+      warn "install-anythingllm: Gatekeeper assessment failed"
+    fi
+  fi
+  ;;
+Linux)
+  installer_file=$(temp-file anythingllm-installer.sh)
+  app_target=""
+
+  cleanup_install_anythingllm_linux() {
+    [ -n "$installer_file" ] && [ -f "$installer_file" ] && rm -f "$installer_file"
+  }
+  trap cleanup_install_anythingllm_linux EXIT INT TERM
+
+  if has detect-distro; then
+    distro=$(detect-distro 2>/dev/null || printf '%s\n' "linux")
+  else
+    distro="linux"
+  fi
+
+  app_dir="$HOME/.local/lib/anythingllm"
+  bin_dir="$HOME/.local/bin"
+  desktop_dir="$HOME/.local/share/applications"
+  app_target="$app_dir/AnythingLLMDesktop.AppImage"
+  launcher="$bin_dir/anythingllm"
+  desktop_file="$desktop_dir/anythingllm.desktop"
+
+  mkdir -p "$app_dir" "$bin_dir" "$desktop_dir"
+  printf '%s\n' "Downloading AnythingLLM..."
+  download_file "$LINUX_INSTALLER_URL" "$installer_file" || die "install-anythingllm: failed to download Linux installer script"
+  chmod +x "$installer_file"
+
+  printf '%s\n' "Running official AnythingLLM Linux installer..."
+  ANYTHING_LLM_INSTALL_DIR="$app_dir" sh "$installer_file" || die "install-anythingllm: official Linux installer failed"
+
+  # The upstream installer may place the AppImage in different locations/names.
+  if [ -f "$app_dir/AnythingLLMDesktop.AppImage" ]; then
+    app_target="$app_dir/AnythingLLMDesktop.AppImage"
+  elif [ -f "$HOME/AnythingLLMDesktop.AppImage" ]; then
+    app_target="$HOME/AnythingLLMDesktop.AppImage"
+  else
+    app_target=$(
+      find "$app_dir" "$HOME" -maxdepth 2 -type f -name "*AnythingLLM*.AppImage" 2>/dev/null |
+        head -1 || true
+    )
+  fi
+
+  if [ -z "$app_target" ] || [ ! -f "$app_target" ]; then
+    die "install-anythingllm: installed AppImage not found after running installer"
+  fi
+
+  chmod +x "$app_target"
+
+  case "$distro" in
+  nixos)
+    printf '%s\n' "Configuring NixOS launcher via appimage-run..."
+    if ! has appimage-run; then
+      if has nix-env; then
+        printf '%s\n' "Installing appimage-run with nix-env..."
+        nix-env -iA nixpkgs.appimage-run || die "install-anythingllm: failed to install appimage-run via nix-env"
+      elif has nix; then
+        printf '%s\n' "Installing appimage-run with nix profile..."
+        if ! nix profile install nixpkgs#appimage-run; then
+          die "install-anythingllm: failed to install appimage-run via nix profile"
+        fi
+      else
+        die "install-anythingllm: NixOS requires appimage-run (nix-env or nix command not found)"
+      fi
+    fi
+    cat >"$launcher" <<EOF
+#!/bin/sh
+exec appimage-run "$app_target" "\$@"
+EOF
+    ;;
+  *)
+    cat >"$launcher" <<EOF
+#!/bin/sh
+exec "$app_target" "\$@"
+EOF
+    ;;
+  esac
+  chmod +x "$launcher"
+
+  cat >"$desktop_file" <<EOF
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=AnythingLLM
+Comment=AnythingLLM Desktop
+Exec=$launcher
+Icon=anythingllm
+Terminal=false
+Categories=Utility;Development;
+StartupNotify=true
+EOF
+
+  printf '%s\n' "AnythingLLM launcher installed at: $launcher"
+  ;;
+*)
+  die "install-anythingllm: unsupported operating system: $OS"
+  ;;
+esac
+
+# Verify installation
+if ! "$script_dir/is-ai-component-installed" anythingllm 2>/dev/null; then
+  die "install-anythingllm: installation verification failed"
+fi
+
+success "AnythingLLM installed successfully"
+
+# Check if we should auto-repair link (if ollama is installed)
+if "$script_dir/is-ai-component-installed" ollama 2>/dev/null; then
+  printf '%s\n' "ollama is installed, repairing link..."
+  "$script_dir/repair-ai-link" || warn "install-anythingllm: failed to repair link"
+fi

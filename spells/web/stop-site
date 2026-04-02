@@ -23,11 +23,11 @@ if [ -z "$site_name" ]; then
   die 2 "stop-site: SITENAME required"
 fi
 
-WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
-SITES_DIR="$WEB_ROOT"
-SITE_DIR="$SITES_DIR/$site_name"
+web_root=${WEB_WIZARDRY_ROOT:-$HOME/sites}
+sites_dir="$web_root"
+site_dir="$sites_dir/$site_name"
 
-if [ ! -d "$SITE_DIR" ]; then
+if [ ! -d "$site_dir" ]; then
   die "stop-site: site '$site_name' not found"
 fi
 
@@ -47,7 +47,7 @@ run_priv() {
   die "stop-site: root or sudo is required"
 }
 
-nginx_pid_file="$SITE_DIR/nginx/nginx.pid"
+nginx_pid_file="$site_dir/nginx/nginx.pid"
 nginx_was_running=0
 
 is_site_nginx_pid_running() {
@@ -71,7 +71,6 @@ is_site_nginx_pid_running() {
     return 1
   fi
 
-  # Accept explicit nginx commands, but avoid false matches like "non-nginx-daemon".
   set -- $cmd
   exe=${1-}
   base=${exe##*/}
@@ -81,9 +80,8 @@ is_site_nginx_pid_running() {
       ;;
   esac
 
-  # If ps includes the site path and nginx in the command, treat it as the site nginx.
   case "$cmd" in
-    *"$SITE_DIR"*nginx*)
+    *"$site_dir"*nginx*)
       return 0
       ;;
   esac
@@ -108,22 +106,41 @@ stop_nginx_process() {
 
   nginx_was_running=1
 
-  # Try graceful stop first, then privileged stop if needed.
-  if ! kill "$pid" 2>/dev/null; then
-    run_priv kill "$pid" 2>/dev/null || true
+  shutdown_grace_seconds=${WEB_STOP_SITE_GRACE_SECONDS:-2}
+  shutdown_poll_seconds=${WEB_STOP_SITE_POLL_SECONDS:-0.2}
+  case "$shutdown_grace_seconds" in
+    ''|*[!0-9.]*) shutdown_grace_seconds=2 ;;
+  esac
+  case "$shutdown_poll_seconds" in
+    ''|*[!0-9.]*) shutdown_poll_seconds=0.2 ;;
+  esac
+
+  max_checks=$(awk -v grace="$shutdown_grace_seconds" -v poll="$shutdown_poll_seconds" 'BEGIN {
+    if (poll <= 0) poll = 0.2;
+    checks = int((grace / poll) + 0.999);
+    if (checks < 1) checks = 1;
+    print checks;
+  }')
+
+  if ! kill -QUIT "$pid" 2>/dev/null; then
+    run_priv kill -QUIT "$pid" 2>/dev/null || true
   fi
 
-  for _ in 1 2 3 4 5; do
+  i=1
+  while [ "$i" -le "$max_checks" ]; do
     if ! kill -0 "$pid" 2>/dev/null; then
       rm -f "$nginx_pid_file"
       return 0
     fi
-    sleep 1
+    sleep "$shutdown_poll_seconds"
+    i=$((i + 1))
   done
 
-  # Force kill as a last resort.
-  if ! kill -9 "$pid" 2>/dev/null; then
-    run_priv kill -9 "$pid" 2>/dev/null || true
+  if kill -0 "$pid" 2>/dev/null; then
+    warn "stop-site: graceful shutdown timed out after ${shutdown_grace_seconds}s, forcing..."
+    if ! kill -KILL "$pid" 2>/dev/null; then
+      run_priv kill -KILL "$pid" 2>/dev/null || true
+    fi
   fi
   sleep 1
 
@@ -134,7 +151,6 @@ stop_nginx_process() {
   rm -f "$nginx_pid_file"
 }
 
-# Determine which daemon system to use
 daemon_mode=""
 if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
   daemon_mode="launchd"
@@ -154,7 +170,6 @@ if [ -f "$daemon_artifact" ]; then
   step "Stopping daemon for $site_name..."
 
   if [ "$daemon_mode" = "launchd" ]; then
-    # Preferred modern command: remove the service from the system domain.
     if run_priv launchctl bootout "system/$label" >/dev/null 2>&1 \
       || run_priv launchctl bootout system "$daemon_artifact" >/dev/null 2>&1 \
       || run_priv launchctl unload "$daemon_artifact" >/dev/null 2>&1; then
@@ -172,7 +187,6 @@ else
   warn "stop-site: daemon not configured for '$site_name' (stopping nginx by PID if running)"
 fi
 
-# Always perform a PID-based fallback so restart works even when daemon state is stale.
 stop_nginx_process
 
 if [ "$daemon_stopped" -eq 1 ] || [ "$nginx_was_running" -eq 1 ]; then

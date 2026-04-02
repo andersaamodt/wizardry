@@ -45,7 +45,7 @@ list_entries() {
         return
     fi
 
-    # Preferred order: core, mud, web-wizardry first, then others alphabetically
+    # Preferred order: core, mud, web-wizardry, wizardry-apps, ai-dev, yt-dlp, voice-recognition, nostr, btcpay, then others alphabetically
     # First output 'core' if it exists
     if [ -e "$install_dir/core" ]; then
         printf '%s\n' "core"
@@ -60,6 +60,36 @@ list_entries() {
     if [ -e "$install_dir/web-wizardry" ]; then
         printf '%s\n' "web-wizardry"
     fi
+
+    # Then 'wizardry-apps' if it exists
+    if [ -e "$install_dir/wizardry-apps" ]; then
+        printf '%s\n' "wizardry-apps"
+    fi
+
+    # Then 'ai-dev' if it exists
+    if [ -e "$install_dir/ai-dev" ]; then
+        printf '%s\n' "ai-dev"
+    fi
+
+    # Then 'yt-dlp' if it exists
+    if [ -e "$install_dir/yt-dlp" ]; then
+        printf '%s\n' "yt-dlp"
+    fi
+
+    # Then 'voice-recognition' if it exists
+    if [ -e "$install_dir/voice-recognition" ]; then
+        printf '%s\n' "voice-recognition"
+    fi
+
+    # Then 'nostr' if it exists
+    if [ -e "$install_dir/nostr" ]; then
+        printf '%s\n' "nostr"
+    fi
+
+    # Then 'btcpay' if it exists
+    if [ -e "$install_dir/btcpay" ]; then
+        printf '%s\n' "btcpay"
+    fi
     
     # Then output all other entries alphabetically
     for entry in "$install_dir"/*; do
@@ -69,6 +99,12 @@ list_entries() {
         [ "$entry_name" = "core" ] && continue
         [ "$entry_name" = "mud" ] && continue
         [ "$entry_name" = "web-wizardry" ] && continue
+        [ "$entry_name" = "wizardry-apps" ] && continue
+        [ "$entry_name" = "ai-dev" ] && continue
+        [ "$entry_name" = "yt-dlp" ] && continue
+        [ "$entry_name" = "voice-recognition" ] && continue
+        [ "$entry_name" = "nostr" ] && continue
+        [ "$entry_name" = "btcpay" ] && continue
         # Skip 'import-arcanum' since it's a special menu item added separately
         [ "$entry_name" = "import-arcanum" ] && continue
         printf '%s\n' "$entry_name"
@@ -94,12 +130,12 @@ while :; do
     set --
     for name in $entries; do
         status_cmd=""
-        if has "${name}-status"; then
-            status_cmd="${name}-status"
-        elif [ -x "$install_dir/$name-status" ] && [ ! -d "$install_dir/$name-status" ]; then
+        if [ -x "$install_dir/$name-status" ] && [ ! -d "$install_dir/$name-status" ]; then
             status_cmd="$install_dir/$name-status"
         elif [ -x "$install_dir/$name/$name-status" ] && [ ! -d "$install_dir/$name/$name-status" ]; then
             status_cmd="$install_dir/$name/$name-status"
+        elif command -v "${name}-status" >/dev/null 2>&1; then
+            status_cmd="${name}-status"
         fi
 
         if [ -n "$status_cmd" ]; then
@@ -108,13 +144,7 @@ while :; do
             status="${GREY}coming soon${RESET}"
         fi
 
-        if has "${name}-menu"; then
-            cmd="${name}-menu"
-            # Special handling for mud-menu which must be sourced
-            if [ "$name" = "mud" ]; then
-                cmd=". mud-menu"
-            fi
-        elif [ -x "$install_dir/$name-menu" ] && [ ! -d "$install_dir/$name-menu" ]; then
+        if [ -x "$install_dir/$name-menu" ] && [ ! -d "$install_dir/$name-menu" ]; then
             cmd="$install_dir/$name-menu"
             # Special handling for mud-menu which must be sourced
             if [ "$name" = "mud" ]; then
@@ -132,6 +162,12 @@ while :; do
             cmd="$install_dir/$name/$name"
         elif [ -x "$install_dir/$name/install-$name" ] && [ -f "$install_dir/$name/install-$name" ]; then
             cmd="$install_dir/$name/install-$name"
+        elif command -v "${name}-menu" >/dev/null 2>&1; then
+            cmd="${name}-menu"
+            # Special handling for mud-menu which must be sourced
+            if [ "$name" = "mud" ]; then
+                cmd=". mud-menu"
+            fi
         else
             cmd='printf "This entry is not ready yet.\n"'
         fi
@@ -142,6 +178,13 @@ while :; do
             core) label="core wizardry" ;;
             mud) label="wizardry MUD" ;;
             web-wizardry) label="web wizardry" ;;
+            wizardry-apps) label="wizardry apps" ;;
+            ai-dev) label="AI dev" ;;
+            yt-dlp) label="yt-dlp" ;;
+            voice-recognition) label="voice recognition" ;;
+            nostr) label="Nostr" ;;
+            btcpay) label="BTCPay Server" ;;
+            docker) label="Docker" ;;
         esac
         
         if [ -n "$status" ]; then
@@ -157,7 +200,7 @@ while :; do
     import_arcanum_cmd=""
     if [ -x "$install_dir/import-arcanum" ]; then
         import_arcanum_cmd="$install_dir/import-arcanum"
-    elif has import-arcanum; then
+    elif command -v import-arcanum >/dev/null 2>&1; then
         import_arcanum_cmd="import-arcanum"
     fi
     

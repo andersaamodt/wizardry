@@ -23,15 +23,15 @@ if [ -z "$site_name" ]; then
   die 2 "enable-site-daemon: SITENAME required"
 fi
 
-WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
-SITES_DIR="$WEB_ROOT"
-SITE_DIR="$SITES_DIR/$site_name"
+web_root=${WEB_WIZARDRY_ROOT:-$HOME/sites}
+sites_dir="$web_root"
+site_dir="$sites_dir/$site_name"
 
-if [ ! -d "$SITE_DIR" ]; then
+if [ ! -d "$site_dir" ]; then
   die "enable-site-daemon: site '$site_name' not found"
 fi
 
-run_priv() {
+enable_run_priv() {
   if [ "$(id -u)" -eq 0 ]; then
     "$@"
     return
@@ -100,7 +100,7 @@ set_plist_bool() {
     }
   ' "$plist" > "$tmp_file"
 
-  run_priv cp "$tmp_file" "$plist"
+  enable_run_priv cp "$tmp_file" "$plist"
   rm -f "$tmp_file"
 }
 
@@ -118,7 +118,7 @@ if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
   set_plist_bool KeepAlive true
 
   # Compatibility: clear stale disabled overrides from older implementations.
-  run_priv launchctl enable "system/$label" 2>/dev/null || true
+  enable_run_priv launchctl enable "system/$label" 2>/dev/null || true
 
   run_at_load=$(plist_bool_value RunAtLoad || printf '')
   keep_alive=$(plist_bool_value KeepAlive || printf '')
@@ -137,7 +137,7 @@ if has systemctl; then
     die "enable-site-daemon: daemon not configured - run 'repair-site-daemon $site_name' first"
   fi
   
-  run_priv systemctl enable "$unit"
+  enable_run_priv systemctl enable "$unit"
   success "Daemon enabled on startup for $site_name"
   exit 0
 fi

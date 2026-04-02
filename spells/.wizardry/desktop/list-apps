@@ -15,16 +15,23 @@ USAGE
 esac
 
 set -eu
+. env-clear
 
 # Use WIZARDRY_DIR from environment (set by invoke-wizardry)
 wizardry_dir=${WIZARDRY_DIR:-$HOME/.wizardry}
+wizardry_apps_dir=${WIZARDRY_APPS_DIR:-$HOME/git/wizardry-apps}
 
 if [ ! -d "$wizardry_dir" ]; then
   printf '%s\n' "list-apps: wizardry directory not found: $wizardry_dir" >&2
   exit 1
 fi
 
-apps_dir="$wizardry_dir/.apps"
+apps_dir="$wizardry_apps_dir/.apps"
+
+ensure_apps_cmd="$wizardry_dir/spells/.arcana/wizardry-apps/ensure-wizardry-apps-component"
+if [ -x "$ensure_apps_cmd" ]; then
+  "$ensure_apps_cmd" apps
+fi
 
 if [ ! -d "$apps_dir" ]; then
   printf '%s\n' "list-apps: .apps directory not found" >&2

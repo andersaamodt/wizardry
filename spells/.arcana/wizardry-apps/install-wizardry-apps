@@ -1,0 +1,33 @@
+#!/bin/sh
+
+# Install all wizardry-apps managed components.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-wizardry-apps
+
+Installs both web templates and desktop apps.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+# shellcheck source=/dev/null
+. "$script_dir/wizardry-apps-common"
+
+wizardry_apps_ensure_repo
+
+for component in web-templates apps; do
+  source_dir=$(wizardry_apps_component_source_path "$component")
+  [ -d "$source_dir" ] || die "install-wizardry-apps: missing $component at $source_dir"
+done
+
+success "wizardry-apps installed at $wizardry_apps_dir"

@@ -1287,8 +1287,8 @@ HEREDOC_TEST
       if [ "$term_status" -eq 1 ]; then
         printf '  %s✓%s Terminal type: %s\n' "$green" "$reset" "${TERM-unknown}"
       else
-        printf '  %s✗%s Terminal type: %s\n' "$red" "$reset" "${TERM-unknown}"
         if [ "$skip_heal" -eq 0 ]; then
+          original_term=${TERM-unknown}
           TERM="xterm-256color"
           export TERM
           term_status=1
@@ -1297,10 +1297,14 @@ HEREDOC_TEST
             *) : ;;
           esac
           if [ "$term_status" -eq 1 ]; then
-            printf '    %s✓%s Terminal type set to %s\n' "$green" "$reset" "$TERM"
+            printf '  %s✓%s Terminal type adjusted from %s to %s\n' \
+              "$green" "$reset" "$original_term" "$TERM"
           else
+            printf '  %s✗%s Terminal type: %s\n' "$red" "$reset" "$original_term"
             printf '    %s✗%s Terminal type still minimal\n' "$red" "$reset"
           fi
+        else
+          printf '  %s✗%s Terminal type: %s\n' "$red" "$reset" "${TERM-unknown}"
         fi
       fi
       if [ "$term_status" -ne 1 ]; then
@@ -1480,30 +1484,41 @@ HEREDOC_TEST
     6)
       # Level 6: Task Priorities
       
-      # Check file locking capability (priorities use file-based state)
-      # Task priorities rely on atomic file operations and locking
+      # Check file locking capability (priorities use file-based state).
+      # with-lock abstracts flock/lockf differences across platforms.
       tmp_root=${TMPDIR:-/tmp}
       lock_test="$tmp_root/.banish-lock-test.$$"
-      
-      # Test that file locking works (flock or similar)
-      if command -v flock >/dev/null 2>&1; then
-        # Test flock
-        if printf 'test' > "$lock_test" 2>/dev/null; then
-          if flock -n "$lock_test" printf 'locked' 2>/dev/null; then
-            rm -f "$lock_test" 2>/dev/null || :
-            printf '  %s✓%s File locking: flock available\n' "$green" "$reset"
-          else
-            rm -f "$lock_test" 2>/dev/null || :
-            printf '  %s✗%s File locking: flock not working\n' "$red" "$reset"
-            return 1
+
+      with_lock_cmd=""
+      if command -v with-lock >/dev/null 2>&1; then
+        with_lock_cmd=$(command -v with-lock)
+      elif [ -x "${WIZARDRY_DIR}/spells/.imps/fs/with-lock" ]; then
+        with_lock_cmd="${WIZARDRY_DIR}/spells/.imps/fs/with-lock"
+      fi
+
+      if [ -z "$with_lock_cmd" ]; then
+        printf '  %s✗%s File locking: with-lock imp not found\n' "$red" "$reset"
+        return 1
+      fi
+
+      if printf 'test' > "$lock_test" 2>/dev/null; then
+        if "$with_lock_cmd" "$lock_test" printf 'locked' >/dev/null 2>&1; then
+          lock_tool='with-lock'
+          if command -v flock >/dev/null 2>&1; then
+            lock_tool='flock'
+          elif command -v lockf >/dev/null 2>&1; then
+            lock_tool='lockf'
           fi
+          rm -f "$lock_test" 2>/dev/null || :
+          printf '  %s✓%s File locking: %s available via with-lock\n' "$green" "$reset" "$lock_tool"
         else
-          printf '  %s✗%s File locking: Cannot create test file\n' "$red" "$reset"
+          rm -f "$lock_test" 2>/dev/null || :
+          printf '  %s✗%s File locking: with-lock check failed\n' "$red" "$reset"
           return 1
         fi
       else
-        # No flock available - priorities may have race conditions
-        printf '  %s✓%s File locking: flock not available (priorities may have race conditions)\n' "$green" "$reset"
+        printf '  %s✗%s File locking: Cannot create test file\n' "$red" "$reset"
+        return 1
       fi
       
       # Check spells

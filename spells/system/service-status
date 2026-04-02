@@ -22,9 +22,9 @@ script_name=$(basename "$0")
 # Get service name from argument or prompt user
 service_name=${1-}
 if [ -z "$service_name" ]; then
-        # Interactive mode - prompt for service name
-        service_name=$(prompt-with-fallback "Which service status should I check?") \
-                || die "$script_name: Failed to get service name"
+        service_name=$(
+                prompt-with-fallback "Which service status should I check?" 2>/dev/null || printf ''
+        )
 fi
 
 if [ -z "$service_name" ]; then

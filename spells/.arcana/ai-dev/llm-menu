@@ -1,0 +1,52 @@
+#!/bin/sh
+
+# Menu for managing a specific LLM model.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: llm-menu MODEL
+
+Opens a menu for managing a specific LLM model (enable, disable, delete).
+
+Example: llm-menu llama2:7b
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+. colors
+
+if ! require menu "The llm-menu needs the 'menu' command to present options."; then
+  exit 1
+fi
+
+model=${1-}
+if [ -z "$model" ]; then
+  die 2 "llm-menu: MODEL required"
+fi
+
+# Catch Ctrl-C and TERM signal to exit cleanly
+trap 'exit 130' INT
+trap 'exit 0' TERM
+
+while :; do
+  # Build menu
+  set -- "Delete model%uninstall-llm \"$model\" && kill -TERM \$PPID"
+  
+  exit_label=$(exit-label)
+  set -- "$@" "${exit_label}%kill -TERM \$PPID"
+  
+  menu "LLM: $model" "$@" || menu_status=$?
+  menu_status=${menu_status:-0}
+  
+  # ESC causes menu to exit with 130
+  if [ "$menu_status" -eq 130 ]; then
+    printf 'ESC\n' >&2
+    exit 0
+  fi
+done

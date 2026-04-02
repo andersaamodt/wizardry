@@ -17,6 +17,19 @@ Commands:
   stop SITENAME      Stop serving a website
   status [SITENAME]  Show website status
   configure SITENAME Configure website settings
+  autorebuild SITENAME [status|enable|disable|toggle]
+                    Manage automatic rebuild watcher + cron for a site
+  nostr-mirror SITENAME  Mirror Nostr events for a blog site
+  check-filesystem-tools Check filesystem growth tooling
+  install-filesystem-tools Ensure filesystem growth tooling is installed
+  uninstall-filesystem-tools Remove filesystem growth tooling
+  check-nostril    Check Nostr server tooling
+  install-nostril Ensure nostril is installed
+  uninstall-nostril Remove nostril
+  btcpay-status   Show BTCPay install status text
+  check-btcpay    Check BTCPay Server tooling/runtime
+  install-btcpay Ensure BTCPay Server is installed
+  uninstall-btcpay Remove BTCPay Server
 
 Without arguments, opens an interactive menu.
 
@@ -48,12 +61,12 @@ trap 'exit 130' INT
 trap 'exit 0' TERM
 
 # Default web root directory
-WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
-SITES_DIR="$WEB_ROOT"
+web_root=${WEB_WIZARDRY_ROOT:-$HOME/sites}
+sites_dir="$web_root"
 
 # Ensure web root exists
-if [ ! -d "$WEB_ROOT" ]; then
-  mkdir -p "$WEB_ROOT"
+if [ ! -d "$web_root" ]; then
+  mkdir -p "$web_root"
 fi
 
 # Handle command-line arguments
@@ -81,8 +94,8 @@ case "$cmd" in
       site-status "$site_name"
     else
       # Show all sites
-      if [ -d "$SITES_DIR" ]; then
-        for site in "$SITES_DIR"/*; do
+      if [ -d "$sites_dir" ]; then
+        for site in "$sites_dir"/*; do
           [ -d "$site" ] || continue
           name=$(basename "$site")
           printf '%s: ' "$name"
@@ -119,6 +132,70 @@ case "$cmd" in
     configure-nginx "$site_name" "$@"
     exit 0
     ;;
+  autorebuild)
+    site_name=${2-}
+    if [ -z "$site_name" ]; then
+      die 2 "web-wizardry: autorebuild requires SITENAME argument"
+    fi
+    autorebuild_action=${3-status}
+    case "$autorebuild_action" in
+      status|enable|disable|toggle)
+        site-autorebuild "$autorebuild_action" "$site_name"
+        ;;
+      *)
+        die 2 "web-wizardry: autorebuild action must be status|enable|disable|toggle"
+        ;;
+    esac
+    exit 0
+    ;;
+  nostr-mirror)
+    site_name=${2-}
+    if [ -z "$site_name" ]; then
+      die 2 "web-wizardry: nostr-mirror requires SITENAME argument"
+    fi
+    blog-nostr-mirror "$site_name"
+    exit 0
+    ;;
+  check-filesystem-tools)
+    check-filesystem-tools
+    exit 0
+    ;;
+  install-filesystem-tools)
+    install-filesystem-tools
+    exit 0
+    ;;
+  uninstall-filesystem-tools)
+    uninstall-filesystem-tools
+    exit 0
+    ;;
+  check-nostril)
+    check-nostril
+    exit 0
+    ;;
+  install-nostril)
+    install-nostril
+    exit 0
+    ;;
+  uninstall-nostril)
+    uninstall-nostril
+    exit 0
+    ;;
+  btcpay-status)
+    btcpay-status
+    exit 0
+    ;;
+  check-btcpay)
+    check-btcpay
+    exit 0
+    ;;
+  install-btcpay)
+    install-btcpay
+    exit 0
+    ;;
+  uninstall-btcpay)
+    uninstall-btcpay
+    exit 0
+    ;;
   '')
     # No command - show interactive menu
     ;;
@@ -136,8 +213,8 @@ while true; do
   site_count=0
   
   # Add existing sites as menu items first
-  if [ -d "$SITES_DIR" ]; then
-    for site in "$SITES_DIR"/*; do
+  if [ -d "$sites_dir" ]; then
+    for site in "$sites_dir"/*; do
       [ -d "$site" ] || continue
       name=$(basename "$site")
       set -- "$@" "${name}%site-menu \"${name}\""

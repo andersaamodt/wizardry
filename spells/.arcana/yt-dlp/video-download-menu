@@ -1,0 +1,60 @@
+#!/bin/sh
+
+# Interactive menu for common yt-dlp download flows.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: video-download-menu
+
+Opens common interactive yt-dlp download workflows.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+if ! require menu "The video-download-menu needs the 'menu' command to present options."; then
+  exit 1
+fi
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+
+trap 'exit 130' INT
+trap 'exit 0' TERM
+
+while :; do
+  unset menu_status
+
+  if ! "$script_dir/is-yt-dlp-installed"; then
+    install_item="Install yt-dlp%$script_dir/install-yt-dlp"
+    exit_label=$(exit-label)
+    exit_item="${exit_label}%kill -TERM \$PPID"
+    menu "Video Download (yt-dlp):" "$install_item" "$exit_item" || menu_status=$?
+    menu_status=${menu_status:-0}
+    [ "$menu_status" -eq 130 ] && exit 0
+    continue
+  fi
+
+  item_default="Download video (default)%$script_dir/run-yt-dlp-wizard default"
+  item_best="Download highest video+audio%$script_dir/run-yt-dlp-wizard best"
+  item_audio="Download audio-only (mp3)%$script_dir/run-yt-dlp-wizard audio"
+  item_subtitles="Download with subtitles%$script_dir/run-yt-dlp-wizard subtitles"
+  item_formats="Inspect available formats%$script_dir/run-yt-dlp-wizard formats"
+
+  exit_label=$(exit-label)
+  exit_item="${exit_label}%kill -TERM \$PPID"
+
+  menu "Video Download (yt-dlp):" \
+    "$item_default" "$item_best" "$item_audio" "$item_subtitles" "$item_formats" \
+    "$exit_item" || menu_status=$?
+  menu_status=${menu_status:-0}
+
+  if [ "$menu_status" -eq 130 ]; then
+    exit 0
+  fi
+done

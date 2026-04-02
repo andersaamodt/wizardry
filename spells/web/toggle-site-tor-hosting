@@ -28,16 +28,16 @@ if [ -z "$site_name" ]; then
   die 2 "toggle-site-tor-hosting: SITENAME required"
 fi
 
-WEB_ROOT="${WIZARDRY_SITES_DIR}"
-SITES_DIR="$WEB_ROOT"
-SITE_DIR="$SITES_DIR/$site_name"
+web_root="${WIZARDRY_SITES_DIR}"
+sites_dir="$web_root"
+site_dir="$sites_dir/$site_name"
 
-if [ ! -d "$SITE_DIR" ]; then
+if [ ! -d "$site_dir" ]; then
   die "toggle-site-tor-hosting: site '$site_name' not found"
 fi
 
 # Get the site's port
-port=$(config-get "$SITE_DIR/site.conf" port 2>/dev/null || echo "8080")
+port=$(config-get "$site_dir/site.conf" port 2>/dev/null || echo "8080")
 
 # Only check tor dependencies when ENABLING (not when disabling)
 # Check if this site already has a hidden service configured

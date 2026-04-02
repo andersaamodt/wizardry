@@ -123,15 +123,7 @@ run_test_case "install-menu prefers spells in the install root" test_install_men
 test_esc_exit_behavior() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
-  
-  # Create menu stub that returns exit code 0 (normal success)
-  cat >"$tmp/menu" <<'SH'
-#!/bin/sh
-printf '%s\n' "$@" >>"$MENU_LOG"
-exit 0
-SH
-  chmod +x "$tmp/menu"
-  
+  stub-menu "$tmp"
   stub-require-command "$tmp"
   
   cat >"$tmp/exit-label" <<'SH'
@@ -148,14 +140,10 @@ SH
 echo ready
 SH
   chmod +x "$install_root/test/test-status"
-  
-  # Run install-menu in background
-  env PATH="$tmp:$PATH" INSTALL_MENU_ROOT="$install_root" INSTALL_MENU_DIRS="test" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/install-menu" &
-  menu_pid=$!
-  sleep 0.5
-  kill -TERM "$menu_pid" 2>/dev/null || true
-  wait "$menu_pid" 2>/dev/null || true
-  
+
+  run_cmd env PATH="$tmp:$PATH" INSTALL_MENU_ROOT="$install_root" INSTALL_MENU_DIRS="test" MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/require.log" "$ROOT_DIR/spells/menu/install-menu"
+  assert_success || { TEST_FAILURE_REASON="menu should exit successfully on escape"; return 1; }
+
   args=$(cat "$tmp/log" 2>/dev/null || printf '')
   case "$args" in
     *'Exit%kill -TERM $PPID'*) : ;;
@@ -223,6 +211,63 @@ SH
 }
 
 run_test_case "install-menu no exit message on ESC" test_no_exit_message_on_esc
+
+test_install_menu_prefers_expected_core_order() {
+  skip-if-compiled || return $?
+  tmp=$(make_tempdir)
+  make_stub_menu_env "$tmp"
+  stub-require-command "$tmp"
+
+  install_root="$tmp/install"
+  mkdir -p \
+    "$install_root/core" \
+    "$install_root/mud" \
+    "$install_root/web-wizardry" \
+    "$install_root/wizardry-apps" \
+    "$install_root/ai-dev" \
+    "$install_root/voice-recognition"
+
+  for name in core mud web-wizardry wizardry-apps ai-dev voice-recognition; do
+    cat >"$tmp/$name-status" <<'SH'
+#!/bin/sh
+echo ready
+SH
+    chmod +x "$tmp/$name-status"
+    cat >"$tmp/$name-menu" <<'SH'
+#!/bin/sh
+exit 0
+SH
+    chmod +x "$tmp/$name-menu"
+  done
+
+  run_cmd env \
+    PATH="$tmp:$PATH" \
+    INSTALL_MENU_ROOT="$install_root" \
+    MENU_LOG="$tmp/log" \
+    "$ROOT_DIR/spells/menu/install-menu"
+  assert_success || return 1
+
+  menu_args=$(cat "$tmp/log")
+
+  core_pos=$(printf '%s' "$menu_args" | grep -b -o "core wizardry - ready%" | head -1 | cut -d: -f1 || true)
+  mud_pos=$(printf '%s' "$menu_args" | grep -b -o "wizardry MUD - ready%" | head -1 | cut -d: -f1 || true)
+  web_pos=$(printf '%s' "$menu_args" | grep -b -o "web wizardry - ready%" | head -1 | cut -d: -f1 || true)
+  apps_pos=$(printf '%s' "$menu_args" | grep -b -o "wizardry apps - ready%" | head -1 | cut -d: -f1 || true)
+  ai_pos=$(printf '%s' "$menu_args" | grep -b -o "AI dev - ready%" | head -1 | cut -d: -f1 || true)
+  voice_pos=$(printf '%s' "$menu_args" | grep -b -o "voice recognition - ready%" | head -1 | cut -d: -f1 || true)
+
+  [ "$core_pos" -gt 0 ] && [ "$mud_pos" -gt 0 ] && [ "$web_pos" -gt 0 ] && [ "$apps_pos" -gt 0 ] && [ "$ai_pos" -gt 0 ] && [ "$voice_pos" -gt 0 ] || {
+    TEST_FAILURE_REASON="missing one or more expected ordered entries"
+    return 1
+  }
+
+  [ "$core_pos" -lt "$mud_pos" ] && [ "$mud_pos" -lt "$web_pos" ] && [ "$web_pos" -lt "$apps_pos" ] && [ "$apps_pos" -lt "$ai_pos" ] && [ "$ai_pos" -lt "$voice_pos" ] || {
+    TEST_FAILURE_REASON="unexpected install-menu order for core/mud/web-wizardry/wizardry-apps/ai-dev/voice-recognition"
+    return 1
+  }
+}
+
+run_test_case "install-menu keeps preferred arcanum order" test_install_menu_prefers_expected_core_order
 
 # Test that nested menu return shows proper blank line spacing
 test_nested_menu_spacing() {

@@ -1,0 +1,104 @@
+#!/bin/sh
+# Deploy the Artificer template stack to a target site.
+# Optionally skip smoke tests during deployment.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: deploy-artificer [SITENAME] [--skip-smoke]
+
+Reapply and deploy the Artificer template stack to a site.
+Default site: daimon
+
+Steps:
+1. Update site from template (artificer)
+2. Build site
+3. Regenerate nginx config
+4. Restart site serving
+5. Verify API health endpoints
+6. Run end-to-end smoke test
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+site_name="daimon"
+skip_smoke=0
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --skip-smoke)
+      skip_smoke=1
+      ;;
+    --*)
+      die "deploy-artificer: unknown option '$1'"
+      ;;
+    *)
+      site_name=$1
+      ;;
+  esac
+  shift
+done
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+cleanup_helper="$script_dir/cleanup-artificer-test-workspaces"
+
+if [ ! -d "$HOME/sites/$site_name" ]; then
+  die "deploy-artificer: site '$site_name' not found"
+fi
+
+step "Deploying Artificer to $site_name"
+
+if [ -x "$cleanup_helper" ]; then
+  step "Cleaning previous Artificer smoke projects"
+  "$cleanup_helper" "$site_name" >/dev/null 2>&1 || true
+fi
+
+step "Updating site from template"
+update-from-template "$site_name" --force
+
+step "Building site"
+build "$site_name" --full
+
+step "Regenerating nginx config"
+configure-nginx "$site_name"
+
+step "Restarting site"
+stop-site "$site_name" || true
+serve-site "$site_name"
+
+status_line=$(site-status "$site_name" 2>/dev/null || echo "unknown")
+info "Status: $status_line"
+
+site_port=$(config-get "$HOME/sites/$site_name/site.conf" port 2>/dev/null || echo "8080")
+base_url="http://localhost:$site_port"
+
+if command -v curl >/dev/null 2>&1; then
+  step "Checking Artificer API"
+  models_json=$(curl -fsS "$base_url/cgi/artificer-api?action=models" 2>/dev/null || true)
+  state_json=$(curl -fsS "$base_url/cgi/artificer-api?action=state" 2>/dev/null || true)
+
+  if [ -n "$models_json" ] && [ -n "$state_json" ]; then
+    success "Artificer API reachable"
+    info "models: $(printf '%s' "$models_json" | sed -n '1p')"
+  else
+    warn "Artificer API check did not return expected JSON"
+  fi
+fi
+
+if [ "$skip_smoke" -eq 0 ]; then
+  step "Running Artificer smoke test"
+  "$script_dir/test-artificer" "$site_name"
+else
+  warn "Skipping smoke test (--skip-smoke)"
+fi
+
+if [ -x "$cleanup_helper" ]; then
+  step "Cleaning Artificer smoke projects"
+  "$cleanup_helper" "$site_name" >/dev/null 2>&1 || true
+fi
+
+success "Artificer deploy complete for $site_name"

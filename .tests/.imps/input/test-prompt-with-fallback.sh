@@ -12,28 +12,49 @@ test_prompt_with_fallback_is_executable() {
 }
 
 test_prompt_with_fallback_finds_ask_text_in_path() {
-  # Stub ask-text to return test value
-  stub_command ask-text "echo test-input"
-  
-  result=$(run_sourced_spell spells/.imps/input/prompt-with-fallback "Enter value:")
+  stub_dir=$(make_tempdir)
+  old_path=$PATH
+  cat >"$stub_dir/ask-text" <<'SH'
+#!/bin/sh
+printf '%s\n' test-input
+SH
+  chmod +x "$stub_dir/ask-text"
+
+  PATH="$stub_dir:$PATH"
+  run_sourced_spell spells/.imps/input/prompt-with-fallback "Enter value:"
+  PATH=$old_path
   assert_success || return 1
   assert_output_contains "test-input" || return 1
 }
 
 test_prompt_with_fallback_passes_prompt() {
-  # Stub ask-text to echo the arguments it receives
-  stub_command ask-text 'echo "Prompted: $*"'
-  
-  result=$(run_sourced_spell spells/.imps/input/prompt-with-fallback "Custom prompt:")
+  stub_dir=$(make_tempdir)
+  old_path=$PATH
+  cat >"$stub_dir/ask-text" <<'SH'
+#!/bin/sh
+printf 'Prompted: %s\n' "$*"
+SH
+  chmod +x "$stub_dir/ask-text"
+
+  PATH="$stub_dir:$PATH"
+  run_sourced_spell spells/.imps/input/prompt-with-fallback "Custom prompt:"
+  PATH=$old_path
   assert_success || return 1
   assert_output_contains "Custom prompt:" || return 1
 }
 
 test_prompt_with_fallback_fails_on_empty_input() {
-  # Stub ask-text to return empty string
-  stub_command ask-text "echo"
-  
+  stub_dir=$(make_tempdir)
+  old_path=$PATH
+  cat >"$stub_dir/ask-text" <<'SH'
+#!/bin/sh
+printf '%s' ''
+SH
+  chmod +x "$stub_dir/ask-text"
+
+  PATH="$stub_dir:$PATH"
   run_sourced_spell spells/.imps/input/prompt-with-fallback "Enter value:"
+  PATH=$old_path
   assert_failure || return 1
 }
 

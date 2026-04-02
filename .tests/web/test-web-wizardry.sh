@@ -13,6 +13,7 @@ test_web_wizardry_help() {
   assert_output_contains "Usage: web-wizardry"
   assert_output_contains "create"
   assert_output_contains "build"
+  assert_output_contains "autorebuild"
 }
 
 test_web_wizardry_create_site() {
@@ -72,8 +73,15 @@ test_web_wizardry_status() {
   rm -rf "$test_web_root" "$stub_dir"
 }
 
+test_web_wizardry_autorebuild_requires_site() {
+  run_spell spells/web/web-wizardry autorebuild
+  assert_status 2
+  assert_error_contains "autorebuild requires SITENAME argument"
+}
+
 run_test_case "web-wizardry --help works" test_web_wizardry_help
 run_test_case "web-wizardry can create site" test_web_wizardry_create_site
 run_test_case "web-wizardry can show status" test_web_wizardry_status
+run_test_case "web-wizardry autorebuild validates sitename" test_web_wizardry_autorebuild_requires_site
 
 finish_tests

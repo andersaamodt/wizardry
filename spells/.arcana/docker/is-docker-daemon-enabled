@@ -1,0 +1,35 @@
+#!/bin/sh
+
+# Check if Docker daemon startup is enabled.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: is-docker-daemon-enabled
+
+Returns success when Docker daemon startup is enabled.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+if ! "$script_dir/is-docker-daemon-installed" >/dev/null 2>&1; then
+  exit 1
+fi
+
+if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+  launch_agent="$HOME/Library/LaunchAgents/com.wizardry.docker-desktop.plist"
+  [ -f "$launch_agent" ] && exit 0
+  exit 1
+fi
+
+if has systemctl && systemctl is-enabled docker >/dev/null 2>&1; then
+  exit 0
+fi
+
+exit 1

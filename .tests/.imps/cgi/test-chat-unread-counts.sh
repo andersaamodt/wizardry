@@ -7,9 +7,9 @@ done
 
 # Check if timeout command is available
 if command -v timeout >/dev/null 2>&1; then
-  TIMEOUT_CMD="timeout 1"
+  TIMEOUT_CMD="timeout 5"
 elif command -v gtimeout >/dev/null 2>&1; then
-  TIMEOUT_CMD="gtimeout 1"
+  TIMEOUT_CMD="gtimeout 5"
 else
   # No timeout available - use background process with sleep
   TIMEOUT_CMD=""
@@ -29,15 +29,15 @@ run_with_timeout() {
   if [ -n "$TIMEOUT_CMD" ]; then
     $TIMEOUT_CMD "$@" 2>&1 || true
   else
-    # Fallback: run in background and kill entire process group after 1 second
+    # Fallback: run in background and kill entire process group after 5 seconds
     tmpout=$(mktemp)
     "$@" > "$tmpout" 2>&1 &
     pid=$!
-    sleep 1
-    # Kill entire process group (negative PID) to terminate all child processes
-    kill -TERM -- -$pid 2>/dev/null || true
+    sleep 5
+    # Kill process group first (portable fallback to direct pid kill).
+    kill -TERM "-$pid" 2>/dev/null || kill -TERM "$pid" 2>/dev/null || true
     sleep 0.1  # Give processes time to handle TERM signal
-    kill -KILL -- -$pid 2>/dev/null || true  # Force kill if still running
+    kill -KILL "-$pid" 2>/dev/null || kill -KILL "$pid" 2>/dev/null || true
     sleep 0.1
     cat "$tmpout"
     rm -f "$tmpout"

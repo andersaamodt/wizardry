@@ -4,9 +4,9 @@
 # Allows: alphanumeric, underscore, hyphen
 # Example: validate-username "$user" || printf 'Invalid username\n'
 
-# Note: No set -eu because this is a conditional imp (returns exit codes for flow control)
+set -eu
 
-username="${1:-}"
+username=${1-}
 
 # Check for empty username
 [ -z "$username" ] && exit 1

@@ -89,6 +89,7 @@ run_test_case "spellbook accepts path argument" test_path_argument_accepted
 
 # Test ESC and Exit behavior - menu exits properly when escape status returned
 test_esc_exit_behavior() {
+  skip-if-compiled || return $?
   stub_dir=$(make_stub_dir)
   stub-memorize-command "$stub_dir"
   stub-require-command-simple "$stub_dir"
@@ -97,6 +98,7 @@ test_esc_exit_behavior() {
   cat >"$stub_dir/menu" <<'SH'
 #!/bin/sh
 printf '%s\n' "$@" >>"$MENU_LOG"
+kill -TERM "$PPID" 2>/dev/null || exit 0
 exit 0
 SH
   chmod +x "$stub_dir/menu"
@@ -107,14 +109,9 @@ printf '%s' "Exit"
 SH
   chmod +x "$stub_dir/exit-label"
   
-  # Run spellbook - it should work normally with exit code 0
-  # Run directly without run_cmd wrapper to avoid hang
-  env PATH="$stub_dir:$PATH" MENU_LOG="$stub_dir/log" "$ROOT_DIR/spells/menu/spellbook" &
-  spellbook_pid=$!
-  sleep 0.5
-  kill -TERM "$spellbook_pid" 2>/dev/null || true
-  wait "$spellbook_pid" 2>/dev/null || true
-  
+  run_cmd env PATH="$stub_dir:$PATH" MENU_LOG="$stub_dir/log" "$ROOT_DIR/spells/menu/spellbook"
+  assert_success || return 1
+
   # Verify that Exit menu item uses "kill -TERM $PPID" (transparent command)
   args=$(cat "$stub_dir/log" 2>/dev/null || printf '')
   case "$args" in

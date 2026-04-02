@@ -78,7 +78,35 @@ while true; do
       portal_location="/mnt"
       ;;
   esac
-  
+
+  has_player_key=0
+  for key_file in "$HOME"/.ssh/*.pub; do
+    [ -f "$key_file" ] || continue
+    key_name=$(basename "$key_file" .pub)
+    if validate-player-name "$key_name" 2>/dev/null; then
+      has_player_key=1
+      break
+    fi
+  done
+  unset key_file key_name
+
+  # Load saved player identity from config when shell env is not set.
+  spell_home="${SPELLBOOK_DIR:-$HOME/.spellbook}"
+  mud_config_file="$spell_home/.mud"
+  if [ -z "${MUD_PLAYER-}" ] && [ -f "$mud_config_file" ]; then
+    saved_player=$(config-get "$mud_config_file" player 2>/dev/null || printf '')
+    if [ -n "$saved_player" ] && validate-player-name "$saved_player" 2>/dev/null; then
+      export MUD_PLAYER="$saved_player"
+    fi
+    unset saved_player
+  fi
+  unset spell_home mud_config_file
+
+  create_player_option=""
+  if [ "$has_player_key" -eq 0 ]; then
+    create_player_option="Create Player%new-player"
+  fi
+
   look="Look Around%look"
   stats="View Stats%stats"
   speak="Say Something%printf 'Message: ' && read msg && say \"\$msg\""
@@ -88,6 +116,12 @@ while true; do
   close_portal="Close Portal%close-portal"
   portal="Teleport to Portal Chamber%cd $portal_location"
   admin="Admin MUD Hosting%mud-admin-menu"
+  change_player="Change player%choose-player && if [ -n \"\${MUD_PLAYER-}\" ] && [ -f \"$HOME/.ssh/\$MUD_PLAYER\" ]; then printf '%s\\n' \"Checking player key (passphrase prompt may appear)...\"; ssh-keygen -y -f \"$HOME/.ssh/\$MUD_PLAYER\" >/dev/null 2>&1 || true; fi"
+  player_status="Player status%player-status"
+  change_player_option=""
+  if [ "$has_player_key" -eq 1 ]; then
+    change_player_option="$change_player"
+  fi
   settings="MUD Settings%. mud-settings"
   # Exit button kills this menu script via TERM signal
   # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)
@@ -95,6 +129,7 @@ while true; do
   exit_item="${exit_label}%kill -TERM \$PPID"
 
   set -- \
+    ${create_player_option:+"$create_player_option"} \
     "$look" \
     "$stats" \
     "$speak" \
@@ -104,6 +139,8 @@ while true; do
     "$close_portal" \
     "$portal" \
     "$admin" \
+    "$player_status" \
+    ${change_player_option:+"$change_player_option"} \
     "$settings" \
     "$exit_item"
   menu "MUD Menu:" "$@" || menu_status=$?

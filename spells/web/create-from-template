@@ -7,11 +7,7 @@ case "${1-}" in
   cat <<'USAGE'
 Usage: create-from-template SITENAME TEMPLATE
 
-Creates a new site by copying a template.
-
-Templates:
-  demo    - Interactive demo site with 15+ CGI examples
-  blog    - Personal blog with content-addressable posts
+Creates a new site by copying an available template source.
 
 Example: create-from-template mysite demo
 USAGE
@@ -21,6 +17,91 @@ esac
 
 set -eu
 . env-clear
+
+template_source_candidates() {
+  wizardry_root=${WIZARDRY_DIR:-$HOME/.wizardry}
+  wizardry_parent=$(dirname "$wizardry_root")
+  printf '%s\n' \
+    "$wizardry_root/web" \
+    "$wizardry_root/spells/web" \
+    "$wizardry_parent/git/wizardry-apps/web" \
+    "$HOME/git/wizardry-apps/web"
+}
+
+external_template_candidates() {
+  template_name=$1
+  wizardry_root=${WIZARDRY_DIR:-$HOME/.wizardry}
+  wizardry_parent=$(dirname "$wizardry_root")
+
+  case "$template_name" in
+    blog)
+      printf '%s\n' \
+        "$wizardry_parent/git/blog-template" \
+        "$HOME/git/blog-template" \
+        "$wizardry_parent/git/nostr-blog" \
+        "$HOME/git/nostr-blog"
+      ;;
+    unix-settings)
+      printf '%s\n' \
+        "$wizardry_parent/git/unix-settings/hosted-web" \
+        "$HOME/git/unix-settings/hosted-web"
+      ;;
+    artificer)
+      printf '%s\n' \
+        "$wizardry_parent/git/artificer/hosted-web" \
+        "$HOME/git/artificer/hosted-web"
+      ;;
+  esac
+}
+
+resolve_template_dir() {
+  template_name=$1
+  for candidate in $(template_source_candidates); do
+    if [ -d "$candidate/$template_name" ]; then
+      printf '%s\n' "$candidate/$template_name"
+      return 0
+    fi
+  done
+  for candidate in $(external_template_candidates "$template_name"); do
+    if [ -d "$candidate/pages" ]; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
+resolve_shared_theme_dir() {
+  for candidate in $(template_source_candidates); do
+    if [ -d "$candidate/.themes" ]; then
+      printf '%s\n' "$candidate/.themes"
+      return 0
+    fi
+  done
+  return 1
+}
+
+list_available_templates() {
+  for template_name in demo blog unix-settings artificer; do
+    if resolve_template_dir "$template_name" >/dev/null 2>&1; then
+      printf '%s\n' "$template_name"
+    fi
+  done
+}
+
+case "${1-}" in
+  --list-templates)
+    list_available_templates
+    exit 0
+    ;;
+  --resolve-template-dir)
+    if [ -z "${2-}" ]; then
+      die 2 "create-from-template: TEMPLATE required for --resolve-template-dir"
+    fi
+    resolve_template_dir "$2" || exit 1
+    exit 0
+    ;;
+esac
 
 site_name=${1-}
 template=${2-}
@@ -33,17 +114,17 @@ if [ -z "$template" ]; then
   die 2 "create-from-template: TEMPLATE required"
 fi
 
-WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
-SITES_DIR="$WEB_ROOT"
-SITE_DIR="$SITES_DIR/$site_name"
+web_root=${WEB_WIZARDRY_ROOT:-$HOME/sites}
+sites_dir="$web_root"
+site_dir="$sites_dir/$site_name"
 
 # Check if site already exists
-if [ -d "$SITE_DIR" ]; then
+if [ -d "$site_dir" ]; then
   die "create-from-template: site '$site_name' already exists"
 fi
 
-# Get WIZARDRY_DIR to find templates
-template_dir="$WIZARDRY_DIR/.templates/$template"
+template_dir=$(resolve_template_dir "$template" 2>/dev/null || printf '')
+shared_theme_dir=$(resolve_shared_theme_dir 2>/dev/null || printf '')
 
 if [ ! -d "$template_dir" ]; then
   die "create-from-template: template '$template' not found"
@@ -52,31 +133,52 @@ fi
 step "Creating site '$site_name' from template '$template'..."
 
 # Copy template to site directory
-mkdir -p "$SITE_DIR"
-cp -r "$template_dir"/* "$SITE_DIR/"
+mkdir -p "$site_dir"
+cp -r "$template_dir"/* "$site_dir/"
 
 # Rename to match expected structure
-if [ -d "$SITE_DIR/pages" ]; then
-  mkdir -p "$SITE_DIR/site"
-  mv "$SITE_DIR/pages" "$SITE_DIR/site/"
+if [ -d "$site_dir/pages" ]; then
+  mkdir -p "$site_dir/site"
+  mv "$site_dir/pages" "$site_dir/site/"
 fi
 
-if [ -d "$SITE_DIR/static" ]; then
-  [ ! -d "$SITE_DIR/site" ] && mkdir -p "$SITE_DIR/site"
-  mv "$SITE_DIR/static" "$SITE_DIR/site/"
+if [ -d "$site_dir/static" ]; then
+  [ ! -d "$site_dir/site" ] && mkdir -p "$site_dir/site"
+  mv "$site_dir/static" "$site_dir/site/"
 fi
 
-if [ -d "$SITE_DIR/includes" ]; then
-  [ ! -d "$SITE_DIR/site" ] && mkdir -p "$SITE_DIR/site"
-  mv "$SITE_DIR/includes" "$SITE_DIR/site/"
+if [ -d "$site_dir/includes" ]; then
+  [ ! -d "$site_dir/site" ] && mkdir -p "$site_dir/site"
+  mv "$site_dir/includes" "$site_dir/site/"
+fi
+
+# Sync shared theme catalog into every site template.
+if [ -d "$shared_theme_dir" ]; then
+  mkdir -p "$site_dir/site/static/themes"
+  cp -f "$shared_theme_dir"/*.css "$site_dir/site/static/themes/" 2>/dev/null || true
+fi
+
+if [ -f "$template_dir/wizardry-server-requirements.conf" ]; then
+  cp "$template_dir/wizardry-server-requirements.conf" "$site_dir/"
+fi
+
+if [ -f "$template_dir/wizardry-content-layout.conf" ]; then
+  cp "$template_dir/wizardry-content-layout.conf" "$site_dir/"
 fi
 
 # Create additional required directories
-mkdir -p "$SITE_DIR/site/uploads"
-mkdir -p "$SITE_DIR/build"
+mkdir -p "$site_dir/site/uploads"
+mkdir -p "$site_dir/build"
+if [ "$template" = "blog" ]; then
+  mkdir -p "$site_dir/site/nostr/state" "$site_dir/site/nostr/events" "$site_dir/site/nostr/derived"
+  : > "$site_dir/site/nostr/state/authors.txt"
+  : > "$site_dir/site/nostr/state/relays.txt"
+  : > "$site_dir/site/nostr/state/blocklist.txt"
+  : > "$site_dir/site/nostr/state/hidden_posts.txt"
+fi
 
 # Create site config
-cat > "$SITE_DIR/site.conf" <<EOF
+cat > "$site_dir/site.conf" <<EOF
 # Site configuration for $site_name
 site-name=$site_name
 site-user=
@@ -86,7 +188,14 @@ domain=localhost
 https=false
 EOF
 
-cat > "$SITE_DIR/site.allowlist" <<EOF
+if [ "$template" = "blog" ]; then
+  cat >> "$site_dir/site.conf" <<'EOF'
+nostr_bridge_enabled=false
+new_users_are_admins=true
+EOF
+fi
+
+cat > "$site_dir/site.allowlist" <<EOF
 # List additional absolute paths this site may access.
 # One path per line. Lines starting with # are ignored.
 EOF
@@ -99,7 +208,7 @@ else
 fi
 
 success "Site '$site_name' created from template '$template'"
-info "Site directory: $SITE_DIR"
+info "Site directory: $site_dir"
 info ""
 info "Next steps:"
 info "  1. Build: web-wizardry build $site_name"

@@ -13,6 +13,10 @@ This spell must be sourced (note the dot) to change your current directory.
 USAGE
   return 0 2>/dev/null || exit 0
   ;;
+-*)
+  printf "jump-trash: unknown option '%s'.\n" "$1" >&2
+  return 1 2>/dev/null || exit 1
+  ;;
 esac
 
 # Uncastable pattern - ensures spell is sourced, not executed

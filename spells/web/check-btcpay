@@ -1,0 +1,30 @@
+#!/bin/sh
+
+# Check whether BTCPay Server tooling/runtime is available.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: check-btcpay
+
+Checks whether BTCPay Server runtime appears installed and, when possible,
+whether its Docker services are running.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+arcana_check="$script_dir/../.arcana/btcpay/check-btcpay-arcana"
+
+if [ -x "$arcana_check" ]; then
+  "$arcana_check"
+  exit $?
+fi
+
+printf 'status=bad\n'
+printf 'summary=%s\n' 'BTCPay checker is unavailable.'
+exit 0

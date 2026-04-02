@@ -1,0 +1,139 @@
+#!/bin/sh
+
+# Install the Tabby daemon container definition.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-tabby-daemon
+
+Installs the Tabby daemon container definition using Docker.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+docker_arcana_dir=$(CDPATH= cd -- "$script_dir/../docker" 2>/dev/null && pwd || printf '')
+tabby_dir="$HOME/.tabby"
+installed_marker="$tabby_dir/daemon-installed"
+probe_timeout_tenths=${TABBY_DOCKER_CHECK_TIMEOUT_TENTHS:-20}
+
+run_with_timeout() {
+  max_ticks=$1
+  shift
+  (
+    "$@"
+  ) >/dev/null 2>&1 &
+  probe_pid=$!
+  ticks=0
+  while kill -0 "$probe_pid" 2>/dev/null; do
+    ticks=$((ticks + 1))
+    if [ "$ticks" -ge "$max_ticks" ]; then
+      kill "$probe_pid" >/dev/null 2>&1 || :
+      return 124
+    fi
+    sleep 0.1
+  done
+  wait "$probe_pid"
+}
+
+if ! has docker; then
+  die "install-tabby-daemon: docker is not installed"
+fi
+
+if ! run_with_timeout "$probe_timeout_tenths" docker info; then
+  if [ -n "$docker_arcana_dir" ] && [ -x "$docker_arcana_dir/start-docker-daemon" ]; then
+    "$docker_arcana_dir/start-docker-daemon" || :
+  fi
+fi
+if ! run_with_timeout "$probe_timeout_tenths" docker info; then
+  die "install-tabby-daemon: could not connect to the docker daemon. docker daemon must be running to install the tabby daemon."
+fi
+
+tabby_container_is_current() {
+  cmd_json=$(docker inspect -f '{{json .Config.Cmd}}' tabby 2>/dev/null || printf '')
+  case "$cmd_json" in
+    *\"serve\"*\"--model\"*) return 1 ;;
+    *\"serve\"*\"--chat-model\"*) return 1 ;;
+    *\"serve\"*)
+      if docker inspect -f '{{range .Mounts}}{{println .Destination}}{{end}}' tabby 2>/dev/null | \
+        grep -qx '/data/config.toml'; then
+        return 0
+      fi
+      return 1
+      ;;
+    *) return 1 ;;
+  esac
+}
+
+if "$script_dir/is-tabby-daemon-installed" >/dev/null 2>&1; then
+  if tabby_container_is_current; then
+    success "tabby daemon is already installed"
+    exit 0
+  fi
+  printf '%s\n' "Repairing tabby daemon container definition..."
+  if ! docker rm -f tabby >/dev/null 2>&1; then
+    die "install-tabby-daemon: failed to remove invalid tabby daemon container"
+  fi
+fi
+
+printf '%s\n' "Installing tabby daemon..."
+printf '%s\n' "Downloading Tabby daemon image..."
+"$script_dir/configure-tabby-daemon" >/dev/null
+
+arch=$(uname -m 2>/dev/null || printf '')
+pull_platform=""
+case "$arch" in
+  arm64|aarch64)
+    # Upstream image does not currently publish a native arm64 manifest.
+    pull_platform="linux/amd64"
+    warn "install-tabby-daemon: no native arm64 image is published; using linux/amd64 image via emulation"
+    ;;
+esac
+
+if [ -n "$pull_platform" ]; then
+  if ! docker pull --platform "$pull_platform" tabbyml/tabby; then
+    die "install-tabby-daemon: failed to download tabby daemon image"
+  fi
+else
+  if ! docker pull tabbyml/tabby; then
+    die "install-tabby-daemon: failed to download tabby daemon image"
+  fi
+fi
+
+mkdir -p "$tabby_dir"
+if [ -n "$pull_platform" ]; then
+  if ! docker create \
+    --name tabby \
+    --platform "$pull_platform" \
+    --restart unless-stopped \
+    -p 8080:8080 \
+    -v "$tabby_dir:/data" \
+    -v "$tabby_dir/config.toml:/data/config.toml:ro" \
+    tabbyml/tabby \
+    serve >/dev/null; then
+    die "install-tabby-daemon: failed to create tabby daemon container"
+  fi
+else
+  if ! docker create \
+    --name tabby \
+    --restart unless-stopped \
+    -p 8080:8080 \
+    -v "$tabby_dir:/data" \
+    -v "$tabby_dir/config.toml:/data/config.toml:ro" \
+    tabbyml/tabby \
+    serve >/dev/null; then
+    die "install-tabby-daemon: failed to create tabby daemon container"
+  fi
+fi
+
+if ! tabby_container_is_current; then
+  die "install-tabby-daemon: container definition is invalid"
+fi
+: >"$installed_marker" 2>/dev/null || :
+
+success "tabby daemon installed"

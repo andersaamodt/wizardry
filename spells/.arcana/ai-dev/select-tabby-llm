@@ -1,0 +1,67 @@
+#!/bin/sh
+
+# Select an installed LLM to use as Tabby chat/completion model.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: select-tabby-llm
+
+Prompts to choose an installed model to use for Tabby chat/completions.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+if ! require menu "The select-tabby-llm needs the 'menu' command to present options."; then
+  exit 1
+fi
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+is_embedding_model_name() {
+  case "$1" in
+    *embed*|*embedding*|nomic-embed-text|nomic-embed-text:*)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+installed=$("$script_dir/list-installed-llms" 2>/dev/null || printf '')
+if [ -z "$installed" ]; then
+  die "select-tabby-llm: no installed models found"
+fi
+
+set --
+while IFS= read -r model; do
+  [ -n "$model" ] || continue
+  if is_embedding_model_name "$model"; then
+    continue
+  fi
+  set -- "$@" "$model%$script_dir/set-tabby-llm \"$model\""
+done <<EOF
+$installed
+EOF
+
+if [ "$#" -eq 0 ]; then
+  die "select-tabby-llm: no chat/completion-capable models are installed"
+fi
+
+exit_label=$(exit-label)
+set -- "$@" "${exit_label}%:"
+
+menu "Select Tabby LLM:" "$@" || menu_status=$?
+menu_status=${menu_status:-0}
+
+if [ "$menu_status" -eq 130 ]; then
+  printf 'ESC\n' >&2
+  exit 0
+fi

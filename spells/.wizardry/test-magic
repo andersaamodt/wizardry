@@ -217,13 +217,14 @@ fi
 export PATH
 
 has_tty=0
-if [ -c /dev/tty ] && [ -r /dev/tty ] && [ -w /dev/tty ]; then
+if tty >/dev/null 2>&1 && [ -c /dev/tty ] && [ -r /dev/tty ] && [ -w /dev/tty ]; then
   has_tty=1
 fi
 
 # Run tests inside strict pocket-dimension unless in GitHub Actions (already isolated).
 if [ "${GITHUB_ACTIONS-}" != "true" ] && [ "${WIZARDRY_TEST_IN_POCKET-0}" -ne 1 ]; then
   platform=$(uname -s 2>/dev/null || printf 'unknown')
+  use_strict_pocket=1
   if [ "$platform" = "Darwin" ] && command -v sudo >/dev/null 2>&1; then
     if ! sudo -n true >/dev/null 2>&1; then
       if [ "$has_tty" -eq 1 ]; then
@@ -233,24 +234,25 @@ if [ "${GITHUB_ACTIONS-}" != "true" ] && [ "${WIZARDRY_TEST_IN_POCKET-0}" -ne 1 
           exit 1
         fi
       else
-        printf '%s\n' "test-magic: macOS isolation needs sudo; authenticating now..." >&2
-        if ! sudo -v; then
-          printf '%s\n' "test-magic: sudo authentication failed" >&2
-          exit 1
-        fi
+        printf '%s\n' \
+          "test-magic: macOS isolation needs sudo; no tty is available, so tests will run without pocket-dimension" \
+          >&2
+        use_strict_pocket=0
       fi
     fi
   fi
-  if ! command -v pocket-dimension >/dev/null 2>&1; then
+  if [ "$use_strict_pocket" -eq 1 ] && ! command -v pocket-dimension >/dev/null 2>&1; then
     printf 'test-magic: pocket-dimension not found\n' >&2
     exit 1
   fi
-  if [ "$has_tty" -eq 1 ]; then
-    printf '%s\n' "test-magic: entering strict pocket-dimension..." > /dev/tty
-  else
-    printf '%s\n' "test-magic: entering strict pocket-dimension..." >&2
+  if [ "$use_strict_pocket" -eq 1 ]; then
+    if [ "$has_tty" -eq 1 ]; then
+      printf '%s\n' "test-magic: entering strict pocket-dimension..." > /dev/tty
+    else
+      printf '%s\n' "test-magic: entering strict pocket-dimension..." >&2
+    fi
+    exec pocket-dimension --strict --network closed -- test-magic "$@"
   fi
-  exec pocket-dimension --strict --network closed -- test-magic "$@"
 fi
 
 # Pre-flight checks (use command -v instead of has since invoke-wizardry not loaded yet)
@@ -399,7 +401,7 @@ run_test_file() {
   cat > "$test_wrapper" << WRAPPER_EOF
 #!/bin/sh
 set +e
-${stdbuf_cmd:+$stdbuf_cmd }"$root_dir/spells/.wizardry/test-spell" --skip-common "$test_path" < /dev/null 2>&1
+${stdbuf_cmd:+$stdbuf_cmd }sh "$root_dir/spells/.wizardry/test-spell" --skip-common "$test_path" < /dev/null 2>&1
 exit_code=\$?
 printf '%s\n' "\$exit_code" > "$test_exit_file"
 WRAPPER_EOF

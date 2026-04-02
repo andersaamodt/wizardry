@@ -111,10 +111,10 @@ if [ -z "$test_path" ]; then
   exit 2
 fi
 
-# Normalize test path - accept with or without .tests/ prefix
+# Normalize test path - accept with or without .tests/ or tests/ prefix.
 case "$test_path" in
-  .tests/*)
-    # Already has .tests/ prefix
+  .tests/*|tests/*)
+    # Already has an explicit test-root prefix
     full_test_path="$ROOT_DIR/$test_path"
     ;;
   *)
@@ -135,5 +135,6 @@ fi
 # 2. Are already run once by test-magic before any spell tests
 # 3. Would cause massive duplication if run per-spell
 
-# Execute the test file
-exec "$full_test_path"
+# Execute the test file under sh so test execution does not depend on
+# direct-exec quirks or executable-bit drift on local filesystems.
+exec sh "$full_test_path"

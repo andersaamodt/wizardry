@@ -142,15 +142,14 @@ test_require_fallback_success() {
 exit 0
 SH
   chmod +x "$tmp/existing-cmd"
-  # Run with PATH that has the command but NOT require-command
-  run_cmd env PATH="$tmp:$WIZARDRY_SYSTEM_PATH" "$ROOT_DIR/spells/.imps/sys/require" existing-cmd
+  # Run with a minimal PATH to force fallback mode (no require-command).
+  run_cmd env PATH="$tmp:/usr/bin:/bin" "$ROOT_DIR/spells/.imps/sys/require" existing-cmd
   assert_success
 }
 
 test_require_fallback_failure_with_message() {
-  tmp=$(make_tempdir)
-  # Run with empty PATH (no require-command, no target command)
-  run_cmd env PATH="$WIZARDRY_SYSTEM_PATH" "$ROOT_DIR/spells/.imps/sys/require" nonexistent-cmd "Custom error message"
+  # Run with minimal system PATH (no require-command, no target command).
+  run_cmd env PATH="/usr/bin:/bin" "$ROOT_DIR/spells/.imps/sys/require" nonexistent-cmd "Custom error message"
   assert_failure
   assert_error_contains "Custom error message"
 }
@@ -161,9 +160,8 @@ test_require_fallback_failure_default_message() {
     TEST_SKIP_REASON="(requires unloaded wizardry)"
     return 222
   fi
-  tmp=$(make_tempdir)
-  # Run with empty PATH (no require-command, no target command, no custom message)
-  run_cmd env PATH="$WIZARDRY_SYSTEM_PATH" "$ROOT_DIR/spells/.imps/sys/require" nonexistent-cmd
+  # Run with minimal system PATH (no require-command, no target command, no custom message).
+  run_cmd env PATH="/usr/bin:/bin" "$ROOT_DIR/spells/.imps/sys/require" nonexistent-cmd
   assert_failure
   assert_error_contains "require: missing required command 'nonexistent-cmd'"
 }
@@ -174,8 +172,7 @@ test_require_fallback_shows_install_hint() {
     TEST_SKIP_REASON="(requires unloaded wizardry)"
     return 222
   fi
-  tmp=$(make_tempdir)
-  run_cmd env PATH="$WIZARDRY_SYSTEM_PATH" "$ROOT_DIR/spells/.imps/sys/require" missing-tool
+  run_cmd env PATH="/usr/bin:/bin" "$ROOT_DIR/spells/.imps/sys/require" missing-tool
   assert_failure
   assert_error_contains "install-menu"
 }

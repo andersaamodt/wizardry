@@ -3,6 +3,7 @@
 # Environment variables:
 #   PTY_INPUT - raw input to send to the command (default: single newline)
 #   PTY_KEYS - symbolic keys to send (e.g., "up up enter") - converted to escape sequences
+#   PTY_SEND_DELAY - whole-second delay before sending input (default: 3)
 #   PATH - inherited for command execution
 #
 # This helper uses socat to create a real PTY for interactive command testing.
@@ -29,7 +30,15 @@ trap 'rm -rf "$test_dir"' EXIT INT TERM
 # Determine input data
 if [ -n "${PTY_KEYS:-}" ]; then
   # Convert symbolic keys to escape sequences using socat-send-keys
-  input_data=$(socat-send-keys $PTY_KEYS)
+  socat_send_keys_bin=$(command -v socat-send-keys 2>/dev/null || true)
+  if [ -z "$socat_send_keys_bin" ]; then
+    printf 'run-with-pty: socat-send-keys not found\n' >&2
+    exit 1
+  fi
+  # Execute via /bin/sh for consistent exit behavior across shells.
+  # Direct execution can return non-zero on some environments even on success.
+  # shellcheck disable=SC2086
+  input_data=$(/bin/sh "$socat_send_keys_bin" $PTY_KEYS)
 elif [ -n "${PTY_INPUT:-}" ]; then
   # Use raw input as-is
   input_data="$PTY_INPUT"
@@ -55,28 +64,38 @@ fi
 } > "$test_dir/cmd.sh"
 chmod +x "$test_dir/cmd.sh"
 
-# Give the command a moment to attach to its PTY before key input arrives.
-emit_input() {
-  sleep 0.1 2>/dev/null || sleep 1
-  printf '%s' "$input_data"
-}
-
-# Run socat with a 5-second timeout.
-# Prefer system timeout helpers when available, otherwise use a shell watchdog.
+# Resolve timeout command across platforms (GNU coreutils on macOS may install gtimeout)
+timeout_cmd=''
 if command -v timeout >/dev/null 2>&1; then
-  emit_input | timeout 5 socat - "EXEC:$test_dir/cmd.sh,pty,stderr" 2>&1 || true
+  timeout_cmd='timeout'
 elif command -v gtimeout >/dev/null 2>&1; then
-  emit_input | gtimeout 5 socat - "EXEC:$test_dir/cmd.sh,pty,stderr" 2>&1 || true
+  timeout_cmd='gtimeout'
+fi
+
+# Use socat with stdin as input side and EXEC with PTY on output side.
+# -T 5 applies socat's own inactivity timeout so PTY tests do not hang when
+# GNU timeout is unavailable (common on macOS).
+# Add a short delay before sending input so the command has time to initialize
+# the terminal mode; this avoids losing early keypresses in PTY tests.
+send_delay=${PTY_SEND_DELAY:-3}
+case "$send_delay" in
+  ''|*[!0-9]*)
+    send_delay=3
+    ;;
+esac
+
+if [ -n "$timeout_cmd" ]; then
+  {
+    if [ "$send_delay" -gt 0 ]; then
+      sleep "$send_delay"
+    fi
+    printf '%s' "$input_data"
+  } | "$timeout_cmd" 7 socat -T 5 - "EXEC:$test_dir/cmd.sh,pty,stderr" 2>&1 || true
 else
-  (
-    emit_input | socat - "EXEC:$test_dir/cmd.sh,pty,stderr" 2>&1
-  ) &
-  pty_pid=$!
-  (
-    sleep 5
-    kill -TERM "$pty_pid" 2>/dev/null || true
-  ) &
-  watchdog_pid=$!
-  wait "$pty_pid" 2>/dev/null || true
-  kill -TERM "$watchdog_pid" 2>/dev/null || true
+  {
+    if [ "$send_delay" -gt 0 ]; then
+      sleep "$send_delay"
+    fi
+    printf '%s' "$input_data"
+  } | socat -T 5 - "EXEC:$test_dir/cmd.sh,pty,stderr" 2>&1 || true
 fi

@@ -24,6 +24,63 @@ mkdir -p "$tmpdir" "$homedir"
 # Restore the caller's PATH for use in the sandbox
 PATH=$saved_path
 
+shell_script_target() {
+  target=${1-}
+  [ -n "$target" ] || return 1
+
+  case "$target" in
+    */*)
+      candidate=$target
+      ;;
+    *)
+      candidate=$(command -v "$target" 2>/dev/null || printf '')
+      ;;
+  esac
+
+  [ -n "$candidate" ] || return 1
+  [ -f "$candidate" ] || return 1
+
+  first_line=$(sed -n '1p' "$candidate" 2>/dev/null || printf '')
+  case "$first_line" in
+    '#!'*/sh*|'#! /bin/sh'*|'#! /usr/bin/env sh'*)
+      printf '%s\n' "$candidate"
+      return 0
+      ;;
+  esac
+
+  return 1
+}
+
+run_target_cmd() {
+  if [ "$#" -eq 0 ]; then
+    return 0
+  fi
+
+  if [ "$1" = "env" ]; then
+    shift
+    while [ "$#" -gt 0 ]; do
+      case "$1" in
+        *=*)
+          export "$1"
+          shift
+          ;;
+        *)
+          break
+          ;;
+      esac
+    done
+    [ "$#" -gt 0 ] || exec env
+  fi
+
+  target_path=$(shell_script_target "${1-}" 2>/dev/null || printf '')
+  if [ -n "$target_path" ]; then
+    shift
+    exec sh "$target_path" "$@"
+  fi
+
+  exec "$@"
+}
+
 if [ "${BWRAP_AVAILABLE:-0}" -eq 1 ]; then
   # Pass through test-related environment variables that tests commonly set
   # These are needed for test stubs (apt-get, pkgin, etc.) to log their actions
@@ -197,7 +254,7 @@ else
     esac
   fi
   
-  if (cd "$workdir" && "$@" >"$stdout" 2>"$stderr"); then
+  if (cd "$workdir" && run_target_cmd "$@" >"$stdout" 2>"$stderr"); then
     STATUS=0
   else
     STATUS=$?
@@ -216,5 +273,3 @@ rm -rf "$sandbox"
 
 # Restore caller's PATH before returning
 PATH=$saved_path
-
-

@@ -1,0 +1,37 @@
+#!/bin/sh
+
+# Check whether Nostr server tooling is available.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: check-nostril
+
+Checks whether the nostril and nak CLIs are available for Nostr auth,
+verification, and bridge flows.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
+
+missing=''
+for bin in nostril nak; do
+  if ! command -v "$bin" >/dev/null 2>&1; then
+    missing="${missing}${missing:+, }$bin"
+  fi
+done
+
+if [ -z "$missing" ]; then
+  printf 'status=ok\n'
+  printf 'summary=%s\n' 'nostril and nak are available on PATH.'
+  exit 0
+fi
+
+printf 'status=bad\n'
+printf 'summary=Missing Nostr server tooling: %s\n' "$missing"
+exit 0

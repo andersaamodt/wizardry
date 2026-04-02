@@ -74,9 +74,10 @@ menu_respects_start_selection() {
   
   # Run with real PTY - sends enter key to select item
   # The PATH includes stubs first so terminal queries get responses
-  PTY_INPUT='
-' run_cmd env \
+  PTY_INPUT='' run_cmd env \
     PATH="$stub_dir:$PATH" \
+    PTY_SEND_DELAY=3 \
+    PTY_KEYS='enter' \
     run-with-pty \
     menu --start-selection 2 "Test:" \
     "First%printf first" \
@@ -125,10 +126,10 @@ menu_highlight_strips_ansi_codes() {
   reset_code=$(printf '\033[0m')
   
   # Run with real PTY
-  PTY_INPUT='
-' run_cmd env \
+  PTY_INPUT='' run_cmd env \
     PATH="$stub_dir:$PATH" \
     TERM=xterm \
+    PTY_KEYS='enter' \
     run-with-pty \
     menu "Test:" \
     "${yellow_code}ColoredItem${reset_code}%printf selected"
@@ -180,10 +181,10 @@ menu_restores_cursor_on_exit() {
   done
   
   # Run with real PTY
-  PTY_INPUT='
-' run_cmd env \
+  PTY_INPUT='' run_cmd env \
     PATH="$stub_dir:$PATH" \
     TERM=xterm \
+    PTY_KEYS='enter' \
     run-with-pty \
     menu "Test:" "Item%printf selected"
   
@@ -215,6 +216,52 @@ menu_restores_cursor_on_exit() {
 }
 run_test_case "menu restores cursor on exit" menu_restores_cursor_on_exit
 
+menu_hides_exit_workaround_in_command_column() {
+  if ! command -v socat >/dev/null 2>&1; then
+    test_skip "requires socat"
+    return 0
+  fi
+
+  tmpdir=$(make_tempdir)
+  stub_dir="$tmpdir/stubs"
+  mkdir -p "$stub_dir"
+
+  for stub in fathom-cursor fathom-terminal; do
+    ln -s "$ROOT_DIR/spells/.imps/test/stub-$stub" "$stub_dir/$stub"
+  done
+
+  PTY_INPUT='' run_cmd env \
+    PATH="$stub_dir:$PATH" \
+    TERM=xterm \
+    PTY_KEYS='escape' \
+    run-with-pty \
+    menu "Test:" "Exit%kill -TERM \$PPID"
+
+  assert_success || return 1
+
+  clean_output=$(printf '%s' "$OUTPUT" | socat-normalize-output)
+  case "$clean_output" in
+    *menu-exit*)
+      ;;
+    *)
+      TEST_FAILURE_REASON="expected cleaned command column to show menu-exit"
+      return 1
+      ;;
+  esac
+
+  case "$clean_output" in
+    *'kill -TERM $PPID'*)
+      TEST_FAILURE_REASON="did not expect raw exit workaround in menu output"
+      return 1
+      ;;
+    *)
+      return 0
+      ;;
+  esac
+}
+run_test_case "menu hides raw exit workaround in command column" \
+  menu_hides_exit_workaround_in_command_column
+
 # Arrow key navigation tests
 # These use run-with-pty with PTY_KEYS to send real escape sequences via socat
 menu_arrow_up_navigation() {
@@ -234,13 +281,11 @@ menu_arrow_up_navigation() {
     ln -s "$ROOT_DIR/spells/.imps/test/stub-$stub" "$stub_dir/$stub"
   done
   
-  # Send actual arrow escape sequences via PTY
-  PTY_KEYS="up up enter"
-  
   # Run menu with PTY starting at item 3, navigate up twice to item 1
   run_cmd env \
     PATH="$stub_dir:$PATH" \
-    PTY_KEYS="$PTY_KEYS" \
+    PTY_INPUT='' \
+    PTY_KEYS='up up enter' \
     run-with-pty \
     menu --start-selection 3 "Navigation Test:" \
     "First Item%printf first" \
@@ -260,7 +305,6 @@ menu_arrow_up_navigation() {
       ;;
   esac
 }
-run_test_case "menu responds to arrow up keys" menu_arrow_up_navigation
 
 # Test that menu responds to arrow down key
 menu_arrow_down_navigation() {
@@ -279,12 +323,10 @@ menu_arrow_down_navigation() {
     ln -s "$ROOT_DIR/spells/.imps/test/stub-$stub" "$stub_dir/$stub"
   done
   
-  # Send actual arrow escape sequences via PTY
-  PTY_KEYS="down enter"
-  
   run_cmd env \
     PATH="$stub_dir:$PATH" \
-    PTY_KEYS="$PTY_KEYS" \
+    PTY_INPUT='' \
+    PTY_KEYS='down enter' \
     run-with-pty \
     menu --start-selection 1 "Navigation Test:" \
     "First Item%printf first" \
@@ -322,12 +364,10 @@ menu_arrow_wrapping() {
     ln -s "$ROOT_DIR/spells/.imps/test/stub-$stub" "$stub_dir/$stub"
   done
   
-  # Send actual arrow escape sequences via PTY
-  PTY_KEYS="up enter"
-  
   run_cmd env \
     PATH="$stub_dir:$PATH" \
-    PTY_KEYS="$PTY_KEYS" \
+    PTY_INPUT='' \
+    PTY_KEYS='up enter' \
     run-with-pty \
     menu --start-selection 1 "Navigation Test:" \
     "First Item%printf first" \
@@ -374,9 +414,9 @@ menu_truncates_long_labels() {
   long_label="This is a very long menu item label that should be truncated to preserve command column space"
   
   # Run menu with long label
-  PTY_INPUT='
-' run_cmd env \
+  PTY_INPUT='' run_cmd env \
     PATH="$stub_dir:$PATH" \
+    PTY_KEYS='enter' \
     run-with-pty \
     menu "Test:" \
     "${long_label}%printf 'test-cmd'"
@@ -397,5 +437,154 @@ menu_truncates_long_labels() {
 }
 
 run_test_case "menu truncates long labels to preserve command column" menu_truncates_long_labels
+
+menu_hides_selection_wrapper_suffixes() {
+  if ! command -v socat >/dev/null 2>&1; then
+    test_skip "requires socat"
+    return 0
+  fi
+
+  tmpdir=$(make_tempdir)
+  stub_dir="$tmpdir/stubs"
+  mkdir -p "$stub_dir"
+
+  for stub in fathom-cursor fathom-terminal; do
+    ln -s "$ROOT_DIR/spells/.imps/test/stub-$stub" "$stub_dir/$stub"
+  done
+
+  selection_file="$tmpdir/selection"
+
+  PTY_INPUT='' run_cmd env \
+    PATH="$stub_dir:$PATH" \
+    SELECTION_FILE="$selection_file" \
+    PTY_KEYS='enter' \
+    run-with-pty \
+    menu "Display Test:" \
+    "Toggle parse%printf selected; echo 3 > \"$selection_file\""
+
+  assert_success || return 1
+
+  clean_output=$(printf '%s' "$OUTPUT" | socat-normalize-output)
+  if [ ! -f "$selection_file" ]; then
+    TEST_FAILURE_REASON="expected command to write selection wrapper state"
+    return 1
+  fi
+  selection_value=$(cat "$selection_file" 2>/dev/null || printf '')
+  if [ "$selection_value" != "3" ]; then
+    TEST_FAILURE_REASON="expected selection wrapper state 3, got '$selection_value'"
+    return 1
+  fi
+
+  case "$clean_output" in
+    *SELECTION_FILE*)
+      TEST_FAILURE_REASON="display command should not expose SELECTION_FILE wrapper"
+      return 1
+      ;;
+  esac
+  case "$clean_output" in
+    *'echo 3 > '*)
+      TEST_FAILURE_REASON="display command should not expose echo selection wrapper"
+      return 1
+      ;;
+  esac
+
+  return 0
+}
+
+run_test_case "menu hides selection wrapper suffixes in command column" menu_hides_selection_wrapper_suffixes
+
+menu_prefers_primary_action_for_compound_commands() {
+  if ! command -v socat >/dev/null 2>&1; then
+    test_skip "requires socat"
+    return 0
+  fi
+
+  tmpdir=$(make_tempdir)
+  stub_dir="$tmpdir/stubs"
+  mkdir -p "$stub_dir"
+
+  for stub in fathom-cursor fathom-terminal; do
+    ln -s "$ROOT_DIR/spells/.imps/test/stub-$stub" "$stub_dir/$stub"
+  done
+
+  PTY_INPUT='' run_cmd env \
+    PATH="$stub_dir:$PATH" \
+    TERM=xterm \
+    PTY_KEYS='escape' \
+    run-with-pty \
+    menu "Display Test:" \
+    'Change other password%read -p "Enter username: " username; sudo passwd "$username"'
+
+  assert_success || return 1
+
+  clean_output=$(printf '%s' "$OUTPUT" | socat-normalize-output)
+  case "$clean_output" in
+    *sudo\ passwd\ \"*)
+      ;;
+    *)
+      TEST_FAILURE_REASON="expected display command to show the primary action"
+      return 1
+      ;;
+  esac
+  case "$clean_output" in
+    *read\ -p\ \"Enter\ username:\ \"*)
+      TEST_FAILURE_REASON="did not expect prompt setup to appear in command column"
+      return 1
+      ;;
+    *)
+      return 0
+      ;;
+  esac
+}
+
+run_test_case "menu shows the primary action for compound commands" \
+  menu_prefers_primary_action_for_compound_commands
+
+menu_hides_command_substitution_noise() {
+  if ! command -v socat >/dev/null 2>&1; then
+    test_skip "requires socat"
+    return 0
+  fi
+
+  tmpdir=$(make_tempdir)
+  stub_dir="$tmpdir/stubs"
+  mkdir -p "$stub_dir"
+
+  for stub in fathom-cursor fathom-terminal; do
+    ln -s "$ROOT_DIR/spells/.imps/test/stub-$stub" "$stub_dir/$stub"
+  done
+
+  PTY_INPUT='' run_cmd env \
+    PATH="$stub_dir:$PATH" \
+    TERM=xterm \
+    PTY_KEYS='escape' \
+    run-with-pty \
+    menu "Display Test:" \
+    'Copy onion%clip-copy "$(sudo cat /tmp/onion.txt)"'
+
+  assert_success || return 1
+
+  clean_output=$(printf '%s' "$OUTPUT" | socat-normalize-output)
+  case "$clean_output" in
+    *clip-copy*)
+      ;;
+    *)
+      TEST_FAILURE_REASON="expected command substitution action to stay readable"
+      return 1
+      ;;
+  esac
+  case "$clean_output" in
+    *'$('*|*'sudo cat /tmp/onion.txt'*)
+      TEST_FAILURE_REASON="did not expect command substitution details in command column"
+      return 1
+      ;;
+    *)
+      return 0
+      ;;
+  esac
+}
+
+run_test_case "menu hides command-substitution scaffolding" \
+  menu_hides_command_substitution_noise
 
 finish_tests

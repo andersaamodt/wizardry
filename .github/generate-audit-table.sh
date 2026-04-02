@@ -38,7 +38,7 @@ find_files() {
   find .github -maxdepth 1 -name '*.md' 2>/dev/null | sort
   
   # Templates
-  find .templates -type f 2>/dev/null | sort
+  find .web -type f 2>/dev/null | sort
   
   # Tutorials
   find tutorials -type f -name '*.sh' 2>/dev/null | sort

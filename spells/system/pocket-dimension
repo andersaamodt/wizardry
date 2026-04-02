@@ -2,8 +2,9 @@
 
 # Run a command inside an isolated "pocket dimension" environment.
 
-pocket_dimension_usage() {
-  cat <<'USAGE'
+case "${1-}" in
+  --help|--usage|-h)
+    cat <<'USAGE'
 Usage: pocket-dimension [OPTIONS] -- command [args...]
 
 Create a short-lived isolated environment and execute a command within it.
@@ -17,11 +18,6 @@ Options:
   --allow-write PATH      Allow write access to PATH (repeatable)
   --help, --usage, -h     Show this help message
 USAGE
-}
-
-case "${1-}" in
-  --help|--usage|-h)
-    pocket_dimension_usage
     exit 0
     ;;
 esac
@@ -29,15 +25,15 @@ esac
 set -eu
 . env-clear
 
-  check_only=0
-  strict_mode=0
-  keep_pocket=0
-  network_mode="open"
-  allow_read_paths=""
-  allow_write_paths=""
+check_only=0
+strict_mode=0
+keep_pocket=0
+network_mode="open"
+allow_read_paths=""
+allow_write_paths=""
 
-  while [ "$#" -gt 0 ]; do
-    case "$1" in
+while [ "$#" -gt 0 ]; do
+  case "$1" in
       --check)
         check_only=1
         shift
@@ -308,7 +304,8 @@ set -eu
       remove_macos_temp_user "$created_user"
       return 1
     fi
-    if ! sudo dscl . -create "/Users/$created_user" RealName "Wizardry Pocket User" >/dev/null 2>&1; then
+    if ! sudo dscl . -create "/Users/$created_user" \
+      RealName "Wizardry Pocket User" >/dev/null 2>&1; then
       remove_macos_temp_user "$created_user"
       return 1
     fi
@@ -320,7 +317,8 @@ set -eu
       remove_macos_temp_user "$created_user"
       return 1
     fi
-    if ! sudo dscl . -create "/Users/$created_user" NFSHomeDirectory "$created_home" >/dev/null 2>&1; then
+    if ! sudo dscl . -create "/Users/$created_user" \
+      NFSHomeDirectory "$created_home" >/dev/null 2>&1; then
       remove_macos_temp_user "$created_user"
       return 1
     fi
@@ -365,7 +363,8 @@ set -eu
     printf 'pocket-dimension: strict mode is unsupported on %s\n' "$platform" >&2
     exit 1
   fi
-  if [ "$strict_mode" -eq 1 ] && [ "$platform" = "Darwin" ] && ! command -v sandbox-exec >/dev/null 2>&1; then
+  if [ "$strict_mode" -eq 1 ] && [ "$platform" = "Darwin" ] \
+    && ! command -v sandbox-exec >/dev/null 2>&1; then
     printf '%s\n' "pocket-dimension: strict macOS mode requires sandbox-exec" >&2
     exit 1
   fi
@@ -378,8 +377,21 @@ set -eu
   mkdir -p "$pocket_home" "$pocket_tmp" "$pocket_run" "$pocket_work"
 
   workdir=$(pwd -P)
-  record_dir="$pocket_root/records"
-  mkdir -p "$record_dir"
+  record_mutations=${WIZARDRY_POCKET_RECORD_MUTATIONS:-0}
+  case "$record_mutations" in
+    1) : ;;
+    *) record_mutations=0 ;;
+  esac
+  # Keeping the pocket implies an inspection workflow; record mutations then.
+  if [ "$keep_pocket" -eq 1 ]; then
+    record_mutations=1
+  fi
+
+  record_dir=''
+  if [ "$record_mutations" -eq 1 ]; then
+    record_dir="$pocket_root/records"
+    mkdir -p "$record_dir"
+  fi
   snapshot_enabled=1
   if [ "$platform" = "Darwin" ] && [ "$strict_mode" -eq 1 ]; then
     snapshot_enabled=0
@@ -397,7 +409,7 @@ set -eu
     fi
   }
 
-  if [ "$snapshot_enabled" -eq 1 ]; then
+  if [ "$record_mutations" -eq 1 ] && [ "$snapshot_enabled" -eq 1 ]; then
     snapshot_files "$record_dir/before" 2>/dev/null || true
   fi
 
@@ -586,7 +598,9 @@ RUNNER
 
           sandbox_exec=$(command -v sandbox-exec 2>/dev/null || printf '')
           sandbox_exec_usable=0
-          if [ -n "$sandbox_exec" ] && "$sandbox_exec" -p "(version 1) (allow default)" /usr/bin/true >/dev/null 2>&1; then
+          if [ -n "$sandbox_exec" ] \
+            && "$sandbox_exec" -p "(version 1) (allow default)" \
+              /usr/bin/true >/dev/null 2>&1; then
             sandbox_exec_usable=1
           fi
 
@@ -603,13 +617,16 @@ RUNNER
                 WIZARDRY_POCKET_NETWORK="$network_mode" \
                 WIZARDRY_TEST_IN_POCKET=1 \
                 WIZARDRY_DEMO_IN_POCKET=1 \
-                "$sandbox_exec" -f "$profile_file" /bin/sh "$runner_script" "$mac_active_repo" "$command_name" "$@"; then
+                "$sandbox_exec" -f "$profile_file" /bin/sh \
+                "$runner_script" "$mac_active_repo" "$command_name" "$@"; then
               status=0
             else
               status=$?
             fi
           else
-            printf '%s\n' "pocket-dimension: sandbox-exec unavailable or unusable; continuing with temp-user isolation only" >&2
+            warn_msg="pocket-dimension: sandbox-exec unavailable or unusable;"
+            warn_msg="$warn_msg continuing with temp-user isolation only"
+            printf '%s\n' "$warn_msg" >&2
             if sudo -H -u "$mac_active_user" \
               env -i \
                 PATH="$run_path" \
@@ -638,7 +655,9 @@ RUNNER
       sandbox_exec=$(command -v sandbox-exec)
     fi
 
-    if [ -n "$sandbox_exec" ] && "$sandbox_exec" -p "(version 1) (allow default)" /usr/bin/true >/dev/null 2>&1; then
+    if [ -n "$sandbox_exec" ] \
+      && "$sandbox_exec" -p "(version 1) (allow default)" \
+        /usr/bin/true >/dev/null 2>&1; then
       sandbox_profile='(version 1) (allow default)'
       if (cd "$workdir" && env -i $env_args "$sandbox_exec" -p "$sandbox_profile" "$@" ); then
         status=0
@@ -647,7 +666,9 @@ RUNNER
       fi
     else
       if [ -n "$sandbox_exec" ]; then
-        printf '%s\n' "pocket-dimension: sandbox-exec unavailable or unusable; running without sandbox-exec" >&2
+        printf '%s\n' \
+          "pocket-dimension: sandbox-exec unavailable or unusable; running without sandbox-exec" \
+          >&2
       fi
       if (cd "$workdir" && env -i $env_args "$@" ); then
         status=0
@@ -659,14 +680,16 @@ RUNNER
 
   cleanup_active_macos_temp_user
 
-  if [ "$snapshot_enabled" -eq 1 ]; then
+  if [ "$record_mutations" -eq 1 ] && [ "$snapshot_enabled" -eq 1 ]; then
     snapshot_files "$record_dir/after" 2>/dev/null || true
     if command -v diff >/dev/null 2>&1; then
-      diff -u "$record_dir/before" "$record_dir/after" >"$record_dir/mutations.diff" 2>/dev/null || true
+      diff -u "$record_dir/before" "$record_dir/after" \
+        >"$record_dir/mutations.diff" 2>/dev/null || true
     fi
-
     if [ -s "$record_dir/mutations.diff" ]; then
-      printf '%s\n' "pocket-dimension: filesystem mutations recorded at $record_dir/mutations.diff" >&2
+      printf '%s\n' \
+        "pocket-dimension: filesystem mutations recorded at $record_dir/mutations.diff" \
+        >&2
     fi
   fi
 

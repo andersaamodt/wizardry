@@ -71,21 +71,21 @@ while true; do
       # Syncthing is running
       restart_option="Restart Syncthing%$SCRIPT_DIR/restart-syncthing"
       stop_option="Stop Syncthing%$SCRIPT_DIR/stop-syncthing"
-      uninstall_option="Uninstall Syncthing%$SCRIPT_DIR/uninstall-syncthing"
+      uninstall_option="Uninstall Syncthing%$SCRIPT_DIR/uninstall-syncthing-arcana"
       
       menu "$title" "$open_option" "$restart_option" "$stop_option" \
         "$autostart_option" "$uninstall_option" "$exit_option" || menu_status=$?
     else
       # Syncthing is not running
       start_option="Start Syncthing%$SCRIPT_DIR/start-syncthing"
-      uninstall_option="Uninstall Syncthing%$SCRIPT_DIR/uninstall-syncthing"
+      uninstall_option="Uninstall Syncthing%$SCRIPT_DIR/uninstall-syncthing-arcana"
       
       menu "$title" "$open_option" "$start_option" "$autostart_option" \
         "$uninstall_option" "$exit_option" || menu_status=$?
     fi
   else
     # Syncthing is not installed - show install option
-    install_option="Install Syncthing%$SCRIPT_DIR/install-syncthing"
+    install_option="Install Syncthing%$SCRIPT_DIR/install-syncthing-arcana"
     menu "$title" "$install_option" "$exit_option" || menu_status=$?
   fi
   menu_status=${menu_status:-0}

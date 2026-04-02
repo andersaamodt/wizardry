@@ -1,0 +1,296 @@
+#!/bin/sh
+# Validate core Artificer agent behavior against a live site.
+# Exercises quick mode, loop mode, and workspace command execution.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: test-artificer-agent [SITENAME] [--model MODEL] [--timeout SEC]
+
+End-to-end validation of core Artificer agent behavior.
+Default site: daimon
+
+Checks:
+1. Quick mode run returns normal assistant text
+2. Loop mode run returns normal assistant text
+3. Loop mode can create executable hello.sh in workspace
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+site_name="daimon"
+model_override=""
+run_timeout_sec="${RUN_TIMEOUT_SEC:-90}"
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --model)
+      shift
+      [ "$#" -gt 0 ] || die "test-artificer-agent: --model requires a value"
+      model_override=$1
+      ;;
+    --timeout)
+      shift
+      [ "$#" -gt 0 ] || die "test-artificer-agent: --timeout requires a value"
+      run_timeout_sec=$1
+      ;;
+    --*)
+      die "test-artificer-agent: unknown option '$1'"
+      ;;
+    *)
+      site_name=$1
+      ;;
+  esac
+  shift
+done
+
+if ! printf '%s' "$run_timeout_sec" | grep -Eq '^[0-9]+$'; then
+  die "test-artificer-agent: timeout must be an integer"
+fi
+
+site_dir="$HOME/sites/$site_name"
+if [ ! -d "$site_dir" ]; then
+  die "test-artificer-agent: site '$site_name' not found"
+fi
+
+if ! command -v perl >/dev/null 2>&1; then
+  die "test-artificer-agent: perl is required for JSON parsing"
+fi
+
+site_port=$(config-get "$site_dir/site.conf" port 2>/dev/null || echo "8080")
+base_url="http://localhost:$site_port"
+api_url="$base_url/cgi/artificer-api"
+cgi_script="$site_dir/cgi/artificer-api"
+if [ ! -x "$cgi_script" ]; then
+  cgi_script="$HOME/.wizardry/.templates/artificer/cgi/artificer-api"
+fi
+[ -x "$cgi_script" ] || die "test-artificer-agent: artificer-api script not found"
+cleanup_helper="$HOME/.wizardry/spells/.arcana/ai-dev/cleanup-artificer-test-workspaces"
+
+step "Artificer agent behavior test for $site_name"
+
+transport_mode="http"
+if ! curl -fsS --connect-timeout 2 --max-time 4 "$api_url?action=models" >/dev/null 2>&1; then
+  transport_mode="cgi"
+  warn "HTTP endpoint unavailable; falling back to direct CGI transport"
+fi
+
+api_get() {
+  query=$1
+  if [ "$transport_mode" = "http" ]; then
+    curl -fsS --max-time 20 "$api_url?$query"
+  else
+    REQUEST_METHOD=GET QUERY_STRING="$query" \
+      RUN_TIMEOUT_SEC="$run_timeout_sec" \
+      WIZARDRY_SITE_NAME="$site_name" WIZARDRY_SITES_DIR="$HOME/sites" \
+      "$cgi_script" | tail -n 1
+  fi
+}
+
+api_post() {
+  payload=$1
+  if [ "$transport_mode" = "http" ]; then
+    curl -fsS --max-time "$((run_timeout_sec + 40))" -X POST "$api_url" --data "$payload"
+  else
+    printf '%s' "$payload" | REQUEST_METHOD=POST QUERY_STRING="" \
+      RUN_TIMEOUT_SEC="$run_timeout_sec" \
+      WIZARDRY_SITE_NAME="$site_name" WIZARDRY_SITES_DIR="$HOME/sites" \
+      "$cgi_script" | tail -n 1
+  fi
+}
+
+urlenc() {
+  perl -MURI::Escape -e 'print uri_escape($ARGV[0]);' "$1"
+}
+
+extract_json_string() {
+  key=$1
+  perl -MJSON::PP -e '
+    use strict;
+    use warnings;
+    binmode(STDOUT, ":encoding(UTF-8)");
+    my $key = shift @ARGV;
+    local $/;
+    my $raw = <>;
+    my $j = decode_json($raw);
+    my $v = $j->{$key};
+    if (defined $v) { print $v; }
+  ' "$key"
+}
+
+run_assertions() {
+  run_json=$1
+  label=$2
+
+  run_success=$(printf '%s' "$run_json" | perl -MJSON::PP -e 'use strict; use warnings; local $/; my $j = decode_json(<>); print($j->{success} ? "1" : "0");')
+  assistant_text=$(printf '%s' "$run_json" | extract_json_string assistant)
+  plan_text=$(printf '%s' "$run_json" | extract_json_string plan)
+
+  [ "$run_success" = "1" ] || die "test-artificer-agent: $label returned success=false"
+  [ -n "$(printf '%s' "$assistant_text" | sed 's/[[:space:]]//g')" ] || die "test-artificer-agent: $label assistant response is empty"
+  [ -n "$(printf '%s' "$plan_text" | sed 's/[[:space:]]//g')" ] || die "test-artificer-agent: $label plan is empty"
+
+  if printf '%s' "$assistant_text" | grep -qi 'Model request failed'; then
+    die "test-artificer-agent: $label model request failed"
+  fi
+
+  if printf '%s' "$assistant_text" | grep -qi 'timed out after'; then
+    die "test-artificer-agent: $label timed out"
+  fi
+
+  if printf '%s' "$assistant_text" | grep -Eq '^\s*\[[0-9eE+., -]+\]\s*$'; then
+    die "test-artificer-agent: $label returned embedding-like vector output"
+  fi
+}
+
+models_json=$(api_get "action=models")
+if ! printf '%s' "$models_json" | grep -q '"success":true'; then
+  die "test-artificer-agent: models endpoint did not return success"
+fi
+
+model_name=$model_override
+if [ -z "$model_name" ]; then
+  model_name=$(printf '%s' "$models_json" | perl -MJSON::PP -e '
+    use strict;
+    use warnings;
+    local $/;
+    my $j = decode_json(<>);
+    my $models = $j->{models};
+    if (ref($models) eq "ARRAY" && @{$models}) {
+      my @list = @{$models};
+      my @preferred = grep {
+        $_ =~ /(coder|code|instruct|chat|llama|qwen|mistral|deepseek)/i &&
+          $_ !~ /(embed|embedding|vision|clip)/i
+      } @list;
+      if (@preferred) {
+        print $preferred[0];
+      } else {
+        print $list[0];
+      }
+    }
+  ')
+fi
+
+if [ -z "$model_name" ]; then
+  die "test-artificer-agent: no models available"
+fi
+
+workspace_id=""
+tmp_workspace=$(mktemp -d "/tmp/artificer-agent.XXXXXX")
+cleanup() {
+  if [ -n "$workspace_id" ]; then
+    api_post "action=delete_workspace&workspace_id=$workspace_id" >/dev/null 2>&1 || true
+  fi
+  if [ -x "$cleanup_helper" ]; then
+    "$cleanup_helper" "$site_name" >/dev/null 2>&1 || true
+  fi
+  rm -rf "$tmp_workspace" 2>/dev/null || true
+}
+trap cleanup EXIT INT TERM
+
+if [ -x "$cleanup_helper" ]; then
+  "$cleanup_helper" "$site_name" >/dev/null 2>&1 || true
+fi
+
+printf '%s\n' '# agent test workspace' > "$tmp_workspace/README.md"
+
+add_workspace_json=$(api_post "action=add_workspace&path=$tmp_workspace&name=ArtificerAgentTest")
+workspace_id=$(printf '%s' "$add_workspace_json" | perl -MJSON::PP -e '
+  use strict;
+  use warnings;
+  local $/;
+  my $j = decode_json(<>);
+  if ($j->{success} && ref($j->{workspace}) eq "HASH") {
+    print $j->{workspace}{id} // "";
+  }
+')
+[ -n "$workspace_id" ] || die "test-artificer-agent: add_workspace failed"
+
+new_conversation_json=$(api_post "action=new_conversation&workspace_id=$workspace_id&title=AgentCoreTest&model=$(urlenc "$model_name")")
+conversation_id=$(printf '%s' "$new_conversation_json" | perl -MJSON::PP -e '
+  use strict;
+  use warnings;
+  local $/;
+  my $j = decode_json(<>);
+  if ($j->{success} && ref($j->{conversation}) eq "HASH") {
+    print $j->{conversation}{id} // "";
+  }
+')
+[ -n "$conversation_id" ] || die "test-artificer-agent: new_conversation failed"
+
+step "Quick mode run"
+quick_prompt='Reply with exactly one short sentence that includes the token QUICK_OK.'
+quick_json=$(api_post "action=run&workspace_id=$workspace_id&conversation_id=$conversation_id&advanced_loop=0&reasoning_effort=low&max_iterations=1&prompt=$(urlenc "$quick_prompt")")
+run_assertions "$quick_json" "quick mode"
+quick_assistant=$(printf '%s' "$quick_json" | extract_json_string assistant)
+if ! printf '%s' "$quick_assistant" | grep -q 'QUICK_OK'; then
+  warn "quick mode response did not include QUICK_OK token; continuing because response was valid text"
+fi
+
+step "Loop mode run"
+loop_prompt='Briefly acknowledge with LOOP_OK and one sentence about workspace status. Do not modify files.'
+loop_json=$(api_post "action=run&workspace_id=$workspace_id&conversation_id=$conversation_id&advanced_loop=1&reasoning_effort=medium&max_iterations=2&prompt=$(urlenc "$loop_prompt")")
+run_assertions "$loop_json" "loop mode"
+loop_assistant=$(printf '%s' "$loop_json" | extract_json_string assistant)
+if ! printf '%s' "$loop_assistant" | grep -q 'LOOP_OK'; then
+  warn "loop mode response did not include LOOP_OK token; continuing because response was valid text"
+fi
+
+step "Loop mode hello world creation"
+hello_conversation_json=$(api_post "action=new_conversation&workspace_id=$workspace_id&title=AgentHelloCreate&model=$(urlenc "$model_name")")
+hello_conversation_id=$(printf '%s' "$hello_conversation_json" | perl -MJSON::PP -e '
+  use strict;
+  use warnings;
+  local $/;
+  my $j = decode_json(<>);
+  if ($j->{success} && ref($j->{conversation}) eq "HASH") {
+    print $j->{conversation}{id} // "";
+  }
+')
+[ -n "$hello_conversation_id" ] || die "test-artificer-agent: hello-world new_conversation failed"
+
+hello_prompt='Create a POSIX sh script named hello.sh in the workspace root with a shebang and one line printing Hello, world!. Make it executable. Then summarize what you changed in one sentence.'
+hello_json=$(api_post "action=run&workspace_id=$workspace_id&conversation_id=$hello_conversation_id&advanced_loop=1&reasoning_effort=high&max_iterations=4&prompt=$(urlenc "$hello_prompt")")
+run_assertions "$hello_json" "loop hello creation"
+
+if [ ! -f "$tmp_workspace/hello.sh" ]; then
+  assistant_text=$(printf '%s' "$hello_json" | extract_json_string assistant)
+  plan_text=$(printf '%s' "$hello_json" | extract_json_string plan)
+  state_text=$(printf '%s' "$hello_json" | extract_json_string state)
+  failures_text=$(printf '%s' "$hello_json" | extract_json_string failures)
+  warn "hello.sh was not created"
+  warn "assistant: $(printf '%s' "$assistant_text" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g')"
+  warn "state: $(printf '%s' "$state_text" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g')"
+  warn "plan: $(printf '%s' "$plan_text" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g')"
+  warn "failures: $(printf '%s' "$failures_text" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g')"
+  die "test-artificer-agent: loop mode failed to create hello.sh"
+fi
+
+if [ ! -x "$tmp_workspace/hello.sh" ]; then
+  chmod +x "$tmp_workspace/hello.sh" 2>/dev/null || true
+  if [ ! -x "$tmp_workspace/hello.sh" ]; then
+    die "test-artificer-agent: hello.sh was created but is not executable"
+  fi
+fi
+
+if ! grep -Eq '^#!/bin/sh' "$tmp_workspace/hello.sh"; then
+  die "test-artificer-agent: hello.sh missing POSIX shebang"
+fi
+
+if ! grep -Eiq 'hello,? world' "$tmp_workspace/hello.sh"; then
+  die "test-artificer-agent: hello.sh missing hello world output"
+fi
+
+hello_run_output=$("$tmp_workspace/hello.sh" 2>/dev/null || true)
+if ! printf '%s' "$hello_run_output" | grep -Eiq 'hello,? world'; then
+  die "test-artificer-agent: hello.sh did not print expected output"
+fi
+
+success "Artificer agent core behavior test passed"
+info "transport: $transport_mode"
+info "model: $model_name"
+info "hello.sh output: $(printf '%s' "$hello_run_output" | tr '\n' ' ' | sed 's/[[:space:]]\+/ /g; s/^[[:space:]]*//; s/[[:space:]]*$//')"

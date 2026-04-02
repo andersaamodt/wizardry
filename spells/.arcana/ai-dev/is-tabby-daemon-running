@@ -1,0 +1,82 @@
+#!/bin/sh
+
+# Check if the Tabby daemon container is running.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: is-tabby-daemon-running
+
+Returns success when the Tabby daemon container is running.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+probe_timeout_tenths=${TABBY_DOCKER_CHECK_TIMEOUT_TENTHS:-20}
+
+run_with_timeout_capture() {
+  out_file=${TMPDIR:-/tmp}/tabby-probe-$$.out
+  rm -f "$out_file" 2>/dev/null || :
+  (
+    "$@" >"$out_file" 2>/dev/null
+  ) &
+  probe_pid=$!
+  ticks=0
+  while kill -0 "$probe_pid" 2>/dev/null; do
+    ticks=$((ticks + 1))
+    if [ "$ticks" -ge "$probe_timeout_tenths" ]; then
+      kill "$probe_pid" >/dev/null 2>&1 || :
+      rm -f "$out_file" 2>/dev/null || :
+      return 124
+    fi
+    sleep 0.1
+  done
+  wait "$probe_pid"
+  probe_rc=$?
+  if [ "$probe_rc" -ne 0 ]; then
+    rm -f "$out_file" 2>/dev/null || :
+    return "$probe_rc"
+  fi
+  cat "$out_file"
+  rm -f "$out_file" 2>/dev/null || :
+}
+
+if ! has docker; then
+  exit 1
+fi
+
+# Container must exist and be in running state (not restarting).
+inspect_line=$(run_with_timeout_capture docker inspect -f '{{.State.Status}}|{{.State.Restarting}}|{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}|{{json .Config.Cmd}}' tabby || printf '')
+if [ -z "$inspect_line" ]; then
+  exit 1
+fi
+
+status=$(printf '%s' "$inspect_line" | awk -F'|' '{print $1}')
+restarting=$(printf '%s' "$inspect_line" | awk -F'|' '{print $2}')
+health_status=$(printf '%s' "$inspect_line" | awk -F'|' '{print $3}')
+cmd_json=$(printf '%s' "$inspect_line" | awk -F'|' '{print $4}')
+
+if [ "$status" != "running" ]; then
+  exit 1
+fi
+if [ "$restarting" = "true" ]; then
+  exit 1
+fi
+
+case "$cmd_json" in
+  *\"serve\"*\"--model\"*) exit 1 ;;
+  *\"serve\"*\"--chat-model\"*) exit 1 ;;
+  *\"serve\"*) ;;
+  *) exit 1 ;;
+esac
+
+# If healthcheck exists, require healthy (not just running).
+if [ "$health_status" = "unhealthy" ]; then
+  exit 1
+fi
+
+exit 0

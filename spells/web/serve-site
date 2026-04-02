@@ -23,15 +23,15 @@ if [ -z "$site_name" ]; then
   die 2 "serve-site: SITENAME required"
 fi
 
-WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
-SITES_DIR="$WEB_ROOT"
-SITE_DIR="$SITES_DIR/$site_name"
+web_root=${WEB_WIZARDRY_ROOT:-$HOME/sites}
+sites_dir="$web_root"
+site_dir="$sites_dir/$site_name"
 
-if [ ! -d "$SITE_DIR" ]; then
+if [ ! -d "$site_dir" ]; then
   die "serve-site: site '$site_name' not found"
 fi
 
-run_priv() {
+serve_site_run_priv() {
   if [ "$(id -u)" -eq 0 ]; then
     "$@"
     return
@@ -65,7 +65,7 @@ is_site_nginx_pid_running() {
 
   cmd=$(ps -p "$pid" -o command= 2>/dev/null || printf '')
   case "$cmd" in
-    *nginx*"$SITE_DIR"*|*nginx*)
+    *nginx*"$site_dir"*|*nginx*)
       return 0
       ;;
   esac
@@ -78,25 +78,25 @@ if ! has nginx; then
 fi
 
 # Check if nginx.conf exists - if not, run configure-nginx
-if [ ! -f "$SITE_DIR/nginx/nginx.conf" ]; then
+if [ ! -f "$site_dir/nginx/nginx.conf" ]; then
   step "Generating nginx configuration..."
   configure-nginx "$site_name"
 fi
 
 # Check if site is already running
-if [ -f "$SITE_DIR/nginx/nginx.pid" ]; then
-  pid=$(cat "$SITE_DIR/nginx/nginx.pid" 2>/dev/null || echo "")
+if [ -f "$site_dir/nginx/nginx.pid" ]; then
+  pid=$(cat "$site_dir/nginx/nginx.pid" 2>/dev/null || echo "")
   if is_site_nginx_pid_running "$pid"; then
     warn "serve-site: $site_name is already running (PID $pid)"
     # Read port and show URL
-    port=$(config-get "$SITE_DIR/site.conf" port 2>/dev/null || echo "8080")
-    domain=$(config-get "$SITE_DIR/site.conf" domain 2>/dev/null || echo "localhost")
+    port=$(config-get "$site_dir/site.conf" port 2>/dev/null || echo "8080")
+    domain=$(config-get "$site_dir/site.conf" domain 2>/dev/null || echo "localhost")
     info "URL: http://$domain:$port"
     info "Stop with: web-stop-site $site_name"
     exit 0
   fi
   # Stale PID file - remove it
-  rm -f "$SITE_DIR/nginx/nginx.pid"
+  rm -f "$site_dir/nginx/nginx.pid"
 fi
 
 # Check if daemon configuration exists
@@ -111,7 +111,7 @@ fi
 
 daemon_is_running() {
   if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
-    run_priv launchctl print "system/$label" 2>/dev/null | grep -q "state = running"
+    serve_site_run_priv launchctl print "system/$label" 2>/dev/null | grep -q "state = running"
     return $?
   fi
   if has systemctl; then
@@ -131,19 +131,20 @@ step "Starting daemon for $site_name..."
 if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
   label="org.wizardry.web.${site_name}"
   # Compatibility: clear stale launchctl disabled overrides from older versions.
-  run_priv launchctl enable "system/$label" >/dev/null 2>&1 || true
+  serve_site_run_priv launchctl enable "system/$label" >/dev/null 2>&1 || true
 
   # Check if service is already running in system domain.
-  if run_priv launchctl print "system/$label" 2>/dev/null | grep -q "state = running"; then
+  if serve_site_run_priv launchctl print "system/$label" 2>/dev/null \
+    | grep -q "state = running"; then
     info "Site '$site_name' is already running"
   else
     # Preferred modern flow: ensure the service exists in system domain, then kickstart.
-    run_priv launchctl bootstrap system "$daemon_artifact" >/dev/null 2>&1 || true
+    serve_site_run_priv launchctl bootstrap system "$daemon_artifact" >/dev/null 2>&1 || true
 
-    if ! run_priv launchctl kickstart -k "system/$label" >/dev/null 2>&1; then
+    if ! serve_site_run_priv launchctl kickstart -k "system/$label" >/dev/null 2>&1; then
       # Legacy fallback for older launchctl versions.
       load_failed=0
-      load_output=$(run_priv launchctl load "$daemon_artifact" 2>&1) || load_failed=$?
+      load_output=$(serve_site_run_priv launchctl load "$daemon_artifact" 2>&1) || load_failed=$?
       if [ "$load_failed" -ne 0 ]; then
         warn "serve-site: launchctl start failed"
         warn "Error: $load_output"
@@ -156,18 +157,18 @@ elif has systemctl; then
   if systemctl is-active --quiet "$unit" 2>/dev/null; then
     info "Site '$site_name' is already running"
   else
-    run_priv systemctl start "$unit"
+    serve_site_run_priv systemctl start "$unit"
   fi
 fi
 
 # Read port from config
-port=$(config-get "$SITE_DIR/site.conf" port 2>/dev/null || echo "8080")
-domain=$(config-get "$SITE_DIR/site.conf" domain 2>/dev/null || echo "localhost")
+port=$(config-get "$site_dir/site.conf" port 2>/dev/null || echo "8080")
+domain=$(config-get "$site_dir/site.conf" domain 2>/dev/null || echo "localhost")
 
 is_serving=0
 for _ in 1 2 3 4 5; do
-  if [ -f "$SITE_DIR/nginx/nginx.pid" ]; then
-    pid=$(cat "$SITE_DIR/nginx/nginx.pid" 2>/dev/null || echo "")
+  if [ -f "$site_dir/nginx/nginx.pid" ]; then
+    pid=$(cat "$site_dir/nginx/nginx.pid" 2>/dev/null || echo "")
     if is_site_nginx_pid_running "$pid"; then
       is_serving=1
       break
@@ -189,21 +190,21 @@ else
   warn "serve-site: daemon for '$site_name' failed to start"
   
   # Check nginx error log
-  if [ -f "$SITE_DIR/nginx/error.log" ] && [ -s "$SITE_DIR/nginx/error.log" ]; then
+  if [ -f "$site_dir/nginx/error.log" ] && [ -s "$site_dir/nginx/error.log" ]; then
     warn "Nginx error log (last 20 lines):"
-    tail -20 "$SITE_DIR/nginx/error.log" >&2
+    tail -20 "$site_dir/nginx/error.log" >&2
   fi
   
   # Check startup log from run-site-daemon
-  if [ -f "$SITE_DIR/nginx/startup.log" ] && [ -s "$SITE_DIR/nginx/startup.log" ]; then
+  if [ -f "$site_dir/nginx/startup.log" ] && [ -s "$site_dir/nginx/startup.log" ]; then
     warn "Nginx startup errors:"
-    cat "$SITE_DIR/nginx/startup.log" >&2
+    cat "$site_dir/nginx/startup.log" >&2
   fi
 
   # Check daemon stderr log from launchd/systemd wrapper.
-  if [ -f "$SITE_DIR/nginx/daemon-error.log" ] && [ -s "$SITE_DIR/nginx/daemon-error.log" ]; then
+  if [ -f "$site_dir/nginx/daemon-error.log" ] && [ -s "$site_dir/nginx/daemon-error.log" ]; then
     warn "Daemon error log (last 40 lines):"
-    tail -40 "$SITE_DIR/nginx/daemon-error.log" >&2
+    tail -40 "$site_dir/nginx/daemon-error.log" >&2
   fi
   
   die "serve-site: check the error output above for details"

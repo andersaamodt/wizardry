@@ -24,16 +24,16 @@ if [ -z "$site_name" ]; then
   die 2 "delete-site: SITENAME required"
 fi
 
-SITES_DIR="${WIZARDRY_SITES_DIR}"
-SITE_DIR="$SITES_DIR/$site_name"
-SITE_DATA_DIR="$SITES_DIR/.sitedata/$site_name"
+sites_dir="${WIZARDRY_SITES_DIR}"
+site_dir="$sites_dir/$site_name"
+site_data_dir="$sites_dir/.sitedata/$site_name"
 
-if [ ! -d "$SITE_DIR" ]; then
+if [ ! -d "$site_dir" ]; then
   die "delete-site: site '$site_name' not found"
 fi
 
-site_user_default="ww_$(printf '%s' "$site_name" | tr 'A-Z' 'a-z' | tr '-' '_')"
-site_user=$(config-get "$SITE_DIR/site.conf" site-user 2>/dev/null || printf '')
+site_user_default="ww_$(printf '%s' "$site_name" | tr 'A-Z' 'a-z' | tr '.-' '__')"
+site_user=$(config-get "$site_dir/site.conf" site-user 2>/dev/null || printf '')
 [ -z "$site_user" ] && site_user="$site_user_default"
 if [ -n "$site_user" ] && [ "$(id -un)" != "$site_user" ] && [ -z "${WIZARDRY_SITE_USER_REEXEC-}" ]; then
   if has sudo; then
@@ -45,16 +45,16 @@ fi
 is_running=0
 
 # Check nginx
-if [ -f "$SITE_DIR/nginx/nginx.pid" ]; then
-  pid=$(cat "$SITE_DIR/nginx/nginx.pid" 2>/dev/null || echo "")
+if [ -f "$site_dir/nginx/nginx.pid" ]; then
+  pid=$(cat "$site_dir/nginx/nginx.pid" 2>/dev/null || echo "")
   if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
     is_running=1
   fi
 fi
 
 # Check fcgiwrap
-if [ -f "$SITE_DIR/nginx/fcgiwrap.pid" ]; then
-  pid=$(cat "$SITE_DIR/nginx/fcgiwrap.pid" 2>/dev/null || echo "")
+if [ -f "$site_dir/nginx/fcgiwrap.pid" ]; then
+  pid=$(cat "$site_dir/nginx/fcgiwrap.pid" 2>/dev/null || echo "")
   if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
     is_running=1
   fi
@@ -75,22 +75,22 @@ read -r confirm
 case "$confirm" in
   y|Y|yes|YES)
     step "Deleting site: $site_name"
-    rm -rf "$SITE_DIR"
+    rm -rf "$site_dir"
     success "Site '$site_name' deleted"
     
     # Ask about deleting site data
-    if [ -d "$SITE_DATA_DIR" ]; then
+    if [ -d "$site_data_dir" ]; then
       printf 'Also delete site data (uploads, etc.)? [y/N] ' 
       read -r confirm_data
       
       case "$confirm_data" in
         y|Y|yes|YES)
-          step "Deleting site data: $SITE_DATA_DIR"
-          rm -rf "$SITE_DATA_DIR"
+          step "Deleting site data: $site_data_dir"
+          rm -rf "$site_data_dir"
           success "Site data deleted"
           ;;
         *)
-          info "Site data preserved at: $SITE_DATA_DIR"
+          info "Site data preserved at: $site_data_dir"
           ;;
       esac
     fi

@@ -1,0 +1,33 @@
+#!/bin/sh
+
+# Report installation status for Nostr tooling.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: nostr-status
+
+Reports whether nostril is installed.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+if command -v colors >/dev/null 2>&1; then
+  . colors
+else
+  RESET=""
+  THEME_SUCCESS=""
+  GREY=""
+fi
+
+if command -v nostril >/dev/null 2>&1; then
+  printf '%sinstalled%s\n' "$THEME_SUCCESS" "$RESET"
+else
+  printf '%snot installed%s\n' "$GREY" "$RESET"
+fi

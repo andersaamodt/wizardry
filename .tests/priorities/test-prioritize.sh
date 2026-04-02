@@ -287,6 +287,33 @@ test_hash_failure_message() {
   assert_failure && assert_error_contains "hashchant"
 }
 
+test_uses_with_lock_for_priority_updates() {
+  skip-if-compiled || return $?
+  # Skip if no xattr commands available
+  if ! command -v attr >/dev/null 2>&1 && ! command -v xattr >/dev/null 2>&1 && ! command -v setfattr >/dev/null 2>&1; then
+    export TEST_SKIP_REASON="xattr support not available"
+    return 222
+  fi
+
+  tmpdir=$(make_tempdir)
+  testfile="$tmpdir/locked.txt"
+  lock_log="$tmpdir/with-lock.log"
+  printf 'locked content\n' > "$testfile"
+
+  cat >"$tmpdir/with-lock" <<'SH'
+#!/bin/sh
+printf '%s\n' "$1" > "$LOCK_LOG"
+shift
+"$@"
+SH
+  chmod +x "$tmpdir/with-lock"
+
+  run_cmd env LOCK_LOG="$lock_log" PATH="$tmpdir:$PATH" \
+    "$ROOT_DIR/spells/priorities/prioritize" "$testfile"
+  assert_success || return 1
+  assert_file_contains "$lock_log" ".wizardry-priorities.lock" || return 1
+}
+
 test_interactive_mode_prompts() {
   # Skip if no xattr commands available
   if ! command -v attr >/dev/null 2>&1 && ! command -v xattr >/dev/null 2>&1 && ! command -v setfattr >/dev/null 2>&1; then
@@ -424,6 +451,7 @@ run_test_case "prioritize promotes when already in highest echelon" test_already
 run_test_case "prioritize moves to highest echelon when in lower echelon" test_move_to_highest_echelon
 run_test_case "prioritize unchecks when prioritizing checked item" test_unchecks_when_prioritizing
 run_test_case "prioritize fails with informative message when hashchant fails" test_hash_failure_message
+run_test_case "prioritize uses with-lock for updates" test_uses_with_lock_for_priority_updates
 run_test_case "prioritize --interactive prompts for file" test_interactive_mode_prompts
 run_test_case "prioritize --interactive with file arg works" test_interactive_mode_with_file_arg
 run_test_case "prioritize --yes/-y auto-creates missing file" test_yes_or_y_flag_auto_creates

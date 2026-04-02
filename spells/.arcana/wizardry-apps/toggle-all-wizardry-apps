@@ -1,0 +1,35 @@
+#!/bin/sh
+
+# Enable or disable all wizardry-apps components.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: toggle-all-wizardry-apps [--enable|--disable]
+
+Installs or uninstalls all wizardry-apps components.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+action=${1:-}
+
+case "$action" in
+  --enable)
+    "$script_dir/install-wizardry-apps"
+    ;;
+  --disable)
+    "$script_dir/uninstall-wizardry-apps"
+    ;;
+  *)
+    printf '%s\n' "Usage: toggle-all-wizardry-apps [--enable|--disable]" >&2
+    exit 2
+    ;;
+esac

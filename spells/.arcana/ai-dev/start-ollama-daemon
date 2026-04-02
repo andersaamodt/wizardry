@@ -1,0 +1,147 @@
+#!/bin/sh
+
+# Start the ollama daemon.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: start-ollama-daemon
+
+Starts the ollama daemon service.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+# Check if ollama is installed
+if ! "$script_dir/is-ai-component-installed" ollama 2>/dev/null; then
+  die "start-ollama-daemon: ollama is not installed"
+fi
+
+run_priv() {
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+    return
+  fi
+  if has sudo; then
+    sudo "$@" && return
+    die "start-ollama-daemon: sudo command failed"
+  fi
+  die "start-ollama-daemon: root required"
+}
+
+unit="ollama.service"
+plist="/Library/LaunchDaemons/com.ollama.service.plist"
+label="system/com.ollama.service"
+
+# Check if already running
+if "$script_dir/is-ollama-daemon-running" 2>/dev/null; then
+  success "ollama daemon is already running"
+  exit 0
+fi
+
+printf '%s\n' "Starting ollama daemon..."
+
+if has systemctl; then
+  # Ensure daemon config exists
+  if [ ! -f "/etc/systemd/system/$unit" ]; then
+    "$script_dir/repair-ollama-daemon"
+  fi
+  
+  run_priv systemctl start "$unit"
+  success "ollama daemon started"
+  exit 0
+fi
+
+if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
+  # Ensure daemon config exists
+  if [ ! -f "$plist" ]; then
+    "$script_dir/repair-ollama-daemon"
+  fi
+
+  # Validate plist before attempting bootstrap.
+  if has plutil; then
+    run_priv plutil -lint "$plist" >/dev/null
+  fi
+
+  bootstrap_once() {
+    err_file=$(temp-file ollama-launchctl-bootstrap.err)
+    if run_priv launchctl bootstrap system "$plist" 2>"$err_file"; then
+      rm -f "$err_file"
+      return 0
+    fi
+    err_msg=$(cat "$err_file" 2>/dev/null || printf '')
+    rm -f "$err_file"
+    printf '%s\n' "$err_msg"
+    return 1
+  }
+
+  # Ensure service is enabled before bootstrap (disabled services can fail to start).
+  run_priv launchctl enable "$label" >/dev/null 2>&1 || :
+  # Replace any existing job definition before bootstrapping.
+  run_priv launchctl bootout "$label" >/dev/null 2>&1 || :
+
+  if ! bootstrap_error=$(bootstrap_once); then
+    # Rebuild plist + retry once to recover stale/bad launchd state.
+    "$script_dir/repair-ollama-daemon"
+    run_priv launchctl enable "$label" >/dev/null 2>&1 || :
+    run_priv launchctl bootout "$label" >/dev/null 2>&1 || :
+    if ! bootstrap_error_retry=$(bootstrap_once); then
+      if [ -n "$bootstrap_error_retry" ]; then
+        die "start-ollama-daemon: launchctl bootstrap failed: $bootstrap_error_retry"
+      fi
+      if [ -n "$bootstrap_error" ]; then
+        die "start-ollama-daemon: launchctl bootstrap failed: $bootstrap_error"
+      fi
+      die "start-ollama-daemon: launchctl bootstrap failed"
+    fi
+  fi
+
+  # Ensure enabled + started now.
+  run_priv launchctl enable "$label" >/dev/null 2>&1 || :
+  run_priv launchctl kickstart -k "$label" >/dev/null 2>&1 || :
+
+  # Wait for the same readiness signal the menu uses.
+  is_ollama_ready() {
+    "$script_dir/is-ollama-daemon-running" >/dev/null 2>&1
+  }
+
+  # Wait up to 30 seconds (GPU init can be slow on first launches).
+  ready=0
+  tries=0
+  while [ "$tries" -lt 120 ]; do
+    if is_ollama_ready; then
+      ready=1
+      break
+    fi
+    tries=$((tries + 1))
+    sleep 0.25
+  done
+
+  if [ "$ready" -ne 1 ]; then
+    # Surface service logs to make launchd/runtime failures actionable.
+    err_log=$(awk '
+      /<key>StandardErrorPath<\/key>/ {
+        getline
+        gsub(/^[[:space:]]*<string>|<\/string>[[:space:]]*$/, "")
+        print
+        exit
+      }
+    ' "$plist" 2>/dev/null || printf '')
+    if [ -n "$err_log" ] && [ -f "$err_log" ]; then
+      printf '%s\n' "start-ollama-daemon: recent daemon stderr:" >&2
+      tail -n 60 "$err_log" >&2 || :
+    fi
+    die "start-ollama-daemon: launchd job did not enter running state"
+  fi
+
+  success "ollama daemon started"
+  exit 0
+fi
+
+die "start-ollama-daemon: systemd or launchd required"

@@ -31,6 +31,16 @@ if [ ! -f "$file" ]; then
   exit 1
 fi
 
+directory=$(dirname "$file")
+if [ "$directory" = "." ]; then
+  directory=$(pwd -P)
+fi
+
+priority_lock_file="$directory/.wizardry-priorities.lock"
+if [ "${WIZARDRY_PRIORITY_LOCK_HELD-0}" -ne 1 ]; then
+  exec with-lock "$priority_lock_file" env WIZARDRY_PRIORITY_LOCK_HELD=1 "$0" "$file"
+fi
+
 # Get current upvotes count, default to 0 if not set
 current=$(read-magic "$file" upvotes 2>/dev/null || printf '0')
 

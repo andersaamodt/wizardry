@@ -23,17 +23,17 @@ if [ -z "$site_name" ]; then
   die 2 "repair-site-daemon: SITENAME required"
 fi
 
-WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
-SITES_DIR="$WEB_ROOT"
-SITE_DIR="$SITES_DIR/$site_name"
-SITE_CONFIG="$SITE_DIR/site.conf"
+web_root=${WEB_WIZARDRY_ROOT:-$HOME/sites}
+sites_dir="$web_root"
+site_dir="$sites_dir/$site_name"
+site_config="$site_dir/site.conf"
 
-if [ ! -d "$SITE_DIR" ]; then
+if [ ! -d "$site_dir" ]; then
   die "repair-site-daemon: site '$site_name' not found"
 fi
 
-site_user_default="ww_$(printf '%s' "$site_name" | tr 'A-Z' 'a-z' | tr '-' '_')"
-site_user=$(config-get "$SITE_CONFIG" site-user 2>/dev/null || printf '')
+site_user_default="ww_$(printf '%s' "$site_name" | tr 'A-Z' 'a-z' | tr '.-' '__')"
+site_user=$(config-get "$site_config" site-user 2>/dev/null || printf '')
 [ -z "$site_user" ] && site_user="$site_user_default"
 if ! id -u "$site_user" >/dev/null 2>&1; then
   warn "repair-site-daemon: site user '$site_user' missing; run fix-site-security first"
@@ -46,7 +46,7 @@ if [ ! -x "$daemon_script" ]; then
   die "repair-site-daemon: daemon script not found at $daemon_script"
 fi
 
-run_priv() {
+repair_run_priv() {
   if [ "$(id -u)" -eq 0 ]; then
     "$@"
     return 0
@@ -80,10 +80,10 @@ After=network.target
 [Service]
 Type=simple
 User=$site_user
-WorkingDirectory=$SITE_DIR
+WorkingDirectory=$site_dir
 Environment=WIZARDRY_DIR=$wizardry_dir
-Environment=WIZARDRY_SITES_DIR=$SITES_DIR
-Environment=WEB_WIZARDRY_ROOT=$SITES_DIR
+Environment=WIZARDRY_SITES_DIR=$sites_dir
+Environment=WEB_WIZARDRY_ROOT=$sites_dir
 Environment=PATH=$daemon_path
 ExecStart=$daemon_script $site_name
 Restart=on-failure
@@ -92,12 +92,12 @@ Restart=on-failure
 WantedBy=multi-user.target
 EOF
 
-  run_priv mkdir -p "$service_dir"
-  run_priv cp "$temp_unit" "$unit_path"
-  run_priv chmod 644 "$unit_path"
+  repair_run_priv mkdir -p "$service_dir"
+  repair_run_priv cp "$temp_unit" "$unit_path"
+  repair_run_priv chmod 644 "$unit_path"
   rm -f "$temp_unit"
 
-  run_priv systemctl daemon-reload
+  repair_run_priv systemctl daemon-reload
   success "Daemon repaired for $site_name (systemd)"
 }
 
@@ -106,7 +106,7 @@ launchd_install() {
   label="org.wizardry.web.${site_name}"
   plist_file="$launch_dir/${label}.plist"
 
-  run_priv mkdir -p "$launch_dir" "$SITE_DIR/nginx"
+  repair_run_priv mkdir -p "$launch_dir" "$site_dir/nginx"
   # Note: nginx/ ownership is managed by fix-site-security
   # (owned by actual user so configure-nginx can write configs)
 
@@ -128,9 +128,9 @@ launchd_install() {
     <key>WIZARDRY_DIR</key>
     <string>$wizardry_dir</string>
     <key>WIZARDRY_SITES_DIR</key>
-    <string>$SITES_DIR</string>
+    <string>$sites_dir</string>
     <key>WEB_WIZARDRY_ROOT</key>
-    <string>$SITES_DIR</string>
+    <string>$sites_dir</string>
     <key>PATH</key>
     <string>/opt/pkg/sbin:/opt/pkg/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
   </dict>
@@ -141,20 +141,20 @@ launchd_install() {
   <key>UserName</key>
   <string>$site_user</string>
   <key>StandardOutPath</key>
-  <string>$SITE_DIR/nginx/daemon.log</string>
+  <string>$site_dir/nginx/daemon.log</string>
   <key>StandardErrorPath</key>
-  <string>$SITE_DIR/nginx/daemon-error.log</string>
+  <string>$site_dir/nginx/daemon-error.log</string>
 </dict>
 </plist>
 EOF
 
-  run_priv cp "$temp_plist" "$plist_file"
-  run_priv chmod 644 "$plist_file"
+  repair_run_priv cp "$temp_plist" "$plist_file"
+  repair_run_priv chmod 644 "$plist_file"
   rm -f "$temp_plist"
 
   # Compatibility: clear stale launchctl disabled overrides from older versions.
   # Startup is now controlled by plist flags above.
-  run_priv launchctl enable "system/$label" 2>/dev/null || true
+  repair_run_priv launchctl enable "system/$label" 2>/dev/null || true
 
   success "Daemon repaired for $site_name (launchd)"
 }

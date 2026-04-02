@@ -105,9 +105,40 @@ test_resurrect_wrong_location() {
   assert_error_contains "home directory"
 }
 
+test_resurrect_in_jump_marker_location() {
+  tmpdir=$(make_tempdir)
+  stub_dir=$(make_tempdir)
+  export SPELLBOOK_DIR="$tmpdir/custom-spellbook"
+  export HOME="$tmpdir"
+
+  stub-xattr "$stub_dir"
+
+  mkdir -p "$SPELLBOOK_DIR/.markers"
+  printf 'avatar-enabled=1\n' > "$SPELLBOOK_DIR/.mud"
+
+  avatar_path="$tmpdir/.avatar-test"
+  mkdir -p "$avatar_path"
+  printf 'avatar-path=%s\n' "$avatar_path" >> "$SPELLBOOK_DIR/.mud"
+
+  jump_dir="$tmpdir/jump-one"
+  mkdir -p "$jump_dir"
+  printf '%s\n' "$jump_dir" > "$SPELLBOOK_DIR/.markers/1"
+
+  export PATH="$stub_dir:$ROOT_DIR/spells/mud:$ROOT_DIR/spells/arcane:$ROOT_DIR/spells/enchant:$ROOT_DIR/spells/.imps/cond:$ROOT_DIR/spells/.imps/out:$ROOT_DIR/spells/.imps/sys:$ROOT_DIR/spells/.imps/str:$ROOT_DIR/spells/.imps/fs:$ROOT_DIR/spells/.imps/mud:$PATH"
+
+  "$stub_dir/xattr" -w user.dead 1 "$avatar_path"
+  "$stub_dir/xattr" -w user.max_life 100 "$avatar_path"
+
+  cd "$jump_dir"
+  run_spell "spells/mud/resurrect"
+  assert_success
+  assert_output_contains "resurrected"
+}
+
 run_test_case "resurrect prints usage" test_help
 run_test_case "resurrect succeeds when not dead" test_resurrect_not_dead
 run_test_case "resurrect brings player back to life" test_resurrect_success
 run_test_case "resurrect fails in wrong location" test_resurrect_wrong_location
+run_test_case "resurrect works in jump marker 1 location" test_resurrect_in_jump_marker_location
 
 finish_tests

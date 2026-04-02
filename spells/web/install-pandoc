@@ -1,0 +1,166 @@
+#!/bin/sh
+# Install pandoc for Wizardry site conversion flows.
+# Supports package-manager and binary download installation.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-pandoc
+
+Ensures pandoc is installed for Wizardry site builds.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
+
+pandoc_say() {
+  printf '%s\n' "$1"
+}
+
+pandoc_has_cmd() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+pandoc_pkg_manager() {
+  if pandoc_has_cmd apt-get; then
+    printf '%s\n' apt
+    return 0
+  fi
+  if pandoc_has_cmd dnf; then
+    printf '%s\n' dnf
+    return 0
+  fi
+  if pandoc_has_cmd brew; then
+    printf '%s\n' brew
+    return 0
+  fi
+  printf '%s\n' none
+}
+
+pandoc_run_privileged() {
+  if "$@" 2>/dev/null; then
+    return 0
+  fi
+  if command -v run_sudo_cmd >/dev/null 2>&1; then
+    run_sudo_cmd "$@"
+    return 0
+  fi
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+    return 0
+  fi
+  if pandoc_has_cmd sudo; then
+    sudo "$@"
+    return 0
+  fi
+  "$@"
+}
+
+pandoc_install_target_bin_dir() {
+  if [ "$(id -u)" -eq 0 ]; then
+    printf '%s\n' /usr/local/bin
+    return 0
+  fi
+  if pandoc_has_cmd sudo || command -v run_sudo_cmd >/dev/null 2>&1; then
+    printf '%s\n' /usr/local/bin
+    return 0
+  fi
+  printf '%s\n' "${XDG_BIN_HOME:-$HOME/.local/bin}"
+}
+
+pandoc_platform_suffix() {
+  os_name=$(uname -s 2>/dev/null || printf '')
+  arch_name=$(uname -m 2>/dev/null || printf '')
+  case "$os_name" in
+    Linux) platform_os=linux ;;
+    Darwin) platform_os=macOS ;;
+    *)
+      return 1
+      ;;
+  esac
+  case "$arch_name" in
+    x86_64|amd64) platform_arch=x86_64 ;;
+    arm64|aarch64) platform_arch=arm64 ;;
+    *)
+      return 1
+      ;;
+  esac
+  printf '%s-%s\n' "$platform_os" "$platform_arch"
+}
+
+pandoc_install_release_binary() {
+  if pandoc_has_cmd pandoc || ! pandoc_has_cmd curl || ! pandoc_has_cmd tar; then
+    [ -x "$(command -v pandoc 2>/dev/null || printf '')" ] && return 0
+    return 1
+  fi
+
+  platform=$(pandoc_platform_suffix 2>/dev/null || true)
+  [ -n "$platform" ] || return 1
+
+  release_json=$(
+    curl -fsSL https://api.github.com/repos/jgm/pandoc/releases/latest 2>/dev/null || true
+  )
+  [ -n "$release_json" ] || return 1
+  release_json_one_line=$(printf '%s' "$release_json" | tr '\n' ' ')
+  download_url=$(printf '%s\n' "$release_json_one_line" | sed -n "s/.*\"browser_download_url\":[[:space:]]*\"\\([^\"]*pandoc-[^\"]*-${platform}\\.tar\\.gz\\)\".*/\\1/p" | head -n 1)
+  [ -n "$download_url" ] || return 1
+
+  tmp_root=$(mktemp -d "${TMPDIR:-/tmp}/pandoc-release.XXXXXX")
+  archive_path="$tmp_root/pandoc.tar.gz"
+  extract_dir="$tmp_root/extract"
+  target_bin_dir=$(pandoc_install_target_bin_dir)
+  mkdir -p "$extract_dir"
+
+  if ! curl -fsSL "$download_url" -o "$archive_path"; then
+    rm -rf "$tmp_root"
+    return 1
+  fi
+  if ! tar -xzf "$archive_path" -C "$extract_dir"; then
+    rm -rf "$tmp_root"
+    return 1
+  fi
+  pandoc_path=$(find "$extract_dir" -type f -name pandoc | head -n 1)
+  [ -n "$pandoc_path" ] || {
+    rm -rf "$tmp_root"
+    return 1
+  }
+  pandoc_run_privileged mkdir -p "$target_bin_dir"
+  pandoc_run_privileged install -m 755 "$pandoc_path" "$target_bin_dir/pandoc"
+  rm -rf "$tmp_root"
+  pandoc_has_cmd pandoc
+}
+
+if pandoc_has_cmd pandoc; then
+  pandoc_say "pandoc is already installed"
+  exit 0
+fi
+
+if pandoc_install_release_binary; then
+  pandoc_say "Installed pandoc"
+  exit 0
+fi
+
+if pandoc_has_cmd apt-get; then
+  pandoc_run_privileged apt-get update -y >/dev/null
+  pandoc_run_privileged env DEBIAN_FRONTEND=noninteractive apt-get install -y pandoc >/dev/null
+elif pandoc_has_cmd dnf; then
+  pandoc_run_privileged dnf install -y pandoc >/dev/null
+elif pandoc_has_cmd brew; then
+  brew install pandoc >/dev/null
+else
+  pandoc_say "install-pandoc: no supported package manager found." >&2
+  exit 1
+fi
+
+if pandoc_has_cmd pandoc; then
+  pandoc_say "Installed pandoc"
+  exit 0
+fi
+
+pandoc_say "install-pandoc: installation incomplete. Ensure pandoc is on PATH." >&2
+exit 1

@@ -34,16 +34,16 @@ if [ -z "$site_name" ]; then
   die 2 "setup-https: SITENAME required"
 fi
 
-WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
-SITES_DIR="$WEB_ROOT"
-SITE_DIR="$SITES_DIR/$site_name"
+web_root=${WEB_WIZARDRY_ROOT:-$HOME/sites}
+sites_dir="$web_root"
+site_dir="$sites_dir/$site_name"
 
-if [ ! -d "$SITE_DIR" ]; then
+if [ ! -d "$site_dir" ]; then
   die "setup-https: site '$site_name' not found"
 fi
 
-site_user_default="ww_$(printf '%s' "$site_name" | tr 'A-Z' 'a-z' | tr '-' '_')"
-site_user=$(config-get "$SITE_DIR/site.conf" site-user 2>/dev/null || printf '')
+site_user_default="ww_$(printf '%s' "$site_name" | tr 'A-Z' 'a-z' | tr '.-' '__')"
+site_user=$(config-get "$site_dir/site.conf" site-user 2>/dev/null || printf '')
 [ -z "$site_user" ] && site_user="$site_user_default"
 if [ -n "$site_user" ] && [ "$(id -un)" != "$site_user" ] && [ -z "${WIZARDRY_SITE_USER_REEXEC-}" ]; then
   if has sudo; then
@@ -95,7 +95,7 @@ case "$confirm" in
 esac
 
 # Get the domain from site.conf or prompt for it
-domain=$(config-get "$SITE_DIR/site.conf" domain 2>/dev/null || echo "")
+domain=$(config-get "$site_dir/site.conf" domain 2>/dev/null || echo "")
 if [ -z "$domain" ] || [ "$domain" = "localhost" ]; then
   printf '\n'
   printf 'Enter your domain name (e.g., example.com): '
@@ -106,7 +106,7 @@ if [ -z "$domain" ] || [ "$domain" = "localhost" ]; then
   fi
   
   # Update domain in site.conf
-  config-set "$SITE_DIR/site.conf" domain "$domain"
+  config-set "$site_dir/site.conf" domain "$domain"
 fi
 
 # Get email for Let's Encrypt notifications

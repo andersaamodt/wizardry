@@ -1,0 +1,93 @@
+#!/bin/sh
+
+# Install Docker.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-docker
+
+Installs Docker.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+core_dir=$(CDPATH= cd -- "$script_dir/../core" && pwd)
+
+if "$script_dir/is-docker-installed" >/dev/null 2>&1; then
+  success "docker is already installed"
+  exit 0
+fi
+
+printf '%s\n' "Installing docker..."
+
+if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+  arch=$(uname -m 2>/dev/null || printf '')
+  case "$arch" in
+    arm64|aarch64) docker_dmg_url="https://desktop.docker.com/mac/main/arm64/Docker.dmg" ;;
+    x86_64|amd64) docker_dmg_url="https://desktop.docker.com/mac/main/amd64/Docker.dmg" ;;
+    *) die "install-docker: unsupported macOS architecture: $arch" ;;
+  esac
+
+  dmg_file=$(temp-file docker-desktop.dmg)
+  mount_point=""
+
+  cleanup_install_docker() {
+    if [ -n "$mount_point" ] && mount | grep -q "on $mount_point "; then
+      hdiutil detach "$mount_point" >/dev/null 2>&1 || \
+        hdiutil detach -force "$mount_point" >/dev/null 2>&1 || :
+    fi
+    [ -f "$dmg_file" ] && rm -f "$dmg_file"
+  }
+  trap cleanup_install_docker EXIT INT TERM
+
+  printf '%s\n' "Downloading Docker..."
+  if has curl; then
+    curl -fL --progress-bar -o "$dmg_file" "$docker_dmg_url" || die "install-docker: failed to download Docker Desktop DMG"
+  elif has wget; then
+    wget -O "$dmg_file" "$docker_dmg_url" || die "install-docker: failed to download Docker Desktop DMG"
+  else
+    die "install-docker: curl or wget is required"
+  fi
+
+  printf '%s\n' "Mounting DMG..."
+  mount_point=$(
+    hdiutil attach -nobrowse -readonly "$dmg_file" 2>/dev/null |
+      awk '/\/Volumes\// { i=index($0, "/Volumes/"); if (i>0) { print substr($0, i); exit } }'
+  )
+  [ -n "$mount_point" ] || die "install-docker: failed to mount Docker Desktop DMG"
+
+  app_bundle=$(find "$mount_point" -maxdepth 2 -type d -name "Docker.app" | head -1 || true)
+  [ -n "$app_bundle" ] || die "install-docker: Docker.app was not found in DMG"
+
+  target_app="/Applications/Docker.app"
+  printf '%s\n' "Installing Docker.app to /Applications..."
+  if [ -w "/Applications" ]; then
+    rm -rf "$target_app" 2>/dev/null || :
+    ditto "$app_bundle" "$target_app" || die "install-docker: failed to copy Docker.app to /Applications"
+  else
+    if ! has sudo; then
+      die "install-docker: /Applications is not writable and sudo is unavailable"
+    fi
+    sudo rm -rf "$target_app" || true
+    sudo ditto "$app_bundle" "$target_app" || die "install-docker: failed to copy Docker.app to /Applications with sudo"
+  fi
+
+  # Ensure docker CLI is reachable for shell-based scripts.
+  "$script_dir/install-docker-daemon" >/dev/null 2>&1 || :
+else
+  APT_PACKAGE=docker.io PACMAN_PACKAGE=docker NIX_PACKAGE=docker PKGIN_PACKAGE=docker \
+    "$core_dir/manage-system-command" docker docker || die "install-docker: package installation failed"
+  "$script_dir/install-docker-daemon" >/dev/null 2>&1 || :
+fi
+
+if ! "$script_dir/is-docker-installed" >/dev/null 2>&1; then
+  die "install-docker: installation verification failed"
+fi
+
+success "docker installed successfully"

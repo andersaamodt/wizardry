@@ -12,6 +12,28 @@
 
 ## Critical POSIX sh Patterns
 
+### macOS App Bundle Replacement
+
+**CRITICAL:** Do not write into a live macOS `.app` bundle in place.
+
+```sh
+# WRONG: rebuild directly into the same .app path while it may be running
+rm -rf "$bundle"
+mkdir -p "$bundle/Contents/Resources"
+cp "$icon_source" "$bundle/Contents/Resources/forge-icon.png"
+
+# RIGHT: build into a staging .app path, then stop the old instance and swap
+stage_bundle="$dist_dir/.staging/MyApp.app"
+rm -rf "$stage_bundle"
+mkdir -p "$stage_bundle/Contents/Resources"
+cp "$icon_source" "$stage_bundle/Contents/Resources/forge-icon.png"
+stop_desktop_instances_for_slug "$root" "$slug" "$app_name" darwin
+rm -rf "$bundle"
+mv "$stage_bundle" "$bundle"
+```
+
+**Why:** macOS can return `Operation not permitted` when copying into `.../MyApp.app/Contents/...` for a bundle that is currently running. Build a fresh staged bundle and swap it into place only after the old process is stopped.
+
 ### Performance: Basename Replacement
 
 **CRITICAL FOR PERFORMANCE:** When processing many files, avoid subprocess calls.

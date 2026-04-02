@@ -1,0 +1,233 @@
+#!/bin/sh
+
+# Capture microphone audio and print local dictation text to stdout.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: dictate [--duration SECONDS] [--language CODE] [--model MODEL]
+
+Captures microphone audio and prints transcribed text to stdout.
+Backend selection is automatic:
+  1. MLX-Whisper on macOS when installed
+  2. Parakeet on Linux with NVIDIA GPU when installed
+  3. CTranslate2 Whisper (via whisper-ctranslate2) fallback
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+duration=${DICTATE_DURATION_SECONDS:-16}
+language=${DICTATE_LANGUAGE:-}
+model_override=${DICTATE_MODEL:-}
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --duration)
+      [ "$#" -ge 2 ] || die 2 "dictate: --duration requires a value"
+      duration=$2
+      shift 2
+      ;;
+    --language)
+      [ "$#" -ge 2 ] || die 2 "dictate: --language requires a value"
+      language=$2
+      shift 2
+      ;;
+    --model)
+      [ "$#" -ge 2 ] || die 2 "dictate: --model requires a value"
+      model_override=$2
+      shift 2
+      ;;
+    *)
+      die 2 "dictate: unknown option '$1'"
+      ;;
+  esac
+done
+
+case "$duration" in
+  ""|*[!0-9]*)
+    die 2 "dictate: duration must be a positive integer"
+    ;;
+  0)
+    die 2 "dictate: duration must be greater than zero"
+    ;;
+esac
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+arcana_dir=${WIZARDRY_VOICE_RECOGNITION_ARCANA_DIR:-$script_dir/../.arcana/voice-recognition}
+backend_cmd="$arcana_dir/voice-recognition-backend"
+
+if [ ! -x "$backend_cmd" ]; then
+  backend_cmd=$(command -v voice-recognition-backend 2>/dev/null || printf '')
+fi
+
+if [ -z "$backend_cmd" ]; then
+  die "dictate: voice recognition arcanum not found"
+fi
+
+if ! command -v ffmpeg >/dev/null 2>&1; then
+  die "dictate: ffmpeg not found. Install Voice Recognition from install-menu"
+fi
+
+backend=$("$backend_cmd" 2>/dev/null || printf '')
+if [ -z "$backend" ]; then
+  die "dictate: no voice backend installed. Open install-menu and enable Voice Recognition"
+fi
+
+python_bin=$("$backend_cmd" --python 2>/dev/null || printf '')
+if [ -z "$python_bin" ] || [ ! -x "$python_bin" ]; then
+  die "dictate: selected backend runtime is unavailable"
+fi
+
+if [ -n "$model_override" ]; then
+  model_name=$model_override
+else
+  model_name=$("$backend_cmd" --model 2>/dev/null || printf '')
+fi
+
+if [ -z "$model_name" ]; then
+  die "dictate: backend model configuration is missing"
+fi
+
+audio_file=$(temp-file dictate-audio.wav)
+transcript_file=$(temp-file dictate-text.txt)
+python_err_file=$(temp-file dictate-python.err)
+
+dictate_cleanup() {
+  rm -f "$audio_file" "$transcript_file" "$python_err_file"
+}
+trap dictate_cleanup EXIT HUP INT TERM
+
+os_name=$(uname -s 2>/dev/null || printf 'unknown')
+
+case "$os_name" in
+  Darwin)
+    ffmpeg -nostdin -hide_banner -loglevel error \
+      -f avfoundation -i ":0" \
+      -t "$duration" -ac 1 -ar 16000 -f wav -y "$audio_file" || die "dictate: microphone capture failed on macOS"
+    ;;
+  Linux)
+    if ffmpeg -nostdin -hide_banner -loglevel error \
+      -f pulse -i default \
+      -t "$duration" -ac 1 -ar 16000 -f wav -y "$audio_file"; then
+      :
+    elif ffmpeg -nostdin -hide_banner -loglevel error \
+      -f alsa -i default \
+      -t "$duration" -ac 1 -ar 16000 -f wav -y "$audio_file"; then
+      :
+    else
+      die "dictate: microphone capture failed on Linux"
+    fi
+    ;;
+  *)
+    die "dictate: unsupported platform: $os_name"
+    ;;
+esac
+
+if [ ! -s "$audio_file" ]; then
+  die "dictate: no audio captured"
+fi
+
+if ! env \
+  "DICTATE_AUDIO_PATH=$audio_file" \
+  "DICTATE_BACKEND=$backend" \
+  "DICTATE_MODEL=$model_name" \
+  "DICTATE_LANGUAGE=$language" \
+  "HF_HOME=${WIZARDRY_VOICE_RECOGNITION_HF_HOME:-${XDG_CACHE_HOME:-$HOME/.cache}/wizardry/voice-recognition/huggingface}" \
+  "HF_HUB_OFFLINE=1" \
+  "TRANSFORMERS_OFFLINE=1" \
+  "$python_bin" >"$transcript_file" 2>"$python_err_file" <<'PY'
+import os
+import sys
+
+backend = os.environ.get("DICTATE_BACKEND", "")
+audio_path = os.environ.get("DICTATE_AUDIO_PATH", "")
+model_name = os.environ.get("DICTATE_MODEL", "")
+language = os.environ.get("DICTATE_LANGUAGE", "").strip()
+if not language:
+    language = None
+
+
+def squash(text):
+    return " ".join(str(text or "").strip().split())
+
+
+text = ""
+
+try:
+    if backend == "ctranslate2-whisper":
+        from faster_whisper import WhisperModel
+
+        model = WhisperModel(model_name, device="auto", compute_type="int8")
+        kwargs = {"vad_filter": True}
+        if language:
+            kwargs["language"] = language
+        segments, _info = model.transcribe(audio_path, **kwargs)
+        parts = []
+        for segment in segments:
+            segment_text = squash(getattr(segment, "text", ""))
+            if segment_text:
+                parts.append(segment_text)
+        text = " ".join(parts)
+    elif backend == "mlx-whisper":
+        import mlx_whisper
+
+        kwargs = {"path_or_hf_repo": model_name}
+        if language:
+            kwargs["language"] = language
+        result = mlx_whisper.transcribe(audio_path, **kwargs)
+        if isinstance(result, dict):
+            text = squash(result.get("text", ""))
+    elif backend == "parakeet":
+        import nemo.collections.asr as nemo_asr
+
+        model = nemo_asr.models.ASRModel.from_pretrained(model_name=model_name)
+        try:
+            outputs = model.transcribe([audio_path])
+        except TypeError:
+            outputs = model.transcribe([audio_path], batch_size=1)
+
+        item = ""
+        if isinstance(outputs, list) and outputs:
+            item = outputs[0]
+        else:
+            item = outputs
+
+        if hasattr(item, "text"):
+            text = squash(getattr(item, "text", ""))
+        elif isinstance(item, dict):
+            text = squash(item.get("text", ""))
+        else:
+            text = squash(item)
+    else:
+        raise RuntimeError("unknown backend")
+except Exception as exc:
+    sys.stderr.write(f"backend runtime failed: {exc}\n")
+    sys.exit(1)
+
+text = squash(text)
+if not text:
+    sys.stderr.write("no speech detected\n")
+    sys.exit(1)
+
+sys.stdout.write(text + "\n")
+PY
+then
+  error_text=$(sed -n '1p' "$python_err_file" 2>/dev/null || printf '')
+  [ -n "$error_text" ] || error_text="dictation failed"
+  die "dictate: $error_text"
+fi
+
+result=$(cat "$transcript_file" 2>/dev/null || printf '')
+result=$(printf '%s' "$result" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+
+if [ -z "$result" ]; then
+  die "dictate: no speech detected"
+fi
+
+printf '%s\n' "$result"

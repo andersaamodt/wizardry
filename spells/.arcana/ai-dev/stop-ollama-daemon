@@ -1,0 +1,65 @@
+#!/bin/sh
+
+# Stop the ollama daemon.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: stop-ollama-daemon
+
+Stops the ollama daemon service.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+run_priv() {
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+    return
+  fi
+  if has sudo; then
+    sudo "$@" && return
+    die "stop-ollama-daemon: sudo command failed"
+  fi
+  die "stop-ollama-daemon: root required"
+}
+
+unit="ollama.service"
+plist="/Library/LaunchDaemons/com.ollama.service.plist"
+label="system/com.ollama.service"
+
+# Check if running
+if ! "$script_dir/is-ollama-daemon-running" 2>/dev/null; then
+  success "ollama daemon is not running"
+  exit 0
+fi
+
+if has systemctl; then
+  run_priv systemctl stop "$unit"
+  success "ollama daemon stopped"
+  exit 0
+fi
+
+if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
+  # Use modern launchctl domain syntax for LaunchDaemons.
+  run_priv launchctl bootout "$label" >/dev/null 2>&1 || :
+  # Legacy fallback for older setups.
+  if [ -f "$plist" ]; then
+    run_priv launchctl unload "$plist" >/dev/null 2>&1 || :
+  fi
+
+  if "$script_dir/is-ollama-daemon-running" 2>/dev/null; then
+    die "stop-ollama-daemon: daemon still appears to be running"
+  fi
+
+  success "ollama daemon stopped"
+  exit 0
+fi
+
+die "stop-ollama-daemon: systemd or launchd required"

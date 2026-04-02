@@ -1,0 +1,28 @@
+#!/bin/sh
+
+# Install or upgrade BTCPay Server in production-domain mode.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-btcpay
+
+Installs BTCPay Server using the official btcpayserver-docker setup flow.
+Set BTCPAY_HOST to the public HTTPS hostname (for example pay.example.com).
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+arcana_install="$script_dir/../.arcana/btcpay/install-btcpay-arcana"
+
+if [ ! -x "$arcana_install" ]; then
+  printf '%s\n' 'install-btcpay: BTCPay installer spell is unavailable.' >&2
+  exit 1
+fi
+
+"$arcana_install" "$@"

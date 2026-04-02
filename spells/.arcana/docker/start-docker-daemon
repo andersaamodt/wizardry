@@ -1,0 +1,90 @@
+#!/bin/sh
+
+# Start the Docker daemon.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: start-docker-daemon
+
+Starts the Docker daemon.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+if ! "$script_dir/is-docker-installed" >/dev/null 2>&1; then
+  die "start-docker-daemon: docker is not installed"
+fi
+
+if ! "$script_dir/is-docker-daemon-installed" >/dev/null 2>&1; then
+  "$script_dir/install-docker-daemon"
+fi
+
+if "$script_dir/is-docker-daemon-running" >/dev/null 2>&1; then
+  success "Docker daemon is already running"
+  exit 0
+fi
+
+printf '%s\n' "Starting Docker daemon..."
+
+if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+  # Single macOS startup path: daemon start also launches/uses Docker Desktop.
+  # Avoid calling start-docker-desktop to prevent recursive output.
+  desktop_running=0
+  if "$script_dir/is-docker-desktop-running" >/dev/null 2>&1; then
+    desktop_running=1
+  fi
+  if has open; then
+    if [ "$desktop_running" -eq 1 ]; then
+      printf '%s\n' "Docker Desktop is already running"
+    else
+      printf '%s\n' "Starting Docker Desktop..."
+    fi
+    open -ga Docker >/dev/null 2>&1 || :
+  fi
+
+  printf '%s\n' "Waiting for Docker daemon readiness..."
+
+  docker_bin=$("$script_dir/resolve-docker-cli" 2>/dev/null || printf '')
+  if [ -n "$docker_bin" ]; then
+    "$docker_bin" desktop start >/dev/null 2>&1 || :
+  fi
+
+  tries=0
+  while [ "$tries" -lt 20 ]; do
+    if "$script_dir/is-docker-daemon-running" >/dev/null 2>&1; then
+      success "Docker daemon started"
+      exit 0
+    fi
+    tries=$((tries + 1))
+    sleep 0.5
+  done
+
+  die "start-docker-daemon: Docker daemon did not enter running state"
+fi
+
+run_priv() {
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+    return
+  fi
+  if has sudo; then
+    sudo "$@" && return
+    die "start-docker-daemon: sudo command failed"
+  fi
+  die "start-docker-daemon: root required"
+}
+
+if has systemctl; then
+  run_priv systemctl start docker
+  success "Docker daemon started"
+  exit 0
+fi
+
+die "start-docker-daemon: systemd or Docker Desktop is required"
