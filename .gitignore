@@ -1,9 +1,98 @@
-# Generated during installation
+# Cross-platform OS clutter
+.DS_Store
+.AppleDouble
+.LSOverride
+.Spotlight-V100/
+.TemporaryItems/
+.Trashes/
+.fseventsd
+._*
+Icon?
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Editor and patch leftovers
+*~
+*.swp
+*.swo
+*.orig
+*.rej
+.idea/
+.vscode/
+.history/
+
+# Local environment and language caches
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+.direnv/
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+
+# Dependency and tool caches
+node_modules/
+.npm/
+.pnpm-store/
+.parcel-cache/
+.next/
+.nuxt/
+.svelte-kit/
+.turbo/
+/.gradle/
+/DerivedData/
+
+# Logs, coverage, and transient output
+*.log
+*.out
+*.pid
+*.seed
+*.stackdump
+nohup.out
+.assay-runs/
+.cache/
+/coverage/
+/htmlcov/
+/_tmp/
+/tmp/
+
+# Build outputs and compiled artifacts
+/build/
+/dist/
+/out/
+/target/
+/debug/
+/release/
+/cmake-build-*/
+/CMakeFiles/
+/compile_commands.json
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+*.class
+*.pyc
+*.pyo
+*.app
+*.AppImage
+*.ipa
+*.aab
+
+# Wizardry-generated and test-local files
 .uninstall
 wizardry-compiled/
 ALL_INPUT
-
-# Test temporary files
 .tests/__temp_test_fixtures/
 .tests/__demos/
 /voice-recognition/
@@ -11,3 +100,4 @@ ALL_INPUT
 .room.log
 /.log
 .log
+.log/
