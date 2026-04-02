@@ -1,0 +1,28 @@
+#!/bin/sh
+
+# Show the system's current network interfaces.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: show-network-interfaces
+
+Show the current network interfaces.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+if command -v ifconfig >/dev/null 2>&1; then
+  exec ifconfig
+fi
+
+if command -v ip >/dev/null 2>&1; then
+  exec ip addr show
+fi
+
+printf '%s\n' "show-network-interfaces: no interface inspection command found" >&2
+exit 1

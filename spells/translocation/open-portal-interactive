@@ -1,0 +1,37 @@
+#!/bin/sh
+
+# Gather portal details interactively, then open the portal.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: open-portal-interactive
+
+Prompt for portal details, then cast open-portal.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+tor_flag=""
+if ask-yn "Use Tor?" no; then
+  tor_flag="--tor"
+fi
+
+player=$(ask-text "Player name:") || exit 1
+server=$(ask-text "Server address (IP or .onion):") || exit 1
+remote_path=$(ask-text "Remote path:" "~") || exit 1
+
+if [ -z "$player" ] || [ -z "$server" ] || [ -z "$remote_path" ]; then
+  printf '%s\n' "open-portal-interactive: cancelled" >&2
+  exit 0
+fi
+
+if [ -n "$tor_flag" ]; then
+  open-portal "$tor_flag" "$player@$server:$remote_path"
+else
+  open-portal "$player@$server:$remote_path"
+fi

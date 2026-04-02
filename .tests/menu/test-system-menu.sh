@@ -35,7 +35,7 @@ SH
   assert_success || return 1
   args=$(cat "$tmp/log" 2>/dev/null || printf '')
   case "$args" in
-    *"System Menu:"*"Restart...%shutdown-menu"*"Update all software%update-all -v"*"Update wizardry%update-wizardry"*"Manage services%"*"services-menu"*"Test all wizardry spells%test-magic"*'Exit%kill -TERM $PPID' ) : ;;
+    *"System Menu:"*"Restart...%shutdown-menu"*"Update all software%update-all -v"*"Update wizardry%update-wizardry"*"Manage services%"*"services-menu"*"Test all wizardry spells%test-magic"*"Uninstall wizardry%uninstall-wizardry"*'Exit%kill -TERM $PPID' ) : ;;
     *) TEST_FAILURE_REASON="expected system actions missing or Exit item incorrect: $args"; return 1 ;;
   esac
 }

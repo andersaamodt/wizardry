@@ -1,0 +1,31 @@
+#!/bin/sh
+
+# Run wizardry's generated uninstall script when this installation provides one.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uninstall-wizardry
+
+Run wizardry's generated uninstall script from the current installation.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+wizardry_dir=${WIZARDRY_DIR-}
+if [ -z "$wizardry_dir" ]; then
+  script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+  wizardry_dir=$(CDPATH= cd -- "$script_dir/../.." && pwd -P)
+fi
+
+uninstall_script="$wizardry_dir/.uninstall"
+if [ ! -x "$uninstall_script" ]; then
+  printf '%s\n' "uninstall-wizardry: no generated uninstall script found at $uninstall_script" >&2
+  exit 1
+fi
+
+exec "$uninstall_script"

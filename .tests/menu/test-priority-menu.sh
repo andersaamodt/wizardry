@@ -266,6 +266,10 @@ SH
     TEST_FAILURE_REASON="Subpriorities... should appear for directory with prioritized items: $(cat "$tmp/log")"
     return 1
   }
+  grep -q "browse-subpriorities \"$tmp/testdir\"" "$tmp/log" || {
+    TEST_FAILURE_REASON="Subpriorities should use browse-subpriorities: $(cat "$tmp/log")"
+    return 1
+  }
 }
 
 test_priority_menu_hides_browse_for_file() {
@@ -345,6 +349,10 @@ SH
   # Verify "Add subpriority" DOES appear
   grep -q "Add subpriority%" "$tmp/log" || {
     TEST_FAILURE_REASON="Add subpriority should appear when no prioritized subitems: $(cat "$tmp/log")"
+    return 1
+  }
+  grep -q "add-subpriority \"$tmp/testdir\"" "$tmp/log" || {
+    TEST_FAILURE_REASON="Add subpriority should use add-subpriority: $(cat "$tmp/log")"
     return 1
   }
   return 0

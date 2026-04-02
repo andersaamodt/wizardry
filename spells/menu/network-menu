@@ -1,12 +1,13 @@
 #!/bin/sh
-# Network configuration menu - work in progress
+
+# Network inspection menu.
 
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
 Usage: network-menu
 
-Displays network configuration options.
+Displays network inspection options.
 USAGE
   exit 0
   ;;
@@ -15,7 +16,15 @@ esac
 set -eu
 . env-clear
 
-require-command menu || exit 1
+if ! require menu "The network menu needs the 'menu' command."; then
+  exit 1
+fi
+
+for spell in show-network-interfaces show-network-routes show-dns-config; do
+  if ! require "$spell" "The network menu expects the '$spell' spell."; then
+    exit 1
+  fi
+done
 
 # Catch Ctrl-C and TERM signal to exit cleanly
 # INT (Ctrl-C) should exit 130, TERM should exit 0
@@ -27,8 +36,9 @@ exit_label=$(exit-label)
 exit_item="${exit_label}%kill -TERM \$PPID"
 
 menu "Network Menu:" \
-  "Configure static IP%configure-static-ip" \
-  "Configure DHCP%configure-dhcp" \
+  "View network interfaces%show-network-interfaces" \
+  "View routing table%show-network-routes" \
+  "View DNS config%show-dns-config" \
   "$exit_item" || menu_status=$?
 menu_status=${menu_status:-0}
 
@@ -37,4 +47,3 @@ if [ "$menu_status" -eq 130 ]; then
   printf 'ESC\n' >&2
   exit 0
 fi
-

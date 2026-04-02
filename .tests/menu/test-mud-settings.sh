@@ -36,8 +36,39 @@ SH
   assert_success
   args=$(cat "$tmp/log")
   case "$args" in
-    *"MUD Settings:"*"player key"*"Change Player%choose-player"*"New Player%new-player"*'Exit%kill -TERM $PPID' ) : ;;
+    *"MUD Settings:"*"Create player key%create-player-key \"$player\""*"Change Player%choose-player"*"New Player%new-player"*'Exit%kill -TERM $PPID' ) : ;;
     *) TEST_FAILURE_REASON="mud settings actions missing: $args"; return 1 ;;
+  esac
+}
+
+test_mud_settings_copy_key_action() {
+  skip-if-compiled || return $?
+  tmp=$(make_tempdir)
+  player=hero
+  mkdir -p "$tmp/home/.ssh"
+  printf 'ssh-ed25519 AAAA hero@MUD\n' > "$tmp/home/.ssh/${player}.pub"
+  stub-menu "$tmp"
+  stub-colors "$tmp"
+  cat >"$tmp/require-command" <<'SH'
+#!/bin/sh
+command -v "$1" >/dev/null 2>&1
+SH
+  chmod +x "$tmp/require-command"
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$tmp/exit-label"
+
+  HOME="$tmp/home" REQUIRE_COMMAND="$tmp/require-command" PATH="$tmp:$PATH" \
+    MENU_LOG="$tmp/log" MUD_PLAYER="$player" MENU_LOOP_LIMIT=1 \
+    run_sourced_spell "spells/menu/mud-settings"
+  assert_success || return 1
+
+  args=$(cat "$tmp/log")
+  case "$args" in
+    *"Copy player key%copy-player-key \"$player\""*) : ;;
+    *) TEST_FAILURE_REASON="copy key action missing: $args"; return 1 ;;
   esac
 }
 
@@ -94,6 +125,7 @@ test_shows_help() {
 
 run_test_case "mud-settings shows usage" test_shows_help
 run_test_case "mud-settings presents player actions" test_mud_settings_menu_actions
+run_test_case "mud-settings uses copy-player-key when key exists" test_mud_settings_copy_key_action
 run_test_case "mud-settings fails fast when menu helper is missing" test_mud_settings_requires_menu_helper
 run_test_case "mud-settings surfaces menu failures" test_mud_settings_reports_menu_failure
 

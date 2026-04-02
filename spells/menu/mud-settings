@@ -75,9 +75,9 @@ while true; do
   # Check if player has a key (copy vs create)
   player_key_path="$HOME/.ssh/${current_player}.pub"
   if [ -f "$player_key_path" ]; then
-    key_action="Copy player key%cat \"$player_key_path\" | pbcopy 2>/dev/null || cat \"$player_key_path\" | xclip -selection clipboard 2>/dev/null || cat \"$player_key_path\""
+    key_action="Copy player key%copy-player-key \"$current_player\""
   else
-    key_action="Create player key%ssh-keygen -t ed25519 -f \"$HOME/.ssh/$current_player\" -N '' && cat \"$HOME/.ssh/${current_player}.pub\""
+    key_action="Create player key%create-player-key \"$current_player\""
   fi
   
   # Build menu items

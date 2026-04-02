@@ -1,0 +1,28 @@
+#!/bin/sh
+
+# Show the system routing table.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: show-network-routes
+
+Show the current routing table.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+if command -v netstat >/dev/null 2>&1; then
+  exec netstat -rn
+fi
+
+if command -v ip >/dev/null 2>&1; then
+  exec ip route show
+fi
+
+printf '%s\n' "show-network-routes: no routing table command found" >&2
+exit 1

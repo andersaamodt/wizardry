@@ -1,0 +1,31 @@
+#!/bin/sh
+
+# Open the priorities menu for a directory's contents.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: browse-subpriorities DIRECTORY
+
+Open priorities inside DIRECTORY.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+directory=${1-}
+if [ -z "$directory" ]; then
+  printf '%s\n' "browse-subpriorities: DIRECTORY required" >&2
+  exit 2
+fi
+
+if [ ! -d "$directory" ]; then
+  printf '%s\n' "browse-subpriorities: not a directory: $directory" >&2
+  exit 1
+fi
+
+cd "$directory"
+exec priorities

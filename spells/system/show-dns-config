@@ -1,0 +1,32 @@
+#!/bin/sh
+
+# Show the system DNS configuration.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: show-dns-config
+
+Show the current DNS configuration.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+if command -v scutil >/dev/null 2>&1; then
+  exec scutil --dns
+fi
+
+if command -v resolvectl >/dev/null 2>&1; then
+  exec resolvectl status
+fi
+
+if [ -r /etc/resolv.conf ]; then
+  exec cat /etc/resolv.conf
+fi
+
+printf '%s\n' "show-dns-config: no DNS configuration source found" >&2
+exit 1

@@ -3,6 +3,7 @@
 # - network-menu is executable and has content
 # - network-menu shows usage with --help
 # - network-menu fails when menu dependency is missing
+# - network-menu forwards working inspection actions
 
 set -eu
 
@@ -31,6 +32,28 @@ test_shows_help() {
 }
 
 run_test_case "network-menu --help shows usage" test_shows_help
+
+test_presents_network_actions() {
+  skip-if-compiled || return $?
+  tmp=$(make_tempdir)
+  stub-menu "$tmp"
+  stub-require-command "$tmp"
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$tmp/exit-label"
+
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/network-menu"
+  assert_success || return 1
+  args=$(cat "$tmp/log")
+  case "$args" in
+    *"View network interfaces%show-network-interfaces"*"View routing table%show-network-routes"*"View DNS config%show-dns-config"*'Exit%kill -TERM $PPID' ) : ;;
+    *) TEST_FAILURE_REASON="network menu actions missing: $args"; return 1 ;;
+  esac
+}
+
+run_test_case "network-menu presents inspection actions" test_presents_network_actions
 
 test_fails_without_menu_dependency() {
   skip-if-compiled || return $?

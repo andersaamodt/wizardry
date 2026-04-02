@@ -1,0 +1,25 @@
+#!/bin/sh
+
+# Prompt for a message, then speak in the current MUD room.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: say-interactive
+
+Prompt for a message, then cast say.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+message=$(ask-text "Message:") || exit 1
+if [ -z "$message" ]; then
+  printf '%s\n' "say-interactive: cancelled" >&2
+  exit 0
+fi
+
+say "$message"
