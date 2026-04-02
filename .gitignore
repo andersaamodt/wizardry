@@ -92,10 +92,6 @@ nohup.out
 # Wizardry-generated and test-local files
 .uninstall
 wizardry-compiled/
-ALL_INPUT
-.tests/__temp_test_fixtures/
-.tests/__demos/
-/voice-recognition/
 *.attrs
 .room.log
 /.log
