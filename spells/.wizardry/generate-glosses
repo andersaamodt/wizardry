@@ -167,6 +167,18 @@ uname|uniq|wc|xargs|xattr)
       return 1  # Blacklisted
       ;;
   esac
+
+  # Also skip names that already resolve to external non-wizardry commands.
+  # This prevents first-word glosses from shadowing real system tools like ssh.
+  resolved_cmd=$(command -v "$check_word" 2>/dev/null || printf '')
+  case "$resolved_cmd" in
+    /*)
+      case "$resolved_cmd" in
+        "$wizardry_dir"/*|"$spell_home"/*) ;;
+        *) return 1 ;;
+      esac
+      ;;
+  esac
   
   return 0  # Not blacklisted
 }
