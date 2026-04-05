@@ -60,8 +60,6 @@ Tests are the fastest path to working code for several reasons:
 
 **DO NOT create standalone test files for validation checks, linting, or project-wide tests.** These should be integrated into existing spells like `lint-magic` or `test-magic`.
 
-`tests/` is a compatibility symlink to `.tests/`; both paths point at the same tree.
-
 ### Test Naming Convention
 
 **IMPORTANT:** Test files use `test-<name>.sh` format (all hyphens, NO underscores).
