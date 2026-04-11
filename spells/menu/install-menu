@@ -45,7 +45,7 @@ list_entries() {
         return
     fi
 
-    # Preferred order: core, mud, web-wizardry, wizardry-apps, ai-dev, yt-dlp, voice-recognition, nostr, btcpay, then others alphabetically
+    # Preferred order: core, mud, web-wizardry, wizardry-apps, ai-dev, yt-dlp, voice-recognition, nostr, crossposting, btcpay, then others alphabetically
     # First output 'core' if it exists
     if [ -e "$install_dir/core" ]; then
         printf '%s\n' "core"
@@ -86,6 +86,11 @@ list_entries() {
         printf '%s\n' "nostr"
     fi
 
+    # Then 'crossposting' if it exists
+    if [ -e "$install_dir/crossposting" ]; then
+        printf '%s\n' "crossposting"
+    fi
+
     # Then 'btcpay' if it exists
     if [ -e "$install_dir/btcpay" ]; then
         printf '%s\n' "btcpay"
@@ -104,6 +109,7 @@ list_entries() {
         [ "$entry_name" = "yt-dlp" ] && continue
         [ "$entry_name" = "voice-recognition" ] && continue
         [ "$entry_name" = "nostr" ] && continue
+        [ "$entry_name" = "crossposting" ] && continue
         [ "$entry_name" = "btcpay" ] && continue
         # Skip 'import-arcanum' since it's a special menu item added separately
         [ "$entry_name" = "import-arcanum" ] && continue
@@ -183,6 +189,7 @@ while :; do
             yt-dlp) label="yt-dlp" ;;
             voice-recognition) label="voice recognition" ;;
             nostr) label="Nostr" ;;
+            crossposting) label="crossposting" ;;
             btcpay) label="BTCPay Server" ;;
             docker) label="Docker" ;;
         esac

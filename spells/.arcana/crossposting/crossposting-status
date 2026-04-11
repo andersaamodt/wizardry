@@ -1,0 +1,51 @@
+#!/bin/sh
+
+# Report installation status for crossposting components.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: crossposting-status
+
+Reports the installation status of crossposting components (jq, pandoc, granary-runtime, bridge-runtime).
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+if command -v colors >/dev/null 2>&1; then
+  . colors
+else
+  RESET=""
+  THEME_SUCCESS=""
+  THEME_WARNING=""
+  GREY=""
+fi
+
+installed=0
+total=4
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+
+for component in jq pandoc granary-runtime bridge-runtime; do
+  if "$script_dir/is-crossposting-component-installed" "$component" 2>/dev/null; then
+    installed=$((installed + 1))
+  fi
+done
+
+if [ "$installed" -eq 0 ]; then
+  color="$GREY"
+  status="not installed"
+elif [ "$installed" -eq "$total" ]; then
+  color="$THEME_SUCCESS"
+  status="installed"
+else
+  color="$THEME_WARNING"
+  status="partial install"
+fi
+
+printf '%s%s%s\n' "$color" "$status" "$RESET"

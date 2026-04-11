@@ -1,0 +1,68 @@
+#!/bin/sh
+
+# Toggle all crossposting components.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: toggle-all-crossposting [--enable|--disable]
+
+Enables or disables jq, pandoc, the Granary runtime, and the Origin bridge runtime shims.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+action=${1-}
+
+if [ -z "$action" ]; then
+  action="--enable"
+  if "$script_dir/is-crossposting-component-installed" jq 2>/dev/null && \
+     "$script_dir/is-crossposting-component-installed" pandoc 2>/dev/null && \
+     "$script_dir/is-crossposting-component-installed" granary-runtime 2>/dev/null && \
+     "$script_dir/is-crossposting-component-installed" bridge-runtime 2>/dev/null; then
+    action="--disable"
+  fi
+fi
+
+case "$action" in
+  --enable)
+    if ! "$script_dir/is-crossposting-component-installed" jq 2>/dev/null; then
+      "$script_dir/install-crossposting-jq"
+    fi
+    if ! "$script_dir/is-crossposting-component-installed" pandoc 2>/dev/null; then
+      "$script_dir/install-crossposting-pandoc"
+    fi
+    if ! "$script_dir/is-crossposting-component-installed" granary-runtime 2>/dev/null; then
+      "$script_dir/install-crossposting-granary"
+    fi
+    if ! "$script_dir/is-crossposting-component-installed" bridge-runtime 2>/dev/null; then
+      "$script_dir/install-origin-bridge-runtime"
+    fi
+    success "All crossposting components enabled"
+    ;;
+  --disable)
+    if "$script_dir/is-crossposting-component-installed" bridge-runtime 2>/dev/null; then
+      "$script_dir/uninstall-origin-bridge-runtime"
+    fi
+    if "$script_dir/is-crossposting-component-installed" granary-runtime 2>/dev/null; then
+      "$script_dir/uninstall-crossposting-granary"
+    fi
+    if "$script_dir/is-crossposting-component-installed" pandoc 2>/dev/null; then
+      "$script_dir/uninstall-crossposting-pandoc"
+    fi
+    if "$script_dir/is-crossposting-component-installed" jq 2>/dev/null; then
+      "$script_dir/uninstall-crossposting-jq"
+    fi
+    success "All crossposting components disabled"
+    ;;
+  *)
+    die 2 "toggle-all-crossposting: invalid action: $action"
+    ;;
+esac

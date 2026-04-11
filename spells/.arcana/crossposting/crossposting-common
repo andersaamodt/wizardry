@@ -1,0 +1,108 @@
+#!/bin/sh
+
+# Shared helper library for crossposting arcana spells.
+
+crossposting_has_cmd() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+crossposting_run_privileged() {
+  if "$@" 2>/dev/null; then
+    return 0
+  fi
+  if command -v run_sudo_cmd >/dev/null 2>&1; then
+    run_sudo_cmd "$@"
+    return 0
+  fi
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+    return 0
+  fi
+  if crossposting_has_cmd sudo; then
+    sudo "$@"
+    return 0
+  fi
+  "$@"
+}
+
+crossposting_install_bin_dir() {
+  if [ -n "${CROSSPOSTING_INSTALL_BIN_DIR-}" ]; then
+    printf '%s\n' "$CROSSPOSTING_INSTALL_BIN_DIR"
+    return 0
+  fi
+  if [ "$(id -u)" -eq 0 ]; then
+    printf '%s\n' /usr/local/bin
+    return 0
+  fi
+  if crossposting_has_cmd sudo || command -v run_sudo_cmd >/dev/null 2>&1; then
+    printf '%s\n' /usr/local/bin
+    return 0
+  fi
+  printf '%s\n' "${XDG_BIN_HOME:-$HOME/.local/bin}"
+}
+
+crossposting_resolve_cmd() {
+  cmd=$1
+  case "$cmd" in
+    */*)
+      [ -x "$cmd" ] || return 1
+      printf '%s\n' "$cmd"
+      ;;
+    *)
+      command -v "$cmd" 2>/dev/null
+      ;;
+  esac
+}
+
+crossposting_bridge_platforms() {
+  printf '%s\n' misskey lemmy kbin reddit x tumblr facebook minds mirror
+}
+
+crossposting_granary_venv_dir() {
+  printf '%s\n' "${CROSSPOSTING_GRANARY_VENV_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/origin/granary-venv}"
+}
+
+crossposting_granary_runtime_python() {
+  if [ -n "${ORIGIN_GRANARY_PYTHON-}" ]; then
+    printf '%s\n' "$ORIGIN_GRANARY_PYTHON"
+    return 0
+  fi
+  venv_dir=$(crossposting_granary_venv_dir)
+  if [ -x "$venv_dir/bin/python3" ]; then
+    printf '%s\n' "$venv_dir/bin/python3"
+    return 0
+  fi
+  printf '%s\n' python3
+}
+
+crossposting_granary_bootstrap_python() {
+  if [ -n "${CROSSPOSTING_GRANARY_BOOTSTRAP_PYTHON-}" ]; then
+    printf '%s\n' "$CROSSPOSTING_GRANARY_BOOTSTRAP_PYTHON"
+    return 0
+  fi
+  printf '%s\n' python3
+}
+
+crossposting_granary_available() {
+  python_cmd=$(crossposting_granary_runtime_python)
+  resolved=$(crossposting_resolve_cmd "$python_cmd") || return 1
+  "$resolved" -c 'import granary' >/dev/null 2>&1
+}
+
+crossposting_bridge_runtime_available() {
+  for platform in $(crossposting_bridge_platforms); do
+    if ! crossposting_has_cmd "origin-bridge-$platform"; then
+      return 1
+    fi
+  done
+  return 0
+}
+
+crossposting_install_binary() {
+  source_path=$1
+  target_name=$2
+  target_bin_dir=$(crossposting_install_bin_dir)
+  crossposting_run_privileged install -d -m 755 "$target_bin_dir"
+  crossposting_run_privileged install -m 755 "$source_path" "$target_bin_dir/$target_name"
+  printf '%s\n' "$target_bin_dir/$target_name"
+}

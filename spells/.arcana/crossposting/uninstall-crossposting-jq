@@ -1,0 +1,22 @@
+#!/bin/sh
+
+# Uninstall jq for crossposting flows.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uninstall-crossposting-jq
+
+Removes jq when you no longer need Origin's JSON processing runtime.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+"$script_dir/../../web/uninstall-jq"

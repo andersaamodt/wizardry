@@ -1,0 +1,65 @@
+#!/bin/sh
+
+# Install Origin bridge runtime shims for bridge-backed targets.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-origin-bridge-runtime
+
+Installs origin-bridge-<platform> shims and the shared origin-bridge-dispatch executable expected by Origin's bridge-backed targets.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+. colors
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+. "$script_dir/crossposting-common"
+
+tmp_root=$(mktemp -d "${TMPDIR:-/tmp}/origin-bridge-runtime.XXXXXX")
+trap 'rm -rf "$tmp_root"' EXIT HUP INT TERM
+
+dispatch_source="$script_dir/origin-bridge-dispatch-template"
+manifest_dir="${XDG_STATE_HOME:-$HOME/.local/state}/wizardry/crossposting"
+manifest_path="$manifest_dir/origin-bridge-runtime.manifest"
+
+mkdir -p "$manifest_dir"
+: >"$manifest_path"
+
+install_one() {
+  source_path=$1
+  target_name=$2
+  target_bin_dir=$(crossposting_install_bin_dir)
+  target_path="$target_bin_dir/$target_name"
+
+  existing=$(command -v "$target_name" 2>/dev/null || true)
+  if [ -n "$existing" ] && [ "$existing" != "$target_path" ]; then
+    printf '%s\n' "Keeping existing $target_name at $existing"
+    return 0
+  fi
+
+  installed_path=$(crossposting_install_binary "$source_path" "$target_name")
+  printf '%s\n' "$installed_path" >>"$manifest_path"
+}
+
+install_one "$dispatch_source" origin-bridge-dispatch
+
+for platform in $(crossposting_bridge_platforms); do
+  wrapper_path="$tmp_root/origin-bridge-$platform"
+  cat >"$wrapper_path" <<'EOF'
+#!/bin/sh
+set -eu
+exec origin-bridge-dispatch "$@"
+EOF
+  chmod 755 "$wrapper_path"
+  install_one "$wrapper_path" "origin-bridge-$platform"
+done
+
+success "Installed Origin bridge runtime shims"
+printf '%s\n' "Configure handlers with ORIGIN_BRIDGE_<PLATFORM>_HANDLER or ORIGIN_BRIDGE_<PLATFORM>_<ACTION>_HANDLER"

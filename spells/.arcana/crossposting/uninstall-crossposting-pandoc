@@ -1,0 +1,22 @@
+#!/bin/sh
+
+# Uninstall pandoc for crossposting flows.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uninstall-crossposting-pandoc
+
+Removes pandoc when you no longer need Origin's markdown rendering runtime.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+"$script_dir/../../web/uninstall-pandoc"

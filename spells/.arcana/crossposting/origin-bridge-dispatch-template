@@ -1,0 +1,59 @@
+#!/bin/sh
+
+set -eu
+
+die() {
+  printf '%s\n' "$*" >&2
+  exit 1
+}
+
+script_name=$(basename "$0")
+platform=
+
+case "$script_name" in
+  origin-bridge-dispatch)
+    platform=${ORIGIN_PLATFORM-}
+    ;;
+  origin-bridge-*)
+    platform=${script_name#origin-bridge-}
+    ;;
+esac
+
+[ -n "$platform" ] || die "origin-bridge-dispatch: could not determine platform. Set ORIGIN_PLATFORM or invoke through origin-bridge-<platform>."
+
+action=${1-}
+[ -n "$action" ] || die "origin-bridge-dispatch: missing action (emit, edit, or fetch)"
+shift
+
+case "$action" in
+  emit|edit|fetch)
+    ;;
+  *)
+    die "origin-bridge-dispatch: unsupported action: $action"
+    ;;
+esac
+
+platform_upper=$(printf '%s' "$platform" | tr '[:lower:]-' '[:upper:]_')
+action_upper=$(printf '%s' "$action" | tr '[:lower:]' '[:upper:]')
+
+eval "handler=\${ORIGIN_BRIDGE_${platform_upper}_${action_upper}_HANDLER-}"
+if [ -z "$handler" ]; then
+  eval "handler=\${ORIGIN_BRIDGE_${platform_upper}_HANDLER-}"
+fi
+if [ -z "$handler" ]; then
+  handler=${ORIGIN_BRIDGE_DEFAULT_HANDLER-}
+fi
+
+[ -n "$handler" ] || die "origin-bridge-dispatch: no handler configured for $platform. Set ORIGIN_BRIDGE_${platform_upper}_HANDLER or ORIGIN_BRIDGE_${platform_upper}_${action_upper}_HANDLER."
+
+case "$handler" in
+  */*)
+    [ -x "$handler" ] || die "origin-bridge-dispatch: handler not executable: $handler"
+    exec "$handler" "$action" "$@"
+    ;;
+  *)
+    command -v "$handler" >/dev/null 2>&1 || die "origin-bridge-dispatch: handler not found on PATH: $handler"
+    resolved=$(command -v "$handler")
+    exec "$resolved" "$action" "$@"
+    ;;
+esac

@@ -1,0 +1,62 @@
+#!/bin/sh
+
+# Install a managed Granary runtime for Origin.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-crossposting-granary
+
+Creates a dedicated Granary runtime for Origin under the standard operator-local state directory.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+. colors
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+. "$script_dir/crossposting-common"
+
+bootstrap_python=$(crossposting_granary_bootstrap_python)
+bootstrap_python=$(crossposting_resolve_cmd "$bootstrap_python") || die "install-crossposting-granary: python3 not found"
+venv_dir=$(crossposting_granary_venv_dir)
+venv_python="$venv_dir/bin/python3"
+wrapper_path=
+
+if ! "$bootstrap_python" -m venv --help >/dev/null 2>&1; then
+  die "install-crossposting-granary: $bootstrap_python does not support python -m venv"
+fi
+
+mkdir -p "$(dirname "$venv_dir")"
+
+if [ ! -x "$venv_python" ]; then
+  "$bootstrap_python" -m venv "$venv_dir"
+fi
+
+"$venv_python" -m pip install --upgrade pip setuptools wheel >/dev/null
+"$venv_python" -m pip install --upgrade granary >/dev/null
+"$venv_python" -c 'import granary' >/dev/null 2>&1 || die "install-crossposting-granary: granary import failed after install"
+
+target_bin_dir=$(crossposting_install_bin_dir)
+tmp_wrapper=$(mktemp "${TMPDIR:-/tmp}/origin-granary-python.XXXXXX")
+trap 'rm -f "$tmp_wrapper"' EXIT HUP INT TERM
+cat >"$tmp_wrapper" <<'EOF'
+#!/bin/sh
+set -eu
+venv_dir=${CROSSPOSTING_GRANARY_VENV_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/origin/granary-venv}
+venv_python=$venv_dir/bin/python3
+[ -x "$venv_python" ] || {
+  printf '%s\n' "origin-granary-python: missing runtime at $venv_python" >&2
+  exit 1
+}
+exec "$venv_python" "$@"
+EOF
+wrapper_path=$(crossposting_install_binary "$tmp_wrapper" origin-granary-python)
+
+success "Installed Granary runtime at $venv_python"
+printf '%s\n' "Origin can use $wrapper_path or $venv_python as ORIGIN_GRANARY_PYTHON"

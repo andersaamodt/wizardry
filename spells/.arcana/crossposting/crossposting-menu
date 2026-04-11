@@ -1,0 +1,87 @@
+#!/bin/sh
+
+# Present the crossposting runtime management menu.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: crossposting-menu
+
+Displays the crossposting management menu with install and uninstall toggles for jq, pandoc, the Granary runtime, and Origin bridge runtime shims.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+if ! require menu "The crossposting-menu needs the 'menu' command to present options."; then
+  exit 1
+fi
+
+trap 'exit 130' INT
+trap 'exit 0' TERM
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+
+while :; do
+  unset menu_status
+
+  if "$script_dir/is-crossposting-component-installed" jq 2>/dev/null; then
+    jq_toggle="[X] jq%$script_dir/uninstall-crossposting-jq"
+  else
+    jq_toggle="[ ] jq%$script_dir/install-crossposting-jq"
+  fi
+
+  if "$script_dir/is-crossposting-component-installed" pandoc 2>/dev/null; then
+    pandoc_toggle="[X] pandoc%$script_dir/uninstall-crossposting-pandoc"
+  else
+    pandoc_toggle="[ ] pandoc%$script_dir/install-crossposting-pandoc"
+  fi
+
+  if "$script_dir/is-crossposting-component-installed" granary-runtime 2>/dev/null; then
+    granary_toggle="[X] Granary runtime%$script_dir/uninstall-crossposting-granary"
+  else
+    granary_toggle="[ ] Granary runtime%$script_dir/install-crossposting-granary"
+  fi
+
+  if "$script_dir/is-crossposting-component-installed" bridge-runtime 2>/dev/null; then
+    bridge_toggle="[X] Origin bridge runtime%$script_dir/uninstall-origin-bridge-runtime"
+  else
+    bridge_toggle="[ ] Origin bridge runtime%$script_dir/install-origin-bridge-runtime"
+  fi
+
+  all_installed=1
+  for component in jq pandoc granary-runtime bridge-runtime; do
+    if ! "$script_dir/is-crossposting-component-installed" "$component" 2>/dev/null; then
+      all_installed=0
+      break
+    fi
+  done
+
+  if [ "$all_installed" -eq 1 ]; then
+    toggle_all="Disable all%$script_dir/toggle-all-crossposting --disable"
+  else
+    toggle_all="Enable all%$script_dir/toggle-all-crossposting --enable"
+  fi
+
+  exit_label=$(exit-label)
+  exit_item="${exit_label}%kill -TERM \$PPID"
+
+  menu "Crossposting:" \
+    "$jq_toggle" \
+    "$pandoc_toggle" \
+    "$granary_toggle" \
+    "$bridge_toggle" \
+    "$toggle_all" \
+    "$exit_item" || menu_status=$?
+  menu_status=${menu_status:-0}
+
+  if [ "$menu_status" -eq 130 ]; then
+    printf 'ESC\n' >&2
+    exit 0
+  fi
+done
