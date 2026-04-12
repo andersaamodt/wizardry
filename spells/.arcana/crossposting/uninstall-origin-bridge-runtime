@@ -1,13 +1,13 @@
 #!/bin/sh
 
-# Remove Origin bridge runtime shims for bridge-backed targets.
+# Remove Origin bridge clients installed from the Origin source tree.
 
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
 Usage: uninstall-origin-bridge-runtime
 
-Removes the managed origin-bridge-<platform> shims and shared origin-bridge-dispatch executable installed by Wizardry.
+Removes the origin-bridge-<platform> executables and shared library installed by Wizardry.
 USAGE
   exit 0
   ;;
@@ -37,8 +37,8 @@ if [ -f "$manifest_path" ]; then
 fi
 
 if [ "$removed" -eq 0 ]; then
-  printf '%s\n' "Origin bridge runtime shims are not installed."
+  printf '%s\n' "Origin bridge clients are not installed."
   exit 0
 fi
 
-success "Removed Origin bridge runtime shims"
+success "Removed Origin bridge clients"

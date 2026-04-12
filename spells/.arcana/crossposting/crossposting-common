@@ -41,6 +41,22 @@ crossposting_install_bin_dir() {
   printf '%s\n' "${XDG_BIN_HOME:-$HOME/.local/bin}"
 }
 
+crossposting_install_lib_dir() {
+  if [ -n "${CROSSPOSTING_INSTALL_LIB_DIR-}" ]; then
+    printf '%s\n' "$CROSSPOSTING_INSTALL_LIB_DIR"
+    return 0
+  fi
+  if [ "$(id -u)" -eq 0 ]; then
+    printf '%s\n' /usr/local/lib
+    return 0
+  fi
+  if crossposting_has_cmd sudo || command -v run_sudo_cmd >/dev/null 2>&1; then
+    printf '%s\n' /usr/local/lib
+    return 0
+  fi
+  printf '%s\n' "${XDG_LIB_HOME:-$HOME/.local/lib}"
+}
+
 crossposting_resolve_cmd() {
   cmd=$1
   case "$cmd" in
@@ -96,6 +112,33 @@ crossposting_bridge_runtime_available() {
     fi
   done
   return 0
+}
+
+crossposting_origin_source_dir() {
+  if [ -n "${ORIGIN_SOURCE_DIR-}" ] && [ -d "$ORIGIN_SOURCE_DIR" ]; then
+    printf '%s\n' "$ORIGIN_SOURCE_DIR"
+    return 0
+  fi
+
+  if crossposting_has_cmd origin; then
+    origin_cmd=$(command -v origin)
+    case "$origin_cmd" in
+      */bin/origin)
+        candidate=$(CDPATH= cd -- "$(dirname "$origin_cmd")/.." && pwd -P)
+        if [ -d "$candidate/bin" ] && [ -f "$candidate/lib/origin-bridge.sh" ]; then
+          printf '%s\n' "$candidate"
+          return 0
+        fi
+        ;;
+    esac
+  fi
+
+  if [ -d "$HOME/git/origin" ] && [ -f "$HOME/git/origin/lib/origin-bridge.sh" ]; then
+    printf '%s\n' "$HOME/git/origin"
+    return 0
+  fi
+
+  return 1
 }
 
 crossposting_install_binary() {

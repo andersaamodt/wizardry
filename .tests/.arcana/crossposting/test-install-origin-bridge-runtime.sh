@@ -15,85 +15,87 @@ test_install_origin_bridge_runtime_help() {
 test_install_origin_bridge_runtime_writes_wrappers() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
+  origin_source="$tmp/origin-source"
+  mkdir -p "$origin_source/bin" "$origin_source/lib"
+  cat >"$origin_source/lib/origin-bridge.sh" <<'EOF'
+#!/bin/sh
+printf '%s\n' "lib"
+EOF
+  chmod +x "$origin_source/lib/origin-bridge.sh"
+  for platform in misskey lemmy kbin reddit x tumblr facebook minds mirror; do
+    cat >"$origin_source/bin/origin-bridge-$platform" <<'EOF'
+#!/bin/sh
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+ROOT_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd -P)
+. "$ROOT_DIR/lib/origin-bridge.sh"
+EOF
+    chmod +x "$origin_source/bin/origin-bridge-$platform"
+  done
   run_cmd env \
+    ORIGIN_SOURCE_DIR="$origin_source" \
     CROSSPOSTING_INSTALL_BIN_DIR="$tmp/bin" \
+    CROSSPOSTING_INSTALL_LIB_DIR="$tmp/lib" \
     XDG_STATE_HOME="$tmp/state" \
     "$ROOT_DIR/$target"
   assert_success || return 1
-  assert_file_contains "$tmp/state/wizardry/crossposting/origin-bridge-runtime.manifest" "origin-bridge-dispatch" || return 1
-  [ -x "$tmp/bin/origin-bridge-dispatch" ] || {
-    TEST_FAILURE_REASON="missing dispatch executable"
+  assert_file_contains "$tmp/state/wizardry/crossposting/origin-bridge-runtime.manifest" "$tmp/lib/origin-bridge.sh" || return 1
+  [ -x "$tmp/lib/origin-bridge.sh" ] || {
+    TEST_FAILURE_REASON="missing shared bridge library"
     return 1
   }
   [ -x "$tmp/bin/origin-bridge-misskey" ] || {
-    TEST_FAILURE_REASON="missing misskey wrapper"
+    TEST_FAILURE_REASON="missing misskey bridge client"
     return 1
   }
 }
 
-test_install_origin_bridge_runtime_installs_real_http_client() {
+test_install_origin_bridge_runtime_installs_origin_sourced_client() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
+  origin_source="$tmp/origin-source"
+  mkdir -p "$origin_source/bin" "$origin_source/lib"
+  cat >"$origin_source/lib/origin-bridge.sh" <<'EOF'
+#!/bin/sh
+set -eu
+printf '%s\n' "${ORIGIN_BRIDGE_TEST_SENTINEL-}" >"${ORIGIN_BRIDGE_TEST_OUTPUT-}"
+printf '{"remote_id":"bridge-id"}'
+EOF
+  chmod +x "$origin_source/lib/origin-bridge.sh"
+  cat >"$origin_source/bin/origin-bridge-reddit" <<'EOF'
+#!/bin/sh
+set -eu
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+ROOT_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd -P)
+. "$ROOT_DIR/lib/origin-bridge.sh"
+EOF
+  chmod +x "$origin_source/bin/origin-bridge-reddit"
+  for platform in misskey lemmy kbin x tumblr facebook minds mirror; do
+    cp "$origin_source/bin/origin-bridge-reddit" "$origin_source/bin/origin-bridge-$platform"
+  done
 
   run_cmd env \
+    ORIGIN_SOURCE_DIR="$origin_source" \
     CROSSPOSTING_INSTALL_BIN_DIR="$tmp/bin" \
+    CROSSPOSTING_INSTALL_LIB_DIR="$tmp/lib" \
     XDG_STATE_HOME="$tmp/state" \
     "$ROOT_DIR/$target"
   assert_success || return 1
 
-  mkdir -p "$tmp/mock-bin"
-  cat >"$tmp/mock-bin/curl" <<'EOF'
-#!/bin/sh
-set -eu
-url=
-while [ $# -gt 0 ]; do
-  case "$1" in
-    -H)
-      printf '%s\n' "$2" >>"$MOCK_HEADERS"
-      shift 2
-      ;;
-    --data-binary)
-      cat "${2#@}" >"$MOCK_BODY"
-      shift 2
-      ;;
-    -X)
-      shift 2
-      ;;
-    -fsS)
-      shift
-      ;;
-    *)
-      url=$1
-      shift
-      ;;
-  esac
-done
-    printf '%s\n' "$url" >"$MOCK_URL"
-    printf '{"remote_id":"bridge-id","remote_url":"https://bridge.example/reddit/bridge-id"}'
-EOF
-  chmod +x "$tmp/mock-bin/curl"
-  : >"$tmp/url"
-  : >"$tmp/body"
-  : >"$tmp/headers"
+  : >"$tmp/output"
 
   run_cmd env \
-    PATH="$tmp/mock-bin:$tmp/bin:/usr/bin:/bin" \
-    ORIGIN_BRIDGE_REDDIT_BASE_URL="https://bridge.example/reddit" \
-    ORIGIN_BRIDGE_REDDIT_TOKEN="wizard-token" \
-    MOCK_URL="$tmp/url" \
-    MOCK_BODY="$tmp/body" \
-    MOCK_HEADERS="$tmp/headers" \
+    PATH="$tmp/bin:/usr/bin:/bin" \
+    ORIGIN_BRIDGE_TEST_SENTINEL="origin-source-client" \
+    ORIGIN_BRIDGE_TEST_OUTPUT="$tmp/output" \
     "$tmp/bin/origin-bridge-reddit" emit <<'EOF'
 {"title":"Test bridge payload"}
 EOF
   assert_success || return 1
   assert_output_contains '"remote_id":"bridge-id"' || return 1
-  assert_file_contains "$tmp/url" 'https://bridge.example/reddit/emit' || return 1
-  assert_file_contains "$tmp/body" '{"title":"Test bridge payload"}' || return 1
-  assert_file_contains "$tmp/headers" 'Authorization: Bearer wizard-token' || return 1
+  assert_file_contains "$tmp/output" 'origin-source-client' || return 1
 }
 
 run_test_case "install-origin-bridge-runtime shows help" test_install_origin_bridge_runtime_help
 run_test_case "install-origin-bridge-runtime writes wrappers" test_install_origin_bridge_runtime_writes_wrappers
-run_test_case "install-origin-bridge-runtime installs real HTTP bridge clients" test_install_origin_bridge_runtime_installs_real_http_client
+run_test_case "install-origin-bridge-runtime installs origin sourced clients" test_install_origin_bridge_runtime_installs_origin_sourced_client
 finish_tests
