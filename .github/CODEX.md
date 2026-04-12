@@ -50,6 +50,10 @@ spells/.imps/     # Micro-helper scripts (imps)
 .tests/           # Test files mirroring spells/ structure
 ```
 
+- Separate POSIX shell CLI projects in the Wizardry ecosystem should use this same layout.
+- Do not introduce ad hoc `bin/` + `lib/` layouts for Wizardry-style shell repos.
+- Keep user-facing commands in `spells/`, internal/non-user-facing helpers in `spells/.imps/`, and behavioral tests in mirrored `.tests/` paths.
+
 ## Spell Template
 
 ```sh

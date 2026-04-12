@@ -4,6 +4,12 @@ applyTo: "spells/**"
 
 ## Creating New Spells
 
+**Ecosystem rule**: Standalone Wizardry-ecosystem shell projects should organize themselves like Wizardry itself.
+- Use `spells/` for user-facing entrypoints.
+- Use `spells/.imps/` for internal helpers and non-user-facing scripts.
+- Use mirrored `.tests/` paths for behavioral coverage.
+- Do not substitute `bin/` + `lib/` when the project is fundamentally a Wizardry-style shell tool.
+
 **CRITICAL**: When creating a new spell, you MUST also create a corresponding test file:
 - Spell location: `spells/category/spell-name`
 - Test location: `.tests/category/test-spell-name.sh`
