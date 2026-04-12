@@ -1,13 +1,13 @@
 #!/bin/sh
 
-# Install Origin bridge runtime shims for bridge-backed targets.
+# Install Origin bridge HTTP clients for bridge-backed targets.
 
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
 Usage: install-origin-bridge-runtime
 
-Installs origin-bridge-<platform> shims and the shared origin-bridge-dispatch executable expected by Origin's bridge-backed targets.
+Installs working origin-bridge-<platform> executables and the shared origin-bridge-dispatch HTTP client used by Origin's bridge-backed targets.
 USAGE
   exit 0
   ;;
@@ -55,11 +55,13 @@ for platform in $(crossposting_bridge_platforms); do
   cat >"$wrapper_path" <<'EOF'
 #!/bin/sh
 set -eu
+ORIGIN_PLATFORM=$(basename "$0" | sed 's/^origin-bridge-//')
+export ORIGIN_PLATFORM
 exec origin-bridge-dispatch "$@"
 EOF
   chmod 755 "$wrapper_path"
   install_one "$wrapper_path" "origin-bridge-$platform"
 done
 
-success "Installed Origin bridge runtime shims"
-printf '%s\n' "Configure handlers with ORIGIN_BRIDGE_<PLATFORM>_HANDLER or ORIGIN_BRIDGE_<PLATFORM>_<ACTION>_HANDLER"
+success "Installed Origin bridge HTTP clients"
+printf '%s\n' "Configure bridge endpoints with ORIGIN_BRIDGE_BASE_URL or ORIGIN_BRIDGE_<PLATFORM>_BASE_URL"

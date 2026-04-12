@@ -33,27 +33,61 @@ case "$action" in
     ;;
 esac
 
+command -v curl >/dev/null 2>&1 || die "origin-bridge-dispatch: curl is required"
+
+env_value() {
+  name=$1
+  eval "printf '%s' \"\${$name-}\""
+}
+
 platform_upper=$(printf '%s' "$platform" | tr '[:lower:]-' '[:upper:]_')
 action_upper=$(printf '%s' "$action" | tr '[:lower:]' '[:upper:]')
-
-eval "handler=\${ORIGIN_BRIDGE_${platform_upper}_${action_upper}_HANDLER-}"
-if [ -z "$handler" ]; then
-  eval "handler=\${ORIGIN_BRIDGE_${platform_upper}_HANDLER-}"
+action_url=$(env_value "ORIGIN_BRIDGE_${platform_upper}_${action_upper}_URL")
+if [ -z "$action_url" ]; then
+  base_url=$(env_value "ORIGIN_BRIDGE_${platform_upper}_BASE_URL")
+  if [ -n "$base_url" ]; then
+    action_url=${base_url%/}/$action
+  fi
 fi
-if [ -z "$handler" ]; then
-  handler=${ORIGIN_BRIDGE_DEFAULT_HANDLER-}
+if [ -z "$action_url" ]; then
+  base_url=${ORIGIN_BRIDGE_BASE_URL-}
+  if [ -n "$base_url" ]; then
+    action_url=${base_url%/}/$platform/$action
+  fi
 fi
 
-[ -n "$handler" ] || die "origin-bridge-dispatch: no handler configured for $platform. Set ORIGIN_BRIDGE_${platform_upper}_HANDLER or ORIGIN_BRIDGE_${platform_upper}_${action_upper}_HANDLER."
+[ -n "$action_url" ] || die "origin-bridge-dispatch: missing bridge URL for $platform. Set ORIGIN_BRIDGE_${platform_upper}_BASE_URL, ORIGIN_BRIDGE_${platform_upper}_${action_upper}_URL, or ORIGIN_BRIDGE_BASE_URL."
 
-case "$handler" in
-  */*)
-    [ -x "$handler" ] || die "origin-bridge-dispatch: handler not executable: $handler"
-    exec "$handler" "$action" "$@"
-    ;;
-  *)
-    command -v "$handler" >/dev/null 2>&1 || die "origin-bridge-dispatch: handler not found on PATH: $handler"
-    resolved=$(command -v "$handler")
-    exec "$resolved" "$action" "$@"
-    ;;
-esac
+auth_header=$(env_value "ORIGIN_BRIDGE_${platform_upper}_AUTH_HEADER")
+if [ -z "$auth_header" ]; then
+  auth_header=${ORIGIN_BRIDGE_AUTH_HEADER-}
+fi
+if [ -z "$auth_header" ]; then
+  token=$(env_value "ORIGIN_BRIDGE_${platform_upper}_TOKEN")
+  if [ -z "$token" ]; then
+    token=${ORIGIN_BRIDGE_TOKEN-}
+  fi
+  if [ -n "$token" ]; then
+    auth_header="Authorization: Bearer $token"
+  fi
+fi
+
+payload_file=$(mktemp "${TMPDIR:-/tmp}/origin-bridge-runtime.XXXXXX")
+trap 'rm -f "$payload_file"' EXIT HUP INT TERM
+cat >"$payload_file"
+
+set -- curl -fsS -X POST \
+  -H 'Accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -H "X-Origin-Platform: $platform" \
+  -H "X-Origin-Action: $action" \
+  -H "X-Origin-Edit: ${ORIGIN_EDIT-0}" \
+  -H "X-Origin-Remote-Id: ${ORIGIN_REMOTE_ID-}" \
+  -H "X-Origin-Remote-Url: ${ORIGIN_REMOTE_URL-}" \
+  --data-binary "@$payload_file"
+
+if [ -n "$auth_header" ]; then
+  set -- "$@" -H "$auth_header"
+fi
+
+"$@" "$action_url"
