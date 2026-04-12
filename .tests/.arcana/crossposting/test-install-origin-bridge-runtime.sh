@@ -16,20 +16,24 @@ test_install_origin_bridge_runtime_writes_wrappers() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   origin_source="$tmp/origin-source"
-  mkdir -p "$origin_source/bin" "$origin_source/lib"
-  cat >"$origin_source/lib/origin-bridge.sh" <<'EOF'
+  mkdir -p "$origin_source/spells/.imps/origin"
+  cat >"$origin_source/spells/.imps/origin/origin-bridge-common" <<'EOF'
 #!/bin/sh
 printf '%s\n' "lib"
 EOF
-  chmod +x "$origin_source/lib/origin-bridge.sh"
+  chmod +x "$origin_source/spells/.imps/origin/origin-bridge-common"
   for platform in misskey lemmy kbin reddit x tumblr facebook minds mirror; do
-    cat >"$origin_source/bin/origin-bridge-$platform" <<'EOF'
+    cat >"$origin_source/spells/.imps/origin/origin-bridge-$platform" <<'EOF'
 #!/bin/sh
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-ROOT_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd -P)
-. "$ROOT_DIR/lib/origin-bridge.sh"
+bridge_common=$SCRIPT_DIR/origin-bridge-common
+if [ ! -f "$bridge_common" ]; then
+  ROOT_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd -P)
+  bridge_common=$ROOT_DIR/lib/origin-bridge-common
+fi
+. "$bridge_common"
 EOF
-    chmod +x "$origin_source/bin/origin-bridge-$platform"
+    chmod +x "$origin_source/spells/.imps/origin/origin-bridge-$platform"
   done
   run_cmd env \
     ORIGIN_SOURCE_DIR="$origin_source" \
@@ -38,8 +42,8 @@ EOF
     XDG_STATE_HOME="$tmp/state" \
     "$ROOT_DIR/$target"
   assert_success || return 1
-  assert_file_contains "$tmp/state/wizardry/crossposting/origin-bridge-runtime.manifest" "$tmp/lib/origin-bridge.sh" || return 1
-  [ -x "$tmp/lib/origin-bridge.sh" ] || {
+  assert_file_contains "$tmp/state/wizardry/crossposting/origin-bridge-runtime.manifest" "$tmp/lib/origin-bridge-common" || return 1
+  [ -x "$tmp/lib/origin-bridge-common" ] || {
     TEST_FAILURE_REASON="missing shared bridge library"
     return 1
   }
@@ -53,24 +57,28 @@ test_install_origin_bridge_runtime_installs_origin_sourced_client() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   origin_source="$tmp/origin-source"
-  mkdir -p "$origin_source/bin" "$origin_source/lib"
-  cat >"$origin_source/lib/origin-bridge.sh" <<'EOF'
+  mkdir -p "$origin_source/spells/.imps/origin"
+  cat >"$origin_source/spells/.imps/origin/origin-bridge-common" <<'EOF'
 #!/bin/sh
 set -eu
 printf '%s\n' "${ORIGIN_BRIDGE_TEST_SENTINEL-}" >"${ORIGIN_BRIDGE_TEST_OUTPUT-}"
 printf '{"remote_id":"bridge-id"}'
 EOF
-  chmod +x "$origin_source/lib/origin-bridge.sh"
-  cat >"$origin_source/bin/origin-bridge-reddit" <<'EOF'
+  chmod +x "$origin_source/spells/.imps/origin/origin-bridge-common"
+  cat >"$origin_source/spells/.imps/origin/origin-bridge-reddit" <<'EOF'
 #!/bin/sh
 set -eu
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
-ROOT_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd -P)
-. "$ROOT_DIR/lib/origin-bridge.sh"
+bridge_common=$SCRIPT_DIR/origin-bridge-common
+if [ ! -f "$bridge_common" ]; then
+  ROOT_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd -P)
+  bridge_common=$ROOT_DIR/lib/origin-bridge-common
+fi
+. "$bridge_common"
 EOF
-  chmod +x "$origin_source/bin/origin-bridge-reddit"
+  chmod +x "$origin_source/spells/.imps/origin/origin-bridge-reddit"
   for platform in misskey lemmy kbin x tumblr facebook minds mirror; do
-    cp "$origin_source/bin/origin-bridge-reddit" "$origin_source/bin/origin-bridge-$platform"
+    cp "$origin_source/spells/.imps/origin/origin-bridge-reddit" "$origin_source/spells/.imps/origin/origin-bridge-$platform"
   done
 
   run_cmd env \

@@ -7,7 +7,7 @@ case "${1-}" in
   cat <<'USAGE'
 Usage: uninstall-origin-bridge-runtime
 
-Removes the origin-bridge-<platform> executables and shared library installed by Wizardry.
+Removes the origin-bridge-<platform> executables and shared helper installed by Wizardry.
 USAGE
   exit 0
   ;;

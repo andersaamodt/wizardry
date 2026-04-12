@@ -123,6 +123,13 @@ crossposting_origin_source_dir() {
   if crossposting_has_cmd origin; then
     origin_cmd=$(command -v origin)
     case "$origin_cmd" in
+      */spells/origin)
+        candidate=$(CDPATH= cd -- "$(dirname "$origin_cmd")/.." && pwd -P)
+        if [ -f "$candidate/spells/.imps/origin/origin-bridge-common" ]; then
+          printf '%s\n' "$candidate"
+          return 0
+        fi
+        ;;
       */bin/origin)
         candidate=$(CDPATH= cd -- "$(dirname "$origin_cmd")/.." && pwd -P)
         if [ -d "$candidate/bin" ] && [ -f "$candidate/lib/origin-bridge.sh" ]; then
@@ -133,7 +140,7 @@ crossposting_origin_source_dir() {
     esac
   fi
 
-  if [ -d "$HOME/git/origin" ] && [ -f "$HOME/git/origin/lib/origin-bridge.sh" ]; then
+  if [ -d "$HOME/git/origin" ] && [ -f "$HOME/git/origin/spells/.imps/origin/origin-bridge-common" ]; then
     printf '%s\n' "$HOME/git/origin"
     return 0
   fi

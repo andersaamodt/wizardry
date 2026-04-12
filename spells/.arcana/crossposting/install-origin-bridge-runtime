@@ -7,7 +7,7 @@ case "${1-}" in
   cat <<'USAGE'
 Usage: install-origin-bridge-runtime
 
-Installs the real origin-bridge-<platform> executables from the Origin project source tree instead of generating local replacements.
+Installs the real origin-bridge-<platform> executables and shared helper from the Origin project source tree instead of generating local replacements.
 USAGE
   exit 0
   ;;
@@ -46,12 +46,12 @@ install_one() {
 }
 
 lib_target_dir=$(crossposting_install_lib_dir)
-lib_target_path="$lib_target_dir/origin-bridge.sh"
-install_one "$origin_source/lib/origin-bridge.sh" "$lib_target_path"
+lib_target_path="$lib_target_dir/origin-bridge-common"
+install_one "$origin_source/spells/.imps/origin/origin-bridge-common" "$lib_target_path"
 
 bin_target_dir=$(crossposting_install_bin_dir)
 for platform in $(crossposting_bridge_platforms); do
-  source_path="$origin_source/bin/origin-bridge-$platform"
+  source_path="$origin_source/spells/.imps/origin/origin-bridge-$platform"
   [ -f "$source_path" ] || die "install-origin-bridge-runtime: missing $source_path in origin source"
   install_one "$source_path" "$bin_target_dir/origin-bridge-$platform"
 done
