@@ -124,7 +124,7 @@ Wizardry includes a curated free software suite which can be easily and optional
 Criteria for inclusion:
 
 * Software that helps accomplish basic computer tasks (messaging, document editing, photos, sharing, etc.)
-* Free software is best; non-commercial open-source an acceptable alternative
+* Free software is best; non-commercial source-available an acceptable alternative
 * Inclusions are opinionated; the free software suite is our recommendations of the best free software
 * No redundant apps; we will choose the best one to include for each purpose, or offer a clear choice if necessary
 
