@@ -23,12 +23,136 @@ set -eu
 . env-clear
 
 BITCOIN_VERSION_DEFAULT="25.0"
+BITCOIN_BINARY_RAM_FLOOR_MB_DEFAULT="1536"
+
+detect_total_ram_mb() {
+  if command -v free >/dev/null 2>&1; then
+    mem=$(free -m 2>/dev/null | awk '/^Mem:/ {print $2; exit}')
+    case "$mem" in
+      ''|*[!0-9]*) ;;
+      *) printf '%s\n' "$mem"; return 0 ;;
+    esac
+  fi
+  if [ -r /proc/meminfo ]; then
+    mem_kb=$(awk '/^MemTotal:[[:space:]]+/ { print $2; exit }' /proc/meminfo 2>/dev/null || printf '')
+    case "$mem_kb" in
+      ''|*[!0-9]*) ;;
+      *) printf '%s\n' $((mem_kb / 1024)); return 0 ;;
+    esac
+  fi
+  printf '%s\n' 0
+}
+
+should_prefer_official_binaries() {
+  # Supported values:
+  # BITCOIN_INSTALL_MODE=official-binaries|package-manager|auto
+  # BITCOIN_INSTALL_PREFER_BINARIES=1|true|yes|on
+  mode=$(printf '%s' "${BITCOIN_INSTALL_MODE-auto}" | tr '[:upper:]' '[:lower:]')
+  prefer_flag=$(printf '%s' "${BITCOIN_INSTALL_PREFER_BINARIES-}" | tr '[:upper:]' '[:lower:]')
+  case "$mode" in
+    official-binaries|binaries)
+      return 0
+      ;;
+    package-manager|packages)
+      return 1
+      ;;
+  esac
+  case "$prefer_flag" in
+    1|true|yes|on)
+      return 0
+      ;;
+  esac
+  if [ ! -t 0 ]; then
+    # Non-interactive installs (such as web interface actions) are safer and
+    # more reproducible with upstream binaries.
+    return 0
+  fi
+  mem_floor=${BITCOIN_BINARY_RAM_FLOOR_MB:-$BITCOIN_BINARY_RAM_FLOOR_MB_DEFAULT}
+  total_mem=$(detect_total_ram_mb)
+  case "$mem_floor" in
+    ''|*[!0-9]*) mem_floor=$BITCOIN_BINARY_RAM_FLOOR_MB_DEFAULT ;;
+  esac
+  case "$total_mem" in
+    ''|*[!0-9]*) total_mem=0 ;;
+  esac
+  if [ "$total_mem" -gt 0 ] && [ "$total_mem" -lt "$mem_floor" ]; then
+    return 0
+  fi
+  return 1
+}
+
+install_official_binaries() {
+  version=$1
+  binary_name=""
+  arch=$(uname -m)
+  os_type=$(uname -s)
+
+  case "$os_type" in
+    Darwin)
+      case "$arch" in
+        x86_64) binary_name="bitcoin-$version-x86_64-apple-darwin.tar.gz" ;;
+        arm64) binary_name="bitcoin-$version-arm64-apple-darwin.tar.gz" ;;
+        *)
+          echo "Unsupported macOS architecture: $arch"
+          return 1
+          ;;
+      esac
+      ;;
+    Linux)
+      case "$arch" in
+        x86_64) binary_name="bitcoin-$version-x86_64-linux-gnu.tar.gz" ;;
+        aarch64) binary_name="bitcoin-$version-aarch64-linux-gnu.tar.gz" ;;
+        armv7l) binary_name="bitcoin-$version-arm-linux-gnueabihf.tar.gz" ;;
+        *)
+          echo "Unsupported Linux architecture: $arch"
+          return 1
+          ;;
+      esac
+      ;;
+    *)
+      echo "Unsupported operating system: $os_type"
+      return 1
+      ;;
+  esac
+
+  bitcoin_url="https://bitcoincore.org/bin/bitcoin-core-$version/$binary_name"
+  tmp_dir=$(temp-dir bitcoin-install) || return 1
+  trap 'cleanup-dir "$tmp_dir"' EXIT HUP INT TERM
+  cd "$tmp_dir" || return 1
+
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL -O "$bitcoin_url" || return 1
+  elif command -v wget >/dev/null 2>&1; then
+    wget "$bitcoin_url" || return 1
+  else
+    echo "Error: curl or wget required to download Bitcoin"
+    return 1
+  fi
+
+  tar -xzf "$binary_name"
+
+  if [ "$os_type" = "Darwin" ]; then
+    sudo install -m 0755 -o root -t /usr/local/bin "bitcoin-$version"/bin/*
+  else
+    sudo install -m 0755 -o root -g root -t /usr/local/bin "bitcoin-$version"/bin/*
+  fi
+
+  cd - >/dev/null || true
+  trap - EXIT HUP INT TERM
+  rm -rf "$tmp_dir"
+  printf "Bitcoin Core version %s installed from official upstream binaries.
+" "$version"
+}
 
 # Prompt for version
 prompt="Which Bitcoin Core version should be installed?"
 printf "%s [%s]: " "$prompt" "$BITCOIN_VERSION_DEFAULT"
 IFS= read -r version
 [ -z "$version" ] && version=$BITCOIN_VERSION_DEFAULT
+prefer_official_binaries=0
+if should_prefer_official_binaries; then
+  prefer_official_binaries=1
+fi
 
 # Detect distribution
 if command -v detect-distro >/dev/null 2>&1; then
@@ -40,83 +164,21 @@ fi
 # NixOS installation path
 if [ "$distro" = "nixos" ]; then
   echo "Detected NixOS. Installing via nix profile for user environment."
-  
-  # Try nix installation
-  nix_success=0
-  if command -v nix-env >/dev/null 2>&1; then
-    nix-env -iA nixpkgs.bitcoind && nix_success=1
-  elif command -v nix >/dev/null 2>&1; then
-    nix profile install nixpkgs#bitcoind && nix_success=1
-  fi
-  
-  # Fallback to binary if nix failed
-  if [ "$nix_success" -eq 0 ]; then
-    echo "Nix tools were not available; falling back to upstream binaries."
-    
-    # Binary installation inline
-    binary_name=""
-    arch=$(uname -m)
-    os_type=$(uname -s)
-    
-    case "$os_type" in
-      Darwin)
-        # macOS binaries
-        case "$arch" in
-          x86_64) binary_name="bitcoin-$version-x86_64-apple-darwin.tar.gz" ;;
-          arm64) binary_name="bitcoin-$version-arm64-apple-darwin.tar.gz" ;;
-          *)
-            echo "Unsupported macOS architecture: $arch"
-            return 1
-            ;;
-        esac
-        ;;
-      Linux)
-        # Linux binaries (NixOS is Linux)
-        case "$arch" in
-          x86_64) binary_name="bitcoin-$version-x86_64-linux-gnu.tar.gz" ;;
-          aarch64) binary_name="bitcoin-$version-aarch64-linux-gnu.tar.gz" ;;
-          armv7l) binary_name="bitcoin-$version-arm-linux-gnueabihf.tar.gz" ;;
-          *)
-            echo "Unsupported Linux architecture: $arch"
-            return 1
-            ;;
-        esac
-        ;;
-      *)
-        echo "Unsupported operating system: $os_type"
-        return 1
-        ;;
-    esac
-    
-    bitcoin_url="https://bitcoincore.org/bin/bitcoin-core-$version/$binary_name"
-    tmp_dir=$(temp-dir bitcoin-install) || return 1
-    trap 'cleanup-dir "$tmp_dir"' EXIT HUP INT TERM
-    cd "$tmp_dir" || return 1
-    
-    # Download with curl or wget
-    if command -v curl >/dev/null 2>&1; then
-      curl -L -O "$bitcoin_url" || return 1
-    elif command -v wget >/dev/null 2>&1; then
-      wget "$bitcoin_url" || return 1
-    else
-      echo "Error: curl or wget required to download Bitcoin"
-      return 1
+  if [ "$prefer_official_binaries" -eq 1 ]; then
+    echo "Using official Bitcoin Core binaries (requested by install mode / environment)."
+    install_official_binaries "$version"
+  else
+    nix_success=0
+    if command -v nix-env >/dev/null 2>&1; then
+      nix-env -iA nixpkgs.bitcoind && nix_success=1
+    elif command -v nix >/dev/null 2>&1; then
+      nix profile install nixpkgs#bitcoind && nix_success=1
     fi
-    
-    tar -xzf "$binary_name"
-    
-    # Install binaries (macOS install command doesn't support -g flag)
-    if [ "$os_type" = "Darwin" ]; then
-      sudo install -m 0755 -o root -t /usr/local/bin "bitcoin-$version"/bin/*
-    else
-      sudo install -m 0755 -o root -g root -t /usr/local/bin "bitcoin-$version"/bin/*
+
+    if [ "$nix_success" -eq 0 ]; then
+      echo "Nix tools were not available; falling back to upstream binaries."
+      install_official_binaries "$version"
     fi
-    
-    cd - >/dev/null || true
-    trap - EXIT HUP INT TERM
-    rm -rf "$tmp_dir"
-    printf "Bitcoin Core version %s installed from upstream binaries.
-" "$version"
   fi
   
   # Configure bitcoin.conf
@@ -181,7 +243,9 @@ command -v apt >/dev/null 2>&1 && pkg_mgr_available=1
 command -v pacman >/dev/null 2>&1 && pkg_mgr_available=1
 
 use_pkg_mgr=0
-if [ "$pkg_mgr_available" -eq 1 ]; then
+if [ "$prefer_official_binaries" -eq 1 ]; then
+  echo "Using official Bitcoin Core binaries (requested by install mode / environment)."
+elif [ "$pkg_mgr_available" -eq 1 ]; then
   if command -v ask-yn >/dev/null 2>&1; then
     ask-yn "Use your package manager to install Bitcoin Core?" "y" && use_pkg_mgr=1
   else
@@ -203,69 +267,7 @@ fi
 
 # Fallback to binary if package install failed
 if [ "$pkg_install_success" -eq 0 ]; then
-  binary_name=""
-  arch=$(uname -m)
-  os_type=$(uname -s)
-  
-  case "$os_type" in
-    Darwin)
-      # macOS binaries
-      case "$arch" in
-        x86_64) binary_name="bitcoin-$version-x86_64-apple-darwin.tar.gz" ;;
-        arm64) binary_name="bitcoin-$version-arm64-apple-darwin.tar.gz" ;;
-        *)
-          echo "Unsupported macOS architecture: $arch"
-          return 1
-          ;;
-      esac
-      ;;
-    Linux)
-      # Linux binaries
-      case "$arch" in
-        x86_64) binary_name="bitcoin-$version-x86_64-linux-gnu.tar.gz" ;;
-        aarch64) binary_name="bitcoin-$version-aarch64-linux-gnu.tar.gz" ;;
-        armv7l) binary_name="bitcoin-$version-arm-linux-gnueabihf.tar.gz" ;;
-        *)
-          echo "Unsupported Linux architecture: $arch"
-          return 1
-          ;;
-      esac
-      ;;
-    *)
-      echo "Unsupported operating system: $os_type"
-      return 1
-      ;;
-  esac
-  
-  bitcoin_url="https://bitcoincore.org/bin/bitcoin-core-$version/$binary_name"
-  tmp_dir=$(temp-dir bitcoin-install) || return 1
-  trap 'cleanup-dir "$tmp_dir"' EXIT HUP INT TERM
-  cd "$tmp_dir" || return 1
-  
-  # Download with curl or wget
-  if command -v curl >/dev/null 2>&1; then
-    curl -L -O "$bitcoin_url" || return 1
-  elif command -v wget >/dev/null 2>&1; then
-    wget "$bitcoin_url" || return 1
-  else
-    echo "Error: curl or wget required to download Bitcoin"
-    return 1
-  fi
-  
-  tar -xzf "$binary_name"
-  
-  # Install binaries (macOS install command doesn't support -g flag)
-  if [ "$os_type" = "Darwin" ]; then
-    sudo install -m 0755 -o root -t /usr/local/bin "bitcoin-$version"/bin/*
-  else
-    sudo install -m 0755 -o root -g root -t /usr/local/bin "bitcoin-$version"/bin/*
-  fi
-  
-  cd - >/dev/null || true
-  trap - EXIT HUP INT TERM
-  rm -rf "$tmp_dir"
-  printf "Bitcoin Core version %s installed from upstream binaries.
-" "$version"
+  install_official_binaries "$version"
 fi
 
 # Configure bitcoin.conf
