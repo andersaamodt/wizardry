@@ -1,0 +1,36 @@
+#!/bin/sh
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: check-supercollider
+
+Checks whether SuperCollider is available.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
+
+if command -v sclang >/dev/null 2>&1; then
+  printf 'status=ok\n'
+  printf 'summary=%s\n' 'SuperCollider is available on PATH.'
+  exit 0
+fi
+
+case "$(uname -s 2>/dev/null || printf '')" in
+  Darwin)
+    if [ -d /Applications/SuperCollider.app ] || [ -d "$HOME/Applications/SuperCollider.app" ]; then
+      printf 'status=ok\n'
+      printf 'summary=%s\n' 'SuperCollider.app is installed.'
+      exit 0
+    fi
+    ;;
+esac
+
+printf 'status=bad\n'
+printf 'summary=%s\n' 'SuperCollider is not installed.'
+exit 0

@@ -1,0 +1,241 @@
+#!/bin/sh
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-supercollider
+
+Ensures SuperCollider is installed.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
+
+say() {
+  printf '%s\n' "$1"
+}
+
+has_cmd() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+run_privileged() {
+  if "$@" 2>/dev/null; then
+    return 0
+  fi
+  if type run_sudo_cmd >/dev/null 2>&1; then
+    run_sudo_cmd "$@"
+    return 0
+  fi
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+    return 0
+  fi
+  if has_cmd sudo; then
+    sudo "$@"
+    return 0
+  fi
+  "$@"
+}
+
+install_target_bin_dir() {
+  if [ "$(id -u)" -eq 0 ]; then
+    printf '%s\n' /usr/local/bin
+    return 0
+  fi
+  if has_cmd sudo || type run_sudo_cmd >/dev/null 2>&1; then
+    printf '%s\n' /usr/local/bin
+    return 0
+  fi
+  printf '%s\n' "${XDG_BIN_HOME:-$HOME/.local/bin}"
+}
+
+supercollider_installed() {
+  if has_cmd sclang; then
+    return 0
+  fi
+  case "$(uname -s 2>/dev/null || printf '')" in
+    Darwin)
+      [ -d /Applications/SuperCollider.app ] || [ -d "$HOME/Applications/SuperCollider.app" ]
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+release_json_latest() {
+  has_cmd curl || return 1
+  curl -fsSL https://api.github.com/repos/supercollider/supercollider/releases/latest 2>/dev/null || return 1
+}
+
+install_macos_cli_links() {
+  app_path=$1
+  target_bin_dir=$(install_target_bin_dir)
+  run_privileged install -d -m 755 "$target_bin_dir"
+  for bin_name in sclang scsynth supernova; do
+    case "$bin_name" in
+      sclang) source_path="$app_path/Contents/MacOS/sclang" ;;
+      *) source_path="$app_path/Contents/Resources/$bin_name" ;;
+    esac
+    [ -x "$source_path" ] || continue
+    run_privileged ln -sf "$source_path" "$target_bin_dir/$bin_name" || true
+  done
+}
+
+install_supercollider_macos_release() {
+  has_cmd curl || return 1
+  has_cmd hdiutil || return 1
+
+  release_json=$(release_json_latest) || return 1
+  release_json_one_line=$(printf '%s' "$release_json" | tr '\n' ' ')
+  download_url=$(printf '%s\n' "$release_json_one_line" | sed -n 's/.*"browser_download_url":[[:space:]]*"\([^"]*SuperCollider-[^"]*-macOS-universal\.dmg\)".*/\1/p' | head -n 1)
+  [ -n "$download_url" ] || return 1
+
+  tmp_root=$(mktemp -d "${TMPDIR:-/tmp}/supercollider-release.XXXXXX")
+  archive_path="$tmp_root/SuperCollider.dmg"
+  mount_dir="$tmp_root/mount"
+  stage_root="$tmp_root/stage"
+  stage_bundle="$stage_root/SuperCollider.app"
+  target_parent="$HOME/Applications"
+  target_bundle="$target_parent/SuperCollider.app"
+  mounted=0
+
+  if [ "$(id -u)" -eq 0 ] || has_cmd sudo || type run_sudo_cmd >/dev/null 2>&1; then
+    target_parent=/Applications
+    target_bundle="$target_parent/SuperCollider.app"
+  fi
+
+  mkdir -p "$mount_dir" "$stage_root"
+  curl -fsSL "$download_url" -o "$archive_path" || {
+    rm -rf "$tmp_root"
+    return 1
+  }
+
+  hdiutil attach -nobrowse -quiet -mountpoint "$mount_dir" "$archive_path" >/dev/null 2>&1 || {
+    rm -rf "$tmp_root"
+    return 1
+  }
+  mounted=1
+
+  source_bundle=$(find "$mount_dir" -maxdepth 2 -type d -name 'SuperCollider.app' | head -n 1)
+  [ -n "$source_bundle" ] || {
+    hdiutil detach -quiet "$mount_dir" >/dev/null 2>&1 || true
+    rm -rf "$tmp_root"
+    return 1
+  }
+
+  if has_cmd ditto; then
+    ditto "$source_bundle" "$stage_bundle" || {
+      hdiutil detach -quiet "$mount_dir" >/dev/null 2>&1 || true
+      rm -rf "$tmp_root"
+      return 1
+    }
+  else
+    cp -R "$source_bundle" "$stage_bundle" || {
+      hdiutil detach -quiet "$mount_dir" >/dev/null 2>&1 || true
+      rm -rf "$tmp_root"
+      return 1
+    }
+  fi
+
+  hdiutil detach -quiet "$mount_dir" >/dev/null 2>&1 || true
+  mounted=0
+
+  run_privileged mkdir -p "$target_parent"
+  if [ -d "$target_bundle" ]; then
+    run_privileged rm -rf "$target_bundle"
+  fi
+  run_privileged mv "$stage_bundle" "$target_bundle"
+  install_macos_cli_links "$target_bundle"
+
+  if [ "$mounted" -eq 1 ]; then
+    hdiutil detach -quiet "$mount_dir" >/dev/null 2>&1 || true
+  fi
+  rm -rf "$tmp_root"
+  supercollider_installed
+}
+
+install_supercollider_unix_pkg() {
+  if has_cmd apt-get; then
+    run_privileged apt-get update -y >/dev/null
+    run_privileged env DEBIAN_FRONTEND=noninteractive apt-get install -y supercollider >/dev/null
+    return 0
+  fi
+  if has_cmd dnf; then
+    run_privileged dnf install -y supercollider >/dev/null
+    return 0
+  fi
+  if has_cmd pacman; then
+    run_privileged pacman -Sy --noconfirm supercollider >/dev/null
+    return 0
+  fi
+  if has_cmd zypper; then
+    run_privileged zypper --non-interactive install supercollider >/dev/null
+    return 0
+  fi
+  if has_cmd apk; then
+    run_privileged apk add supercollider >/dev/null
+    return 0
+  fi
+  if has_cmd nix-env; then
+    nix-env -iA nixpkgs.supercollider >/dev/null
+    return 0
+  fi
+  if has_cmd pkg; then
+    run_privileged pkg install -y supercollider >/dev/null
+    return 0
+  fi
+  if has_cmd pkg_add; then
+    run_privileged pkg_add supercollider >/dev/null
+    return 0
+  fi
+  if has_cmd brew; then
+    brew install --cask supercollider >/dev/null
+    return 0
+  fi
+  return 1
+}
+
+if supercollider_installed; then
+  say "SuperCollider is already installed"
+  exit 0
+fi
+
+case "$(uname -s 2>/dev/null || printf '')" in
+  Darwin)
+    install_supercollider_macos_release >/dev/null 2>&1 || true
+    if supercollider_installed; then
+      say "Installed SuperCollider"
+      exit 0
+    fi
+    if has_cmd brew; then
+      brew install --cask supercollider >/dev/null
+    else
+      say "install-supercollider: automatic macOS install failed." >&2
+      exit 1
+    fi
+    ;;
+  Linux|FreeBSD|OpenBSD)
+    if ! install_supercollider_unix_pkg; then
+      say "install-supercollider: no supported package manager found." >&2
+      exit 1
+    fi
+    ;;
+  *)
+    say "install-supercollider: unsupported host." >&2
+    exit 1
+    ;;
+esac
+
+if supercollider_installed; then
+  say "Installed SuperCollider"
+  exit 0
+fi
+
+say "install-supercollider: installation incomplete. Ensure SuperCollider is available on PATH." >&2
+exit 1

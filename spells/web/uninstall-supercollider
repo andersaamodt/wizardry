@@ -1,0 +1,104 @@
+#!/bin/sh
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uninstall-supercollider
+
+Removes SuperCollider when it was installed through a supported package manager or app bundle path.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
+
+say() {
+  printf '%s\n' "$1"
+}
+
+has_cmd() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+run_privileged() {
+  if "$@" 2>/dev/null; then
+    return 0
+  fi
+  if type run_sudo_cmd >/dev/null 2>&1; then
+    run_sudo_cmd "$@"
+    return 0
+  fi
+  if [ "$(id -u)" -eq 0 ]; then
+    "$@"
+    return 0
+  fi
+  if has_cmd sudo; then
+    sudo "$@"
+    return 0
+  fi
+  "$@"
+}
+
+removed=0
+
+if has_cmd apt-get; then
+  run_privileged env DEBIAN_FRONTEND=noninteractive apt-get remove -y supercollider >/dev/null 2>&1 || true
+  removed=1
+elif has_cmd dnf; then
+  run_privileged dnf remove -y supercollider >/dev/null 2>&1 || true
+  removed=1
+elif has_cmd pacman; then
+  run_privileged pacman -Rns --noconfirm supercollider >/dev/null 2>&1 || true
+  removed=1
+elif has_cmd zypper; then
+  run_privileged zypper --non-interactive remove supercollider >/dev/null 2>&1 || true
+  removed=1
+elif has_cmd apk; then
+  run_privileged apk del supercollider >/dev/null 2>&1 || true
+  removed=1
+elif has_cmd nix-env; then
+  nix-env -e supercollider >/dev/null 2>&1 || true
+  removed=1
+elif has_cmd pkg; then
+  run_privileged pkg delete -y supercollider >/dev/null 2>&1 || true
+  removed=1
+elif has_cmd pkg_delete; then
+  run_privileged pkg_delete supercollider >/dev/null 2>&1 || true
+  removed=1
+elif has_cmd brew; then
+  brew uninstall --cask supercollider >/dev/null 2>&1 || true
+  removed=1
+fi
+
+for app_path in /Applications/SuperCollider.app "$HOME/Applications/SuperCollider.app"; do
+  if [ -d "$app_path" ]; then
+    run_privileged rm -rf "$app_path" >/dev/null 2>&1 || true
+    removed=1
+  fi
+done
+
+for bin_path in /usr/local/bin/sclang /usr/local/bin/scsynth /usr/local/bin/supernova "${XDG_BIN_HOME:-$HOME/.local/bin}/sclang" "${XDG_BIN_HOME:-$HOME/.local/bin}/scsynth" "${XDG_BIN_HOME:-$HOME/.local/bin}/supernova"; do
+  if [ -L "$bin_path" ]; then
+    rm -f "$bin_path" >/dev/null 2>&1 || true
+  fi
+done
+
+if command -v sclang >/dev/null 2>&1; then
+  say "uninstall-supercollider: SuperCollider is still present on PATH" >&2
+  exit 1
+fi
+
+if [ -d /Applications/SuperCollider.app ] || [ -d "$HOME/Applications/SuperCollider.app" ]; then
+  say "uninstall-supercollider: SuperCollider.app is still present" >&2
+  exit 1
+fi
+
+if [ "$removed" -eq 0 ]; then
+  say "SuperCollider is not installed"
+  exit 0
+fi
+
+say "Uninstalled SuperCollider"
