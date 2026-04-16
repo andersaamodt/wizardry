@@ -263,6 +263,7 @@ if [ "$mode" = managed ]; then
   state_dir=$site_root/.wizardry.hq
   signature_file=$state_dir/content-sync-rebuild.signature
   target_file=$state_dir/content-sync-rebuild.target
+  run_lock_dir=$state_dir/content-sync-rebuild.run.lock
   watcher_pid_file=$state_dir/content-sync-rebuild.watch.pid
   log_file=$state_dir/content-sync-rebuild.log
   cron_file=/etc/cron.d/headquarters-content-rebuild-$site_user
@@ -278,6 +279,7 @@ else
   state_dir=$site_root/.wizardry-autorebuild
   signature_file=$state_dir/site-autorebuild.signature
   target_file=$state_dir/site-autorebuild.target
+  run_lock_dir=$state_dir/site-autorebuild.run.lock
   watcher_pid_file=$state_dir/site-autorebuild.watch.pid
   log_file=$site_root/.log/site-autorebuild.log
   cron_begin="# BEGIN WIZARDRY SITE AUTOREBUILD $site_name"
@@ -338,13 +340,21 @@ resolve_managed_current_target() {
   esac
 }
 
+stage_timestamp() {
+  if [ -n "${SITE_AUTOREBUILD_STAGE_STAMP:-}" ]; then
+    printf '%s\n' "$SITE_AUTOREBUILD_STAGE_STAMP"
+    return 0
+  fi
+  date -u +%Y%m%d%H%M%S 2>/dev/null || date +%Y%m%d%H%M%S
+}
+
 managed_stage_target() {
-  stage_stamp=$(date -u +%Y%m%d%H%M%S 2>/dev/null || date +%Y%m%d%H%M%S)
+  stage_stamp=$(stage_timestamp)
   stage_target=$releases_root/$stage_stamp
+  suffix=0
   while autorebuild_run_privileged test -e "$stage_target"; do
-    sleep 1
-    stage_stamp=$(date -u +%Y%m%d%H%M%S 2>/dev/null || date +%Y%m%d%H%M%S)
-    stage_target=$releases_root/$stage_stamp
+    suffix=$((suffix + 1))
+    stage_target=$releases_root/$stage_stamp-$suffix
   done
   printf '%s\n' "$stage_target"
 }
@@ -426,6 +436,82 @@ read_state_value() {
   fi
 }
 
+run_lock_mkdir() {
+  lock_path=$1
+  if [ "$mode" = managed ]; then
+    run_as_user "$site_user" mkdir "$lock_path"
+  else
+    mkdir "$lock_path"
+  fi
+}
+
+run_lock_remove() {
+  lock_path=$1
+  if [ "$mode" = managed ]; then
+    run_as_user "$site_user" sh -eu -c 'rm -rf "$1"' sh "$lock_path"
+  else
+    rm -rf "$lock_path"
+  fi
+}
+
+read_file_line() {
+  file_path=$1
+  if [ "$mode" = managed ]; then
+    run_as_user "$site_user" sh -eu -c '
+      target_file=$1
+      if [ -f "$target_file" ]; then
+        sed -n "1p" "$target_file"
+      fi
+    ' sh "$file_path" 2>/dev/null || true
+  else
+    if [ -f "$file_path" ]; then
+      sed -n '1p' "$file_path" 2>/dev/null || true
+    fi
+  fi
+}
+
+write_run_lock_pid() {
+  pid_file=$1
+  lock_pid=$2
+  if [ "$mode" = managed ]; then
+    run_as_user "$site_user" sh -eu -c '
+      target_file=$1
+      pid_value=$2
+      printf "%s\n" "$pid_value" > "$target_file"
+    ' sh "$pid_file" "$lock_pid"
+  else
+    printf '%s\n' "$lock_pid" > "$pid_file"
+  fi
+}
+
+acquire_run_lock() {
+  ensure_state_dir
+  pid_file=$run_lock_dir/pid
+  attempt=0
+  while [ "$attempt" -lt 2 ]; do
+    if run_lock_mkdir "$run_lock_dir" 2>/dev/null; then
+      write_run_lock_pid "$pid_file" "$$"
+      return 0
+    fi
+    existing_pid=$(read_file_line "$pid_file")
+    case "$existing_pid" in
+      ''|*[!0-9]*)
+        existing_pid=''
+        ;;
+    esac
+    if [ -n "$existing_pid" ] && kill -0 "$existing_pid" 2>/dev/null; then
+      return 1
+    fi
+    run_lock_remove "$run_lock_dir" 2>/dev/null || true
+    attempt=$((attempt + 1))
+  done
+  return 1
+}
+
+release_run_lock() {
+  run_lock_remove "$run_lock_dir" 2>/dev/null || true
+}
+
 run_build_once() {
   if [ "$mode" = managed ]; then
     runtime_dir=$site_root/.wizardry
@@ -476,6 +562,9 @@ run_build_once() {
 
 run_change_pass() {
   ensure_state_dir
+  if ! acquire_run_lock; then
+    return 0
+  fi
 
   current_signature=''
   if [ "$mode" = managed ]; then
@@ -526,10 +615,14 @@ run_change_pass() {
 
   if [ "$current_signature" = "$previous_signature" ] &&
     [ "$current_target" = "$previous_target" ]; then
+    release_run_lock
     return 0
   fi
 
-  run_build_once || return 1
+  run_build_once || {
+    release_run_lock
+    return 1
+  }
   if [ "$mode" = managed ]; then
     current_target=$(resolve_managed_current_target)
   else
@@ -537,6 +630,7 @@ run_change_pass() {
   fi
   write_state_value "$signature_file" "$current_signature"
   write_state_value "$target_file" "$current_target"
+  release_run_lock
   return 0
 }
 

@@ -428,15 +428,77 @@ test_site_autorebuild_managed_run_cleans_failed_stage() {
   fi
 }
 
+test_site_autorebuild_managed_run_uses_suffix_on_release_collision() {
+  skip-if-compiled || return $?
+  setup_managed_site_autorebuild_fixture
+
+  mkdir -p "$site_root/releases/20260101000000"
+
+  run_cmd env \
+    PATH="$stub_dir:/usr/bin:/bin:/usr/sbin:/sbin" \
+    SITE_AUTOREBUILD_STAGE_STAMP=20260101000000 \
+    SITE_AUTOREBUILD_FAKE_CRON_ROOT="$fake_cron_root" \
+    SITE_AUTOREBUILD_SITE_ROOT="$site_root" \
+    SITE_AUTOREBUILD_STUB_DIR="$stub_dir" \
+    SITE_AUTOREBUILD_BUILD_LOG="$build_log" \
+    WIZARDRY_DIR="$site_root/.wizardry" \
+    sh "$ROOT_DIR/spells/web/site-autorebuild" run --managed "$site_user" --site-root "$site_root"
+  assert_success || return 1
+
+  current_link=$(readlink "$site_root/site")
+  if [ "$current_link" != 'releases/20260101000000-1' ]; then
+    TEST_FAILURE_REASON="managed collision should stage release with numeric suffix"
+    return 1
+  fi
+}
+
+test_site_autorebuild_local_run_skips_when_lock_is_held() {
+  skip-if-compiled || return $?
+
+  web_root=$(temp-dir site-autorebuild-lock-web)
+  site_root="$web_root/testsite"
+  mkdir -p "$site_root/site/pages" "$site_root/.wizardry-autorebuild/site-autorebuild.run.lock"
+  printf '%s\n' '# Test page' > "$site_root/site/pages/index.md"
+  printf '%s\n' "$$" > "$site_root/.wizardry-autorebuild/site-autorebuild.run.lock/pid"
+
+  fake_wizardry=$(temp-dir site-autorebuild-lock-wizardry)
+  mkdir -p "$fake_wizardry/spells/web"
+  build_log=$(temp-file site-autorebuild-lock-build-log)
+  cat > "$fake_wizardry/spells/web/build" <<'EOS'
+#!/bin/sh
+set -eu
+printf '%s\n' "$1" >> "${SITE_AUTOREBUILD_BUILD_LOG:?}"
+EOS
+  chmod +x "$fake_wizardry/spells/web/build"
+
+  run_cmd env \
+    WEB_WIZARDRY_ROOT="$web_root" \
+    WIZARDRY_DIR="$fake_wizardry" \
+    SITE_AUTOREBUILD_BUILD_LOG="$build_log" \
+    sh "$ROOT_DIR/spells/web/site-autorebuild" run testsite
+  assert_success || return 1
+
+  if [ -s "$build_log" ]; then
+    TEST_FAILURE_REASON="local run should skip build when another autorebuild pass holds the lock"
+    return 1
+  fi
+
+  rm -rf "$web_root" "$fake_wizardry"
+}
+
 run_test_case "site-autorebuild --help" test_site_autorebuild_help
 run_test_case "site-autorebuild validates target" test_site_autorebuild_requires_target
 run_test_case "site-autorebuild local enable/run/disable" \
   test_site_autorebuild_local_enable_run_disable
+run_test_case "site-autorebuild local run skips when lock is held" \
+  test_site_autorebuild_local_run_skips_when_lock_is_held
 run_test_case "site-autorebuild managed enable/disable installs runtime and cron" \
   test_site_autorebuild_managed_enable_disable
 run_test_case "site-autorebuild managed run stages a new release" \
   test_site_autorebuild_managed_run_stages_release
 run_test_case "site-autorebuild managed run cleans failed staged releases" \
   test_site_autorebuild_managed_run_cleans_failed_stage
+run_test_case "site-autorebuild managed run uses suffix on release collision" \
+  test_site_autorebuild_managed_run_uses_suffix_on_release_collision
 
 finish_tests

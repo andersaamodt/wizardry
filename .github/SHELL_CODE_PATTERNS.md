@@ -12,6 +12,32 @@
 
 ## Critical POSIX sh Patterns
 
+### Stage Names and Long-Running Cron Safety
+
+**CRITICAL:** Do not block on wall-clock time to pick a unique staged release path.
+
+```sh
+# WRONG: waits for the next second and can wedge behind future-dated paths
+stage_stamp=$(date -u +%Y%m%d%H%M%S)
+stage_target=$releases_root/$stage_stamp
+while test -e "$stage_target"; do
+  sleep 1
+  stage_stamp=$(date -u +%Y%m%d%H%M%S)
+  stage_target=$releases_root/$stage_stamp
+done
+
+# RIGHT: keep the timestamp and add a numeric suffix immediately
+stage_stamp=$(date -u +%Y%m%d%H%M%S)
+stage_target=$releases_root/$stage_stamp
+suffix=0
+while test -e "$stage_target"; do
+  suffix=$((suffix + 1))
+  stage_target=$releases_root/$stage_stamp-$suffix
+done
+```
+
+**Why:** Cron-managed rebuilds can pile up or appear hung when they wait on timestamp collisions, especially if a future-dated release directory already exists. Use an atomic mkdir lock plus stale-PID recovery to skip overlapping runs, and use suffix-based stage names so a single collision never turns into an unbounded sleep loop.
+
 ### macOS App Bundle Replacement
 
 **CRITICAL:** Do not write into a live macOS `.app` bundle in place.
