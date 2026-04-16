@@ -345,10 +345,22 @@ http {
 }
 EOF
 
-# Update site config
-config-set "$site_dir/site.conf" port "$port"
-config-set "$site_dir/site.conf" domain "$domain"
-config-set "$site_dir/site.conf" https "$use_https"
+# Update site config only when values changed so preview restarts do not
+# make Headquarters think a fresh build is immediately stale again.
+current_port=$(config-get "$site_dir/site.conf" port 2>/dev/null || printf '')
+if [ "$current_port" != "$port" ]; then
+  config-set "$site_dir/site.conf" port "$port"
+fi
+
+current_domain=$(config-get "$site_dir/site.conf" domain 2>/dev/null || printf '')
+if [ "$current_domain" != "$domain" ]; then
+  config-set "$site_dir/site.conf" domain "$domain"
+fi
+
+current_https=$(config-get "$site_dir/site.conf" https 2>/dev/null || printf '')
+if [ "$current_https" != "$use_https" ]; then
+  config-set "$site_dir/site.conf" https "$use_https"
+fi
 
 # Update Tor hidden service port if Tor hosting is enabled for this site
 if is-tor-installed; then
