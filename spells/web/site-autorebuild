@@ -532,9 +532,15 @@ run_build_once() {
     }
     release_name=${stage_target##*/}
     spell_path=$(wizardry_spell_path "$runtime_dir")
-    if run_as_user "$site_user" env HOME="$site_root" PATH="$spell_path" \
-      WEB_WIZARDRY_ROOT="$releases_root" WIZARDRY_DIR="$runtime_dir" \
-      "$build_spell" "$release_name" --full; then
+    if run_as_user "$site_user" sh -eu -c '
+      target_cwd=$1
+      shift
+      cd "$target_cwd"
+      exec env HOME="$1" PATH="$2" WEB_WIZARDRY_ROOT="$3" WIZARDRY_DIR="$4" "$5" "$6" --full
+    ' sh \
+      "$releases_root" \
+      "$site_root" "$spell_path" "$releases_root" "$runtime_dir" \
+      "$build_spell" "$release_name"; then
       managed_apply_release_permissions "$stage_target"
       autorebuild_run_privileged ln -sfn "$stage_target" "$current_link"
       autorebuild_run_privileged \
