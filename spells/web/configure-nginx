@@ -249,6 +249,13 @@ http {
         location /static/ {
             alias $site_dir/build/static/;
         }
+
+        # Authorized attachments are handed off from CGI using X-Accel-Redirect
+        # so nginx serves the file bytes directly instead of shell CGI streaming them.
+        location /__site-files/ {
+            internal;
+            alias $sites_dir/.sitedata/$site_name/files/;
+        }
         
         # SSE endpoint - requires unbuffered streaming
         location ~ ^/cgi/chat-stream$ {
