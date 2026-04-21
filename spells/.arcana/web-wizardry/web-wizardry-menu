@@ -7,7 +7,7 @@ case "${1-}" in
   cat <<'USAGE'
 Usage: web-wizardry-menu
 
-Displays the web wizardry management menu with install/uninstall toggles for each component.
+Displays the web wizardry management menu with install/uninstall toggles for each component, including Fauxzilla.
 USAGE
   exit 0
   ;;
@@ -43,6 +43,7 @@ while true; do
   openssl_was_installed=0
   htmx_was_installed=0
   certbot_was_installed=0
+  fauxzilla_was_installed=0
   
   "$script_dir/is-web-component-installed" pandoc 2>/dev/null && pandoc_was_installed=1
   "$script_dir/is-web-component-installed" nginx 2>/dev/null && nginx_was_installed=1
@@ -52,6 +53,7 @@ while true; do
   "$script_dir/is-web-component-installed" openssl 2>/dev/null && openssl_was_installed=1
   "$script_dir/is-web-component-installed" htmx 2>/dev/null && htmx_was_installed=1
   "$script_dir/is-web-component-installed" certbot 2>/dev/null && certbot_was_installed=1
+  "$script_dir/is-web-component-installed" fauxzilla 2>/dev/null && fauxzilla_was_installed=1
   
   # Track starting position
   start_selection=${start_selection:-1}
@@ -145,10 +147,20 @@ while true; do
     pos=$((pos + 1))
     https_admin=""
   fi
+
+  # Fauxzilla toggle
+  if [ "$fauxzilla_was_installed" -eq 1 ]; then
+    fauxzilla_toggle="[X] fauxzilla%uninstall-fauxzilla"
+    fauxzilla_pos=$pos
+  else
+    fauxzilla_toggle="[ ] fauxzilla%install-fauxzilla"
+    fauxzilla_pos=$pos
+  fi
+  pos=$((pos + 1))
   
   # Check if all are installed for enable/disable all toggle
   all_installed=1
-  for component in pandoc nginx fcgiwrap filesystem-tools openssl htmx certbot; do
+  for component in pandoc nginx fcgiwrap filesystem-tools openssl htmx certbot fauxzilla; do
     if ! "$script_dir/is-web-component-installed" "$component" 2>/dev/null; then
       all_installed=0
       break
@@ -173,6 +185,7 @@ while true; do
   [ -n "$htmx_update" ] && set -- "$@" "$htmx_update"
   set -- "$@" "$certbot_toggle"
   [ -n "$https_admin" ] && set -- "$@" "$https_admin"
+  set -- "$@" "$fauxzilla_toggle"
   set -- "$@" "$toggle_all" "$exit_item"
   
   menu --start-selection "$start_selection" "Install Web Wizardry:" "$@" || menu_status=$?
@@ -220,6 +233,11 @@ while true; do
   else
     certbot_now_installed=0
   fi
+  if "$script_dir/is-web-component-installed" fauxzilla 2>/dev/null; then
+    fauxzilla_now_installed=1
+  else
+    fauxzilla_now_installed=0
+  fi
   
   # Update start_selection to the component that changed
   if [ "$pandoc_was_installed" -ne "$pandoc_now_installed" ]; then
@@ -236,6 +254,8 @@ while true; do
     start_selection=$htmx_pos
   elif [ "$certbot_was_installed" -ne "$certbot_now_installed" ]; then
     start_selection=$certbot_pos
+  elif [ "$fauxzilla_was_installed" -ne "$fauxzilla_now_installed" ]; then
+    start_selection=$fauxzilla_pos
   fi
   # If no change detected, start_selection stays the same
   

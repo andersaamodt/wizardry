@@ -1,0 +1,24 @@
+#!/bin/sh
+
+# Uninstall Fauxzilla through its repo checkout.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uninstall-fauxzilla
+
+Runs the Fauxzilla uninstall script from the local repo checkout.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+repo_dir=${FAUXZILLA_REPO_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/fauxzilla/repo}
+[ -x "$repo_dir/scripts/fauxzilla-uninstall" ] || {
+  printf '%s\n' 'uninstall-fauxzilla: Fauxzilla repo checkout is missing.' >&2
+  exit 1
+}
+
+exec "$repo_dir/scripts/fauxzilla-uninstall" "$@"

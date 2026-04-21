@@ -7,7 +7,7 @@ done
 
 test_web_wizardry_menu_help() {
   run_spell "spells/.arcana/web-wizardry/web-wizardry-menu" --help
-  assert_success && assert_output_contains "certbot"
+  assert_success && assert_output_contains "Fauxzilla"
 }
 
 run_test_case "web-wizardry-menu shows help" test_web_wizardry_menu_help

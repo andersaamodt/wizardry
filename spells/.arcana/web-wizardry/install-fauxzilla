@@ -1,0 +1,33 @@
+#!/bin/sh
+
+# Install Fauxzilla through its repo checkout.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-fauxzilla
+
+Clones or updates the Fauxzilla repo and runs its install script.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+repo_url=${FAUXZILLA_REPO_URL:-https://github.com/andersaamodt/fauxzilla.git}
+repo_dir=${FAUXZILLA_REPO_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/fauxzilla/repo}
+
+if [ ! -d "$repo_dir/.git" ]; then
+  command -v git >/dev/null 2>&1 || {
+    printf '%s\n' 'install-fauxzilla: git is required to fetch Fauxzilla.' >&2
+    exit 1
+  }
+  mkdir -p "$(dirname "$repo_dir")"
+  git clone "$repo_url" "$repo_dir" >/dev/null
+elif [ -z "${FAUXZILLA_SKIP_REPO_UPDATE-}" ]; then
+  git -C "$repo_dir" pull --ff-only >/dev/null 2>&1 || true
+fi
+
+exec "$repo_dir/scripts/fauxzilla-install" "$@"
+

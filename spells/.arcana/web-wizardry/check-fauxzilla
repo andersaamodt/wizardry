@@ -1,0 +1,26 @@
+#!/bin/sh
+
+# Check Fauxzilla through its repo checkout.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: check-fauxzilla
+
+Emits Wizardry-compatible health status for Fauxzilla.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+repo_dir=${FAUXZILLA_REPO_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/fauxzilla/repo}
+if [ ! -x "$repo_dir/scripts/fauxzilla-check" ]; then
+  printf 'status=bad\n'
+  printf 'summary=%s\n' 'Fauxzilla repo checkout is missing.'
+  exit 0
+fi
+
+exec "$repo_dir/scripts/fauxzilla-check" "$@"
+

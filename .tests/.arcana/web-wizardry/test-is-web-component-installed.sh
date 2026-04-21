@@ -7,7 +7,7 @@ done
 
 test_is_web_component_installed_help() {
   run_spell "spells/.arcana/web-wizardry/is-web-component-installed" --help
-  assert_success && assert_output_contains "certbot"
+  assert_success && assert_output_contains "fauxzilla"
 }
 
 run_test_case "is-web-component-installed shows help" test_is_web_component_installed_help
