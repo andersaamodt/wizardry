@@ -7,7 +7,7 @@ case "${1-}" in
   cat <<'USAGE'
 Usage: web-wizardry-menu
 
-Displays the web wizardry management menu with install/uninstall toggles for each component, including Fauxzilla.
+Displays the web wizardry management menu with install/uninstall toggles for each component, including Fauxzilla and Firefox Sync client configuration.
 USAGE
   exit 0
   ;;
@@ -157,6 +157,8 @@ while true; do
     fauxzilla_pos=$pos
   fi
   pos=$((pos + 1))
+
+  fauxzilla_client_configure="    configure Firefox Sync%configure-fauxzilla-client"
   
   # Check if all are installed for enable/disable all toggle
   all_installed=1
@@ -186,6 +188,7 @@ while true; do
   set -- "$@" "$certbot_toggle"
   [ -n "$https_admin" ] && set -- "$@" "$https_admin"
   set -- "$@" "$fauxzilla_toggle"
+  set -- "$@" "$fauxzilla_client_configure"
   set -- "$@" "$toggle_all" "$exit_item"
   
   menu --start-selection "$start_selection" "Install Web Wizardry:" "$@" || menu_status=$?
