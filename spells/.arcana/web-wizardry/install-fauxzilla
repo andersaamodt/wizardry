@@ -29,5 +29,9 @@ elif [ -z "${FAUXZILLA_SKIP_REPO_UPDATE-}" ]; then
   git -C "$repo_dir" pull --ff-only >/dev/null 2>&1 || true
 fi
 
-exec "$repo_dir/scripts/fauxzilla-install" "$@"
+if [ -z "${FAUXZILLA_DEFAULT_DOMAIN-}" ] && [ -n "${HQ_HOST-}" ]; then
+  FAUXZILLA_DEFAULT_DOMAIN=new.$HQ_HOST
+  export FAUXZILLA_DEFAULT_DOMAIN
+fi
 
+exec "$repo_dir/scripts/fauxzilla-install" "$@"
