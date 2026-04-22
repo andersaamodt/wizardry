@@ -20,7 +20,22 @@ repo_dir=${FAUXZILLA_REPO_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/fauxzilla/re
 
 if [ "$#" -eq 0 ] && { [ -n "${HQ_SERVER_HOST-}" ] || [ -n "${HQ_SITE_DOMAIN-}" ]; }; then
   default_device_name=${FAUXZILLA_DEVICE_NAME:-${HQ_SITE_DOMAIN:-${HQ_SERVER_HOST:-Fauxzilla Hub}}}
-  set -- --hub --device-name "$default_device_name"
+  default_public_host=${HQ_SITE_DOMAIN:-${HQ_SERVER_HOST:-}}
+  default_public_base_url=${FAUXZILLA_PUBLIC_BASE_URL:-}
+  if [ -n "$default_public_host" ] && [ -z "$default_public_base_url" ]; then
+    default_public_base_url=https://$default_public_host/fauxzilla
+  fi
+  if [ -n "$default_public_base_url" ]; then
+    set -- --hub --device-name "$default_device_name" --public-base-url "$default_public_base_url"
+  else
+    set -- --hub --device-name "$default_device_name"
+  fi
+fi
+
+if [ "$#" -eq 0 ] && [ -n "${HQ_HOST-}" ]; then
+  default_device_name=${FAUXZILLA_DEVICE_NAME:-$HQ_HOST}
+  default_public_base_url=${FAUXZILLA_PUBLIC_BASE_URL:-https://$HQ_HOST/fauxzilla}
+  set -- --hub --device-name "$default_device_name" --public-base-url "$default_public_base_url"
 fi
 
 if [ -n "${HQ_UPLOADED_TREE_PATH-}" ] && [ -d "${HQ_UPLOADED_TREE_PATH-}" ]; then
