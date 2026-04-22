@@ -20,6 +20,7 @@ set +u
 
 component=${1:-}
 [ -z "$component" ] && exit 1
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 
 case "$component" in
   pandoc|nginx|fcgiwrap|openssl)
@@ -42,7 +43,7 @@ case "$component" in
     command -v certbot >/dev/null 2>&1 || [ -f "$HOME/.acme.sh/acme.sh" ]
     ;;
   fauxzilla)
-    [ -f /etc/fauxzilla/runtime.env ] && [ -f /opt/fauxzilla/stack/docker-compose.yml ]
+    "$script_dir/check-fauxzilla" 2>/dev/null | grep -Fqx 'status=ok'
     ;;
   *)
     exit 1

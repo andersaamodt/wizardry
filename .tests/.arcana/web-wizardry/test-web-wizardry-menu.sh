@@ -27,7 +27,7 @@ SH
 
   args=$(cat "$tmp/log")
   case "$args" in
-    *"configure Firefox Sync%configure-fauxzilla-client"*) : ;;
+    *"configure Fauxzilla browser%configure-fauxzilla-client"*) : ;;
     *)
       TEST_FAILURE_REASON="menu entry missing Fauxzilla client configuration action: $args"
       return 1
