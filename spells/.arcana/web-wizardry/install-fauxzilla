@@ -18,7 +18,16 @@ set -eu
 repo_url=${FAUXZILLA_REPO_URL:-https://github.com/andersaamodt/fauxzilla.git}
 repo_dir=${FAUXZILLA_REPO_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/fauxzilla/repo}
 
-if [ ! -d "$repo_dir/.git" ]; then
+if [ "$#" -eq 0 ] && { [ -n "${HQ_SERVER_HOST-}" ] || [ -n "${HQ_SITE_DOMAIN-}" ]; }; then
+  default_device_name=${FAUXZILLA_DEVICE_NAME:-${HQ_SITE_DOMAIN:-${HQ_SERVER_HOST:-Fauxzilla Hub}}}
+  set -- --hub --device-name "$default_device_name"
+fi
+
+if [ -n "${HQ_UPLOADED_TREE_PATH-}" ] && [ -d "${HQ_UPLOADED_TREE_PATH-}" ]; then
+  mkdir -p "$(dirname "$repo_dir")"
+  rm -rf "$repo_dir"
+  cp -R "$HQ_UPLOADED_TREE_PATH" "$repo_dir"
+elif [ ! -d "$repo_dir/.git" ]; then
   command -v git >/dev/null 2>&1 || {
     printf '%s\n' 'install-fauxzilla: git is required to fetch Fauxzilla.' >&2
     exit 1
