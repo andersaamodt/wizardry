@@ -7,7 +7,7 @@ case "${1-}" in
   cat <<'USAGE'
 Usage: install-fauxzilla
 
-Clones or updates the Fauxzilla repo and runs its install script.
+Clones or updates the Fauxzilla repo and runs its local install script.
 USAGE
   exit 0
   ;;
@@ -29,9 +29,10 @@ elif [ -z "${FAUXZILLA_SKIP_REPO_UPDATE-}" ]; then
   git -C "$repo_dir" pull --ff-only >/dev/null 2>&1 || true
 fi
 
-if [ -z "${FAUXZILLA_DEFAULT_DOMAIN-}" ] && [ -n "${HQ_HOST-}" ]; then
-  FAUXZILLA_DEFAULT_DOMAIN=new.$HQ_HOST
-  export FAUXZILLA_DEFAULT_DOMAIN
-fi
+repo_spell=$repo_dir/scripts/fauxzilla-install
+[ -f "$repo_spell" ] || {
+  printf '%s\n' "install-fauxzilla: Fauxzilla repo checkout is missing $repo_spell." >&2
+  exit 1
+}
 
-exec "$repo_dir/scripts/fauxzilla-install" "$@"
+exec sh "$repo_spell" "$@"

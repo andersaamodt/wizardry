@@ -19,19 +19,16 @@ test_configure_fauxzilla_client_forwards_to_repo_spell() {
   cat >"$repo_dir/wizardry/configure-fauxzilla-client" <<'EOF'
 #!/bin/sh
 set -eu
-printf 'default_domain=%s\n' "${FAUXZILLA_DEFAULT_DOMAIN-}"
 printf 'args=%s\n' "$*"
 EOF
   chmod +x "$repo_dir/wizardry/configure-fauxzilla-client"
 
   FAUXZILLA_REPO_DIR="$repo_dir" \
     FAUXZILLA_SKIP_REPO_UPDATE=1 \
-    HQ_HOST="example.test" \
     run_spell "spells/.arcana/web-wizardry/configure-fauxzilla-client" \
       --check \
       --non-interactive
   assert_success || return 1
-  assert_output_contains "default_domain=new.example.test" || return 1
   assert_output_contains "args=--check --non-interactive" || return 1
 }
 

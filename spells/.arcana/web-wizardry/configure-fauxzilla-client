@@ -8,8 +8,8 @@ case "${1-}" in
 Usage: configure-fauxzilla-client [fauxzilla options]
 
 Ensures the Fauxzilla repo checkout exists and forwards to Fauxzilla's browser
-configuration helper, which writes Firefox enterprise policy for the Fauxzilla
-add-on.
+configuration helper, which writes Firefox enterprise policy for the local
+Fauxzilla add-on.
 USAGE
   exit 0
   ;;
@@ -31,15 +31,10 @@ elif [ -z "${FAUXZILLA_SKIP_REPO_UPDATE-}" ]; then
   git -C "$repo_dir" pull --ff-only >/dev/null 2>&1 || true
 fi
 
-if [ -z "${FAUXZILLA_DEFAULT_DOMAIN-}" ] && [ -n "${HQ_HOST-}" ]; then
-  FAUXZILLA_DEFAULT_DOMAIN=new.$HQ_HOST
-  export FAUXZILLA_DEFAULT_DOMAIN
-fi
-
 repo_spell=$repo_dir/wizardry/configure-fauxzilla-client
-[ -x "$repo_spell" ] || {
+[ -f "$repo_spell" ] || {
   printf '%s\n' "configure-fauxzilla-client: Fauxzilla repo checkout is missing $repo_spell." >&2
   exit 1
 }
 
-exec "$repo_spell" "$@"
+exec sh "$repo_spell" "$@"

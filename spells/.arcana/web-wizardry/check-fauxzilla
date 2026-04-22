@@ -16,11 +16,11 @@ esac
 set -eu
 
 repo_dir=${FAUXZILLA_REPO_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/fauxzilla/repo}
-if [ ! -x "$repo_dir/scripts/fauxzilla-check" ]; then
+repo_spell=$repo_dir/scripts/fauxzilla-check
+if [ ! -f "$repo_spell" ]; then
   printf 'status=bad\n'
   printf 'summary=%s\n' 'Fauxzilla repo checkout is missing.'
   exit 0
 fi
 
-exec "$repo_dir/scripts/fauxzilla-check" "$@"
-
+exec sh "$repo_spell" "$@"
