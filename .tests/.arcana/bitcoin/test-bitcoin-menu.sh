@@ -43,6 +43,8 @@ test_bitcoin_menu_controls_running_service() {
   run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/.arcana/bitcoin/bitcoin-menu"
   assert_success
   assert_file_contains "$tmp/log" "Stop Bitcoin Service%sudo systemctl stop bitcoin"
+  assert_file_contains "$tmp/log" "Wallet Menu%wallet-menu"
+  assert_file_contains "$tmp/log" "Create Wallet (Guided)%generate-bitcoin-wallet"
   assert_file_contains "$tmp/log" "Uninstall Bitcoin Service%remove-service bitcoin"
   assert_file_contains "$tmp/log" "Uninstall Bitcoin%uninstall-bitcoin"
 }
@@ -65,6 +67,8 @@ SH
 
   run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/.arcana/bitcoin/bitcoin-menu"
   assert_success
+  assert_file_contains "$tmp/log" "Wallet Menu%wallet-menu"
+  assert_file_contains "$tmp/log" "Create Wallet (Guided)%generate-bitcoin-wallet"
   assert_file_contains "$tmp/log" "Install Bitcoin Service%install-service-template $ROOT_DIR/spells/.arcana/bitcoin/bitcoin.service \"BITCOIND=/usr/bin/bitcoind\""
   assert_file_contains "$tmp/log" "Uninstall Bitcoin%uninstall-bitcoin"
 }

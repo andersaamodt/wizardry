@@ -18,6 +18,9 @@ require-wizardry || exit 1
 set -eu
 . env-clear
 . colors
+: "${BOLD:=}"
+: "${CYAN:=}"
+: "${RESET:=}"
 
 # Catch Ctrl-C and TERM signal to exit cleanly
 # INT (Ctrl-C) should exit 130, TERM should exit 0
@@ -41,6 +44,7 @@ while true; do
   if command -v lightning-cli >/dev/null 2>&1; then
     # Lightning is installed - show management options
     wallet_option="Wallet Menu%lightning-wallet-menu"
+    root_secret_option="Create Root Secret (Guided)%generate-lightning-hsm-secret"
     info_option="Show Info%lightning-cli getinfo"
     configure_option="Configure Lightning%configure-lightning"
     repair_option="Repair Permissions%repair-lightning-permissions"
@@ -64,14 +68,14 @@ while true; do
     
     # Build menu with available options
     if [ -n "$service_status_option" ] && [ -n "$lightning_service_option" ]; then
-      menu "$title" "$wallet_option" "$info_option" "$configure_option" \
+      menu "$title" "$wallet_option" "$root_secret_option" "$info_option" "$configure_option" \
         "$repair_option" "$service_status_option" "$lightning_service_option" \
         "$uninstall_option" "$exit_option" || menu_status=$?
     elif [ -n "$service_status_option" ]; then
-      menu "$title" "$wallet_option" "$info_option" "$configure_option" \
+      menu "$title" "$wallet_option" "$root_secret_option" "$info_option" "$configure_option" \
         "$repair_option" "$service_status_option" "$uninstall_option" "$exit_option" || menu_status=$?
     else
-      menu "$title" "$wallet_option" "$info_option" "$configure_option" \
+      menu "$title" "$wallet_option" "$root_secret_option" "$info_option" "$configure_option" \
         "$repair_option" "$uninstall_option" "$exit_option" || menu_status=$?
     fi
   else

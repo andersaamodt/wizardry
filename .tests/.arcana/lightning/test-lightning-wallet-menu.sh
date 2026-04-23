@@ -28,7 +28,13 @@ run_test_case "lightning-wallet-menu shows usage help" shows_usage_help
 contains_wallet_actions() {
   assert_file_contains "$ROOT_DIR/spells/.arcana/lightning/lightning-wallet-menu" "lightning-cli listfunds"
   assert_file_contains "$ROOT_DIR/spells/.arcana/lightning/lightning-wallet-menu" "lightning-cli newaddr"
+  assert_file_contains "$ROOT_DIR/spells/.arcana/lightning/lightning-wallet-menu" "Create Root Secret (Guided)%generate-lightning-hsm-secret"
 }
 run_test_case "lightning-wallet-menu lists wallet actions" contains_wallet_actions
+
+guided_secret_spell_exists() {
+  [ -x "$ROOT_DIR/spells/.arcana/lightning/generate-lightning-hsm-secret" ]
+}
+run_test_case "generate-lightning-hsm-secret is executable" guided_secret_spell_exists
 
 finish_tests

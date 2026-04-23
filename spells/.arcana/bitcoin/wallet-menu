@@ -27,6 +27,9 @@ else
   CYAN=""
   RESET=""
 fi
+: "${BOLD:=}"
+: "${CYAN:=}"
+: "${RESET:=}"
 
 # Catch Ctrl-C and TERM signal to exit cleanly
 # INT (Ctrl-C) should exit 130, TERM should exit 0
@@ -34,6 +37,27 @@ trap 'exit 130' INT
 trap 'exit 0' TERM
 
 first_run=1
+
+bitcoin_wallet_menu() {
+  title="${BOLD}${CYAN}Bitcoin Wallet"
+  if ! is-bitcoin-installed >/dev/null 2>&1; then
+    install_option="Install or Upgrade Bitcoin%install-bitcoin"
+    exit_label=$(exit-label)
+    exit_option="${exit_label}%kill -TERM \$PPID"
+    menu "Bitcoin: $(bitcoin-status)" "$install_option" "$exit_option"
+    return 0
+  fi
+
+  guided_create="Create Wallet (Guided)%generate-bitcoin-wallet"
+  list_wallets="List Wallets%bitcoin-cli listwallets"
+  create_wallet="Create Wallet (Raw RPC)%bitcoin-cli -named createwallet wallet_name=wallet descriptors=true avoid_reuse=true load_on_startup=true"
+  get_address="Get New Receive Address%bitcoin-cli getnewaddress \"\" bech32m"
+  stop_daemon="Stop bitcoind%bitcoin-cli stop"
+  exit_label=$(exit-label)
+  exit_option="${exit_label}%kill -TERM \$PPID"
+
+  menu "$title" "$guided_create" "$list_wallets" "$create_wallet" "$get_address" "$stop_daemon" "$exit_option"
+}
 
 # Main execution loop
 while true; do
@@ -43,14 +67,7 @@ while true; do
     first_run=0
   fi
 
-  # Display wallet menu
-  title="${BOLD}${CYAN}Bitcoin Wallet"
-  list_wallets="List Wallets%bitcoin-cli listwallets"
-  create_wallet="Create Wallet%bitcoin-cli createwallet"
-  exit_label=$(exit-label)
-  exit_option="${exit_label}%kill -TERM \$PPID"
-  
-  menu "$title" "$list_wallets" "$create_wallet" "$exit_option" || menu_status=$?
+  bitcoin_wallet_menu || menu_status=$?
   menu_status=${menu_status:-0}
   
   # ESC causes menu to exit with 130 - handle gracefully by exiting

@@ -42,10 +42,10 @@ test_wallet_menu_shows_wallet_controls_when_installed() {
 
   run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/.arcana/bitcoin/wallet-menu"
   assert_success
-  assert_file_contains "$tmp/log" "Check Wallet Balance"
-  assert_file_contains "$tmp/log" "Get New Receive Address"
-  assert_file_contains "$tmp/log" "Send Bitcoin"
-  assert_file_contains "$tmp/log" "Uninstall Bitcoin%uninstall-bitcoin"
+  assert_file_contains "$tmp/log" "Create Wallet (Guided)%generate-bitcoin-wallet"
+  assert_file_contains "$tmp/log" "List Wallets%bitcoin-cli listwallets"
+  assert_file_contains "$tmp/log" "Create Wallet (Raw RPC)%bitcoin-cli -named createwallet wallet_name=wallet descriptors=true avoid_reuse=true load_on_startup=true"
+  assert_file_contains "$tmp/log" "Get New Receive Address%bitcoin-cli getnewaddress \"\" bech32m"
 }
 
 test_wallet_menu_shows_stop_when_running() {
@@ -67,6 +67,12 @@ test_wallet_menu_shows_stop_when_running() {
 run_test_case "wallet-menu prompts for install when missing" test_wallet_menu_prompts_install_when_missing
 run_test_case "wallet-menu shows wallet controls when installed" test_wallet_menu_shows_wallet_controls_when_installed
 run_test_case "wallet-menu shows stop when daemon running" test_wallet_menu_shows_stop_when_running
+
+test_guided_wallet_spell_is_present() {
+  [ -x "$ROOT_DIR/spells/.arcana/bitcoin/generate-bitcoin-wallet" ]
+}
+
+run_test_case "generate-bitcoin-wallet is executable" test_guided_wallet_spell_is_present
 
 test_shows_help() {
   run_cmd "$ROOT_DIR/spells/.arcana/bitcoin/wallet-menu" --help

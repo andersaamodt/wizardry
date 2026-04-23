@@ -18,6 +18,9 @@ require-wizardry || exit 1
 set -eu
 . env-clear
 . colors
+: "${BOLD:=}"
+: "${CYAN:=}"
+: "${RESET:=}"
 
 # Catch Ctrl-C and TERM signal to exit cleanly
 # INT (Ctrl-C) should exit 130, TERM should exit 0
@@ -28,6 +31,8 @@ trap 'exit 0' TERM
 bitcoin_menu_display_menu() {
   title="${BOLD}${CYAN}Bitcoin: $(bitcoin-status)"
   blockchain_info="Display Blockchain Info%bitcoin-cli getblockchaininfo"
+  wallet_menu="Wallet Menu%wallet-menu"
+  guided_wallet="Create Wallet (Guided)%generate-bitcoin-wallet"
   set_config="Configure Bitcoin%configure-bitcoin"
   change_directory="Change Bitcoin Directory%change-bitcoin-directory"
   clear_cache="Clear Bitcoin Cache%# coming soon"
@@ -42,13 +47,15 @@ bitcoin_menu_display_menu() {
       service_status_option="View Bitcoin Service Status%sudo systemctl status bitcoin"
       if is-bitcoin-running; then
         bitcoin_service_option="Stop Bitcoin Service%sudo systemctl stop bitcoin"
-        menu "$title" "$blockchain_info" "$set_config" "$change_directory" \
+        menu "$title" "$blockchain_info" "$wallet_menu" "$guided_wallet" \
+          "$set_config" "$change_directory" \
           "$clear_cache" "$repair_permissions" "$service_status_option" \
           "$bitcoin_service_option" "$install_service_option" \
           "$install_bitcoin_option" "$exit_option"
       else
         bitcoin_service_option="Start Bitcoin Service%sudo systemctl start bitcoin"
-        menu "$title" "$set_config" "$change_directory" "$clear_cache" \
+        menu "$title" "$wallet_menu" "$guided_wallet" "$set_config" \
+          "$change_directory" "$clear_cache" \
           "$repair_permissions" "$service_status_option" "$bitcoin_service_option" \
           "$install_service_option" "$install_bitcoin_option" "$exit_option"
       fi
@@ -56,7 +63,8 @@ bitcoin_menu_display_menu() {
       script_dir=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
       install_service_option="Install Bitcoin Service%install-service-template \
 $script_dir/bitcoin.service \"BITCOIND=\$(command -v bitcoind)\""
-      menu "$title" "$set_config" "$change_directory" "$clear_cache" \
+      menu "$title" "$wallet_menu" "$guided_wallet" "$set_config" \
+        "$change_directory" "$clear_cache" \
         "$repair_permissions" "$install_service_option" "$install_bitcoin_option" \
         "$exit_option"
   fi
@@ -85,4 +93,3 @@ while true; do
     exit 0
   fi
 done
-

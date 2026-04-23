@@ -1,0 +1,187 @@
+#!/bin/sh
+
+# Create an encrypted Bitcoin Core descriptor wallet through a guided flow.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: generate-bitcoin-wallet
+
+Guides a local Bitcoin Core wallet creation flow with descriptor-wallet defaults,
+encryption, a first receive address, and an immediate backup file.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+if ! command -v bitcoin-cli >/dev/null 2>&1; then
+  printf '%s\n' 'Bitcoin Core CLI is not installed yet, so the wallet wizard is not ready.'
+  exit 1
+fi
+
+ask_yes_no() {
+  prompt_text=$1
+  default_answer=${2:-y}
+  if command -v ask-yn >/dev/null 2>&1; then
+    if ask-yn "$prompt_text" "$default_answer"; then
+      return 0
+    fi
+    return 1
+  fi
+  case "$default_answer" in
+    y|Y) prompt_suffix='[Y/n]' ;;
+    *) prompt_suffix='[y/N]' ;;
+  esac
+  printf '%s %s: ' "$prompt_text" "$prompt_suffix"
+  IFS= read -r reply
+  case ${reply:-$default_answer} in
+    y|Y|yes|YES|Yes) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+prompt_value() {
+  prompt_text=$1
+  default_value=${2-}
+  if [ -n "$default_value" ]; then
+    printf '%s [%s]: ' "$prompt_text" "$default_value"
+  else
+    printf '%s: ' "$prompt_text"
+  fi
+  IFS= read -r reply
+  if [ -n "$reply" ]; then
+    printf '%s\n' "$reply"
+  else
+    printf '%s\n' "$default_value"
+  fi
+}
+
+wallet_rpc() {
+  wallet_name=$1
+  shift
+  bitcoin-cli -rpcwallet="$wallet_name" "$@"
+}
+
+wallet_loaded() {
+  wallet_name=$1
+  bitcoin-cli listwallets 2>/dev/null | tr -d '[:space:]"[],' | tr '\n' ' ' | grep -Fq "$wallet_name"
+}
+
+daemon_ready() {
+  bitcoin-cli getblockchaininfo >/dev/null 2>&1
+}
+
+start_daemon_if_needed() {
+  if daemon_ready; then
+    return 0
+  fi
+  if ! command -v bitcoind >/dev/null 2>&1; then
+    printf '%s\n' 'Bitcoin Core is installed without a runnable bitcoind binary in PATH, so the wallet wizard cannot start the node.'
+    exit 1
+  fi
+  if ask_yes_no 'A running local bitcoind is needed for wallet creation. A local background start looks appropriate here.' 'y'; then
+    bitcoind -daemon >/dev/null 2>&1 || {
+      printf '%s\n' 'The local bitcoind start did not succeed, so wallet creation stayed paused.'
+      exit 1
+    }
+  else
+    printf '%s\n' 'Wallet creation stayed paused before the node start.'
+    exit 1
+  fi
+  tries=0
+  while [ "$tries" -lt 30 ]; do
+    if daemon_ready; then
+      return 0
+    fi
+    tries=$((tries + 1))
+    sleep 1
+  done
+  printf '%s\n' 'bitcoind started, but RPC did not become ready in time for the wallet wizard.'
+  exit 1
+}
+
+read_secret_twice() {
+  prompt_text=$1
+  while true; do
+    printf '%s: ' "$prompt_text" >/dev/tty
+    stty -echo < /dev/tty
+    IFS= read -r first_pass < /dev/tty || true
+    stty echo < /dev/tty
+    printf '\n' >/dev/tty
+    [ -n "$first_pass" ] || {
+      printf '%s\n' 'An empty secret would leave the wallet unencrypted, so the wizard is still waiting for a passphrase.'
+      continue
+    }
+    printf '%s: ' 'Passphrase confirmation' >/dev/tty
+    stty -echo < /dev/tty
+    IFS= read -r second_pass < /dev/tty || true
+    stty echo < /dev/tty
+    printf '\n' >/dev/tty
+    if [ "$first_pass" = "$second_pass" ]; then
+      printf '%s\n' "$first_pass"
+      return 0
+    fi
+    printf '%s\n' 'The two passphrase entries did not match, so the wallet stayed uncreated.'
+  done
+}
+
+printf '%s\n' 'Bitcoin Core wallet wizard'
+printf '%s\n' 'This flow creates a modern descriptor wallet, turns on wallet encryption at creation time, and writes an immediate backup.'
+printf '%s\n' 'The strongest result usually comes from a local machine that is intentionally quiet, with networking disabled or otherwise understood for the moment the secret material is created.'
+if ! ask_yes_no 'This session appears ready for a local wallet-creation flow with those conditions kept in mind.' 'n'; then
+  printf '%s\n' 'Wallet creation stayed paused.'
+  exit 0
+fi
+
+start_daemon_if_needed
+
+default_wallet_name=primary
+wallet_name=$(prompt_value 'Wallet name' "$default_wallet_name")
+case "$wallet_name" in
+  ''|*[!A-Za-z0-9._-]*)
+    printf '%s\n' 'Wallet names in this flow stay limited to letters, numbers, dot, underscore, and hyphen.'
+    exit 1
+    ;;
+esac
+
+if wallet_loaded "$wallet_name"; then
+  printf 'A wallet named %s is already loaded, so the creation step stayed untouched.\n' "$wallet_name"
+  exit 1
+fi
+
+wallet_passphrase=$(read_secret_twice 'Wallet encryption passphrase')
+
+create_output=$(bitcoin-cli -named createwallet \
+  wallet_name="$wallet_name" \
+  passphrase="$wallet_passphrase" \
+  avoid_reuse=true \
+  descriptors=true \
+  load_on_startup=true 2>&1) || {
+    printf '%s\n' "$create_output"
+    exit 1
+  }
+
+address_type=bech32m
+first_address=$(wallet_rpc "$wallet_name" getnewaddress "" "$address_type" 2>/dev/null || printf '')
+
+backup_root=${XDG_STATE_HOME:-$HOME/.local/state}/wizardry/bitcoin-wallet-backups
+mkdir -p "$backup_root"
+stamp=$(date -u +%Y%m%d%H%M%S 2>/dev/null || printf 'wallet')
+backup_path=$backup_root/$wallet_name-$stamp.bak
+wallet_rpc "$wallet_name" backupwallet "$backup_path" >/dev/null 2>&1 || {
+  printf '%s\n' 'The wallet was created, but the immediate backup write did not succeed.'
+  exit 1
+}
+
+printf '\n'
+printf 'Wallet created: %s\n' "$wallet_name"
+printf 'Backup file: %s\n' "$backup_path"
+if [ -n "$first_address" ]; then
+  printf 'First receive address: %s\n' "$first_address"
+fi
+printf '%s\n' 'A Bitcoin Core wallet does not expose a simple BIP39 recovery phrase here; the backup file and wallet passphrase are the important recovery materials for this flow.'

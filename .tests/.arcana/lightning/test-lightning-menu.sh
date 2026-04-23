@@ -27,6 +27,7 @@ run_test_case "lightning-menu shows usage help" shows_usage_help
 
 contains_uninstall_entry() {
   assert_file_contains "$ROOT_DIR/spells/.arcana/lightning/lightning-menu" "Uninstall Lightning"
+  assert_file_contains "$ROOT_DIR/spells/.arcana/lightning/lightning-menu" "Create Root Secret (Guided)%generate-lightning-hsm-secret"
 }
 run_test_case "lightning-menu includes uninstall entry" contains_uninstall_entry
 
