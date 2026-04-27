@@ -213,3 +213,5 @@
 - Executable-file scans should prefer `[ -x "$path" ]` over `find -perm` forms because POSIX/BSD/GNU permission predicates differ in "any execute bit" semantics.
 - Under `set -e`, a filtering pipeline can exit before cleanup/status-normalization commands run; put `|| true` on the pipeline when "no matches" is not a failure.
 - SSH public key validators should parse type/data after whitespace normalization because users often paste keys as split shell arguments or with extra spacing.
+- Intentional word splitting of user input must disable globbing first, or values like `*` expand against the caller's current directory.
+- Optional flags documented after operands should be parsed independent of position, not only as the first argument.

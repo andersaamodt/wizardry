@@ -40,10 +40,28 @@ max_length_supports_verbose_flag() {
   [ "$OUTPUT" = "$expected" ] || { TEST_FAILURE_REASON="expected verbose output with summary"; return 1; }
 }
 
+max_length_supports_verbose_flag_after_arguments() {
+  run_spell "spells/cantrips/max-length" tiny hugephrase -v
+  assert_success || return 1
+  expected="Maximum length: 10
+10"
+  [ "$OUTPUT" = "$expected" ] || { TEST_FAILURE_REASON="expected trailing -v to enable verbose output"; return 1; }
+}
+
+max_length_does_not_glob_single_argument() {
+  workdir=$(make_tempdir)
+  touch "$workdir/longfilename"
+  run_cmd sh -c "cd \"$workdir\" && \"$ROOT_DIR/spells/cantrips/max-length\" '*'"
+  assert_success || return 1
+  [ "$OUTPUT" = "1" ] || { TEST_FAILURE_REASON="expected literal asterisk length 1, got '$OUTPUT'"; return 1; }
+}
+
 run_test_case "max-length requires at least one argument" max_length_requires_input
 run_test_case "max-length returns longest length for arguments" max_length_measures_individual_arguments
 run_test_case "max-length splits single list argument" max_length_splits_single_argument_list
 run_test_case "max-length prints verbose summary when requested" max_length_supports_verbose_flag
+run_test_case "max-length accepts verbose flag after arguments" max_length_supports_verbose_flag_after_arguments
+run_test_case "max-length does not glob single argument" max_length_does_not_glob_single_argument
 
 shows_help() {
   run_spell spells/cantrips/max-length --help

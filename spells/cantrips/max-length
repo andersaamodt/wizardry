@@ -16,11 +16,20 @@ esac
 
 set -eu
 . env-clear
+
 verbose=0
-if [ "${1-}" = "-v" ]; then
-  verbose=1
+
+arg_count=$#
+while [ "$arg_count" -gt 0 ]; do
+  arg=$1
   shift
-fi
+  if [ "$arg" = "-v" ]; then
+    verbose=1
+  else
+    set -- "$@" "$arg"
+  fi
+  arg_count=$((arg_count - 1))
+done
 
 if [ "$#" -eq 0 ]; then
   printf '%s\n' "No arguments passed to max_length"
@@ -31,7 +40,9 @@ fi
 # single argument that contains spaces, treat it as a whitespace-delimited list
 # to measure each word individually.
 if [ "$#" -eq 1 ]; then
+  set -f
   set -- $1
+  set +f
 fi
 
 longest=0
