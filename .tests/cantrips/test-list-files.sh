@@ -74,11 +74,20 @@ test_lists_regular_files_only() {
   esac
 }
 
+test_rejects_invalid_type() {
+  workdir=$(make_tempdir)
+
+  run_spell "spells/cantrips/list-files" "$workdir" -t z
+  assert_failure || return 1
+  assert_error_contains "type must be f or d" || return 1
+}
+
 run_test_case "list-files prints usage" test_help
 run_test_case "list-files lists files recursively" test_lists_files_recursively
 run_test_case "list-files -x lists executable files only" test_lists_executable_files_only
 run_test_case "list-files -x includes owner-only executables" test_lists_owner_only_executable_files
 run_test_case "list-files -t f lists regular files only" test_lists_regular_files_only
+run_test_case "list-files rejects invalid type" test_rejects_invalid_type
 
 
 # Test via source-then-invoke pattern  

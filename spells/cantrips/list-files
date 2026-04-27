@@ -48,6 +48,12 @@ while [ "$#" -gt 0 ]; do
         usage-error "list-files" "-t requires an argument"
       fi
       file_type=$2
+      case "$file_type" in
+        f|d) ;;
+        *)
+          usage-error "list-files" "type must be f or d"
+          ;;
+      esac
       shift 2
       ;;
     *)
