@@ -57,16 +57,17 @@ if ! check-attribute-tool attr \
 fi
 
 header_tmp=$(temp-file wizardry-header) || exit 1
-trap 'rm -f "$header_tmp"' EXIT HUP INT TERM
+body_dir=$(dirname "$scroll")
+body_name=${scroll##*/}
+body_tmp=$(mktemp "$body_dir/.${body_name}.body.XXXXXX") || exit 1
+trap 'rm -f "$header_tmp" "$body_tmp"' EXIT HUP INT TERM
 printf '%s\n' "$yaml_header" >"$header_tmp"
 
-body_tmp=$(temp-file wizardry-body) || exit 1
 awk '
-    /^---$/ {delim++; next}
+    /^---$/ && delim<2 {delim++; next}
     delim<2 {next}
     {print}
 ' "$scroll" >"$body_tmp"
-mv "$body_tmp" "$scroll"
 
 while IFS= read -r line || [ -n "$line" ]; do
     key=${line%%:*}
@@ -74,11 +75,13 @@ while IFS= read -r line || [ -n "$line" ]; do
     value=${value# }
     [ -z "$key" ] && continue
 
-    if ! set-attribute "$key" "$value" "$scroll" >/dev/null 2>&1; then
+    if ! set-attribute "$key" "$value" "$body_tmp" >/dev/null 2>&1; then
         printf '%s\n' "Error: failed to set attribute $key" >&2
         exit 1
     fi
 done <"$header_tmp"
 
+mv "$body_tmp" "$scroll"
+
 trap - EXIT HUP INT TERM
-rm -f "$header_tmp"
+rm -f "$header_tmp" "$body_tmp"

@@ -215,3 +215,5 @@
 - SSH public key validators should parse type/data after whitespace normalization because users often paste keys as split shell arguments or with extra spacing.
 - Intentional word splitting of user input must disable globbing first, or values like `*` expand against the caller's current directory.
 - Optional flags documented after operands should be parsed independent of position, not only as the first argument.
+- Front-matter strippers must stop treating delimiter lines specially after the closing delimiter, or body content containing `---` is silently lost.
+- Destructive metadata conversions should stage body changes and write attributes to the staged file, then replace the original only after every attribute write succeeds.

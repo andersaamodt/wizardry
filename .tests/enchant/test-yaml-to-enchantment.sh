@@ -75,6 +75,33 @@ user.beta: moon"
   [ "$body" = "body" ] || { TEST_FAILURE_REASON="header not stripped"; return 1; }
 }
 
+test_preserves_body_delimiters() {
+  stub_dir=$(make_stub_dir)
+  cat >"$stub_dir/attr" <<'STUB'
+#!/bin/sh
+exit 0
+STUB
+  chmod +x "$stub_dir/attr"
+
+  tmpfile="$WIZARDRY_TMPDIR/headered-body-delimiter"
+  cat >"$tmpfile" <<'FILE'
+---
+user.alpha: sun
+---
+first
+---
+second
+FILE
+
+  PATH="$stub_dir:$PATH" run_spell "spells/enchant/yaml-to-enchantment" "$tmpfile"
+  assert_success || return 1
+  body=$(cat "$tmpfile")
+  expected="first
+---
+second"
+  [ "$body" = "$expected" ] || { TEST_FAILURE_REASON="body delimiter was not preserved: $body"; return 1; }
+}
+
 test_reports_missing_helpers() {
   stub_dir=$(make_stub_dir)
   # Keep only core tools and wizardry imps in PATH.
@@ -120,7 +147,13 @@ FILE
 
   restricted_path="$stub_dir:$WIZARDRY_IMPS_PATH"
   PATH="$restricted_path" run_spell "spells/enchant/yaml-to-enchantment" "$tmpfile"
-  assert_failure && assert_error_contains "failed to set attribute"
+  assert_failure && assert_error_contains "failed to set attribute" || return 1
+  body=$(cat "$tmpfile")
+  expected="---
+user.alpha: fail
+---
+body"
+  [ "$body" = "$expected" ] || { TEST_FAILURE_REASON="file changed after attribute failure: $body"; return 1; }
 }
 
 run_test_case "yaml-to-enchantment prints usage" test_help
@@ -128,6 +161,7 @@ run_test_case "yaml-to-enchantment validates arguments" test_argument_validation
 run_test_case "yaml-to-enchantment fails for missing files" test_missing_file
 run_test_case "yaml-to-enchantment requires YAML header" test_requires_header
 run_test_case "yaml-to-enchantment restores attributes and strips header" test_restores_attributes_and_strips_header
+run_test_case "yaml-to-enchantment preserves body delimiters" test_preserves_body_delimiters
 run_test_case "yaml-to-enchantment reports missing helpers" test_reports_missing_helpers
 run_test_case "yaml-to-enchantment fails when helper errors" test_fails_on_attribute_error
 
