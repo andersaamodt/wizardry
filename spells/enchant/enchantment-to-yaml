@@ -41,6 +41,22 @@ if [ -z "$keys" ]; then
   exit 1
 fi
 
+# Clear attributes from file - check if we have tools available before
+# rewriting content so failure leaves the original file untouched.
+has_attr_tool=0
+if check-attribute-tool xattr; then
+  has_attr_tool=1
+elif check-attribute-tool attr; then
+  has_attr_tool=1
+elif check-attribute-tool setfattr; then
+  has_attr_tool=1
+fi
+
+if [ "$has_attr_tool" -eq 0 ]; then
+  printf '%s\n' "Error: requires one of attr, xattr, or setfattr to clear attributes" >&2
+  exit 1
+fi
+
 # Create YAML front matter with attributes
 tmp=$(temp-file wizardry-yaml) || exit 1
 {
@@ -55,21 +71,6 @@ tmp=$(temp-file wizardry-yaml) || exit 1
 } >"$tmp"
 cat "$file" >>"$tmp" || exit 1
 mv "$tmp" "$file"
-
-# Clear attributes from file - check if we have tools available
-has_attr_tool=0
-if check-attribute-tool xattr; then
-  has_attr_tool=1
-elif check-attribute-tool attr; then
-  has_attr_tool=1
-elif check-attribute-tool setfattr; then
-  has_attr_tool=1
-fi
-
-if [ "$has_attr_tool" -eq 0 ]; then
-  printf '%s\n' "Error: requires one of attr, xattr, or setfattr to clear attributes" >&2
-  exit 1
-fi
 
 # Clear all attributes using available tools
 if check-attribute-tool xattr; then

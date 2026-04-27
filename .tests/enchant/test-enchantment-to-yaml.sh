@@ -108,7 +108,9 @@ STUB
 
   restricted_path="$stub_dir:$WIZARDRY_IMPS_PATH"
   PATH="$restricted_path" run_spell "spells/enchant/enchantment-to-yaml" "$target"
-  assert_failure && assert_error_contains "requires one of attr, xattr, or setfattr"
+  assert_failure && assert_error_contains "requires one of attr, xattr, or setfattr" || return 1
+  body=$(cat "$target")
+  [ "$body" = "content" ] || { TEST_FAILURE_REASON="file changed despite missing clear helper: $body"; return 1; }
 }
 
 run_test_case "enchantment-to-yaml prints usage" test_help
