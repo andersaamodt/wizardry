@@ -19,6 +19,11 @@ set -eu
 from=''
 to=''
 
+if [ "$#" -eq 2 ]; then
+        from=$1
+        to=$2
+else
+parse_error=''
 while [ "$#" -gt 0 ]; do
         case "$1" in
                 from)
@@ -26,6 +31,9 @@ while [ "$#" -gt 0 ]; do
                         if [ "$#" -gt 0 ]; then
                                 from=$1
                                 shift
+                        else
+                                parse_error="move: source path required after 'from'."
+                                break
                         fi
                         ;;
                 to)
@@ -33,6 +41,9 @@ while [ "$#" -gt 0 ]; do
                         if [ "$#" -gt 0 ]; then
                                 to=$1
                                 shift
+                        else
+                                parse_error="move: destination path required after 'to'."
+                                break
                         fi
                         ;;
                 *)
@@ -40,11 +51,21 @@ while [ "$#" -gt 0 ]; do
                                 from=$1
                         elif is unset "$to"; then
                                 to=$1
+                        else
+                                parse_error="move: too many arguments."
+                                break
                         fi
                         shift
                         ;;
         esac
 done
+
+if is set "$parse_error"; then
+        printf '%s\n' "$parse_error" >&2
+        printf '%s\n' "Usage: move <source> <destination>" >&2
+        exit 1
+fi
+fi
 
 # Validate arguments
 if is unset "$from"; then

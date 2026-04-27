@@ -217,3 +217,5 @@
 - Optional flags documented after operands should be parsed independent of position, not only as the first argument.
 - Front-matter strippers must stop treating delimiter lines specially after the closing delimiter, or body content containing `---` is silently lost.
 - Destructive metadata conversions should stage body changes and write attributes to the staged file, then replace the original only after every attribute write succeeds.
+- Natural-language parsers should preserve literal two-argument command forms so reserved words like `from` and `to` remain valid filenames.
+- Commands that mutate files should reject extra operands before acting; silently ignoring extras can move or rewrite the wrong target.
