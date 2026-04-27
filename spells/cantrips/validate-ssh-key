@@ -22,21 +22,27 @@ if [ -z "${1+x}" ]; then
         fail "validate-ssh-key: key required"
 fi
 
-ssh_key=$1
+ssh_key=$*
+
+# Split on shell whitespace so callers may pass the whole key as one quoted
+# string or paste it as separate arguments.
+set -f
+set -- $ssh_key
+set +f
+
+key_type=${1-}
+key_data=${2-}
 
 # SSH key format: ssh-<type> <base64-data> [optional-comment]
 # Common types: ssh-rsa, ssh-ed25519, ssh-dss, ecdsa-sha2-*
-case "$ssh_key" in
-        ssh-rsa\ *|ssh-ed25519\ *|ssh-dss\ *|ecdsa-sha2-*\ *)
+case "$key_type" in
+        ssh-rsa|ssh-ed25519|ssh-dss|ecdsa-sha2-*)
                 # Valid key type prefix
                 ;;
         *)
                 exit 1
                 ;;
 esac
-
-# Extract the base64 portion (second field)
-key_data=$(printf '%s' "$ssh_key" | cut -d' ' -f2)
 
 # Check that key_data looks like base64 (alphanumeric, +, /, and = for padding)
 case "$key_data" in

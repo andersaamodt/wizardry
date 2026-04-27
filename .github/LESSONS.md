@@ -210,3 +210,6 @@
 - `env VAR=value command` creates CLEAN environment with only specified vars - must explicitly pass ALL needed vars, not just export them in parent shell.
 - Signed integer validation must reject a bare `-` before numeric comparison, or shell arithmetic tests can emit errors and still fall through as success.
 - Dry-run paths must use unique temporary files and preserve existing files in the target directory, especially when users may already have generic names like `tempfile.tmp`.
+- Executable-file scans should prefer `[ -x "$path" ]` over `find -perm` forms because POSIX/BSD/GNU permission predicates differ in "any execute bit" semantics.
+- Under `set -e`, a filtering pipeline can exit before cleanup/status-normalization commands run; put `|| true` on the pipeline when "no matches" is not a failure.
+- SSH public key validators should parse type/data after whitespace normalization because users often paste keys as split shell arguments or with extra spacing.

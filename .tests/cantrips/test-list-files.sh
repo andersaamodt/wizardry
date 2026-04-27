@@ -46,6 +46,20 @@ test_lists_executable_files_only() {
   esac
 }
 
+test_lists_owner_only_executable_files() {
+  workdir=$(make_tempdir)
+  printf 'private script\n' >"$workdir/private.sh"
+  chmod 700 "$workdir/private.sh"
+  printf 'text\n' >"$workdir/regular.txt"
+
+  run_spell "spells/cantrips/list-files" "$workdir" -x
+  assert_success || return 1
+  assert_output_contains "private.sh" || return 1
+  case "$OUTPUT" in
+    *regular.txt*) TEST_FAILURE_REASON="should not list non-executable files"; return 1 ;;
+  esac
+}
+
 test_lists_regular_files_only() {
   workdir=$(make_tempdir)
   mkdir -p "$workdir/subdir"
@@ -63,6 +77,7 @@ test_lists_regular_files_only() {
 run_test_case "list-files prints usage" test_help
 run_test_case "list-files lists files recursively" test_lists_files_recursively
 run_test_case "list-files -x lists executable files only" test_lists_executable_files_only
+run_test_case "list-files -x includes owner-only executables" test_lists_owner_only_executable_files
 run_test_case "list-files -t f lists regular files only" test_lists_regular_files_only
 
 

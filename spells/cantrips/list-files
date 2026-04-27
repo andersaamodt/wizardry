@@ -63,9 +63,13 @@ fi
 # Build find command
 if [ "$only_executable" = "1" ]; then
   if [ -n "$file_type" ]; then
-    find "$directory" -type "$file_type" -perm -111 2>/dev/null
+    find "$directory" -type "$file_type" 2>/dev/null | while IFS= read -r path; do
+      [ -x "$path" ] && printf '%s\n' "$path"
+    done || true
   else
-    find "$directory" -type f -perm -111 2>/dev/null
+    find "$directory" -type f 2>/dev/null | while IFS= read -r path; do
+      [ -x "$path" ] && printf '%s\n' "$path"
+    done || true
   fi
 elif [ -n "$file_type" ]; then
   find "$directory" -type "$file_type" 2>/dev/null

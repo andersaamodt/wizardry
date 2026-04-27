@@ -32,6 +32,16 @@ test_accepts_ed25519_key() {
   assert_success || return 1
 }
 
+test_accepts_key_split_across_arguments() {
+  run_spell "spells/cantrips/validate-ssh-key" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI user@host
+  assert_success || return 1
+}
+
+test_accepts_key_with_extra_spacing() {
+  run_spell "spells/cantrips/validate-ssh-key" "ssh-ed25519    AAAAC3NzaC1lZDI1NTE5AAAAI    user@host"
+  assert_success || return 1
+}
+
 test_rejects_invalid_format() {
   run_spell "spells/cantrips/validate-ssh-key" "not-a-valid-key"
   assert_failure || return 1
@@ -46,6 +56,8 @@ test_requires_argument() {
 run_test_case "validate-ssh-key shows usage text" test_help
 run_test_case "validate-ssh-key accepts RSA keys" test_accepts_rsa_key
 run_test_case "validate-ssh-key accepts ed25519 keys" test_accepts_ed25519_key
+run_test_case "validate-ssh-key accepts split key arguments" test_accepts_key_split_across_arguments
+run_test_case "validate-ssh-key accepts extra spacing" test_accepts_key_with_extra_spacing
 run_test_case "validate-ssh-key rejects invalid format" test_rejects_invalid_format
 run_test_case "validate-ssh-key requires argument" test_requires_argument
 
