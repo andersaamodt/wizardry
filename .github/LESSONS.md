@@ -208,3 +208,5 @@
 - CGI tests require WIZARDRY_SITE_NAME, WIZARDRY_SITES_DIR, REQUEST_METHOD, QUERY_STRING env vars in test sandbox whitelist (run-cmd) to work correctly.
 - Piping to run_spell doesn't work for capturing OUTPUT because pipe creates subshell; call CGI scripts directly for POST requests with stdin data.
 - `env VAR=value command` creates CLEAN environment with only specified vars - must explicitly pass ALL needed vars, not just export them in parent shell.
+- Signed integer validation must reject a bare `-` before numeric comparison, or shell arithmetic tests can emit errors and still fall through as success.
+- Dry-run paths must use unique temporary files and preserve existing files in the target directory, especially when users may already have generic names like `tempfile.tmp`.

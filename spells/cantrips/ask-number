@@ -32,13 +32,29 @@ min=$2
 max=$3
 
 case $min in
-*[!0-9-]*|"")
+  -*)
+    min_digits=${min#-}
+    ;;
+  *)
+    min_digits=$min
+    ;;
+esac
+case $min_digits in
+*[!0-9]*|"")
   die "ask-number: MIN must be an integer." || exit 1
   ;;
 *) : ;;
 esac
 case $max in
-*[!0-9-]*|"")
+  -*)
+    max_digits=${max#-}
+    ;;
+  *)
+    max_digits=$max
+    ;;
+esac
+case $max_digits in
+*[!0-9]*|"")
   die "ask-number: MAX must be an integer." || exit 1
   ;;
 *) : ;;
@@ -89,7 +105,15 @@ while :; do
   esac
 
   case $response in
-  *[!0-9-]*|"")
+  -*)
+    response_digits=${response#-}
+    ;;
+  *)
+    response_digits=$response
+    ;;
+  esac
+  case $response_digits in
+  *[!0-9]*|"")
     printf '%s\n' "Whole number expected." >&2
     continue
     ;;

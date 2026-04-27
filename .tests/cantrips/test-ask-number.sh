@@ -83,6 +83,28 @@ test_ask_number_reprompts_on_empty() {
   assert_success && assert_output_contains "7" && assert_error_contains "Whole number expected."
 }
 
+# Test lone minus input is rejected, not accepted as an integer
+test_ask_number_rejects_lone_minus_input() {
+  tmp=$(make_tempdir)
+  printf -- '-\n5\n' >"$tmp/answers"
+  run_cmd env ASK_CANTRIP_INPUT=stdin sh -c "\"$ROOT_DIR/spells/cantrips/ask-number\" 'Pick' -1 9 < \"$tmp/answers\""
+  assert_success || return 1
+  assert_output_contains "5" || return 1
+  assert_error_contains "Whole number expected." || return 1
+  case $ERROR in
+    *"integer expression expected"*) TEST_FAILURE_REASON="shell integer error leaked to caller"; return 1 ;;
+  esac
+}
+
+# Test lone minus is rejected as a bound
+test_ask_number_rejects_lone_minus_bounds() {
+  run_cmd env ASK_CANTRIP_INPUT=none "$ROOT_DIR/spells/cantrips/ask-number" "Question" - 3
+  assert_failure && assert_error_contains "MIN must be an integer." || return 1
+
+  run_cmd env ASK_CANTRIP_INPUT=none "$ROOT_DIR/spells/cantrips/ask-number" "Question" 1 -
+  assert_failure && assert_error_contains "MAX must be an integer." || return 1
+}
+
 # Test rejects non-integer MAX
 test_ask_number_rejects_invalid_max() {
   run_cmd "$ROOT_DIR/spells/cantrips/ask-number" "Question" 1 notanint
@@ -141,6 +163,8 @@ run_test_case "ask_number rejects above maximum" test_ask_number_rejects_above_m
 run_test_case "ask_number accepts negative numbers" test_ask_number_accepts_negative
 run_test_case "ask_number negative range bounds" test_ask_number_negative_bounds
 run_test_case "ask_number reprompts on empty input" test_ask_number_reprompts_on_empty
+run_test_case "ask_number rejects lone minus input" test_ask_number_rejects_lone_minus_input
+run_test_case "ask_number rejects lone minus bounds" test_ask_number_rejects_lone_minus_bounds
 run_test_case "ask_number rejects non-integer MAX" test_ask_number_rejects_invalid_max
 run_test_case "ask_number rejects MIN greater than MAX" test_ask_number_rejects_min_gt_max
 run_test_case "ask_number shows usage with too few args" test_ask_number_shows_usage_too_few
