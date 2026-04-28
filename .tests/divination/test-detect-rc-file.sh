@@ -95,6 +95,28 @@ test_handles_home_path_with_spaces() {
   assert_output_contains "format=shell" || return 1
 }
 
+test_rejects_linebreak_home_before_key_value_output() {
+  tmpdir=$(make_tempdir)
+  home_dir="$tmpdir/home
+forged=1"
+  mkdir -p "$home_dir"
+  touch "$home_dir/.profile"
+
+  run_cmd env DETECT_RC_FILE_PLATFORM=unknown HOME="$home_dir" SHELL=sh sh -c '
+    exec spells/divination/detect-rc-file
+  '
+
+  assert_failure || return 1
+  assert_error_contains "unsafe output value" || return 1
+  case "$OUTPUT" in
+    *"
+forged=1"*)
+      TEST_FAILURE_REASON="detect-rc-file printed forged key=value output from HOME"
+      return 1
+      ;;
+  esac
+}
+
 test_handles_missing_home() {
   run_cmd env DETECT_RC_FILE_PLATFORM=unknown HOME= SHELL=sh sh -c '
     exec spells/divination/detect-rc-file
@@ -239,6 +261,7 @@ run_test_case "detect-rc-file emits nix formatting hints" test_emits_nix_format_
 run_test_case "detect-rc-file favors existing platform candidates" test_prefers_existing_platform_file
 run_test_case "detect-rc-file respects shell defaults on unknown platforms" test_prefers_shell_file_when_platform_unknown
 run_test_case "detect-rc-file handles HOME paths with spaces" test_handles_home_path_with_spaces
+run_test_case "detect-rc-file rejects linebreak HOME before key=value output" test_rejects_linebreak_home_before_key_value_output
 run_test_case "detect-rc-file tolerates missing HOME" test_handles_missing_home
 run_test_case "detect-rc-file falls back to shell on NixOS without home-manager" test_nixos_falls_back_to_shell_rc
 run_test_case "detect-rc-file detects new home-manager path" test_nixos_detects_new_home_manager_path

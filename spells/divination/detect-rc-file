@@ -64,11 +64,25 @@ USAGE
         exit 2
 fi
 
+reject_unsafe_output_value() {
+        output_value=$1
+        output_newline='
+'
+        output_carriage_return=$(printf '\r')
+        case "$output_value" in
+        *"$output_newline"*|*"$output_carriage_return"*)
+                printf '%s\n' "detect-rc-file: unsafe output value." >&2
+                exit 1
+                ;;
+        esac
+}
+
 add_candidate() {
         file=$1
         if [ -z "$file" ]; then
                 return 0
         fi
+        reject_unsafe_output_value "$file"
         while IFS= read -r candidate || [ -n "$candidate" ]; do
                 if [ "$candidate" = "$file" ]; then
                         return 0
@@ -214,6 +228,10 @@ case $rc_file in
         format=shell
         ;;
         esac
+
+reject_unsafe_output_value "$platform"
+reject_unsafe_output_value "$rc_file"
+reject_unsafe_output_value "$format"
 
 printf 'platform=%s\n' "$platform"
 printf 'rc_file=%s\n' "$rc_file"
