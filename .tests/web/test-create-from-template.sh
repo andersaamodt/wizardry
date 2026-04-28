@@ -163,6 +163,55 @@ EOF
   rm -rf "$fake_wizardry_root"
 }
 
+test_create_from_template_handles_wizardry_dir_with_spaces() {
+  skip-if-compiled || return $?
+
+  test_web_root=$(temp-dir web-wizardry-test)
+  tmp_parent=$(temp-dir wizardry-template-parent)
+  fake_wizardry_root="$tmp_parent/wizardry root"
+
+  mkdir -p "$fake_wizardry_root/web/minimal/pages"
+  cat > "$fake_wizardry_root/web/minimal/pages/index.md" <<'EOF'
+# Space Root Template
+EOF
+
+  WIZARDRY_DIR="$fake_wizardry_root" WEB_WIZARDRY_ROOT="$test_web_root" \
+    run_spell spells/web/create-from-template mini minimal
+
+  assert_success || return 1
+  [ -f "$test_web_root/mini/site/pages/index.md" ] || {
+    TEST_FAILURE_REASON="template under WIZARDRY_DIR with spaces was not copied"
+    rm -rf "$test_web_root" "$tmp_parent"
+    return 1
+  }
+
+  rm -rf "$test_web_root" "$tmp_parent"
+}
+
+test_create_from_template_rejects_path_shaped_site_name() {
+  skip-if-compiled || return $?
+
+  tmpdir=$(make_tempdir)
+  web_root="$tmpdir/sites"
+  escape_dir="$tmpdir/escape"
+  fake_wizardry_root="$tmpdir/wizardry"
+  mkdir -p "$web_root" "$escape_dir" "$fake_wizardry_root/web/minimal/pages"
+  printf '%s\n' keep > "$escape_dir/keep"
+  cat > "$fake_wizardry_root/web/minimal/pages/index.md" <<'EOF'
+# Minimal
+EOF
+
+  WIZARDRY_DIR="$fake_wizardry_root" WEB_WIZARDRY_ROOT="$web_root" \
+    run_spell spells/web/create-from-template ../escape minimal
+
+  assert_failure || return 1
+  assert_error_contains "invalid site name" || return 1
+  if [ -e "$escape_dir/site.conf" ] || [ ! -f "$escape_dir/keep" ]; then
+    TEST_FAILURE_REASON="create-from-template wrote outside WEB_WIZARDRY_ROOT"
+    return 1
+  fi
+}
+
 test_create_from_template_resolves_external_repo_templates() {
   skip-if-compiled || return $?
 
@@ -230,6 +279,8 @@ elif [ -d "$ROOT_DIR/spells/web/blog" ] || [ -d "$(dirname "$ROOT_DIR")/git/wiza
 fi
 run_test_case "all templates create expected site structure" test_all_web_templates_create_expected_structure
 run_test_case "create-from-template resolves templates from web" test_create_from_template_uses_web_directory
+run_test_case "create-from-template handles WIZARDRY_DIR paths with spaces" test_create_from_template_handles_wizardry_dir_with_spaces
+run_test_case "create-from-template rejects path-shaped site names" test_create_from_template_rejects_path_shaped_site_name
 run_test_case "create-from-template resolves external repo templates" test_create_from_template_resolves_external_repo_templates
 
 finish_tests

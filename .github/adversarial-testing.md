@@ -26,6 +26,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Names that become service units, daemon labels, process matches, or security users need the same strict validator as create/configure paths.
 - If a value is both a label and a path component, test create, edit, rename, import, and repair paths for the same contract.
 - Template and import paths should share create-path validators because they often write both directories and profile metadata.
+- Template-based site creation must validate site names before creating the output root; template paths with spaces should still resolve.
 - Mutation commands must enforce the same path output contract as list/status commands before writing metadata or renaming folders.
 - Rebuild/run/install-style commands that print machine-readable rows must reject line-break paths before executing side effects, not only before status-only reads.
 - Values interpolated into regex matching need stricter name validation than path quoting alone provides.
@@ -77,6 +78,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Connector imps that replay accumulated command-argument strings should disable globbing around the intentional split, then restore the prior globbing mode.
 - Generated gloss scanners should test `WIZARDRY_DIR` and `SPELLBOOK_DIR` paths containing spaces, especially when feeding file lists to grep or find.
 - Candidate path lists should not be space-delimited; test `$HOME`, project roots, and config paths containing spaces.
+- Template source candidate lists should be newline-delimited, not command-substitution `for` loops, because install roots commonly contain spaces.
 - Use `--` when passing user paths to commands that support it.
 
 ### Numeric and Interactive Input
@@ -186,6 +188,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Menu labels built from hand-edited metadata should strip CR before display and command construction, even when writer commands now reject CR.
 - Root hint validation belongs in the shared resolver, not only the diagnostic action that prints the resolved root.
 - GUI backend root/path candidate lists should stay newline-delimited or argument-list based; space-delimited path lists break valid project roots containing spaces.
+- Workspace-relative paths from config and auto-detected child directories should reject CR/LF before they are served, launched, persisted, or echoed as GUI rows.
 
 ### Eval-Printing Commands
 
