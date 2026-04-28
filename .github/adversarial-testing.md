@@ -56,6 +56,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 
 - Key-value files must keep keys allowlisted and values single-line unless multi-line values are the explicit file format.
 - CSV-like values must reject leading/trailing commas, empty entries, unsupported characters, and line-break injection.
+- Tab-, pipe-, and comma-delimited records must reject delimiter characters in fields before persisting or printing rows for another parser.
 - Metadata conversions should stage changes and replace originals only after all writes succeed.
 - Front-matter parsing must preserve delimiter-like body content after the closing delimiter.
 - Round-trip tests should include empty values, multi-line values, repeated delimiters, and write failures.
