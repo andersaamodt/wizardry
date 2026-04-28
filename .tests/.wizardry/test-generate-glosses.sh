@@ -537,11 +537,11 @@ test_first_word_gloss_synonym_lookup_matches_literal_name() {
   spellbook="$tmpdir/spellbook"
   mkdir -p "$wizardry_dir/spells/test" "$spellbook"
 
-  cat > "$wizardry_dir/spells/test/my.alias-do" <<'EOF'
+  cat > "$wizardry_dir/spells/test/my-alias.do" <<'EOF'
 #!/bin/sh
 printf 'GOOD_LITERAL_SPELL\n'
 EOF
-  chmod +x "$wizardry_dir/spells/test/my.alias-do"
+  chmod +x "$wizardry_dir/spells/test/my-alias.do"
 
   cat > "$wizardry_dir/spells/test/bad-uncastable" <<'EOF'
 #!/bin/sh
@@ -550,7 +550,7 @@ printf 'BAD_REGEX_SYNONYM\n'
 EOF
   chmod +x "$wizardry_dir/spells/test/bad-uncastable"
 
-  printf '%s\n' 'myXalias-do=bad-uncastable' > "$spellbook/.synonyms"
+  printf '%s\n' 'my-aliasXdo=bad-uncastable' > "$spellbook/.synonyms"
 
   WIZARDRY_DIR="$wizardry_dir" SPELLBOOK_DIR="$spellbook" \
     run_spell spells/.wizardry/generate-glosses --output "$tmpdir/glosses" --quiet
@@ -566,7 +566,7 @@ WIZARDRY_DIR="$wizardry_dir"
 SPELLBOOK_DIR="$spellbook"
 export WIZARDRY_DIR SPELLBOOK_DIR
 . "$tmpdir/glosses"
-my.alias do
+my alias.do
 EOF
   chmod +x "$tmpdir/run.sh"
 
