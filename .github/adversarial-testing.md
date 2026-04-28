@@ -101,6 +101,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Native packaging entrypoints should validate bundle IDs again before rendering plist or project metadata.
 - Backend status rows should sanitize XDG/env-derived file paths, including preference write confirmations.
 - Plain-text backend outputs still need argument shape checks when GUI code treats the first line as authoritative state.
+- Uninstall helpers should reject explicit removal paths outside the artifact shape they own before recursive deletion.
 - Validate remote metadata before downloads, extraction, install paths, chmod, JWT signing, API URLs, or platform tools run.
 - Git remote URLs can contain CR/LF and path-shaped slugs; validate before printing status rows or constructing GitHub API URLs.
 - Stub network tools and feed hostile metadata instead of relying on live services for adversarial release tests.
