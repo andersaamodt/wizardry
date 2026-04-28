@@ -4,6 +4,7 @@
 # - thesaurus shows usage with --help
 # - thesaurus fails when menu dependency is missing
 # - thesaurus supports --list flag
+# - thesaurus checks default overrides by literal synonym name
 
 set -eu
 
@@ -118,6 +119,24 @@ test_no_integer_expression_error_with_empty_files() {
 }
 
 run_test_case "no integer expression error with empty files" test_no_integer_expression_error_with_empty_files
+
+test_list_keeps_default_when_custom_regex_false_match_exists() {
+  skip-if-compiled || return $?
+  tmpdir=$(make_tempdir)
+  spellbook="$tmpdir/.spellbook"
+  mkdir -p "$spellbook"
+  printf '%s\n' 'myXalias=custom-target' > "$spellbook/.synonyms"
+  printf '%s\n' 'my.alias=default-target' > "$spellbook/.default-synonyms"
+  touch "$spellbook/.default-synonyms-initialized"
+
+  SPELLBOOK_DIR="$spellbook" run_spell "spells/menu/thesaurus" --list
+
+  assert_success || return 1
+  assert_output_contains "myXalias" || return 1
+  assert_output_contains "my.alias" || return 1
+}
+
+run_test_case "thesaurus override checks use literal names" test_list_keeps_default_when_custom_regex_false_match_exists
 
 
 # Test via source-then-invoke pattern  

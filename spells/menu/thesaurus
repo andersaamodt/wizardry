@@ -105,7 +105,9 @@ set -eu
             # Check if this default is overridden by a custom synonym
             is_overridden=0
             if [ -f "$custom_file" ]; then
-              custom_override=$(grep "^$synonym_word=" "$custom_file" 2>/dev/null || true)
+              custom_override=$(
+                awk -F= -v key="$synonym_word" '$1 == key { print; exit }' "$custom_file" 2>/dev/null || true
+              )
               if [ -n "$custom_override" ]; then
                 is_overridden=1
               fi
@@ -194,9 +196,13 @@ set -eu
           if [ -n "$synonym_word" ] && [ -n "$target_spell" ]; then
             # Check if this default is overridden by a custom synonym
             is_overridden=0
-            custom_override=$(grep "^$synonym_word=" "$custom_file" 2>/dev/null || true)
-            if [ -f "$custom_file" ] && [ -n "$custom_override" ]; then
-              is_overridden=1
+            if [ -f "$custom_file" ]; then
+              custom_override=$(
+                awk -F= -v key="$synonym_word" '$1 == key { print; exit }' "$custom_file" 2>/dev/null || true
+              )
+              if [ -n "$custom_override" ]; then
+                is_overridden=1
+              fi
             fi
             
             # Only show if not overridden

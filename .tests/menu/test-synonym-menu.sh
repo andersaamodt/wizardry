@@ -4,6 +4,7 @@
 # - synonym-menu shows usage with --help
 # - synonym-menu requires WORD argument
 # - synonym-menu auto-detects synonym type
+# - synonym-menu matches synonym names literally
 
 set -eu
 
@@ -72,6 +73,29 @@ EOF
 
 run_test_case "synonym-menu auto-detects synonym type" test_detects_custom_synonym
 
+test_does_not_open_menu_for_regex_false_match() {
+  tmpdir=$(make_tempdir)
+  spellbook="$tmpdir/.spellbook"
+  stubdir="$tmpdir/bin"
+  menu_log="$tmpdir/menu.log"
+  mkdir -p "$spellbook" "$stubdir"
+  printf '%s\n' 'myXalias=echo' > "$spellbook/.synonyms"
+  cat > "$stubdir/menu" <<'SH'
+#!/bin/sh
+printf '%s\n' "$@" > "$MENU_LOG"
+exit 130
+SH
+  chmod +x "$stubdir/menu"
+
+  SPELLBOOK_DIR="$spellbook" MENU_LOG="$menu_log" PATH="$stubdir:$PATH" \
+    run_cmd "$ROOT_DIR/spells/menu/synonym-menu" "my.alias"
+
+  assert_failure || return 1
+  assert_error_contains "not found" || return 1
+  assert_path_missing "$menu_log" || return 1
+}
+
+run_test_case "synonym-menu rejects regex false matches" test_does_not_open_menu_for_regex_false_match
 
 # Test via source-then-invoke pattern  
 

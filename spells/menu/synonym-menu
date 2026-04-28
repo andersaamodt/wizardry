@@ -46,14 +46,27 @@ set -eu
   synonyms_file=""
   target_spell=""
   
-  if [ -f "$custom_file" ] && grep -q "^$synonym_word=" "$custom_file" 2>/dev/null; then
+  custom_match=""
+  if [ -f "$custom_file" ]; then
+    custom_match=$(
+      awk -F= -v key="$synonym_word" '$1 == key { print; exit }' "$custom_file" 2>/dev/null || true
+    )
+  fi
+  default_match=""
+  if [ -z "$custom_match" ] && [ -f "$default_file" ]; then
+    default_match=$(
+      awk -F= -v key="$synonym_word" '$1 == key { print; exit }' "$default_file" 2>/dev/null || true
+    )
+  fi
+
+  if [ -n "$custom_match" ]; then
     synonym_type="custom"
     synonyms_file="$custom_file"
-    target_spell=$(grep "^$synonym_word=" "$custom_file" | sed "s/^$synonym_word=//")
-  elif [ -f "$default_file" ] && grep -q "^$synonym_word=" "$default_file" 2>/dev/null; then
+    target_spell=$(printf '%s' "$custom_match" | sed 's/^[^=]*=//')
+  elif [ -n "$default_match" ]; then
     synonym_type="default"
     synonyms_file="$default_file"
-    target_spell=$(grep "^$synonym_word=" "$default_file" | sed "s/^$synonym_word=//")
+    target_spell=$(printf '%s' "$default_match" | sed 's/^[^=]*=//')
   fi
   
   if [ -z "$target_spell" ]; then
