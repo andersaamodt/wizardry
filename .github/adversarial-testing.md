@@ -77,6 +77,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Machine-readable `key=value` output must reject CR/LF in echoed values so hostile input cannot forge later keys.
 - Environment-derived fields such as shell, cwd, platform, and detected helper labels are untrusted when echoed in machine-readable status output.
 - Diagnostic/status commands are not exempt from output-shape rules; treat their paths and environment fields as hostile key/value values.
+- Validators that print `key=value` summaries should validate or sanitize the file paths they echo, not only the structured data being validated.
 - If a command must execute a control-character-bearing path, keep the execution value separate from the sanitized display/status value printed as `key=value`.
 - Helper-script stdout and filesystem entry names are untrusted when they are forwarded into GUI/backend records; test installed modules with delimiter-shaped filenames and status lines.
 - Catalog/list/count commands must apply the same identifier validator as the command that later executes the selected item.
