@@ -37,6 +37,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Sourced parsers must be tested for repeated independent invocations in one shell, leaked recursion depth, and clobbered caller loop variables.
 - Synonym targets that include preset arguments must be tested through direct parser recursion, not only through generated shell glosses.
 - Generated parser/gloss code must use the same literal lookup semantics as the runtime parser; test regex-shaped names against near-match records.
+- Parser synonym targets should include category/path-prefixed spells and must resolve them only under the project spell tree.
 
 ### Shell Expansion
 
@@ -107,6 +108,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Treat repository sync/import scripts as release tools: reject missing or recursive source/target paths, test dotfile copies, and preserve local-only generated/host directories.
 - Any sync/import script that prints `key=value` status rows should reject line-break paths before echoing canonical source or target values.
 - Generated metadata that gets committed or synced should avoid machine-local absolute paths; readers should resolve relative paths against the project and ignore config paths that escape it.
+- Release helper scripts should revalidate manifest fields they print, not rely only on CI ordering around a separate validator.
 - Manifest and catalog validators should test future hostile records, not only the current checked-in data, because workflows often iterate those records into paths, package IDs, API calls, and generated files.
 - "Single-line" validators should reject tabs when the same values can later appear in TSV or other delimiter-based GUI rows.
 - When staging generated assets, test partial output directories; each expected file should have an explicit fallback instead of relying on a glob to mean the directory is complete.

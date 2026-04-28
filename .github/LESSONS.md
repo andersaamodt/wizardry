@@ -75,6 +75,7 @@
 - Sourced parsers must use parser-specific scratch variable names and scope recursion depth to actual recursive calls so independent caller loops are not corrupted.
 - Parser synonym recursion must split stored targets with globbing disabled so synonyms like `talk=say hello` preserve preset arguments without pathname expansion.
 - Generated first-word glosses must use literal synonym key matching just like parse, or regex-shaped command names can route to near-match synonyms.
+- Parser synonym targets with category prefixes must resolve as spell-relative paths under `WIZARDRY_DIR/spells`, not as ordinary command names or arbitrary filesystem paths.
 
 
 - When a file is sourced (`. filename`), using `exit` exits the parent shell; use `return` instead (discovered via doppelganger failing to create directories) (3)

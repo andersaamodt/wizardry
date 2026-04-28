@@ -1195,6 +1195,33 @@ EOF
   assert_output_contains "say args: [hello world]" || return 1
 }
 
+test_synonym_target_can_use_spell_relative_path() {
+  saved_wizdir="${WIZARDRY_DIR-}"
+  saved_spellbook="${SPELLBOOK_DIR-}"
+
+  tmpdir=$(make_tempdir)
+  test_spell_dir="$tmpdir/wizardry/spells/custom"
+  spellbook="$tmpdir/spellbook"
+  mkdir -p "$test_spell_dir" "$spellbook"
+
+  cat > "$test_spell_dir/path-target" <<'EOF'
+#!/bin/sh
+printf 'path target args: [%s]\n' "$*"
+EOF
+  chmod +x "$test_spell_dir/path-target"
+  printf '%s\n' 'go=custom/path-target preset' > "$spellbook/.synonyms"
+
+  export WIZARDRY_DIR="$tmpdir/wizardry"
+  export SPELLBOOK_DIR="$spellbook"
+  run_sourced_spell "spells/.imps/lex/parse" "go" "extra"
+
+  if [ -n "$saved_wizdir" ]; then export WIZARDRY_DIR="$saved_wizdir"; else unset WIZARDRY_DIR; fi
+  if [ -n "$saved_spellbook" ]; then export SPELLBOOK_DIR="$saved_spellbook"; else unset SPELLBOOK_DIR; fi
+
+  assert_success || return 1
+  assert_output_contains "path target args: [preset extra]" || return 1
+}
+
 test_parse_depth_does_not_leak_between_calls() {
   saved_wizdir="${WIZARDRY_DIR-}"
   tmpdir=$(make_tempdir)
@@ -1246,6 +1273,7 @@ run_test_case "Custom synonym multi-word castable (issue: leap to location)" tes
 run_test_case "Custom synonym multi-word uncastable (issue: leap to location sourcing)" test_custom_synonym_uncastable
 run_test_case "Synonym lookup matches literal names" test_synonym_lookup_matches_literal_name
 run_test_case "Synonym target arguments are split" test_synonym_target_arguments_are_split
+run_test_case "Synonym target can use spell-relative path" test_synonym_target_can_use_spell_relative_path
 run_test_case "Parse depth does not leak between calls" test_parse_depth_does_not_leak_between_calls
 
 # Test parse-enabled=0 behavior

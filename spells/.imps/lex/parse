@@ -168,6 +168,19 @@ while [ $attempt_len -gt 0 ]; do
   if [ -z "$spell_path" ] && [ -x "$wizardry_dir/spells/.wizardry/$cmd_name" ]; then
     spell_path="$wizardry_dir/spells/.wizardry/$cmd_name"
   fi
+
+  # Try explicit spell-relative paths used by some synonyms, such as
+  # translocation/jump-to-marker or .arcana/web-wizardry/web-wizardry-menu.
+  if [ -z "$spell_path" ]; then
+    case "$cmd_name" in
+      /*|..|../*|*/..|*/../*|*//*) ;;
+      */*)
+        if [ -x "$wizardry_dir/spells/$cmd_name" ]; then
+          spell_path="$wizardry_dir/spells/$cmd_name"
+        fi
+        ;;
+    esac
+  fi
   
   # Try spell category directories
   if [ -z "$spell_path" ]; then
@@ -416,7 +429,6 @@ fi
 
 printf 'parse: %s: command not found\n' "$first_word" >&2
 return 127
-
 
 
 
