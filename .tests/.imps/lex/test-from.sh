@@ -57,6 +57,42 @@ EOF
   assert_output_contains "args: [source value dest value after]" || return 1
 }
 
+test_from_does_not_glob_command_args() {
+  tmpdir=$(make_tempdir)
+  workdir="$tmpdir/work"
+  stubdir="$tmpdir/bin"
+  mkdir -p "$workdir" "$stubdir"
+  : > "$workdir/expanded"
+
+  cat > "$stubdir/show-args" <<'EOF'
+#!/bin/sh
+printf 'args: [%s]\n' "$*"
+EOF
+  chmod +x "$stubdir/show-args"
+
+  saved_path=$PATH
+  saved_workdir=${RUN_CMD_WORKDIR-}
+  PATH="$stubdir:$PATH"
+  RUN_CMD_WORKDIR=$workdir
+  export PATH RUN_CMD_WORKDIR
+  run_cmd "$ROOT_DIR/spells/.imps/lex/from" "show-args" "*" "source"
+  PATH=$saved_path
+  export PATH
+  if [ -n "$saved_workdir" ]; then
+    RUN_CMD_WORKDIR=$saved_workdir
+    export RUN_CMD_WORKDIR
+  else
+    unset RUN_CMD_WORKDIR
+  fi
+
+  assert_success || return 1
+  assert_output_contains "args: [source *]" || return 1
+  if printf '%s' "$OUTPUT" | grep -q "expanded"; then
+    TEST_FAILURE_REASON="from expanded a glob in command arguments"
+    return 1
+  fi
+}
+
 test_from_requires_source() {
   run_spell spells/.imps/lex/from "echo" "hello"
   assert_failure || return 1
@@ -71,6 +107,7 @@ run_test_case "from is executable" test_from_is_executable
 run_test_case "from prepends source to args" test_from_prepends_source
 run_test_case "from preserves source with spaces" test_from_preserves_source_with_spaces
 run_test_case "from sources parse for remaining words" test_from_sources_parse_for_remaining_words
+run_test_case "from does not glob command args" test_from_does_not_glob_command_args
 run_test_case "from requires source" test_from_requires_source
 run_test_case "from requires command" test_from_requires_command
 

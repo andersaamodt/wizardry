@@ -22,17 +22,35 @@ if [ -z "$to_cmd" ]; then
 fi
 
 if [ $# -eq 0 ]; then
+  to_had_noglob=0
+  case $- in
+    *f*) to_had_noglob=1 ;;
+    *) set -f ;;
+  esac
   if [ -n "$to_cmd_args" ]; then
     # shellcheck disable=SC2086
     "$to_cmd" $to_cmd_args "$to_target"
+    to_status=$?
   else
     "$to_cmd" "$to_target"
+    to_status=$?
   fi
-  exit $?
+  if [ "$to_had_noglob" -eq 0 ]; then
+    set +f
+  fi
+  exit "$to_status"
 fi
 
 to_lex_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+to_had_noglob=0
+case $- in
+  *f*) to_had_noglob=1 ;;
+  *) set -f ;;
+esac
 # shellcheck disable=SC2086
 set -- "$to_cmd" $to_cmd_args "$to_target" "$@"
+if [ "$to_had_noglob" -eq 0 ]; then
+  set +f
+fi
 . "$to_lex_dir/parse"
 exit $?
