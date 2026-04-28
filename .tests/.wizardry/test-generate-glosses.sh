@@ -445,6 +445,37 @@ jump() {"*|jump\(\)\ \{*)
   esac
 }
 
+test_parse_disabled_hyphenated_alias_accepts_arguments() {
+  if ! command -v bash >/dev/null 2>&1; then
+    test_skip "requires bash"
+    return 0
+  fi
+
+  tmpdir=$(make_tempdir)
+  printf 'parse-enabled=0\n' > "$tmpdir/.mud"
+
+  WIZARDRY_DIR="$ROOT_DIR" SPELLBOOK_DIR="$tmpdir" \
+    run_spell spells/.wizardry/generate-glosses --output "$tmpdir/glosses" --quiet
+  assert_success || return 1
+
+  cat > "$tmpdir/run.bash" <<EOF
+#!/usr/bin/env bash
+set -u
+shopt -s expand_aliases
+. "$tmpdir/glosses"
+jump-to-marker --help
+EOF
+  chmod +x "$tmpdir/run.bash"
+
+  run_cmd env \
+    PATH="$ROOT_DIR/spells/.imps/lex:$PATH" \
+    SPELLBOOK_DIR="$tmpdir" \
+    bash "$tmpdir/run.bash"
+
+  assert_success || return 1
+  assert_output_contains "Usage:" || return 1
+}
+
 test_synonym_invalid_chars_still_rejected() {
   # Test that truly invalid characters are still rejected
   tmpdir=$(make_tempdir)
@@ -471,6 +502,7 @@ run_test_case "hyphenated special-char synonyms do not emit invalid functions" t
 run_test_case "single-quote synonym targets do not break gloss file" test_single_quote_synonym_target_does_not_break_gloss_file
 run_test_case "first-word gloss handles unset WIZARDRY_DIR under set -u" test_first_word_gloss_handles_unset_wizardry_dir_under_set_u
 run_test_case "CRLF parse-disabled config suppresses first-word glosses" test_parse_disabled_crlf_config_suppresses_first_word_glosses
+run_test_case "parse-disabled hyphenated aliases accept arguments" test_parse_disabled_hyphenated_alias_accepts_arguments
 run_test_case "synonyms with truly invalid chars still rejected" test_synonym_invalid_chars_still_rejected
 
 # Realistic tests - actually execute aliases in interactive shell context
