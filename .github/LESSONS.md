@@ -74,6 +74,7 @@
 - When generate-glosses creates first-word glosses, consumed words must be shifted BEFORE calling parse with synonym targets to prevent infinite loops (e.g., "jump-to" → "leap-to-location" with args still present causes parse to try "leap-to-location-to-marker-home").
 - Sourced parsers must use parser-specific scratch variable names and scope recursion depth to actual recursive calls so independent caller loops are not corrupted.
 - Parser synonym recursion must split stored targets with globbing disabled so synonyms like `talk=say hello` preserve preset arguments without pathname expansion.
+- Generated first-word glosses must use literal synonym key matching just like parse, or regex-shaped command names can route to near-match synonyms.
 
 
 - When a file is sourced (`. filename`), using `exit` exits the parent shell; use `return` instead (discovered via doppelganger failing to create directories) (3)

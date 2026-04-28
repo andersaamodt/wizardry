@@ -36,6 +36,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Natural-language parsers must distinguish reserved connector words from literal filenames.
 - Sourced parsers must be tested for repeated independent invocations in one shell, leaked recursion depth, and clobbered caller loop variables.
 - Synonym targets that include preset arguments must be tested through direct parser recursion, not only through generated shell glosses.
+- Generated parser/gloss code must use the same literal lookup semantics as the runtime parser; test regex-shaped names against near-match records.
 
 ### Shell Expansion
 
