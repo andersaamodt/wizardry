@@ -25,6 +25,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - If a value is both a label and a path component, test create, edit, rename, import, and repair paths for the same contract.
 - Template and import paths should share create-path validators because they often write both directories and profile metadata.
 - Mutation commands must enforce the same path output contract as list/status commands before writing metadata or renaming folders.
+- Rebuild/run/install-style commands that print machine-readable rows must reject line-break paths before executing side effects, not only before status-only reads.
 - Values interpolated into regex matching need stricter name validation than path quoting alone provides.
 - Composite refs such as `source:name` must reject unsupported namespaces, missing separators, repeated separators, and trailing words.
 - After rejecting a path-like value, assert sibling/outside files were not created, modified, chmodded, or deleted.
