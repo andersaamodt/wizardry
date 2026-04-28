@@ -111,6 +111,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - When staging generated assets, test partial output directories; each expected file should have an explicit fallback instead of relying on a glob to mean the directory is complete.
 - Status output that echoes configured commands or generated log paths must sanitize CR/LF separately from execution semantics; shell comments can let hostile command text succeed while forging GUI rows.
 - GUI preference/config readers should parse and revalidate hand-edited files instead of streaming them directly back to the bridge.
+- Project starter templates should carry the same adversarial backend contracts as first-party apps so generated projects do not recreate fixed bugs.
 
 ### Eval-Printing Commands
 
