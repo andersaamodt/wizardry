@@ -17,6 +17,13 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 
 ## High-Value Bug Classes
 
+### Path And Name Boundaries
+
+- Values used as path segments must reject `.`, `..`, `/`, `\`, empty values, and line breaks before side effects.
+- If a value is both a label and a path component, test create, edit, rename, import, and repair paths for the same contract.
+- After rejecting a path-like value, assert sibling/outside files were not created, modified, chmodded, or deleted.
+- Test path-like values in config files too; imported metadata is input, not trusted source code.
+
 ### Argument Shape
 
 - Missing operands should fail before side effects.
@@ -47,9 +54,24 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 
 ### Metadata and Structured Data
 
+- Key-value files must keep keys allowlisted and values single-line unless multi-line values are the explicit file format.
+- CSV-like values must reject leading/trailing commas, empty entries, unsupported characters, and line-break injection.
 - Metadata conversions should stage changes and replace originals only after all writes succeed.
 - Front-matter parsing must preserve delimiter-like body content after the closing delimiter.
 - Round-trip tests should include empty values, multi-line values, repeated delimiters, and write failures.
+
+### Release And Remote Metadata
+
+- Treat release asset names, package names, bundle IDs, API filter values, and remote branch/track names as hostile input.
+- Validate remote metadata before downloads, extraction, install paths, chmod, JWT signing, API URLs, or platform tools run.
+- Stub network tools and feed hostile metadata instead of relying on live services for adversarial release tests.
+
+### GUI And Bridge Surfaces
+
+- GUI controls must not rely on client-only validation; backend validators own the command contract.
+- Test create/edit parity: values rejected during creation must not become valid through rename, settings, import, or advanced fields.
+- Bridge actions should route to fixed commands with positional args, never user-selected executables or shell fragments.
+- For Wizardry app GUI specifics, read `/Users/andersaamodt/git/wizardry-apps/.github/adversarial-testing.md`.
 
 ### Pipelines and Exit Status
 
