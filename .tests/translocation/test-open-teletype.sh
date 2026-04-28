@@ -4,6 +4,7 @@
 # - Requires torify command
 # - Requires MUD_PLAYER environment variable
 # - Rejects extra operands before connecting
+# - Rejects blank prompted connection fields before connecting
 
 set -eu
 
@@ -82,10 +83,70 @@ EOF
   fi
 }
 
+test_rejects_blank_prompted_address_before_connecting() {
+  tmpdir=$(make_tempdir)
+  stubdir=$tmpdir/bin
+  home=$tmpdir/home
+  log=$tmpdir/torify.log
+  mkdir -p "$stubdir" "$home/.ssh"
+  : > "$home/.ssh/test_player"
+  cat > "$stubdir/torify" <<EOF
+#!/bin/sh
+printf '%s\n' "torify \$*" >> "$log"
+exit 0
+EOF
+  chmod +x "$stubdir/torify"
+  for util in sh env printf; do
+    if command -v "$util" >/dev/null 2>&1; then
+      ln -sf "$(command -v "$util")" "$stubdir/$util" 2>/dev/null || true
+    fi
+  done
+
+  run_cmd env PATH="$stubdir:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:/bin:/usr/bin" HOME="$home" MUD_PLAYER=test_player \
+    sh -c "printf '\\nuser\\n' | \"$ROOT_DIR/spells/translocation/open-teletype\""
+  assert_failure || return 1
+  assert_error_contains "remote address required" || return 1
+  if [ -f "$log" ]; then
+    TEST_FAILURE_REASON="open-teletype connected with a blank remote address"
+    return 1
+  fi
+}
+
+test_rejects_blank_prompted_user_before_connecting() {
+  tmpdir=$(make_tempdir)
+  stubdir=$tmpdir/bin
+  home=$tmpdir/home
+  log=$tmpdir/torify.log
+  mkdir -p "$stubdir" "$home/.ssh"
+  : > "$home/.ssh/test_player"
+  cat > "$stubdir/torify" <<EOF
+#!/bin/sh
+printf '%s\n' "torify \$*" >> "$log"
+exit 0
+EOF
+  chmod +x "$stubdir/torify"
+  for util in sh env printf; do
+    if command -v "$util" >/dev/null 2>&1; then
+      ln -sf "$(command -v "$util")" "$stubdir/$util" 2>/dev/null || true
+    fi
+  done
+
+  run_cmd env PATH="$stubdir:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:/bin:/usr/bin" HOME="$home" MUD_PLAYER=test_player \
+    sh -c "printf '\\n' | \"$ROOT_DIR/spells/translocation/open-teletype\" host.example"
+  assert_failure || return 1
+  assert_error_contains "remote user required" || return 1
+  if [ -f "$log" ]; then
+    TEST_FAILURE_REASON="open-teletype connected with a blank remote user"
+    return 1
+  fi
+}
+
 run_test_case "open-teletype shows usage text" test_help
 run_test_case "open-teletype requires torify" test_requires_torify
 run_test_case "open-teletype requires MUD_PLAYER" test_requires_mud_player
 run_test_case "open-teletype rejects extra operands before connecting" test_rejects_extra_operands_before_connecting
+run_test_case "open-teletype rejects blank prompted address before connecting" test_rejects_blank_prompted_address_before_connecting
+run_test_case "open-teletype rejects blank prompted user before connecting" test_rejects_blank_prompted_user_before_connecting
 
 
 # Test via source-then-invoke pattern  

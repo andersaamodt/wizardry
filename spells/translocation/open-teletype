@@ -46,12 +46,20 @@ remote_user=${2-}
 
 if [ -z "$tor_address" ]; then
         printf '%s' "Enter the Tor address: "
-        read -r tor_address
+        IFS= read -r tor_address || tor_address=
+fi
+if [ -z "$tor_address" ]; then
+        printf '%s\n' "open-teletype: remote address required." >&2
+        exit 2
 fi
 
 if [ -z "$remote_user" ]; then
         printf '%s' "Enter the remote user: "
-        read -r remote_user
+        IFS= read -r remote_user || remote_user=
+fi
+if [ -z "$remote_user" ]; then
+        printf '%s\n' "open-teletype: remote user required." >&2
+        exit 2
 fi
 
 # Connect via ssh through torify
