@@ -39,10 +39,27 @@ detect_posix_awk_probe_works() {
   assert_output_contains "POSIX toolchain and probes look healthy." || return 1
 }
 
+detect_posix_find_probe_handles_quote_bearing_tmpdir() {
+  tmpdir=$(make_tempdir)
+  quote_tmp="$tmpdir/tmp'root"
+  mkdir -p "$quote_tmp"
+
+  run_cmd env \
+    TMPDIR="$quote_tmp" \
+    WIZARDRY_TEST_HELPERS_ONLY=1 \
+    DETECT_POSIX_TOOLS=find \
+    DETECT_POSIX_PROBES=find \
+    "$ROOT_DIR/spells/divination/detect-posix"
+
+  assert_success || return 1
+  assert_output_contains "POSIX toolchain and probes look healthy." || return 1
+}
+
 run_test_case "detect-posix shows usage with --help" detect_posix_shows_usage
 run_test_case "detect-posix succeeds for minimal probe" detect_posix_reports_success_for_minimal_probe
 run_test_case "detect-posix reports missing tools" detect_posix_reports_missing_tools
 run_test_case "detect-posix awk probe works without unbound variable error" detect_posix_awk_probe_works
+run_test_case "detect-posix find probe handles quote-bearing TMPDIR" detect_posix_find_probe_handles_quote_bearing_tmpdir
 
 
 # Test via source-then-invoke pattern  
