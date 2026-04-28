@@ -21,6 +21,10 @@ if [ "$#" -eq 0 ]; then
   printf '%s\n' "file-to-folder: file path required" >&2
   exit 2
 fi
+if [ "$#" -ne 1 ]; then
+  printf '%s\n' "file-to-folder: exactly one file path expected" >&2
+  exit 2
+fi
 
 file="$1"
 

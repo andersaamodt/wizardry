@@ -133,6 +133,9 @@ test_ask_number_shows_usage_too_many() {
 test_ask_number_shows_usage_no_args() {
   run_cmd "$ROOT_DIR/spells/cantrips/ask-number"
   assert_failure && assert_error_contains "Usage:"
+  case "$ERROR" in
+    *">&2"*) TEST_FAILURE_REASON="usage output leaked redirection token"; return 1 ;;
+  esac
 }
 
 # Test range hint appears in prompt

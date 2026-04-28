@@ -20,7 +20,6 @@ set -eu
 
 if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
   cat >&2 <<'USAGE'
->&2
 Usage: ask-yn "Question" [default]
 
 Prompt for a yes/no response. Defaults may be 'yes' or 'no'.

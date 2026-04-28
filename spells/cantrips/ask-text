@@ -21,7 +21,6 @@ set -eu
 
 if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
   cat >&2 <<'USAGE'
->&2
 Usage: ask-text "Question" [default]
 
 Prompts the user with the provided question and echoes their response.

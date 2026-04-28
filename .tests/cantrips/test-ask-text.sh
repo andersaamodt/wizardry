@@ -86,6 +86,9 @@ test_ask_text_no_hint_without_default() {
 test_ask_text_shows_usage_no_args() {
   run_cmd "$ROOT_DIR/spells/cantrips/ask-text"
   assert_failure && assert_error_contains "Usage:"
+  case "$ERROR" in
+    *">&2"*) TEST_FAILURE_REASON="usage output leaked redirection token"; return 1 ;;
+  esac
 }
 
 # Test usage error with too many arguments

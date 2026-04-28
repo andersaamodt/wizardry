@@ -120,6 +120,17 @@ file_to_folder_requires_argument() {
   assert_error_contains "file path required" || return 1
 }
 
+file_to_folder_rejects_extra_argument() {
+  tmpdir=$(make_tempdir)
+  testfile="$tmpdir/extra.txt"
+  printf 'test content' > "$testfile"
+
+  run_spell "spells/arcane/file-to-folder" "$testfile" extra
+  assert_failure || return 1
+  assert_error_contains "exactly one file path" || return 1
+  [ -f "$testfile" ] || { TEST_FAILURE_REASON="file should remain unchanged after argument error"; return 1; }
+}
+
 file_to_folder_rejects_non_text_files() {
   tmpdir=$(make_tempdir)
   # Create a binary file (use /dev/zero to ensure it's binary)
@@ -191,6 +202,7 @@ run_test_case "file-to-folder handles whitespace-only files" file_to_folder_hand
 run_test_case "file-to-folder rejects directories" file_to_folder_rejects_directories
 run_test_case "file-to-folder rejects missing files" file_to_folder_rejects_missing_files
 run_test_case "file-to-folder requires argument" file_to_folder_requires_argument
+run_test_case "file-to-folder rejects extra arguments" file_to_folder_rejects_extra_argument
 run_test_case "file-to-folder rejects non-text files" file_to_folder_rejects_non_text_files
 run_test_case "file-to-folder accepts text files" file_to_folder_accepts_text_files
 run_test_case "file-to-folder transfers priority attribute" file_to_folder_transfers_priority_attribute

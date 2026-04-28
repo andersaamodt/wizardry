@@ -220,3 +220,4 @@
 - Natural-language parsers should preserve literal two-argument command forms so reserved words like `from` and `to` remain valid filenames.
 - Commands that mutate files should reject extra operands before acting; silently ignoring extras can move or rewrite the wrong target.
 - Validate constrained option values before passing them to platform tools; suppressed tool stderr otherwise turns usage errors into silent failures.
+- Heredoc redirection belongs on the `cat` command, not inside the heredoc body; otherwise usage output leaks literal tokens like `>&2`.

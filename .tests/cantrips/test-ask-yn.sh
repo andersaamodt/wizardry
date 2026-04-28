@@ -89,6 +89,9 @@ test_ask_yn_accepts_uppercase_NO() {
 test_ask_yn_shows_usage_no_args() {
   run_cmd "$ROOT_DIR/spells/cantrips/ask-yn"
   assert_failure && assert_error_contains "Usage:"
+  case "$ERROR" in
+    *">&2"*) TEST_FAILURE_REASON="usage output leaked redirection token"; return 1 ;;
+  esac
 }
 
 test_ask_yn_shows_usage_too_many_args() {

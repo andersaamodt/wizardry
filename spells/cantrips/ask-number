@@ -19,7 +19,6 @@ set -eu
 
 if [ "$#" -ne 3 ]; then
   cat >&2 <<'USAGE'
->&2
 Usage: ask-number "Question" MIN MAX
 
 Prompts until the user supplies an integer within the inclusive range.
