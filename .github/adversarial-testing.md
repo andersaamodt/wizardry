@@ -90,6 +90,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 
 - Key-value files must keep keys allowlisted and values single-line unless multi-line values are the explicit file format.
 - Metadata writers and editors must reject both LF and CR line breaks; reader-side CR stripping can otherwise silently change persisted identifiers.
+- Line-based key/value readers can still import CR inside a value; sanitize or fall back before reprinting display names or writing generated launchers.
 - CSV-like values must reject leading/trailing commas, empty entries, unsupported characters, and line-break injection.
 - Tab-, pipe-, and comma-delimited records must reject delimiter characters in fields before persisting or printing rows for another parser.
 - Use delimiter-specific output sanitizers for row formats; `key=value` CR/LF cleanup does not protect TSV or pipe-separated columns.
@@ -158,6 +159,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Staging helpers that delete/recreate output directories should reject destinations that overlap source directories before removal.
 - Any sync/import script that prints `key=value` status rows should reject line-break paths before echoing canonical source or target values.
 - Generated metadata that gets committed or synced should avoid machine-local absolute paths; readers should resolve relative paths against the project and ignore config paths that escape it.
+- Relative suffixes between two paths should be computed after both sides are canonicalized; symlinked system paths can otherwise become nested absolute paths.
 - Release helper scripts should revalidate manifest fields they print, not rely only on CI ordering around a separate validator.
 - Manifest and catalog validators should test future hostile records, not only the current checked-in data, because workflows often iterate those records into paths, package IDs, API calls, and generated files.
 - Catalog source subdirectories are repo-internal paths; reject absolute paths, empty components, `.`, `..`, backslashes, tabs, and CR/LF before clone/copy/cache replacement code runs.
