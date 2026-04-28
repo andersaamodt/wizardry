@@ -39,6 +39,7 @@ if [ "$parse_sourced" -eq 0 ]; then
   exit 1
 fi
 
+wizardry_parse_main() {
 # Check if parse is enabled in config BEFORE doing any work (defaults to enabled when unset)
 spell_home="${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}"
 config_file="$spell_home/.mud"
@@ -430,28 +431,9 @@ fi
 
 printf 'parse: %s: command not found\n' "$first_word" >&2
 return 127
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+wizardry_parse_main "$@"
+parse_status=$?
+unset -f wizardry_parse_main 2>/dev/null || true
+return "$parse_status"

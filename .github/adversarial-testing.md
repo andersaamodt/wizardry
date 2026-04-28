@@ -21,6 +21,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 
 - Values used as path segments must reject `.`, `..`, `/`, `\`, empty values, and line breaks before side effects.
 - Path arguments that are echoed in machine-readable status rows should reject line breaks even when the filesystem can technically represent them.
+- Names that become service units, daemon labels, process matches, or security users need the same strict validator as create/configure paths.
 - If a value is both a label and a path component, test create, edit, rename, import, and repair paths for the same contract.
 - Template and import paths should share create-path validators because they often write both directories and profile metadata.
 - Mutation commands must enforce the same path output contract as list/status commands before writing metadata or renaming folders.
@@ -37,6 +38,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Constrained options must reject unsupported values before platform tools run.
 - Natural-language parsers must distinguish reserved connector words from literal filenames.
 - Sourced parsers must be tested for repeated independent invocations in one shell, leaked recursion depth, and clobbered caller loop variables.
+- Sourced parsers should also preserve caller positional parameters after internal `shift` and `set --` operations.
 - Synonym targets that include preset arguments must be tested through direct parser recursion, not only through generated shell glosses.
 - Generated parser/gloss code must use the same literal lookup semantics as the runtime parser; test regex-shaped names against near-match records.
 - Parser synonym targets should include category/path-prefixed spells and must resolve them only under the project spell tree.
