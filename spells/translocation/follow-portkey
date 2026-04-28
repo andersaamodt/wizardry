@@ -52,6 +52,14 @@ if [ ! -d "$context" ]; then
         exit 1
 fi
 
+shell_quote() {
+        printf "'"
+        printf '%s' "$1" | sed "s/'/'\\\\''/g"
+        printf "'"
+}
+
 # Output the cd command for eval
-printf 'cd "%s"\n' "$context"
-printf '%s\n' "Following portkey to $context."
+printf 'cd '
+shell_quote "$context"
+printf '\n'
+printf '%s\n' "Following portkey to $context." >&2

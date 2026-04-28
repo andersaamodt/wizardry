@@ -74,11 +74,40 @@ test_fails_on_missing_destination_without_cd() {
   esac
 }
 
+test_quotes_eval_output_for_quote_bearing_destination() {
+  skip-if-compiled || return $?
+
+  tmpdir=$(make_tempdir)
+  portkey=$tmpdir/portkey
+  payload_file="$tmpdir/follow-portkey-injected"
+  destination="$tmpdir/dest\"; touch \"$payload_file\"; echo \""
+  stubdir=$tmpdir/bin
+  mkdir -p "$stubdir" "$destination"
+  : > "$portkey"
+  {
+    printf '%s\n' '#!/bin/sh'
+    printf 'printf '\''%%s\\n'\'' %s\n' "'$destination'"
+  } > "$stubdir/read-magic"
+  chmod +x "$stubdir/read-magic"
+
+  PATH="$stubdir:$PATH" run_spell "spells/translocation/follow-portkey" "$portkey"
+  assert_success || return 1
+  ( eval "$OUTPUT" ) || {
+    TEST_FAILURE_REASON="follow-portkey emitted cd output that could not be evaluated"
+    return 1
+  }
+  if [ -e "$payload_file" ]; then
+    TEST_FAILURE_REASON="follow-portkey eval output executed injected shell"
+    return 1
+  fi
+}
+
 run_test_case "follow-portkey shows usage text" test_help
 run_test_case "follow-portkey requires file argument" test_requires_argument
 run_test_case "follow-portkey fails on missing file" test_fails_on_missing_file
 run_test_case "follow-portkey rejects extra operands" test_rejects_extra_operands
 run_test_case "follow-portkey fails without cd when destination is missing" test_fails_on_missing_destination_without_cd
+run_test_case "follow-portkey quotes eval output for quote-bearing destination" test_quotes_eval_output_for_quote_bearing_destination
 
 
 # Test via source-then-invoke pattern  

@@ -172,6 +172,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 Commands whose stdout is meant for `eval` or sourcing need stricter failure behavior:
 
 - Validate all operands before printing shell code.
+- Shell-quote every printed value structurally; quoting with raw double quotes is not enough for imported paths containing `"`, `$`, backticks, or command substitutions.
 - If a destination or target is invalid, exit nonzero and print no eval-able command.
 - Reject extra operands even when the first operand would be valid.
 
