@@ -21,6 +21,44 @@ test_site_autorebuild_requires_target() {
   assert_error_contains "SITENAME required"
 }
 
+test_site_autorebuild_rejects_path_shaped_local_name() {
+  skip-if-compiled || return $?
+
+  tmpdir=$(temp-dir site-autorebuild-path-test)
+  web_root="$tmpdir/sites"
+  escape_dir="$tmpdir/escape"
+  mkdir -p "$web_root" "$escape_dir/site"
+
+  run_cmd env WEB_WIZARDRY_ROOT="$web_root" \
+    sh "$ROOT_DIR/spells/web/site-autorebuild" run ../escape
+  assert_status 2 || return 1
+  assert_error_contains "invalid site name" || return 1
+
+  if [ -d "$escape_dir/.wizardry-autorebuild" ]; then
+    TEST_FAILURE_REASON="site-autorebuild created state outside WEB_WIZARDRY_ROOT"
+    return 1
+  fi
+
+  rm -rf "$tmpdir"
+}
+
+test_site_autorebuild_rejects_unsafe_managed_inputs() {
+  skip-if-compiled || return $?
+
+  site_root=$(temp-dir site-autorebuild-managed-path-test)
+  current_user=$(id -un 2>/dev/null || printf 'wizard')
+
+  run_cmd sh "$ROOT_DIR/spells/web/site-autorebuild" status --managed ../escape --site-root "$site_root"
+  assert_status 2 || return 1
+  assert_error_contains "invalid site user" || return 1
+
+  run_cmd sh "$ROOT_DIR/spells/web/site-autorebuild" status --managed "$current_user" --content-root ../escape --site-root "$site_root"
+  assert_status 2 || return 1
+  assert_error_contains "invalid content root" || return 1
+
+  rm -rf "$site_root"
+}
+
 test_site_autorebuild_local_enable_run_disable() {
   skip-if-compiled || return $?
 
@@ -488,6 +526,10 @@ EOS
 
 run_test_case "site-autorebuild --help" test_site_autorebuild_help
 run_test_case "site-autorebuild validates target" test_site_autorebuild_requires_target
+run_test_case "site-autorebuild rejects path-shaped local site names" \
+  test_site_autorebuild_rejects_path_shaped_local_name
+run_test_case "site-autorebuild rejects unsafe managed inputs" \
+  test_site_autorebuild_rejects_unsafe_managed_inputs
 run_test_case "site-autorebuild local enable/run/disable" \
   test_site_autorebuild_local_enable_run_disable
 run_test_case "site-autorebuild local run skips when lock is held" \

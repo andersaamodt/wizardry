@@ -58,6 +58,30 @@ site_user=''
 content_root='.'
 site_root_override=''
 
+site_segment_is_safe() {
+  case "${1-}" in
+    .|..|''|*[!a-zA-Z0-9._-]*)
+      return 1
+      ;;
+  esac
+  return 0
+}
+
+value_has_line_break() {
+  [ "$(printf '%s' "${1-}" | tr -d '\r\n')" != "${1-}" ]
+}
+
+relative_content_root_is_safe() {
+  root_value=${1-}
+  value_has_line_break "$root_value" && return 1
+  case "$root_value" in
+    ''|/*|*//*|..|../*|*/..|*/../*)
+      return 1
+      ;;
+  esac
+  return 0
+}
+
 while [ $# -gt 0 ]; do
   case "${1-}" in
     --managed)
@@ -129,11 +153,31 @@ if [ "$mode" = managed ]; then
     printf '%s\n' 'site-autorebuild: SITE_USER required for --managed mode' >&2
     exit 2
   }
+  if ! site_segment_is_safe "$site_user"; then
+    printf '%s\n' 'site-autorebuild: invalid site user' >&2
+    exit 2
+  fi
+  if ! relative_content_root_is_safe "$content_root"; then
+    printf '%s\n' 'site-autorebuild: invalid content root' >&2
+    exit 2
+  fi
+  if [ -n "$site_root_override" ] && value_has_line_break "$site_root_override"; then
+    printf '%s\n' 'site-autorebuild: invalid site root' >&2
+    exit 2
+  fi
 else
   [ -n "$site_name" ] || {
     printf '%s\n' 'site-autorebuild: SITENAME required in local mode' >&2
     exit 2
   }
+  if ! site_segment_is_safe "$site_name"; then
+    printf '%s\n' 'site-autorebuild: invalid site name' >&2
+    exit 2
+  fi
+  if [ -n "$site_root_override" ] && value_has_line_break "$site_root_override"; then
+    printf '%s\n' 'site-autorebuild: invalid site root' >&2
+    exit 2
+  fi
 fi
 
 autorebuild_run_privileged() {

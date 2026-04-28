@@ -93,6 +93,19 @@ test_web_wizardry_rebuild_requires_site() {
   assert_error_contains "rebuild requires SITENAME argument"
 }
 
+test_web_wizardry_rejects_path_shaped_site_names() {
+  skip-if-compiled || return $?
+
+  test_web_root=$(temp-dir wizardry-path-test)
+  mkdir -p "$test_web_root/../escape"
+
+  WEB_WIZARDRY_ROOT="$test_web_root" run_spell spells/web/web-wizardry rebuild ../escape
+  assert_status 2 || return 1
+  assert_error_contains "invalid site name" || return 1
+
+  rm -rf "$test_web_root" "$test_web_root/../escape"
+}
+
 test_web_wizardry_create_from_template_runs_build() {
   skip-if-compiled || return $?
 
@@ -161,6 +174,8 @@ run_test_case "web-wizardry create-from-template validates arguments" \
   test_web_wizardry_create_from_template_requires_args
 run_test_case "web-wizardry rebuild validates sitename" \
   test_web_wizardry_rebuild_requires_site
+run_test_case "web-wizardry rejects path-shaped site names" \
+  test_web_wizardry_rejects_path_shaped_site_names
 run_test_case "web-wizardry create-from-template builds the site" \
   test_web_wizardry_create_from_template_runs_build
 run_test_case "web-wizardry rebuild runs full build and restart" \

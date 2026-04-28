@@ -24,6 +24,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Status, menu, daemon, and HTTPS wrappers need site-name validation too; read-only helpers can still leak outside state, re-exec as an imported user, or mutate daemon/certificate artifacts before downstream validators run.
 - Destructive site commands must reject path-shaped names before deriving both the site directory and companion data directory.
 - Stop/restart commands must reject path-shaped names before PID-file cleanup, daemon label construction, or service-unit lookup.
+- Scheduler/autorebuild helpers must validate local site labels, managed user labels, and relative content roots before cron entries, lock paths, release paths, or ownership changes are formed.
 - Path arguments that are echoed in machine-readable status rows should reject line breaks even when the filesystem can technically represent them.
 - Names that become service units, daemon labels, process matches, or security users need the same strict validator as create/configure paths.
 - Daemon repair commands must validate labels before rendering service files or creating runtime directories such as nginx state paths.
