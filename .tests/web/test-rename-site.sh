@@ -112,9 +112,40 @@ EOF
   rm -rf "$stub_dir" "$test_web_root"
 }
 
+test_rename_site_rejects_dot_path_segments() {
+  skip-if-compiled || return $?
+
+  test_web_root=$(temp-dir rename-site-test)
+  export WIZARDRY_SITES_DIR="$test_web_root"
+  mkdir -p "$test_web_root"
+  printf 'site-name=root\n' > "$test_web_root/site.conf"
+
+  run_spell spells/web/rename-site . newsite
+  assert_status 2 || return 1
+  assert_error_contains "invalid OLD_NAME" || return 1
+  if [ -e "$test_web_root/newsite" ]; then
+    fail "rename-site created destination for dot old name"
+    return 1
+  fi
+
+  mkdir -p "$test_web_root/oldsite"
+  printf 'site-name=oldsite\n' > "$test_web_root/oldsite/site.conf"
+
+  run_spell spells/web/rename-site oldsite ..
+  assert_status 2 || return 1
+  assert_error_contains "invalid NEW_NAME" || return 1
+  if [ ! -d "$test_web_root/oldsite" ]; then
+    fail "rename-site moved source for dot-dot new name"
+    return 1
+  fi
+
+  rm -rf "$test_web_root"
+}
+
 run_test_case "rename-site --help" test_rename_site_help
 run_test_case "rename-site requires OLD_NAME" test_rename_site_requires_old_name
 run_test_case "rename-site moves site and data" test_rename_site_moves_site_and_data
 run_test_case "rename-site allows dotted destination" test_rename_site_allows_dotted_destination
+run_test_case "rename-site rejects dot path segments" test_rename_site_rejects_dot_path_segments
 
 finish_tests

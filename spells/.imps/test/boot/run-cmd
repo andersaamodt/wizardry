@@ -116,6 +116,7 @@ if [ "${BWRAP_AVAILABLE:-0}" -eq 1 ]; then
     SYSTEMCTL_STATE_DIR INSTALL_SERVICE_TEMPLATE_ASK_YN \
     INSTALL_SERVICE_TEMPLATE_ASK_TEXT ASK_TEXT_STUB_FILE SERVICE_DIR \
     WIZARDRY_TEST_HELPERS_ONLY WIZARDRY_DEMO_NO_BWRAP OPERATIONS_LOG \
+    CURL XDG_BIN_HOME NAK_BAD_DOWNLOAD_MARKER \
     WIZARDRY_SITE_NAME WIZARDRY_SITES_DIR \
     REQUEST_METHOD QUERY_STRING CONTENT_TYPE CONTENT_LENGTH \
     LAUNCHD_PLIST_DIR LAUNCHCTL_STATE_DIR
@@ -173,6 +174,9 @@ elif [ "${MACOS_SANDBOX_AVAILABLE:-0}" -eq 1 ]; then
   [ -n "${ASK_TEXT_STUB_FILE:-}" ] && export ASK_TEXT_STUB_FILE
   [ -n "${SERVICE_DIR:-}" ] && export SERVICE_DIR
   [ -n "${OPERATIONS_LOG:-}" ] && export OPERATIONS_LOG
+  [ -n "${CURL:-}" ] && export CURL
+  [ -n "${XDG_BIN_HOME:-}" ] && export XDG_BIN_HOME
+  [ -n "${NAK_BAD_DOWNLOAD_MARKER:-}" ] && export NAK_BAD_DOWNLOAD_MARKER
   
   # Export CGI environment variables for web wizardry tests
   [ -n "${WIZARDRY_SITE_NAME:-}" ] && export WIZARDRY_SITE_NAME
@@ -230,6 +234,9 @@ else
   [ -n "${ASK_TEXT_STUB_FILE:-}" ] && export ASK_TEXT_STUB_FILE
   [ -n "${SERVICE_DIR:-}" ] && export SERVICE_DIR
   [ -n "${OPERATIONS_LOG:-}" ] && export OPERATIONS_LOG
+  [ -n "${CURL:-}" ] && export CURL
+  [ -n "${XDG_BIN_HOME:-}" ] && export XDG_BIN_HOME
+  [ -n "${NAK_BAD_DOWNLOAD_MARKER:-}" ] && export NAK_BAD_DOWNLOAD_MARKER
   
   # Export CGI environment variables for web wizardry tests
   [ -n "${WIZARDRY_SITE_NAME:-}" ] && export WIZARDRY_SITE_NAME

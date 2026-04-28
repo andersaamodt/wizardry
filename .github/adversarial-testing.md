@@ -21,6 +21,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 
 - Values used as path segments must reject `.`, `..`, `/`, `\`, empty values, and line breaks before side effects.
 - Site-name arguments for maintenance commands need the same path-segment validation as site creation before reading or creating per-site metadata.
+- Rename commands need source and destination validation; a dot-allowing character class still needs explicit `.` and `..` rejection.
 - Status, menu, daemon, and HTTPS wrappers need site-name validation too; read-only helpers can still leak outside state, re-exec as an imported user, or mutate daemon/certificate artifacts before downstream validators run.
 - Destructive site commands must reject path-shaped names before deriving both the site directory and companion data directory.
 - Stop/restart commands must reject path-shaped names before PID-file cleanup, daemon label construction, or service-unit lookup.
@@ -138,6 +139,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Remote API response fields should be revalidated after structured parsing before they are reused in URLs or status rows.
 - Remote API tokens should be revalidated after structured parsing before they are used in HTTP headers.
 - Remote API download URLs should be revalidated for scheme/source before any downloader receives them.
+- Installer tests for hostile remote metadata should pass downloader and install-target overrides through the sandbox so the test cannot fall back to host tools.
 - Service account JSON should be treated as imported release metadata; validate identity fields before JWT rendering.
 - Deploy/signing environment values should be validated before remote-shell, codesign, or notarization tooling receives them.
 - Asset generators that print status rows should reject line-break paths and unsafe stored file extensions before writing metadata.

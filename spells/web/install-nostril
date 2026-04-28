@@ -15,6 +15,8 @@ USAGE
 esac
 
 set -eu
+install_nostril_curl=${CURL:-curl}
+install_nostril_xdg_bin_home=${XDG_BIN_HOME-}
 . env-clear
 
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
@@ -25,6 +27,33 @@ say() {
 
 has_cmd() {
   command -v "$1" >/dev/null 2>&1
+}
+
+curl_cmd() {
+  printf '%s\n' "$install_nostril_curl"
+}
+
+has_curl() {
+  command -v "$(curl_cmd)" >/dev/null 2>&1
+}
+
+fetch_url() {
+  "$(curl_cmd)" -fsSL "$@"
+}
+
+nak_download_url_is_safe() {
+  url=${1-}
+  case "$url" in
+    *[[:space:]]*)
+      return 1
+      ;;
+  esac
+  case "$url" in
+    https://github.com/fiatjaf/nak/releases/download/*)
+      return 0
+      ;;
+  esac
+  return 1
 }
 
 run_privileged() {
@@ -85,6 +114,10 @@ ensure_build_deps() {
 }
 
 install_target_bin_dir() {
+  if [ -n "$install_nostril_xdg_bin_home" ]; then
+    printf '%s\n' "$install_nostril_xdg_bin_home"
+    return 0
+  fi
   if [ "$(id -u)" -eq 0 ]; then
     printf '%s\n' /usr/local/bin
     return 0
@@ -130,22 +163,23 @@ install_nak_release_binary() {
   if has_cmd nak; then
     return 0
   fi
-  if ! has_cmd curl; then
+  if ! has_curl; then
     return 1
   fi
   platform=$(platform_suffix 2>/dev/null || true)
   [ -n "$platform" ] || return 1
 
   release_json=$(
-    curl -fsSL https://api.github.com/repos/fiatjaf/nak/releases/latest 2>/dev/null || true
+    fetch_url https://api.github.com/repos/fiatjaf/nak/releases/latest 2>/dev/null || true
   )
   [ -n "$release_json" ] || return 1
   release_json_one_line=$(printf '%s' "$release_json" | tr '\n' ' ')
   download_url=$(printf '%s\n' "$release_json_one_line" | sed -n "s/.*\"browser_download_url\":[[:space:]]*\"\\([^\"]*nak-[^\"]*-${platform}\\)\".*/\\1/p" | head -n 1)
   [ -n "$download_url" ] || return 1
+  nak_download_url_is_safe "$download_url" || return 1
 
   tmp_bin=$(mktemp "${TMPDIR:-/tmp}/nak-release.XXXXXX")
-  curl -fsSL "$download_url" -o "$tmp_bin" || {
+  fetch_url "$download_url" -o "$tmp_bin" || {
     rm -f "$tmp_bin"
     return 1
   }
