@@ -184,6 +184,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Helper command list output should be treated as imported GUI rows and filtered for delimiter shape before forwarding.
 - Menu labels built from hand-edited metadata should strip CR before display and command construction, even when writer commands now reject CR.
 - Root hint validation belongs in the shared resolver, not only the diagnostic action that prints the resolved root.
+- GUI backend root/path candidate lists should stay newline-delimited or argument-list based; space-delimited path lists break valid project roots containing spaces.
 
 ### Eval-Printing Commands
 
