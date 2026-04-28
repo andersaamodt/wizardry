@@ -29,6 +29,8 @@ set -eu
   spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
   custom_file="$spell_home/.synonyms"
   default_file="$spell_home/.default-synonyms"
+  newline='
+'
   
   # Parse arguments
   if [ "$#" -lt 1 ]; then
@@ -74,11 +76,24 @@ set -eu
     exit 2
   fi
   
+  custom_match=""
+  if [ -f "$custom_file" ]; then
+    custom_match=$(
+      awk -F= -v key="$synonym_word" '$1 == key { print; exit }' "$custom_file" 2>/dev/null || true
+    )
+  fi
+  default_match=""
+  if [ -z "$custom_match" ] && [ -f "$default_file" ]; then
+    default_match=$(
+      awk -F= -v key="$synonym_word" '$1 == key { print; exit }' "$default_file" 2>/dev/null || true
+    )
+  fi
+
   # Check which file contains the synonym (custom only - can't edit defaults)
-  if [ -f "$custom_file" ] && grep -q "^$synonym_word=" "$custom_file" 2>/dev/null; then
+  if [ -n "$custom_match" ]; then
     # Found in custom - OK to edit
     synonyms_file="$custom_file"
-  elif [ -f "$default_file" ] && grep -q "^$synonym_word=" "$default_file" 2>/dev/null; then
+  elif [ -n "$default_match" ]; then
     # Found in default - can't edit
     printf '%s\n' "edit-synonym: cannot edit default synonym '$synonym_word'" >&2
     printf '%s\n' "Use 'Override' option in synonym-menu to create a custom version" >&2
@@ -89,7 +104,7 @@ set -eu
   fi
   
   # Read current target spell from the synonym
-  current_spell=$(grep "^$synonym_word=" "$synonyms_file" | sed "s/^$synonym_word=\\(.*\\)$/\\1/")
+  current_spell=$(printf '%s' "$custom_match" | sed 's/^[^=]*=//')
   
   if [ -z "$current_spell" ]; then
     printf '%s\n' "edit-synonym: could not parse target spell from synonym" >&2
@@ -105,7 +120,7 @@ set -eu
       fi
       
       case $new_value in
-        *[/\ ]*)
+        *"$newline"*|*[/=\ ]*)
           printf '%s\n' "edit-synonym: synonym word cannot contain spaces or slashes" >&2
           exit 2
           ;;
@@ -120,7 +135,10 @@ set -eu
       esac
       
       # Check for conflicts
-      if grep -q "^$new_value=" "$synonyms_file" 2>/dev/null; then
+      conflict_match=$(
+        awk -F= -v key="$new_value" '$1 == key { print; exit }' "$synonyms_file" 2>/dev/null || true
+      )
+      if [ -n "$conflict_match" ]; then
         if [ "$new_value" != "$synonym_word" ]; then
           printf '%s\n' "edit-synonym: synonym '$new_value' already exists" >&2
           exit 1
@@ -145,6 +163,12 @@ set -eu
         printf '%s\n' "edit-synonym: target spell cannot be empty" >&2
         exit 2
       fi
+      case $new_value in
+        *"$newline"*)
+          printf '%s\n' "edit-synonym: target spell cannot contain line breaks" >&2
+          exit 2
+          ;;
+      esac
       
       # Check if target spell exists
       if ! command -v "$new_value" >/dev/null 2>&1; then

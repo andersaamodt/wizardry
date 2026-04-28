@@ -6,6 +6,7 @@
 # - fails when synonym doesn't exist
 # - validates new word name
 # - prevents duplicate word names
+# - matches synonym names literally before editing
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
@@ -129,6 +130,29 @@ test_prevents_duplicate_word() {
   assert_failure || return 1
 }
 
+test_does_not_create_from_regex_false_match() {
+  case_dir=$(make_tempdir)
+  synonyms_file="$case_dir/.synonyms"
+
+  SPELLBOOK_DIR="$case_dir" \
+    run_spell "spells/spellcraft/add-synonym" "myXalias" printf
+  assert_success || return 1
+
+  SPELLBOOK_DIR="$case_dir" \
+    run_spell "spells/spellcraft/edit-synonym" "my.alias" --word newalias
+
+  assert_failure || return 1
+  assert_error_contains "not found" || return 1
+  if grep -F -q -e 'newalias=' "$synonyms_file"; then
+    TEST_FAILURE_REASON="edit-synonym created a new alias from a regex false match"
+    return 1
+  fi
+  if ! grep -F -q -e 'myXalias=printf' "$synonyms_file"; then
+    TEST_FAILURE_REASON="edit-synonym changed the wrong synonym"
+    return 1
+  fi
+}
+
 run_test_case "prints help" test_shows_help
 run_test_case "edits synonym word" test_edits_synonym_word
 run_test_case "edits target spell" test_edits_target_spell
@@ -136,6 +160,7 @@ run_test_case "fails when synonym not found" test_fails_when_synonym_not_found
 run_test_case "requires edit mode flag" test_requires_edit_mode
 run_test_case "rejects invalid new word" test_rejects_invalid_new_word
 run_test_case "prevents duplicate word" test_prevents_duplicate_word
+run_test_case "does not create aliases from regex false matches" test_does_not_create_from_regex_false_match
 
 
 # Test via source-then-invoke pattern  
