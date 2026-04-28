@@ -139,6 +139,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Remote API response fields should be revalidated after structured parsing before they are reused in URLs or status rows.
 - Remote API tokens should be revalidated after structured parsing before they are used in HTTP headers.
 - Remote API download URLs should be revalidated for scheme/source before any downloader receives them.
+- Installer tests that harden `PATH` should inject the downloader explicitly so fake-network regressions cannot silently hit the host `curl`.
 - Installer tests for hostile remote metadata should pass downloader and install-target overrides through the sandbox so the test cannot fall back to host tools.
 - Service account JSON should be treated as imported release metadata; validate identity fields before JWT rendering.
 - Deploy/signing environment values should be validated before remote-shell, codesign, or notarization tooling receives them.

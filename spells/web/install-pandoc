@@ -14,6 +14,9 @@ USAGE
 esac
 
 set -eu
+pandoc_curl=${CURL:-curl}
+pandoc_cmd=${PANDOC:-pandoc}
+pandoc_xdg_bin_home=${XDG_BIN_HOME-}
 . env-clear
 
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
@@ -24,6 +27,37 @@ pandoc_say() {
 
 pandoc_has_cmd() {
   command -v "$1" >/dev/null 2>&1
+}
+
+pandoc_is_installed() {
+  command -v "$pandoc_cmd" >/dev/null 2>&1
+}
+
+pandoc_curl_cmd() {
+  printf '%s\n' "$pandoc_curl"
+}
+
+pandoc_has_curl() {
+  command -v "$(pandoc_curl_cmd)" >/dev/null 2>&1
+}
+
+pandoc_fetch_url() {
+  "$(pandoc_curl_cmd)" -fsSL "$@"
+}
+
+pandoc_download_url_is_safe() {
+  url=${1-}
+  case "$url" in
+    *[[:space:]]*)
+      return 1
+      ;;
+  esac
+  case "$url" in
+    https://github.com/jgm/pandoc/releases/download/*)
+      return 0
+      ;;
+  esac
+  return 1
 }
 
 pandoc_pkg_manager() {
@@ -62,6 +96,10 @@ pandoc_run_privileged() {
 }
 
 pandoc_install_target_bin_dir() {
+  if [ -n "$pandoc_xdg_bin_home" ]; then
+    printf '%s\n' "$pandoc_xdg_bin_home"
+    return 0
+  fi
   if [ "$(id -u)" -eq 0 ]; then
     printf '%s\n' /usr/local/bin
     return 0
@@ -94,8 +132,8 @@ pandoc_platform_suffix() {
 }
 
 pandoc_install_release_binary() {
-  if pandoc_has_cmd pandoc || ! pandoc_has_cmd curl || ! pandoc_has_cmd tar; then
-    [ -x "$(command -v pandoc 2>/dev/null || printf '')" ] && return 0
+  if pandoc_is_installed || ! pandoc_has_curl || ! pandoc_has_cmd tar; then
+    pandoc_is_installed && return 0
     return 1
   fi
 
@@ -103,12 +141,13 @@ pandoc_install_release_binary() {
   [ -n "$platform" ] || return 1
 
   release_json=$(
-    curl -fsSL https://api.github.com/repos/jgm/pandoc/releases/latest 2>/dev/null || true
+    pandoc_fetch_url https://api.github.com/repos/jgm/pandoc/releases/latest 2>/dev/null || true
   )
   [ -n "$release_json" ] || return 1
   release_json_one_line=$(printf '%s' "$release_json" | tr '\n' ' ')
   download_url=$(printf '%s\n' "$release_json_one_line" | sed -n "s/.*\"browser_download_url\":[[:space:]]*\"\\([^\"]*pandoc-[^\"]*-${platform}\\.tar\\.gz\\)\".*/\\1/p" | head -n 1)
   [ -n "$download_url" ] || return 1
+  pandoc_download_url_is_safe "$download_url" || return 1
 
   tmp_root=$(mktemp -d "${TMPDIR:-/tmp}/pandoc-release.XXXXXX")
   archive_path="$tmp_root/pandoc.tar.gz"
@@ -116,7 +155,7 @@ pandoc_install_release_binary() {
   target_bin_dir=$(pandoc_install_target_bin_dir)
   mkdir -p "$extract_dir"
 
-  if ! curl -fsSL "$download_url" -o "$archive_path"; then
+  if ! pandoc_fetch_url "$download_url" -o "$archive_path"; then
     rm -rf "$tmp_root"
     return 1
   fi
@@ -132,10 +171,10 @@ pandoc_install_release_binary() {
   pandoc_run_privileged mkdir -p "$target_bin_dir"
   pandoc_run_privileged install -m 755 "$pandoc_path" "$target_bin_dir/pandoc"
   rm -rf "$tmp_root"
-  pandoc_has_cmd pandoc
+  pandoc_is_installed
 }
 
-if pandoc_has_cmd pandoc; then
+if pandoc_is_installed; then
   pandoc_say "pandoc is already installed"
   exit 0
 fi
@@ -157,7 +196,7 @@ else
   exit 1
 fi
 
-if pandoc_has_cmd pandoc; then
+if pandoc_is_installed; then
   pandoc_say "Installed pandoc"
   exit 0
 fi
