@@ -20,6 +20,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 ### Path And Name Boundaries
 
 - Values used as path segments must reject `.`, `..`, `/`, `\`, empty values, and line breaks before side effects.
+- Site-name arguments for maintenance commands need the same path-segment validation as site creation before reading or creating per-site metadata.
 - Path arguments that are echoed in machine-readable status rows should reject line breaks even when the filesystem can technically represent them.
 - Names that become service units, daemon labels, process matches, or security users need the same strict validator as create/configure paths.
 - If a value is both a label and a path component, test create, edit, rename, import, and repair paths for the same contract.
@@ -144,6 +145,8 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - GUI controls must not rely on client-only validation; backend validators own the command contract.
 - Test create/edit parity: values rejected during creation must not become valid through rename, settings, import, or advanced fields.
 - Bridge actions should route to fixed commands with positional args, never user-selected executables or shell fragments.
+- Help/about-style bridge actions should map friendly labels to a fixed allowlist instead of executing arbitrary command names with `--help`.
+- Direct menu-run and terminal-launch paths should share one-line argument validation so one GUI path cannot accept forged row text the other rejects.
 - For Wizardry app GUI specifics, read `/Users/andersaamodt/git/wizardry-apps/.github/adversarial-testing.md`.
 
 ### Pipelines and Exit Status
@@ -177,6 +180,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Log/history readers that feed GUIs should revalidate delimiter row shape and sanitize CR, even when the normal writer already cleans entries.
 - Helper command list output should be treated as imported GUI rows and filtered for delimiter shape before forwarding.
 - Menu labels built from hand-edited metadata should strip CR before display and command construction, even when writer commands now reject CR.
+- Root hint validation belongs in the shared resolver, not only the diagnostic action that prints the resolved root.
 
 ### Eval-Printing Commands
 

@@ -70,7 +70,31 @@ EOF
   rm -rf "$web_root" "$stub_dir" "$allow_dir"
 }
 
+test_manage_allowed_dirs_rejects_path_shaped_site_name() {
+  skip-if-compiled || return $?
+
+  tmpdir=$(make_tempdir)
+  web_root="$tmpdir/sites"
+  escape_dir="$tmpdir/escape"
+  mkdir -p "$web_root" "$escape_dir"
+  current_user=$(id -un)
+  cat > "$escape_dir/site.conf" <<EOF
+site-name=escape
+site-user=$current_user
+EOF
+
+  WEB_WIZARDRY_ROOT="$web_root" run_spell spells/web/manage-allowed-dirs ../escape
+
+  assert_failure || return 1
+  assert_error_contains "invalid site name" || return 1
+  if [ -e "$escape_dir/site.allowlist" ]; then
+    TEST_FAILURE_REASON="manage-allowed-dirs wrote an allowlist outside the web root"
+    return 1
+  fi
+}
+
 run_test_case "manage-allowed-dirs --help works" test_manage_allowed_dirs_help
 run_test_case "manage-allowed-dirs adds allowlist entry" test_manage_allowed_dirs_adds_entry
+run_test_case "manage-allowed-dirs rejects path-shaped site names" test_manage_allowed_dirs_rejects_path_shaped_site_name
 
 finish_tests

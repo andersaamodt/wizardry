@@ -258,3 +258,4 @@
 - Capability probes should not interpolate `TMPDIR` paths into `sh -c` strings; quote-bearing temp roots can break the probe or execute unintended shell syntax.
 - System membership readers must validate imported user names before tilde-expansion `eval`; hostile group records can otherwise execute command substitutions during status listing.
 - Candidate path lists should use newline-delimited records, not space-delimited strings; `$HOME` or config paths with spaces otherwise split into bogus candidates.
+- Site maintenance commands must validate site-name path segments before creating metadata files; create-time validation does not protect hand-created or path-shaped directories.
