@@ -102,6 +102,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Backend status rows should sanitize XDG/env-derived file paths, including preference write confirmations.
 - Plain-text backend outputs still need argument shape checks when GUI code treats the first line as authoritative state.
 - Install/uninstall helpers should reject explicit replacement or removal paths outside the artifact shape they own before recursive deletion.
+- Build helpers should reject explicit artifact output paths outside the artifact shape they own before recursive replacement.
 - Validate remote metadata before downloads, extraction, install paths, chmod, JWT signing, API URLs, or platform tools run.
 - Git remote URLs can contain CR/LF and path-shaped slugs; validate before printing status rows or constructing GitHub API URLs.
 - Stub network tools and feed hostile metadata instead of relying on live services for adversarial release tests.
