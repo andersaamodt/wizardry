@@ -63,6 +63,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Key-value files must keep keys allowlisted and values single-line unless multi-line values are the explicit file format.
 - CSV-like values must reject leading/trailing commas, empty entries, unsupported characters, and line-break injection.
 - Tab-, pipe-, and comma-delimited records must reject delimiter characters in fields before persisting or printing rows for another parser.
+- Use delimiter-specific output sanitizers for row formats; `key=value` CR/LF cleanup does not protect TSV or pipe-separated columns.
 - Machine-readable `key=value` output must reject CR/LF in echoed values so hostile input cannot forge later keys.
 - Environment-derived fields such as shell, cwd, platform, and detected helper labels are untrusted when echoed in machine-readable status output.
 - Diagnostic/status commands are not exempt from output-shape rules; treat their paths and environment fields as hostile key/value values.
