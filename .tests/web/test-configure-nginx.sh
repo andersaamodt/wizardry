@@ -166,9 +166,36 @@ test_configure_nginx_preserves_existing_port() {
   rm -rf "$test_web_root" "$stub_dir"
 }
 
+test_configure_nginx_rejects_path_shaped_site_name() {
+  skip-if-compiled || return $?
+
+  tmpdir=$(make_tempdir)
+  web_root="$tmpdir/sites"
+  escape_dir="$tmpdir/escape"
+  mkdir -p "$web_root" "$escape_dir"
+  printf 'site-name=escape\n' > "$escape_dir/site.conf"
+
+  stub_dir=$(temp-dir web-wizardry-stub)
+  stub-sudo "$stub_dir"
+
+  PATH="$stub_dir:$PATH" WEB_WIZARDRY_ROOT="$web_root" \
+    run_spell spells/web/configure-nginx ../escape
+
+  assert_failure || return 1
+  assert_error_contains "invalid site name" || return 1
+  if [ -d "$escape_dir/nginx" ]; then
+    TEST_FAILURE_REASON="configure-nginx created nginx paths outside WEB_WIZARDRY_ROOT"
+    return 1
+  fi
+
+  rm -rf "$tmpdir" "$stub_dir"
+}
+
 run_test_case "configure-nginx --help" test_configure_nginx_help
 run_test_case "configure-nginx creates local mime.types" test_configure_nginx_creates_local_mimetypes
 run_test_case "configure-nginx supports .onion addresses" test_configure_nginx_supports_onion_addresses
 run_test_case "configure-nginx preserves existing port" test_configure_nginx_preserves_existing_port
+run_test_case "configure-nginx rejects path-shaped site names" \
+  test_configure_nginx_rejects_path_shaped_site_name
 
 finish_tests

@@ -121,6 +121,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Metadata conversions should stage changes and replace originals only after all writes succeed.
 - Front-matter parsing must preserve delimiter-like body content after the closing delimiter.
 - Config paths rendered into another language or config format must reject that renderer's quote, variable, comment, and statement delimiters.
+- Site names rendered into nginx/Tor/service config must be validated before file writes and before regex matching against existing config.
 - Round-trip tests should include empty values, multi-line values, repeated delimiters, and write failures.
 
 ### Release And Remote Metadata

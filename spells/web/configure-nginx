@@ -29,6 +29,12 @@ site_name=${1-}
 if [ -z "$site_name" ]; then
   die 2 "configure-nginx: SITENAME required"
 fi
+
+case "$site_name" in
+  .|..|*[!a-zA-Z0-9._-]*)
+    die 2 "configure-nginx: invalid site name"
+    ;;
+esac
 shift
 
 # Parse options
