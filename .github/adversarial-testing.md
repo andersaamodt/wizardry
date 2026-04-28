@@ -20,6 +20,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 ### Path And Name Boundaries
 
 - Values used as path segments must reject `.`, `..`, `/`, `\`, empty values, and line breaks before side effects.
+- Path arguments that are echoed in machine-readable status rows should reject line breaks even when the filesystem can technically represent them.
 - If a value is both a label and a path component, test create, edit, rename, import, and repair paths for the same contract.
 - Template and import paths should share create-path validators because they often write both directories and profile metadata.
 - Values interpolated into regex matching need stricter name validation than path quoting alone provides.
@@ -40,6 +41,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Parser synonym targets should include category/path-prefixed spells and must resolve them only under the project spell tree.
 - Generated gloss files should be syntax-checked with POSIX `sh -n` after adding aliases or first-word functions for names containing special characters.
 - Hand-edited synonym files are imported metadata; test quote-bearing targets so one malformed record cannot make every generated gloss unsourceable.
+- Generated parser/gloss functions should be executed under `set -u` with optional environment variables unset, not only syntax-checked.
 
 ### Shell Expansion
 
