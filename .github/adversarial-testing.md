@@ -112,6 +112,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Status output that echoes configured commands or generated log paths must sanitize CR/LF separately from execution semantics; shell comments can let hostile command text succeed while forging GUI rows.
 - GUI preference/config readers should parse and revalidate hand-edited files instead of streaming them directly back to the bridge.
 - Project starter templates should carry the same adversarial backend contracts as first-party apps so generated projects do not recreate fixed bugs.
+- Log/history readers that feed GUIs should revalidate delimiter row shape and sanitize CR, even when the normal writer already cleans entries.
 
 ### Eval-Printing Commands
 
