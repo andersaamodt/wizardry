@@ -72,6 +72,7 @@
 - Duplicated uncastable detection logic (in gloss functions, synonyms, parse) is an antipattern; centralize in a single helper function (invoke_spell_helper) that's preloaded with glosses.
 - Parse should not depend on other imps (like env-or) being available; use inline parameter expansion ${VAR:-default} instead to ensure parse works in all contexts.
 - When generate-glosses creates first-word glosses, consumed words must be shifted BEFORE calling parse with synonym targets to prevent infinite loops (e.g., "jump-to" → "leap-to-location" with args still present causes parse to try "leap-to-location-to-marker-home").
+- Sourced parsers must use parser-specific scratch variable names and scope recursion depth to actual recursive calls so independent caller loops are not corrupted.
 
 
 - When a file is sourced (`. filename`), using `exit` exits the parent shell; use `return` instead (discovered via doppelganger failing to create directories) (3)

@@ -34,6 +34,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Optional flags should work in every documented position.
 - Constrained options must reject unsupported values before platform tools run.
 - Natural-language parsers must distinguish reserved connector words from literal filenames.
+- Sourced parsers must be tested for repeated independent invocations in one shell, leaked recursion depth, and clobbered caller loop variables.
 
 ### Shell Expansion
 

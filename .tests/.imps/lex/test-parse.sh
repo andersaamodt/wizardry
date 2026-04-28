@@ -1184,10 +1184,16 @@ EOF
   run_cmd sh -c '
     set -eu
     i=0
+    guard=0
     while [ "$i" -lt 12 ]; do
       set -- noop
       . "$ROOT_DIR/spells/.imps/lex/parse"
       i=$((i + 1))
+      guard=$((guard + 1))
+      if [ "$guard" -gt 20 ]; then
+        printf "%s\n" "parse leaked caller loop state" >&2
+        exit 1
+      fi
     done
   '
 
@@ -1197,6 +1203,10 @@ EOF
   case "$ERROR" in
     *"Maximum recursion depth"*)
       TEST_FAILURE_REASON="parse depth leaked between independent calls"
+      return 1
+      ;;
+    *"parse leaked caller loop state"*)
+      TEST_FAILURE_REASON="parse clobbered caller loop state"
       return 1
       ;;
   esac
