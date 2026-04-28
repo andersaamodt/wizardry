@@ -17,7 +17,7 @@ case "$1" in
     attr_file="${file}.attrs"
     # Remove existing key if present
     if [ -f "$attr_file" ]; then
-      grep -v "^${key}=" "$attr_file" > "${attr_file}.tmp" 2>/dev/null || true
+      awk -F= -v key="$key" '$1 != key' "$attr_file" > "${attr_file}.tmp"
       mv "${attr_file}.tmp" "$attr_file" 2>/dev/null || true
     fi
     # Add new key=value
@@ -29,7 +29,7 @@ case "$1" in
     file=$3
     attr_file="${file}.attrs"
     if [ -f "$attr_file" ]; then
-      value=$(grep "^${key}=" "$attr_file" 2>/dev/null | cut -d= -f2-)
+      value=$(awk -F= -v key="$key" '$1 == key { sub(/^[^=]*=/, ""); print; exit }' "$attr_file")
       if [ -n "$value" ]; then
         printf '%s\n' "$value"
         exit 0
@@ -62,10 +62,8 @@ while [ $# -gt 0 ]; do
 done
 if [ -n "$key" ] && [ -n "$value" ] && [ -n "$file" ]; then
   attr_file="${file}.attrs"
-  # Escape special regex characters in key for grep
-  escaped_key=$(printf '%s\n' "$key" | sed 's/[.[\*^$]/\\&/g')
   if [ -f "$attr_file" ]; then
-    grep -v "^${escaped_key}=" "$attr_file" > "${attr_file}.tmp" 2>/dev/null || true
+    awk -F= -v key="$key" '$1 != key' "$attr_file" > "${attr_file}.tmp"
     mv "${attr_file}.tmp" "$attr_file" 2>/dev/null || true
   fi
   printf '%s=%s\n' "$key" "$value" >> "$attr_file"
@@ -87,7 +85,7 @@ done
 if [ -n "$file" ]; then
   attr_file="${file}.attrs"
   if [ -f "$attr_file" ]; then
-    grep -v "^${key}=" "$attr_file" > "${attr_file}.tmp" 2>/dev/null || true
+    awk -F= -v key="$key" '$1 != key' "$attr_file" > "${attr_file}.tmp"
     mv "${attr_file}.tmp" "$attr_file" 2>/dev/null || true
   fi
   printf '%s=%s\n' "$key" "$value" >> "$attr_file"
@@ -108,7 +106,7 @@ done
 if [ -n "$file" ]; then
   attr_file="${file}.attrs"
   if [ -f "$attr_file" ]; then
-    value=$(grep "^${key}=" "$attr_file" 2>/dev/null | cut -d= -f2-)
+    value=$(awk -F= -v key="$key" '$1 == key { sub(/^[^=]*=/, ""); print; exit }' "$attr_file")
     if [ -n "$value" ]; then
       printf '%s="%s"\n' "$key" "$value"
       exit 0

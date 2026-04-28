@@ -24,6 +24,26 @@ test_xattr_writes_and_reads() {
   [ "$result" = "myvalue" ]
 }
 
+test_xattr_matches_metacharacter_keys_literally() {
+  tmpdir=$(make_tempdir)
+  stub_xattr "$tmpdir"
+  testfile="$tmpdir/testfile"
+  : > "$testfile"
+  "$tmpdir/xattr" -w user.a one "$testfile"
+  "$tmpdir/xattr" -w userXa two "$testfile"
+  result=$("$tmpdir/xattr" -p user.a "$testfile")
+  [ "$result" = "one" ] || {
+    TEST_FAILURE_REASON="xattr stub treated dot as a regex: $result"
+    return 1
+  }
+  "$tmpdir/xattr" -w user.a three "$testfile"
+  result=$("$tmpdir/xattr" -p userXa "$testfile")
+  [ "$result" = "two" ] || {
+    TEST_FAILURE_REASON="xattr stub overwrote regex-matched sibling key: $result"
+    return 1
+  }
+}
+
 test_attr_writes_attributes() {
   tmpdir=$(make_tempdir)
   stub_xattr "$tmpdir"
@@ -36,6 +56,7 @@ test_attr_writes_attributes() {
 
 run_test_case "stub-xattr creates all executables" test_creates_stubs
 run_test_case "stub-xattr writes and reads attributes" test_xattr_writes_and_reads
+run_test_case "stub-xattr matches metacharacter keys literally" test_xattr_matches_metacharacter_keys_literally
 run_test_case "stub-xattr attr command works" test_attr_writes_attributes
 
 finish_tests
