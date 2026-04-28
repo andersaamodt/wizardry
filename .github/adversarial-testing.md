@@ -64,6 +64,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - CSV-like values must reject leading/trailing commas, empty entries, unsupported characters, and line-break injection.
 - Tab-, pipe-, and comma-delimited records must reject delimiter characters in fields before persisting or printing rows for another parser.
 - Machine-readable `key=value` output must reject CR/LF in echoed values so hostile input cannot forge later keys.
+- Environment-derived fields such as shell, cwd, platform, and detected helper labels are untrusted when echoed in machine-readable status output.
 - If a command must execute a control-character-bearing path, keep the execution value separate from the sanitized display/status value printed as `key=value`.
 - Helper-script stdout and filesystem entry names are untrusted when they are forwarded into GUI/backend records; test installed modules with delimiter-shaped filenames and status lines.
 - Catalog/list/count commands must apply the same identifier validator as the command that later executes the selected item.
