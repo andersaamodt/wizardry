@@ -807,6 +807,38 @@ test_user_synonym_target_cannot_escape_spell_tree() {
   fi
 }
 
+test_user_synonym_spell_relative_target_executes_generated_function() {
+  tmpdir=$(make_tempdir)
+  wizardry_dir="$tmpdir/wizardry"
+  spellbook="$tmpdir/spellbook"
+  run_dir="$tmpdir/run"
+  mkdir -p "$wizardry_dir/spells/custom" "$wizardry_dir/spells/.imps/lex" "$spellbook" "$run_dir"
+
+  cp "$ROOT_DIR/spells/.imps/lex/parse" "$wizardry_dir/spells/.imps/lex/parse"
+  chmod +x "$wizardry_dir/spells/.imps/lex/parse"
+
+  cat > "$wizardry_dir/spells/custom/path-target" <<'EOF'
+#!/bin/sh
+printf 'path target generated args: [%s]\n' "$*"
+EOF
+  chmod +x "$wizardry_dir/spells/custom/path-target"
+
+  printf '%s\n' 'safe=custom/path-target preset' > "$spellbook/.synonyms"
+
+  WIZARDRY_DIR="$wizardry_dir" SPELLBOOK_DIR="$spellbook" \
+    run_spell spells/.wizardry/generate-glosses --output "$tmpdir/glosses" --quiet
+  assert_success || return 1
+
+  run_cmd env \
+    PATH="$wizardry_dir/spells/.imps/lex:$PATH" \
+    SPELLBOOK_DIR="$spellbook" \
+    RUN_CMD_WORKDIR="$run_dir" \
+    sh -c 'unset WIZARDRY_DIR; . "$1"; safe extra' sh "$tmpdir/glosses"
+
+  assert_success || return 1
+  assert_output_contains "path target generated args: [preset extra]" || return 1
+}
+
 test_first_word_gloss_uses_embedded_root_when_wizardry_dir_unset() {
   tmpdir=$(make_tempdir)
   wizardry_dir="$tmpdir/custom-root"
@@ -845,6 +877,7 @@ run_test_case "generate-glosses skips first-word glosses that shadow system comm
 run_test_case "first-word gloss synonym lookup matches literal names" test_first_word_gloss_synonym_lookup_matches_literal_name
 run_test_case "user synonym targets cannot inject generated functions" test_user_synonym_target_cannot_inject_generated_function
 run_test_case "user synonym targets cannot escape spell tree" test_user_synonym_target_cannot_escape_spell_tree
+run_test_case "user synonym spell-relative targets execute generated functions" test_user_synonym_spell_relative_target_executes_generated_function
 run_test_case "first-word gloss uses embedded root when WIZARDRY_DIR is unset" test_first_word_gloss_uses_embedded_root_when_wizardry_dir_unset
 
 finish_tests

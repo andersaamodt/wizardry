@@ -618,6 +618,46 @@ can_be_function_name() {
   esac
 }
 
+emit_path_synonym_function() {
+  emit_syn_name=$1
+  emit_syn_target=$2
+  emit_line "$emit_syn_name() {"
+  emit_line "  syn_had_wizardry_dir=0"
+  emit_line "  syn_saved_wizardry_dir=\${WIZARDRY_DIR-}"
+  emit_line "  if [ \"\${WIZARDRY_DIR+x}\" = x ]; then"
+  emit_line "    syn_had_wizardry_dir=1"
+  emit_line "  fi"
+  emit_line "  WIZARDRY_DIR=\${WIZARDRY_DIR:-$wizardry_dir}"
+  emit_line "  export WIZARDRY_DIR"
+  emit_line "  syn_had_noglob=0"
+  emit_line "  case \$- in"
+  emit_line "    *f*) syn_had_noglob=1 ;;"
+  emit_line "    *) set -f ;;"
+  emit_line "  esac"
+  emit_line "  set -- $emit_syn_target \"\$@\""
+  emit_line "  if [ \"\$syn_had_noglob\" -eq 0 ]; then"
+  emit_line "    set +f"
+  emit_line "  fi"
+  emit_line "  if [ -f \"\$WIZARDRY_DIR/spells/.imps/lex/parse\" ]; then"
+  emit_line "    . \"\$WIZARDRY_DIR/spells/.imps/lex/parse\""
+  emit_line "    syn_status=\$?"
+  emit_line "  elif command -v parse >/dev/null 2>&1; then"
+  emit_line "    . parse"
+  emit_line "    syn_status=\$?"
+  emit_line "  else"
+  emit_line "    printf '%s\\n' \"$emit_syn_name: parse command not found\" >&2"
+  emit_line "    syn_status=127"
+  emit_line "  fi"
+  emit_line "  if [ \"\$syn_had_wizardry_dir\" -eq 1 ]; then"
+  emit_line "    WIZARDRY_DIR=\$syn_saved_wizardry_dir"
+  emit_line "    export WIZARDRY_DIR"
+  emit_line "  else"
+  emit_line "    unset WIZARDRY_DIR"
+  emit_line "  fi"
+  emit_line "  return \$syn_status"
+  emit_line "}"
+}
+
 # Track seen synonyms to avoid duplicates
 synonyms_seen=" "
 
@@ -686,7 +726,10 @@ if [ -f "$synonym_file" ]; then
         *)
           # No conflict - generate function for direct invocation
           # For hyphenated targets, use the hyphenated form directly (it will have an alias)
-          emit_line "$word() { $target \"\$@\"; }"
+          case "$target" in
+            */*) emit_path_synonym_function "$word" "$target" ;;
+            *) emit_line "$word() { $target \"\$@\"; }" ;;
+          esac
           ;;
       esac
     fi
@@ -758,7 +801,10 @@ if [ -f "$default_synonym_file" ]; then
         *)
           # No conflict - generate function for direct invocation
           # For hyphenated targets, use the hyphenated form directly (it will have an alias)
-          emit_line "$word() { $target \"\$@\"; }"
+          case "$target" in
+            */*) emit_path_synonym_function "$word" "$target" ;;
+            *) emit_line "$word() { $target \"\$@\"; }" ;;
+          esac
           ;;
       esac
     fi

@@ -259,6 +259,7 @@
 - Parser connector imps that intentionally split accumulated command-argument strings must temporarily disable globbing so literal `*` arguments do not expand against the caller's working directory. (2)
 - Generated first-word glosses must pass their embedded install root into sourced parser fallbacks when `WIZARDRY_DIR` is unset; otherwise isolated installs accidentally parse against `~/.wizardry`.
 - Parser and gloss synonym targets may allow spell-relative slashes, but must still reject absolute paths, `..` segments, and doubled slashes.
+- Generated synonym functions with spell-relative targets should route through parse with the embedded wizardry root instead of executing raw relative command paths.
 - Parser-adjacent cache files must be treated as imported metadata and re-matched against current candidates before executing cached choices.
 - Capability probes should not interpolate `TMPDIR` paths into `sh -c` strings; quote-bearing temp roots can break the probe or execute unintended shell syntax.
 - System membership readers must validate imported user names before tilde-expansion `eval`; hostile group records can otherwise execute command substitutions during status listing.
