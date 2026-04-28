@@ -26,6 +26,12 @@ if [ -z "$site_name" ]; then
   die 2 "disable-https: SITENAME required"
 fi
 
+case "$site_name" in
+  .|..|*[!a-zA-Z0-9._-]*)
+    die 2 "disable-https: invalid site name"
+    ;;
+esac
+
 web_root=${WEB_WIZARDRY_ROOT:-$HOME/sites}
 sites_dir="$web_root"
 site_dir="$sites_dir/$site_name"
