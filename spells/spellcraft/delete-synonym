@@ -24,6 +24,10 @@ set -eu
     printf '%s\n' "delete-synonym: requires WORD argument" >&2
     exit 2
   fi
+  if [ "$#" -gt 1 ]; then
+    printf '%s\n' "delete-synonym: too many arguments" >&2
+    exit 2
+  fi
 
   synonym_word=$1
 
