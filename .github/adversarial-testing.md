@@ -93,6 +93,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Validate every release credential identifier consistently across build, upload, and promote helpers before passing them to platform tools.
 - Release tag/version strings become generated project metadata; validate them before rendering build-system files.
 - Remote API response fields should be revalidated after structured parsing before they are reused in URLs or status rows.
+- Remote API tokens should be revalidated after structured parsing before they are used in HTTP headers.
 - Service account JSON should be treated as imported release metadata; validate identity fields before JWT rendering.
 - Deploy/signing environment values should be validated before remote-shell, codesign, or notarization tooling receives them.
 - Asset generators that print status rows should reject line-break paths and unsafe stored file extensions before writing metadata.
