@@ -75,6 +75,7 @@ fi
 
 # Escape single quotes in command for safe passing
 escaped_command=$(printf '%s' "$command" | sed "s/'/'\\\\''/g")
+escaped_name=$(printf '%s' "$name" | sed "s/'/'\\\\''/g")
 tab_char=$(printf '\t')
 
 # Helper function to check if spell is memorized
@@ -93,10 +94,10 @@ while :; do
       # Store current memorization state before menu
       if is_memorized "$name"; then
               before_memorized=1
-              cast_toggle="[X] Forget%forget '$name'"
+              cast_toggle="[X] Forget%forget '$escaped_name'"
       else
               before_memorized=0
-              cast_toggle="[ ] Memorize%memorize '$name'"
+              cast_toggle="[ ] Memorize%memorize '$escaped_name'"
       fi
       
       # Exit button kills this menu script via TERM signal
@@ -145,9 +146,9 @@ while :; do
       # Build menu items based on spell type
       if [ "$is_custom" -eq 1 ]; then
               if [ -n "$help_item" ]; then
-                      set -- "Cast now%$escaped_command" "$cast_toggle" "$help_item" "Erase spell%erase-spell '$name' && kill -TERM \$PPID" "$exit_item"
+                      set -- "Cast now%$escaped_command" "$cast_toggle" "$help_item" "Erase spell%erase-spell '$escaped_name' && kill -TERM \$PPID" "$exit_item"
               else
-                      set -- "Cast now%$escaped_command" "$cast_toggle" "Erase spell%erase-spell '$name' && kill -TERM \$PPID" "$exit_item"
+                      set -- "Cast now%$escaped_command" "$cast_toggle" "Erase spell%erase-spell '$escaped_name' && kill -TERM \$PPID" "$exit_item"
               fi
       else
               if [ -n "$help_item" ]; then

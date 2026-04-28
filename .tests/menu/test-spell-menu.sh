@@ -115,6 +115,39 @@ SH
 
 run_test_case "spell-menu ESC/Exit behavior" test_esc_exit_behavior
 
+test_spell_name_actions_quote_single_quotes() {
+  skip-if-compiled || return $?
+  stub_dir=$(make_stub_dir)
+  stub-memorize-command "$stub_dir"
+  stub-require-command-simple "$stub_dir"
+
+  cat >"$stub_dir/menu" <<'SH'
+#!/bin/sh
+printf '%s\n' "$@" >>"$MENU_LOG"
+kill -TERM "$PPID" 2>/dev/null || exit 0; exit 0
+SH
+  chmod +x "$stub_dir/menu"
+
+  cat >"$stub_dir/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$stub_dir/exit-label"
+
+  hostile_name="bad'; touch '$stub_dir/pwned'; echo '"
+  run_cmd env PATH="$stub_dir:$PATH" MENU_LOG="$stub_dir/log" "$ROOT_DIR/spells/menu/spell-menu" "$hostile_name"
+  assert_success || { TEST_FAILURE_REASON="menu should render quote-bearing spell names"; return 1; }
+
+  args=$(cat "$stub_dir/log")
+  expected="[ ] Memorize%memorize 'bad'\\''; touch '\\''$stub_dir/pwned'\\''; echo '\\'''"
+  case "$args" in
+    *"$expected"*) : ;;
+    *) TEST_FAILURE_REASON="memorize action should shell-quote spell name: $args"; return 1 ;;
+  esac
+}
+
+run_test_case "spell-menu quotes spell names in actions" test_spell_name_actions_quote_single_quotes
+
 # Test that toggle selection keeps cursor position, other actions reset to first item
 test_toggle_keeps_cursor_position() {
   skip-if-compiled || return $?

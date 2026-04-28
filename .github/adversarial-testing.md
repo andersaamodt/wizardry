@@ -168,6 +168,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Help/about-style bridge actions should map friendly labels to a fixed allowlist instead of executing arbitrary command names with `--help`.
 - Direct menu-run and terminal-launch paths should share one-line argument validation so one GUI path cannot accept forged row text the other rejects.
 - Menu action strings that include paths should be tested with spaces and quotes because menu execution commonly evals the action payload.
+- Menu action strings that include names/labels should be tested with shell metacharacters too; downstream validation does not protect the menu eval boundary.
 - For Wizardry app GUI specifics, read `/Users/andersaamodt/git/wizardry-apps/.github/adversarial-testing.md`.
 
 ### Pipelines and Exit Status
