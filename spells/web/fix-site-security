@@ -26,6 +26,12 @@ if [ -z "$site_name" ]; then
   die 2 "fix-site-security: SITENAME required"
 fi
 
+case "$site_name" in
+  .|..|*[!a-zA-Z0-9._-]*)
+    die 2 "fix-site-security: invalid site name"
+    ;;
+esac
+
 web_root=${WEB_WIZARDRY_ROOT:-$HOME/sites}
 sites_dir="$web_root"
 site_dir="$sites_dir/$site_name"
@@ -83,7 +89,8 @@ ensure_site_group() {
   fi
 
   if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has dscl; then
-    max_gid=$(dscl . -list /Groups PrimaryGroupID 2>/dev/null | awk '{print $2}' | sort -n | tail -1)
+    max_gid=$(dscl . -list /Groups PrimaryGroupID 2>/dev/null | \
+      awk '{print $2}' | sort -n | tail -1)
     case "$max_gid" in
       ''|*[!0-9]*) max_gid=500 ;;
     esac

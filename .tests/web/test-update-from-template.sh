@@ -159,10 +159,11 @@ test_update_handles_wizardry_dir_with_spaces() {
   fake_wizardry_root="$tmp_parent/wizardry root"
   template_root="$fake_wizardry_root/web/minimal"
 
-  mkdir -p "$template_root/pages"
+  mkdir -p "$template_root/pages" "$fake_wizardry_root/web/.themes"
   cat > "$template_root/pages/index.md" <<'EOF'
 # from space root v1
 EOF
+  printf '%s\n' "body { color: black; }" > "$fake_wizardry_root/web/.themes/space-root.css"
 
   WIZARDRY_DIR="$fake_wizardry_root" WEB_WIZARDRY_ROOT="$test_web_root" \
     run_spell spells/web/create-from-template minisite minimal
@@ -171,6 +172,7 @@ EOF
   cat > "$template_root/pages/index.md" <<'EOF'
 # from space root v2
 EOF
+  rm -f "$test_web_root/minisite/site/static/themes/space-root.css"
 
   WIZARDRY_DIR="$fake_wizardry_root" WEB_WIZARDRY_ROOT="$test_web_root" \
     run_spell spells/web/update-from-template minisite --force
@@ -178,6 +180,11 @@ EOF
 
   if ! grep -q "from space root v2" "$test_web_root/minisite/site/pages/index.md"; then
     TEST_FAILURE_REASON="update-from-template did not resolve WIZARDRY_DIR with spaces"
+    rm -rf "$test_web_root" "$tmp_parent"
+    return 1
+  fi
+  if [ ! -f "$test_web_root/minisite/site/static/themes/space-root.css" ]; then
+    TEST_FAILURE_REASON="update-from-template did not resolve shared themes from WIZARDRY_DIR with spaces"
     rm -rf "$test_web_root" "$tmp_parent"
     return 1
   fi

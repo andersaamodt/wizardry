@@ -316,6 +316,34 @@ EOF
   rm -rf "$web_root" "$stub_dir"
 }
 
+test_fix_site_security_rejects_path_shaped_site_name() {
+  skip-if-compiled || return $?
+
+  tmpdir=$(make_tempdir)
+  web_root="$tmpdir/sites"
+  escape_dir="$tmpdir/escape"
+  mkdir -p "$web_root" "$escape_dir/site"
+  cat > "$escape_dir/site.conf" <<'EOF'
+site-user=ww_escape
+EOF
+
+  stub_dir=$(temp-dir web-wizardry-stub)
+  write_fix_security_identity_stubs "$stub_dir" "ww_escape"
+  stub-uname-linux "$stub_dir"
+
+  PATH="$stub_dir:$PATH" WEB_WIZARDRY_ROOT="$web_root" \
+    run_spell spells/web/fix-site-security ../escape
+
+  assert_failure || return 1
+  assert_error_contains "invalid site name" || return 1
+  if [ -d "$escape_dir/build" ] || [ -d "$escape_dir/nginx" ]; then
+    TEST_FAILURE_REASON="fix-site-security created runtime paths outside WEB_WIZARDRY_ROOT"
+    return 1
+  fi
+
+  rm -rf "$tmpdir" "$stub_dir"
+}
+
 run_test_case "fix-site-security --help works" test_fix_site_security_help
 run_test_case "fix-site-security sets site-user" test_fix_site_security_sets_site_user
 run_test_case "fix-site-security repairs missing Linux private groups" \
@@ -324,5 +352,7 @@ run_test_case "fix-site-security makes sitedata files writable" test_fix_site_se
 run_test_case "fix-site-security makes nginx runtime paths group-writable" \
   test_fix_site_security_nginx_is_group_writable
 run_test_case "fix-site-security does not create site .web-libs cache" test_fix_site_security_does_not_create_site_web_lib_cache
+run_test_case "fix-site-security rejects path-shaped site names" \
+  test_fix_site_security_rejects_path_shaped_site_name
 
 finish_tests
