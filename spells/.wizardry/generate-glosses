@@ -550,6 +550,30 @@ uname|uniq|wc|xargs|xattr)
   return 0
 }
 
+# Helper function to check if a synonym target is safe to emit in generated shell.
+# Targets may include preset arguments separated by spaces, but not shell syntax.
+is_synonym_target_valid() {
+  syn_target=$1
+  syn_newline='
+'
+  syn_carriage_return=$(printf '\r')
+  syn_tab=$(printf '\t')
+
+  case "$syn_target" in
+    ''|*"$syn_newline"*|*"$syn_carriage_return"*|*"$syn_tab"*)
+      return 1
+      ;;
+  esac
+
+  case "$syn_target" in
+    *[\#\'\"\$\`\\\|\&\;\(\)\<\>\*\?\[\]]*)
+      return 1
+      ;;
+  esac
+
+  return 0
+}
+
 # Helper function to check if a name can be a valid POSIX function name
 # Function names can only contain: alphanumeric and underscore
 # They cannot start with a digit
@@ -602,12 +626,10 @@ if [ -f "$synonym_file" ]; then
       continue
     fi
 
-    case "$target" in
-      *\'*)
-        [ "$quiet" -eq 0 ] && warn "Invalid synonym target for $word" >&2
-        continue
-        ;;
-    esac
+    if ! is_synonym_target_valid "$target"; then
+      [ "$quiet" -eq 0 ] && warn "Invalid synonym target for $word" >&2
+      continue
+    fi
     
     # Check for duplicates
     case "$synonyms_seen" in
@@ -675,13 +697,11 @@ if [ -f "$default_synonym_file" ]; then
       continue
     fi
 
-    case "$target" in
-      *\'*)
-        printf '%s\n' "ERROR: invalid default synonym target: $word" >&2
-        default_synonym_errors=$((default_synonym_errors + 1))
-        continue
-        ;;
-    esac
+    if ! is_synonym_target_valid "$target"; then
+      printf '%s\n' "ERROR: invalid default synonym target: $word" >&2
+      default_synonym_errors=$((default_synonym_errors + 1))
+      continue
+    fi
     
     # Check for duplicates (user synonyms take precedence)
     case "$synonyms_seen" in

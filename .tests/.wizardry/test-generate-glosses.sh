@@ -751,9 +751,45 @@ EOF
   esac
 }
 
+test_user_synonym_target_cannot_inject_generated_function() {
+  if ! command -v bash >/dev/null 2>&1; then
+    test_skip "requires bash"
+    return 0
+  fi
+
+  tmpdir=$(make_tempdir)
+  spellbook="$tmpdir/spellbook"
+  payload_file="$tmpdir/synonym-target-injected"
+  mkdir -p "$spellbook"
+
+  printf '%s\n' "zap=printf SAFE; touch $payload_file" > "$spellbook/.synonyms"
+
+  WIZARDRY_DIR="$ROOT_DIR" SPELLBOOK_DIR="$spellbook" \
+    run_spell spells/.wizardry/generate-glosses --output "$tmpdir/glosses" --quiet
+  assert_success || return 1
+
+  cat > "$tmpdir/run.sh" <<EOF
+#!/usr/bin/env bash
+set -eu
+. "$tmpdir/glosses"
+if command -v zap >/dev/null 2>&1; then
+  zap || true
+fi
+EOF
+  chmod +x "$tmpdir/run.sh"
+
+  run_cmd bash "$tmpdir/run.sh"
+  assert_success || return 1
+  if [ -e "$payload_file" ]; then
+    TEST_FAILURE_REASON="generated synonym function executed shell syntax from target metadata"
+    return 1
+  fi
+}
+
 run_test_case "aliases with numbers actually execute in interactive shell" test_aliases_with_numbers_actually_execute
 run_test_case "aliases with special chars actually execute in interactive shell" test_aliases_with_special_chars_actually_execute
 run_test_case "generate-glosses skips first-word glosses that shadow system commands" test_generate_glosses_skips_system_command_prefixes
 run_test_case "first-word gloss synonym lookup matches literal names" test_first_word_gloss_synonym_lookup_matches_literal_name
+run_test_case "user synonym targets cannot inject generated functions" test_user_synonym_target_cannot_inject_generated_function
 
 finish_tests
