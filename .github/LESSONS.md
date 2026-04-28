@@ -84,6 +84,7 @@
 - Parser and generated gloss synonym targets must strip carriage returns because CRLF metadata can create command names that syntax-check but fail at runtime.
 - Synonym writers must reject carriage returns, not only newlines, so reader-side CRLF cleanup cannot silently rename persisted keys.
 - Menu readers should strip carriage returns from hand-edited synonym metadata before building labels or commands.
+- Parser fallbacks for found system commands must preserve the command's nonzero status instead of converting it to command-not-found.
 
 
 - When a file is sourced (`. filename`), using `exit` exits the parent shell; use `return` instead (discovered via doppelganger failing to create directories) (3)

@@ -46,6 +46,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Parser and gloss configuration readers should include CRLF config files so disabled flags are not bypassed by carriage returns.
 - Parse-disabled generated aliases should be executed with trailing arguments, not only sourced or syntax-checked.
 - Parser and gloss synonym readers should execute CRLF synonym targets, not only syntax-check generated output; carriage returns in command names can pass `sh -n` and fail only at runtime.
+- Parser system-command fallbacks should preserve nonzero statuses from found utilities instead of rewriting failures as command-not-found.
 
 ### Shell Expansion
 

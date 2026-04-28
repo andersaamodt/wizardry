@@ -223,6 +223,30 @@ EOF
   assert_output_contains "custom echo spell" || return 1
 }
 
+test_parse_preserves_system_command_failure_status() {
+  saved_wizdir="${WIZARDRY_DIR-}"
+  tmpdir=$(make_tempdir)
+  mkdir -p "$tmpdir/wizardry/spells"
+
+  export WIZARDRY_DIR="$tmpdir/wizardry"
+  run_sourced_spell "spells/.imps/lex/parse" "false"
+
+  if [ -n "$saved_wizdir" ]; then
+    export WIZARDRY_DIR="$saved_wizdir"
+  else
+    unset WIZARDRY_DIR
+  fi
+
+  if [ "$STATUS" -ne 1 ]; then
+    TEST_FAILURE_REASON="expected false status 1, got $STATUS"
+    return 1
+  fi
+  if printf '%s' "$ERROR" | grep -q "command not found"; then
+    TEST_FAILURE_REASON="parse rewrote a found system command failure as command not found"
+    return 1
+  fi
+}
+
 test_parse_skips_numeric_args() {
   # Save original WIZARDRY_DIR
   saved_wizdir="${WIZARDRY_DIR-}"
@@ -784,6 +808,7 @@ run_test_case "numeric only args (jump 1)" test_numeric_only_args
 run_test_case "command ending in number (jump to 5)" test_command_ending_in_number
 run_test_case "parse skips functions to avoid recursion" test_parse_skips_functions
 run_test_case "parse skips builtins" test_parse_skips_builtins
+run_test_case "parse preserves system command failure status" test_parse_preserves_system_command_failure_status
 run_test_case "parse skips numeric arguments" test_parse_skips_numeric_args
 run_test_case "parse skips flags" test_parse_skips_flags
 run_test_case "parse handles multi-word command with numeric arg" test_parse_multiword_with_numeric

@@ -358,12 +358,11 @@ if [ -n "$cmd_type" ]; then
       # No slash - could be a builtin, function, or alias
       # Unset any gloss function first to prevent infinite recursion
       unset -f "$first_word" 2>/dev/null || true
-      # Try to run it - if it was a function we just unset, this will fail
-      # and we'll fall through to the error message
-      if "$first_word" "$@" 2>/dev/null; then
-        return $?
+      command "$first_word" "$@"
+      cmd_status=$?
+      if [ "$cmd_status" -ne 127 ]; then
+        return "$cmd_status"
       fi
-      # Command failed (was likely a function we just unset), continue to error
       ;;
   esac
 fi
@@ -431,7 +430,6 @@ fi
 
 printf 'parse: %s: command not found\n' "$first_word" >&2
 return 127
-
 
 
 
