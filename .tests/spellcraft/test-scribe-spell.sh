@@ -102,6 +102,28 @@ test_script_is_executable() {
   esac
 }
 
+test_quotes_single_quotes_in_generated_command() {
+  case_dir=$(make_tempdir)
+
+  SPELLBOOK_DIR="$case_dir" \
+    run_spell "spells/spellcraft/scribe-spell" quote-cmd "printf '%s\\n' \"it's safe\""
+
+  assert_success || return 1
+  [ -x "$case_dir/quote-cmd" ] || {
+    TEST_FAILURE_REASON="quote-bearing generated script missing"
+    return 1
+  }
+
+  output=$("$case_dir/quote-cmd")
+  case "$output" in
+    "it's safe") : ;;
+    *)
+      TEST_FAILURE_REASON="quote-bearing generated script output was: $output"
+      return 1
+      ;;
+  esac
+}
+
 test_rejects_existing_command_name() {
   case_dir=$(make_tempdir)
   
@@ -162,6 +184,8 @@ run_test_case "scribe-spell fails with partial args" test_fails_with_partial_arg
 run_test_case "scribe-spell rejects invalid names" test_rejects_invalid_name
 run_test_case "scribe-spell joins multi-word commands" test_multiword_command
 run_test_case "scribe-spell creates executable scripts" test_script_is_executable
+run_test_case "scribe-spell quotes single quotes in generated commands" \
+  test_quotes_single_quotes_in_generated_command
 run_test_case "scribe-spell rejects existing command names" test_rejects_existing_command_name
 run_test_case "scribe-spell rejects duplicate spell in spellbook" test_rejects_duplicate_spell_in_spellbook
 run_test_case "scribe-spell rejects duplicate spell in subfolder" test_rejects_duplicate_spell_in_subfolder

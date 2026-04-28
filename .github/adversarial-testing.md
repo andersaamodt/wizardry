@@ -70,6 +70,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Generated gloss files should be syntax-checked with POSIX `sh -n` after adding aliases or first-word functions for names containing special characters.
 - Hand-edited synonym files are imported metadata; test quote-bearing targets so one malformed record cannot make every generated gloss unsourceable.
 - Generated gloss synonym targets are shell code unless validated; reject shell metacharacters, globs, and control characters while preserving simple preset-argument targets.
+- Generated `sh -c` wrappers should execute quote-bearing command text in tests, not only inspect the generated file.
 - Generated glosses that embed an install root must execute parser fallbacks with that root when `WIZARDRY_DIR` is unset; test an isolated root outside `~/.wizardry`.
 - Generated parser/gloss functions should be executed under `set -u` with optional environment variables unset, not only syntax-checked.
 - Parser and gloss configuration readers should include CRLF config files so disabled flags are not bypassed by carriage returns.

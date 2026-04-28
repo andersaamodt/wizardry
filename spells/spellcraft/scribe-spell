@@ -226,7 +226,7 @@ if [ "$#" -ge 2 ]; then
         if [ "$target_dir" != "$target_path" ] && [ ! -d "$target_dir" ]; then
                 mkdir -p "$target_dir"
         fi
-        escaped_cmd=$(printf '%s' "$cmd" | sed "s/'/'\\''/g")
+        escaped_cmd=$(printf '%s' "$cmd" | sed "s/'/'\\\\''/g")
         cat >"$target_path" <<EOF_SCRIPT
 #!/bin/sh
 exec sh -c '$escaped_cmd' "\$0" "\$@"
@@ -353,7 +353,7 @@ target_dir=${target_path%/*}
 if [ "$target_dir" != "$target_path" ] && [ ! -d "$target_dir" ]; then
         mkdir -p "$target_dir"
 fi
-escaped_cmd=$(printf '%s' "$cmd_text" | sed "s/'/'\\''/g")
+escaped_cmd=$(printf '%s' "$cmd_text" | sed "s/'/'\\\\''/g")
 cat >"$target_path" <<EOF_SCRIPT
 #!/bin/sh
 exec sh -c '$escaped_cmd' "\$0" "\$@"

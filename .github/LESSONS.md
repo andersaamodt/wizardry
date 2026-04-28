@@ -253,6 +253,7 @@
 - User-controlled text passed to grep should use fixed-string matching, or path characters like `[` can break detection.
 - Delimited key files should compare the parsed key field literally; regex key matching can mutate or execute sibling records.
 - Generated shell glosses must validate imported synonym targets for shell metacharacters before emitting functions or aliases; rejecting only quotes still allows semicolon command injection.
+- Generated `sh -c` wrappers must test command text containing single quotes; the shell-quote escape must emit `'\''`, not repeated raw quotes.
 - Parser connector imps that intentionally split accumulated command-argument strings must temporarily disable globbing so literal `*` arguments do not expand against the caller's working directory.
 - Generated first-word glosses must pass their embedded install root into sourced parser fallbacks when `WIZARDRY_DIR` is unset; otherwise isolated installs accidentally parse against `~/.wizardry`.
 - Capability probes should not interpolate `TMPDIR` paths into `sh -c` strings; quote-bearing temp roots can break the probe or execute unintended shell syntax.
