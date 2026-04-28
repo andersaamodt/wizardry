@@ -91,6 +91,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 
 - Treat release asset names, package names, bundle IDs, API filter values, and remote branch/track names as hostile input.
 - Validate every release credential identifier consistently across build, upload, and promote helpers before passing them to platform tools.
+- Release-control flags should reject unsupported values instead of silently changing deploy, review, or publish behavior.
 - Release tag/version strings become generated project metadata; validate them before rendering build-system files.
 - Remote API response fields should be revalidated after structured parsing before they are reused in URLs or status rows.
 - Remote API tokens should be revalidated after structured parsing before they are used in HTTP headers.
