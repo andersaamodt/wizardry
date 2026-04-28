@@ -29,6 +29,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Composite refs such as `source:name` must reject unsupported namespaces, missing separators, repeated separators, and trailing words.
 - After rejecting a path-like value, assert sibling/outside files were not created, modified, chmodded, or deleted.
 - Test path-like values in config files too; imported metadata is input, not trusted source code.
+- Hand-edited config values that feed daemon/service config need read-time validation even when writer commands validate them.
 
 ### Argument Shape
 
@@ -139,6 +140,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 
 - Prefer POSIX constructs and document any exception.
 - Exercise BSD/GNU differences for `find`, `stat`, `sed`, `date`, permission predicates, and xattr tools.
+- Spell discovery should avoid `find -executable`; use `find -type f` plus `[ -x ]` filtering and test on BSD/macOS.
 - Test behavior when optional helper commands are missing by stubbing `PATH`.
 - Keep temporary artifacts in `WIZARDRY_TMPDIR`, `TMPDIR`, or another ignored external location.
 - Treat repository sync/import scripts as release tools: reject missing or recursive source/target paths, test dotfile copies, and preserve local-only generated/host directories.

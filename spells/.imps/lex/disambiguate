@@ -30,8 +30,13 @@ dis_count=0
 dis_wizardry_dir="${WIZARDRY_DIR:-$HOME/.wizardry}"
 if [ -d "$dis_wizardry_dir/spells" ]; then
   dis_spell_path=$(
-    find "$dis_wizardry_dir/spells" -name "$dis_cmd" \
-      -type f -executable 2>/dev/null | head -1
+    find "$dis_wizardry_dir/spells" -name "$dis_cmd" -type f 2>/dev/null |
+      while IFS= read -r dis_candidate_path; do
+        if [ -x "$dis_candidate_path" ]; then
+          printf '%s\n' "$dis_candidate_path"
+          break
+        fi
+      done
   )
   if [ -n "$dis_spell_path" ]; then
     dis_count=$((dis_count + 1))
@@ -98,4 +103,3 @@ if [ "$dis_remember" -eq 1 ]; then
 fi
 
 "$dis_chosen_path" "$@"
-

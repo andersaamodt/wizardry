@@ -23,8 +23,26 @@ test_disambiguate_runs_single_command() {
   assert_output_contains "hello" || return 1
 }
 
+test_disambiguate_finds_wizardry_spell_portably() {
+  tmp=$(make_tempdir)
+  mkdir -p "$tmp/wizardry/spells/test" "$tmp/spellbook"
+
+  cat > "$tmp/wizardry/spells/test/hello" <<'EOF'
+#!/bin/sh
+printf 'wizardry spell ran: [%s]\n' "$*"
+EOF
+  chmod +x "$tmp/wizardry/spells/test/hello"
+
+  WIZARDRY_DIR="$tmp/wizardry" SPELLBOOK_DIR="$tmp/spellbook" \
+    run_spell spells/.imps/lex/disambiguate hello arg
+
+  assert_success || return 1
+  assert_output_contains "wizardry spell ran: [arg]" || return 1
+}
+
 run_test_case "disambiguate is executable" test_disambiguate_is_executable
 run_test_case "disambiguate with no args succeeds" test_disambiguate_no_args_succeeds
 run_test_case "disambiguate runs single command" test_disambiguate_runs_single_command
+run_test_case "disambiguate finds wizardry spell portably" test_disambiguate_finds_wizardry_spell_portably
 
 finish_tests

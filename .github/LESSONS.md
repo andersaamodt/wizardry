@@ -89,6 +89,7 @@
 - POSIX shell function variables are still global, so sourced parser scratch names must be parser-prefixed to avoid clobbering caller variables.
 - Parser connector imps must source parse during handoff and quote explicit source/target operands separately from accumulated argument strings.
 - Parser system-command fallback must shift off the command word before execution so system commands receive only their intended operands.
+- Lex spell discovery must not use `find -executable`; BSD/macOS rejects it and makes valid wizardry commands disappear.
 
 
 - When a file is sourced (`. filename`), using `exit` exits the parent shell; use `return` instead (discovered via doppelganger failing to create directories) (3)
