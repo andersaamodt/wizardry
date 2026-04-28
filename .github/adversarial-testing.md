@@ -27,6 +27,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - If a value is both a label and a path component, test create, edit, rename, import, and repair paths for the same contract.
 - Template and import paths should share create-path validators because they often write both directories and profile metadata.
 - Template-based site creation must validate site names before creating the output root; template paths with spaces should still resolve.
+- Template refresh commands must share creation-time site-name validation before removing template-owned subtrees.
 - Mutation commands must enforce the same path output contract as list/status commands before writing metadata or renaming folders.
 - Rebuild/run/install-style commands that print machine-readable rows must reject line-break paths before executing side effects, not only before status-only reads.
 - Values interpolated into regex matching need stricter name validation than path quoting alone provides.
@@ -79,6 +80,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Generated gloss scanners should test `WIZARDRY_DIR` and `SPELLBOOK_DIR` paths containing spaces, especially when feeding file lists to grep or find.
 - Candidate path lists should not be space-delimited; test `$HOME`, project roots, and config paths containing spaces.
 - Template source candidate lists should be newline-delimited, not command-substitution `for` loops, because install roots commonly contain spaces.
+- Template creation and update commands should both be tested with `WIZARDRY_DIR` paths containing spaces because they often resolve shared roots through separate helper loops.
 - Use `--` when passing user paths to commands that support it.
 
 ### Numeric and Interactive Input
