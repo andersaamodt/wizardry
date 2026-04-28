@@ -97,6 +97,33 @@ SH
 
 run_test_case "synonym-menu rejects regex false matches" test_does_not_open_menu_for_regex_false_match
 
+test_strips_crlf_target_before_menu_label() {
+  tmpdir=$(make_tempdir)
+  spellbook="$tmpdir/.spellbook"
+  stubdir="$tmpdir/bin"
+  menu_log="$tmpdir/menu.log"
+  mkdir -p "$spellbook" "$stubdir"
+  printf 'bad=target\r\n' > "$spellbook/.synonyms"
+  cat > "$stubdir/menu" <<'SH'
+#!/bin/sh
+printf '%s\n' "$@" > "$MENU_LOG"
+exit 130
+SH
+  chmod +x "$stubdir/menu"
+
+  SPELLBOOK_DIR="$spellbook" MENU_LOG="$menu_log" PATH="$stubdir:$PATH" \
+    run_cmd "$ROOT_DIR/spells/menu/synonym-menu" bad
+
+  assert_success || return 1
+  assert_path_exists "$menu_log" || return 1
+  if od -An -tx1 "$menu_log" | grep -q '0d'; then
+    TEST_FAILURE_REASON="synonym-menu passed carriage returns to menu labels"
+    return 1
+  fi
+}
+
+run_test_case "synonym-menu strips CRLF target before menu label" test_strips_crlf_target_before_menu_label
+
 # Test via source-then-invoke pattern  
 
 finish_tests

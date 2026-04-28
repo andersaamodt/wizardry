@@ -62,11 +62,11 @@ set -eu
   if [ -n "$custom_match" ]; then
     synonym_type="custom"
     synonyms_file="$custom_file"
-    target_spell=$(printf '%s' "$custom_match" | sed 's/^[^=]*=//')
+    target_spell=$(printf '%s' "$custom_match" | sed 's/^[^=]*=//' | tr -d '\r')
   elif [ -n "$default_match" ]; then
     synonym_type="default"
     synonyms_file="$default_file"
-    target_spell=$(printf '%s' "$default_match" | sed 's/^[^=]*=//')
+    target_spell=$(printf '%s' "$default_match" | sed 's/^[^=]*=//' | tr -d '\r')
   fi
   
   if [ -z "$target_spell" ]; then

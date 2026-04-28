@@ -71,6 +71,8 @@ set -eu
     # Print custom synonyms first
     if [ -f "$custom_file" ]; then
       while IFS= read -r line; do
+        line=$(printf '%s' "$line" | tr -d '\r')
+
         # Skip comments and empty lines
         case $line in
           \#*|'') continue ;;
@@ -91,6 +93,8 @@ set -eu
     # Print default synonyms
     if [ -f "$default_file" ]; then
       while IFS= read -r line; do
+        line=$(printf '%s' "$line" | tr -d '\r')
+
         # Skip comments and empty lines
         case $line in
           \#*|'') continue ;;
@@ -150,6 +154,8 @@ set -eu
     has_custom=0
     if [ -f "$custom_file" ]; then
       while IFS= read -r line; do
+        line=$(printf '%s' "$line" | tr -d '\r')
+
         # Skip comments and empty lines
         case $line in
           \#*|'') continue ;;
@@ -183,6 +189,8 @@ set -eu
     # List default synonyms
     if [ -f "$default_file" ]; then
       while IFS= read -r line; do
+        line=$(printf '%s' "$line" | tr -d '\r')
+
         # Skip comments and empty lines
         case $line in
           \#*|'') continue ;;

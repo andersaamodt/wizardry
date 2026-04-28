@@ -94,6 +94,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Release tag/version strings become generated project metadata; validate them before rendering build-system files.
 - Remote API response fields should be revalidated after structured parsing before they are reused in URLs or status rows.
 - Service account JSON should be treated as imported release metadata; validate identity fields before JWT rendering.
+- Deploy/signing environment values should be validated before remote-shell, codesign, or notarization tooling receives them.
 - Validate remote metadata before downloads, extraction, install paths, chmod, JWT signing, API URLs, or platform tools run.
 - Git remote URLs can contain CR/LF and path-shaped slugs; validate before printing status rows or constructing GitHub API URLs.
 - Stub network tools and feed hostile metadata instead of relying on live services for adversarial release tests.
@@ -132,6 +133,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Project starter templates should carry the same adversarial backend contracts as first-party apps so generated projects do not recreate fixed bugs.
 - Log/history readers that feed GUIs should revalidate delimiter row shape and sanitize CR, even when the normal writer already cleans entries.
 - Helper command list output should be treated as imported GUI rows and filtered for delimiter shape before forwarding.
+- Menu labels built from hand-edited metadata should strip CR before display and command construction, even when writer commands now reject CR.
 
 ### Eval-Printing Commands
 

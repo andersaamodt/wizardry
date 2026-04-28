@@ -138,6 +138,28 @@ test_list_keeps_default_when_custom_regex_false_match_exists() {
 
 run_test_case "thesaurus override checks use literal names" test_list_keeps_default_when_custom_regex_false_match_exists
 
+test_list_strips_crlf_synonym_records() {
+  skip-if-compiled || return $?
+  tmpdir=$(make_tempdir)
+  spellbook="$tmpdir/.spellbook"
+  mkdir -p "$spellbook"
+  printf 'bad=custom-target\r\n' > "$spellbook/.synonyms"
+  printf 'good=default-target\r\n' > "$spellbook/.default-synonyms"
+  touch "$spellbook/.default-synonyms-initialized"
+
+  SPELLBOOK_DIR="$spellbook" run_spell "spells/menu/thesaurus" --list
+
+  assert_success || return 1
+  assert_output_contains "bad" || return 1
+  assert_output_contains "good" || return 1
+  if printf '%s' "$OUTPUT" | od -An -tx1 | grep -q '0d'; then
+    TEST_FAILURE_REASON="thesaurus --list printed carriage returns from synonym metadata"
+    return 1
+  fi
+}
+
+run_test_case "thesaurus --list strips CRLF synonym records" test_list_strips_crlf_synonym_records
+
 
 # Test via source-then-invoke pattern  
 
