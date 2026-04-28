@@ -1350,6 +1350,45 @@ EOF
   assert_output_contains "script args: [outer one]" || return 1
 }
 
+test_parse_does_not_clobber_common_caller_variables() {
+  saved_wizdir="${WIZARDRY_DIR-}"
+  tmpdir=$(make_tempdir)
+  test_spell_dir="$tmpdir/wizardry/spells/test"
+  mkdir -p "$test_spell_dir"
+
+  cat > "$test_spell_dir/noop" <<'EOF'
+#!/bin/sh
+printf 'noop\n'
+EOF
+  chmod +x "$test_spell_dir/noop"
+
+  export WIZARDRY_DIR="$tmpdir/wizardry"
+  run_cmd sh -c '
+    set -eu
+    cmd_name=KEEP
+    first_word=KEEP
+    spell_path=KEEP
+    category_dir=KEEP
+    synonym_target=KEEP
+    set -- noop
+    . "$ROOT_DIR/spells/.imps/lex/parse" >/dev/null
+    printf "cmd_name=%s\n" "$cmd_name"
+    printf "first_word=%s\n" "$first_word"
+    printf "spell_path=%s\n" "$spell_path"
+    printf "category_dir=%s\n" "$category_dir"
+    printf "synonym_target=%s\n" "$synonym_target"
+  '
+
+  if [ -n "$saved_wizdir" ]; then export WIZARDRY_DIR="$saved_wizdir"; else unset WIZARDRY_DIR; fi
+
+  assert_success || return 1
+  assert_output_contains "cmd_name=KEEP" || return 1
+  assert_output_contains "first_word=KEEP" || return 1
+  assert_output_contains "spell_path=KEEP" || return 1
+  assert_output_contains "category_dir=KEEP" || return 1
+  assert_output_contains "synonym_target=KEEP" || return 1
+}
+
 run_test_case "Single-word spell with argument (issue: prioritize mytask)" test_single_word_spell_with_arg
 run_test_case "Multi-word spell with argument (issue: magic missile target)" test_multiword_spell_with_arg
 run_test_case "Longest match priority (cast spell fireball)" test_longest_match_priority
@@ -1361,6 +1400,7 @@ run_test_case "Synonym target can use spell-relative path" test_synonym_target_c
 run_test_case "Synonym target strips CRLF line endings" test_synonym_target_strips_crlf
 run_test_case "Parse depth does not leak between calls" test_parse_depth_does_not_leak_between_calls
 run_test_case "Parse does not clobber caller positionals" test_parse_does_not_clobber_caller_positionals
+run_test_case "Parse does not clobber common caller variables" test_parse_does_not_clobber_common_caller_variables
 
 # Test parse-enabled=0 behavior
 test_parse_disabled() {

@@ -41,12 +41,12 @@ fi
 
 wizardry_parse_main() {
 # Check if parse is enabled in config BEFORE doing any work (defaults to enabled when unset)
-spell_home="${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}"
-config_file="$spell_home/.mud"
+parse_spell_home="${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}"
+parse_config_file="$parse_spell_home/.mud"
 parse_enabled=""
-if [ -f "$config_file" ]; then
+if [ -f "$parse_config_file" ]; then
   parse_enabled=$(
-    grep "^parse-enabled=" "$config_file" 2>/dev/null | cut -d= -f2- | tr -d '\r' || printf ''
+    grep "^parse-enabled=" "$parse_config_file" 2>/dev/null | cut -d= -f2- | tr -d '\r' || printf ''
   )
 fi
 # Default to enabled (1) if not set
@@ -76,35 +76,34 @@ if [ $# -eq 0 ]; then
 fi
 
 # Get WIZARDRY_DIR
-wizardry_dir=${WIZARDRY_DIR:-${HOME:-.}/.wizardry}
-if [ ! -d "$wizardry_dir/spells" ]; then
+parse_wizardry_dir=${WIZARDRY_DIR:-${HOME:-.}/.wizardry}
+if [ ! -d "$parse_wizardry_dir/spells" ]; then
   # Fall back to detecting from script location if needed
   if command -v dirname >/dev/null 2>&1 && command -v pwd >/dev/null 2>&1; then
-    script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || :
-    if [ -n "$script_dir" ]; then
-      wiz_root=$(CDPATH= cd -- "$script_dir/../../.." 2>/dev/null && pwd -P) || :
-      if [ -n "$wiz_root" ] && [ -d "$wiz_root/spells" ]; then
-        wizardry_dir=$wiz_root
+    parse_script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P) || :
+    if [ -n "$parse_script_dir" ]; then
+      parse_wiz_root=$(CDPATH= cd -- "$parse_script_dir/../../.." 2>/dev/null && pwd -P) || :
+      if [ -n "$parse_wiz_root" ] && [ -d "$parse_wiz_root/spells" ]; then
+        parse_wizardry_dir=$parse_wiz_root
       fi
     fi
   fi
 fi
 
 # Extract command words (non-flag args from the beginning)
-cmd_word_count=0
-first_word=""
-all_args="$#"
+parse_cmd_word_count=0
+parse_first_word=""
 
 # Count how many leading args are command words (not flags or pure numbers)
-for loop_arg in "$@"; do
-  case "$loop_arg" in
+for parse_loop_arg in "$@"; do
+  case "$parse_loop_arg" in
     -*) break ;;
     *[!0-9]*) 
       # Contains non-numeric characters - it's a command word
-      if [ -z "$first_word" ]; then
-        first_word=$loop_arg
+      if [ -z "$parse_first_word" ]; then
+        parse_first_word=$parse_loop_arg
       fi
-      cmd_word_count=$((cmd_word_count + 1))
+      parse_cmd_word_count=$((parse_cmd_word_count + 1))
       ;;
     *)
       # Pure numeric argument - stop counting command words
@@ -114,160 +113,160 @@ for loop_arg in "$@"; do
 done
 
 # If no command words, nothing to do
-if [ $cmd_word_count -eq 0 ]; then
+if [ $parse_cmd_word_count -eq 0 ]; then
   printf 'parse: no command specified\n' >&2
   return 1
 fi
 
 # Try progressively longer combinations (from max down to 1)
-attempt_len=$cmd_word_count
-while [ $attempt_len -gt 0 ]; do
+parse_attempt_len=$parse_cmd_word_count
+while [ $parse_attempt_len -gt 0 ]; do
   # Build command name from first N words joined with hyphens
   # IMPORTANT: Only use command words (skip flags and pure numbers)
-  cmd_name=""
+  parse_cmd_name=""
   parse_i=0
-  for loop_arg in "$@"; do
+  for parse_loop_arg in "$@"; do
     # Skip flags and pure numeric arguments (same logic as counting loop)
-    case "$loop_arg" in
+    case "$parse_loop_arg" in
       -*) break ;;
       *[!0-9]*) ;;  # Contains non-numeric - it's a command word, use it
       *) break ;;    # Pure numeric - stop
     esac
     
-    if [ $parse_i -ge $attempt_len ]; then
+    if [ $parse_i -ge $parse_attempt_len ]; then
       break
     fi
-    if [ -z "$cmd_name" ]; then
-      cmd_name=$loop_arg
+    if [ -z "$parse_cmd_name" ]; then
+      parse_cmd_name=$parse_loop_arg
     else
-      cmd_name="${cmd_name}-${loop_arg}"
+      parse_cmd_name="${parse_cmd_name}-${parse_loop_arg}"
     fi
     parse_i=$((parse_i + 1))
   done
   
   # Try all possible spell locations
-  spell_path=""
+  parse_spell_path=""
   
   # Try imp directories
-  for imp_dir in sys cond out fs str paths text input menu pkg test lang; do
-    if [ -x "$wizardry_dir/spells/.imps/$imp_dir/$cmd_name" ]; then
+  for parse_imp_dir in sys cond out fs str paths text input menu pkg test lang; do
+    if [ -x "$parse_wizardry_dir/spells/.imps/$parse_imp_dir/$parse_cmd_name" ]; then
       # Skip parse in lex to avoid recursion
-      if [ "$imp_dir" = "lex" ] && [ "$cmd_name" = "parse" ]; then
+      if [ "$parse_imp_dir" = "lex" ] && [ "$parse_cmd_name" = "parse" ]; then
         continue
       fi
-      spell_path="$wizardry_dir/spells/.imps/$imp_dir/$cmd_name"
+      parse_spell_path="$parse_wizardry_dir/spells/.imps/$parse_imp_dir/$parse_cmd_name"
       break
     fi
   done
   
   # Try lex separately (but avoid parse recursion)
-  if [ -z "$spell_path" ] && [ "$cmd_name" != "parse" ]; then
-    if [ -x "$wizardry_dir/spells/.imps/lex/$cmd_name" ]; then
-      spell_path="$wizardry_dir/spells/.imps/lex/$cmd_name"
+  if [ -z "$parse_spell_path" ] && [ "$parse_cmd_name" != "parse" ]; then
+    if [ -x "$parse_wizardry_dir/spells/.imps/lex/$parse_cmd_name" ]; then
+      parse_spell_path="$parse_wizardry_dir/spells/.imps/lex/$parse_cmd_name"
     fi
   fi
   
   # Try .wizardry directory
-  if [ -z "$spell_path" ] && [ -x "$wizardry_dir/spells/.wizardry/$cmd_name" ]; then
-    spell_path="$wizardry_dir/spells/.wizardry/$cmd_name"
+  if [ -z "$parse_spell_path" ] && [ -x "$parse_wizardry_dir/spells/.wizardry/$parse_cmd_name" ]; then
+    parse_spell_path="$parse_wizardry_dir/spells/.wizardry/$parse_cmd_name"
   fi
 
   # Try explicit spell-relative paths used by some synonyms, such as
   # translocation/jump-to-marker or .arcana/web-wizardry/web-wizardry-menu.
-  if [ -z "$spell_path" ]; then
-    case "$cmd_name" in
+  if [ -z "$parse_spell_path" ]; then
+    case "$parse_cmd_name" in
       /*|..|../*|*/..|*/../*|*//*) ;;
       */*)
-        if [ -x "$wizardry_dir/spells/$cmd_name" ]; then
-          spell_path="$wizardry_dir/spells/$cmd_name"
+        if [ -x "$parse_wizardry_dir/spells/$parse_cmd_name" ]; then
+          parse_spell_path="$parse_wizardry_dir/spells/$parse_cmd_name"
         fi
         ;;
     esac
   fi
   
   # Try spell category directories
-  if [ -z "$spell_path" ]; then
-    for category_dir in "$wizardry_dir/spells"/*; do
-      [ -d "$category_dir" ] || continue
-      case "$category_dir" in
+  if [ -z "$parse_spell_path" ]; then
+    for parse_category_dir in "$parse_wizardry_dir/spells"/*; do
+      [ -d "$parse_category_dir" ] || continue
+      case "$parse_category_dir" in
         */.|*/..|*/.imps|*/.wizardry) continue ;;
       esac
-      if [ -x "$category_dir/$cmd_name" ]; then
-        spell_path="$category_dir/$cmd_name"
+      if [ -x "$parse_category_dir/$parse_cmd_name" ]; then
+        parse_spell_path="$parse_category_dir/$parse_cmd_name"
         break
       fi
     done
   fi
   
   # Also try .arcana subdirectories if not found yet
-  if [ -z "$spell_path" ] && [ -d "$wizardry_dir/spells/.arcana" ]; then
-    for category_dir in "$wizardry_dir/spells/.arcana"/*; do
-      [ -d "$category_dir" ] || continue
-      if [ -x "$category_dir/$cmd_name" ]; then
-        spell_path="$category_dir/$cmd_name"
+  if [ -z "$parse_spell_path" ] && [ -d "$parse_wizardry_dir/spells/.arcana" ]; then
+    for parse_category_dir in "$parse_wizardry_dir/spells/.arcana"/*; do
+      [ -d "$parse_category_dir" ] || continue
+      if [ -x "$parse_category_dir/$parse_cmd_name" ]; then
+        parse_spell_path="$parse_category_dir/$parse_cmd_name"
         break
       fi
     done
   fi
   
   # Check if this command name is a synonym
-  if [ -z "$spell_path" ]; then
-    spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
-    synonym_target=""
+  if [ -z "$parse_spell_path" ]; then
+    parse_spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
+    parse_synonym_target=""
     
     # Check user synonyms first
-    if [ -f "$spell_home/.synonyms" ]; then
-      synonym_match=$(
-        awk -F= -v key="$cmd_name" '$1 == key { print; exit }' "$spell_home/.synonyms" 2>/dev/null || true
+    if [ -f "$parse_spell_home/.synonyms" ]; then
+      parse_synonym_match=$(
+        awk -F= -v key="$parse_cmd_name" '$1 == key { print; exit }' "$parse_spell_home/.synonyms" 2>/dev/null || true
       )
-      synonym_target=$(printf '%s' "$synonym_match" | sed 's/^[^=]*=//' | tr -d '\r')
+      parse_synonym_target=$(printf '%s' "$parse_synonym_match" | sed 's/^[^=]*=//' | tr -d '\r')
     fi
     
     # Check default synonyms if not found in user synonyms
-    if [ -z "$synonym_target" ] && [ -f "$spell_home/.default-synonyms" ]; then
-      synonym_match=$(
-        awk -F= -v key="$cmd_name" '$1 == key { print; exit }' "$spell_home/.default-synonyms" 2>/dev/null || true
+    if [ -z "$parse_synonym_target" ] && [ -f "$parse_spell_home/.default-synonyms" ]; then
+      parse_synonym_match=$(
+        awk -F= -v key="$parse_cmd_name" '$1 == key { print; exit }' "$parse_spell_home/.default-synonyms" 2>/dev/null || true
       )
-      synonym_target=$(printf '%s' "$synonym_match" | sed 's/^[^=]*=//' | tr -d '\r')
+      parse_synonym_target=$(printf '%s' "$parse_synonym_match" | sed 's/^[^=]*=//' | tr -d '\r')
     fi
     
     # If synonym found, check if target is uncastable before recursing
-    if [ -n "$synonym_target" ]; then
+    if [ -n "$parse_synonym_target" ]; then
       # Check if synonym target is an uncastable spell that needs sourcing
-      synonym_target_path=""
+      parse_synonym_target_path=""
       
       # Search for the synonym target in spell directories
-      for category_dir in "$wizardry_dir/spells"/*; do
-        [ -d "$category_dir" ] || continue
-        case "$category_dir" in
+      for parse_category_dir in "$parse_wizardry_dir/spells"/*; do
+        [ -d "$parse_category_dir" ] || continue
+        case "$parse_category_dir" in
           */.|*/..|*/.imps|*/.wizardry|*/.arcana) continue ;;
         esac
-        if [ -f "$category_dir/$synonym_target" ]; then
-          if grep -q "^# Uncastable pattern" "$category_dir/$synonym_target" 2>/dev/null; then
+        if [ -f "$parse_category_dir/$parse_synonym_target" ]; then
+          if grep -q "^# Uncastable pattern" "$parse_category_dir/$parse_synonym_target" 2>/dev/null; then
             # Found uncastable synonym target - source it with remaining args
-            synonym_target_path="$category_dir/$synonym_target"
+            parse_synonym_target_path="$parse_category_dir/$parse_synonym_target"
             break
           fi
         fi
       done
       
       # If synonym target is uncastable, source it
-      if [ -n "$synonym_target_path" ]; then
-        # Skip first $attempt_len args (the synonym name parts)
+      if [ -n "$parse_synonym_target_path" ]; then
+        # Skip first $parse_attempt_len args (the synonym name parts)
         parse_shift_count=0
-        while [ $parse_shift_count -lt $attempt_len ] && [ $# -gt 0 ]; do
+        while [ $parse_shift_count -lt $parse_attempt_len ] && [ $# -gt 0 ]; do
           shift
           parse_shift_count=$((parse_shift_count + 1))
         done
         # Source the uncastable spell
-        . "$synonym_target_path"
+        . "$parse_synonym_target_path"
         return $?
       fi
       
       # Synonym target is castable - recursively source parse
-      # Skip first $attempt_len args (the synonym name parts)
+      # Skip first $parse_attempt_len args (the synonym name parts)
       parse_shift_count=0
-      while [ $parse_shift_count -lt $attempt_len ] && [ $# -gt 0 ]; do
+      while [ $parse_shift_count -lt $parse_attempt_len ] && [ $# -gt 0 ]; do
         shift
         parse_shift_count=$((parse_shift_count + 1))
       done
@@ -286,7 +285,7 @@ while [ $attempt_len -gt 0 ]; do
         *) set -f ;;
       esac
       # shellcheck disable=SC2086
-      set -- $synonym_target "$@"
+      set -- $parse_synonym_target "$@"
       if [ "$parse_had_noglob" -eq 0 ]; then
         set +f
       fi
@@ -297,7 +296,7 @@ while [ $attempt_len -gt 0 ]; do
         . "${WIZARDRY_DIR:-./.wizardry}/spells/.imps/lex/parse"
         parse_status=$?
       else
-        printf '%s\n' "parse: cannot find parse to handle synonym $cmd_name" >&2
+        printf '%s\n' "parse: cannot find parse to handle synonym $parse_cmd_name" >&2
         return 127
       fi
       if [ "$parse_had_depth" -eq 1 ]; then
@@ -311,10 +310,10 @@ while [ $attempt_len -gt 0 ]; do
   fi
   
   # If found, source or execute the spell
-  if [ -n "$spell_path" ]; then
-    # Skip first $attempt_len args to get remaining args for the spell
+  if [ -n "$parse_spell_path" ]; then
+    # Skip first $parse_attempt_len args to get remaining args for the spell
     parse_shift_count=0
-    while [ $parse_shift_count -lt $attempt_len ]; do
+    while [ $parse_shift_count -lt $parse_attempt_len ]; do
       if [ $# -gt 0 ]; then
         shift
       fi
@@ -322,74 +321,74 @@ while [ $attempt_len -gt 0 ]; do
     done
     
     # Check if spell is uncastable (must be sourced)
-    if grep -q "^# Uncastable pattern" "$spell_path" 2>/dev/null; then
+    if grep -q "^# Uncastable pattern" "$parse_spell_path" 2>/dev/null; then
       # Source the uncastable spell
-      . "$spell_path"
+      . "$parse_spell_path"
       return $?
     fi
     
     # Castable spell - execute it, unsetting any function with the same name first
     # This prevents recursive loops when glosses create functions with the same name
-    unset -f "$cmd_name" 2>/dev/null || true
-    "$spell_path" "$@"
+    unset -f "$parse_cmd_name" 2>/dev/null || true
+    "$parse_spell_path" "$@"
     return $?
   fi
   
   # Try next shorter combination
-  attempt_len=$((attempt_len - 1))
+  parse_attempt_len=$((parse_attempt_len - 1))
 done
 
 # Last resort: try first word as system command (but not functions or aliases)
-cmd_type=$(command -v "$first_word" 2>/dev/null || true)
-if [ -n "$cmd_type" ]; then
+parse_cmd_type=$(command -v "$parse_first_word" 2>/dev/null || true)
+if [ -n "$parse_cmd_type" ]; then
   # Check if it's an actual executable file (not a function or alias)
   # command -v returns path for executables, name for builtins/functions/aliases
-  case "$cmd_type" in
+  case "$parse_cmd_type" in
     */*)
       # Contains a slash - it's a path to an executable file
-      if [ -f "$cmd_type" ] && [ -x "$cmd_type" ]; then
+      if [ -f "$parse_cmd_type" ] && [ -x "$parse_cmd_type" ]; then
         # It's a real executable command, run it
         # Unset any gloss function first to prevent recursion
-        unset -f "$first_word" 2>/dev/null || true
-        "$first_word" "$@"
+        unset -f "$parse_first_word" 2>/dev/null || true
+        "$parse_first_word" "$@"
         return $?
       fi
       ;;
     *)
       # No slash - could be a builtin, function, or alias
       # Unset any gloss function first to prevent infinite recursion
-      unset -f "$first_word" 2>/dev/null || true
-      command "$first_word" "$@"
-      cmd_status=$?
-      if [ "$cmd_status" -ne 127 ]; then
-        return "$cmd_status"
+      unset -f "$parse_first_word" 2>/dev/null || true
+      command "$parse_first_word" "$@"
+      parse_cmd_status=$?
+      if [ "$parse_cmd_status" -ne 127 ]; then
+        return "$parse_cmd_status"
       fi
       ;;
   esac
 fi
 
 # Check synonyms as final fallback
-spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
-synonym_target=""
+parse_spell_home=${SPELLBOOK_DIR:-${HOME:-.}/.spellbook}
+parse_synonym_target=""
 
 # Check user synonyms first
-if [ -f "$spell_home/.synonyms" ]; then
-  synonym_match=$(
-    awk -F= -v key="$first_word" '$1 == key { print; exit }' "$spell_home/.synonyms" 2>/dev/null || true
+if [ -f "$parse_spell_home/.synonyms" ]; then
+  parse_synonym_match=$(
+    awk -F= -v key="$parse_first_word" '$1 == key { print; exit }' "$parse_spell_home/.synonyms" 2>/dev/null || true
   )
-  synonym_target=$(printf '%s' "$synonym_match" | sed 's/^[^=]*=//' | tr -d '\r')
+  parse_synonym_target=$(printf '%s' "$parse_synonym_match" | sed 's/^[^=]*=//' | tr -d '\r')
 fi
 
 # Check default synonyms if not found in user synonyms
-if [ -z "$synonym_target" ] && [ -f "$spell_home/.default-synonyms" ]; then
-  synonym_match=$(
-    awk -F= -v key="$first_word" '$1 == key { print; exit }' "$spell_home/.default-synonyms" 2>/dev/null || true
+if [ -z "$parse_synonym_target" ] && [ -f "$parse_spell_home/.default-synonyms" ]; then
+  parse_synonym_match=$(
+    awk -F= -v key="$parse_first_word" '$1 == key { print; exit }' "$parse_spell_home/.default-synonyms" 2>/dev/null || true
   )
-  synonym_target=$(printf '%s' "$synonym_match" | sed 's/^[^=]*=//' | tr -d '\r')
+  parse_synonym_target=$(printf '%s' "$parse_synonym_match" | sed 's/^[^=]*=//' | tr -d '\r')
 fi
 
 # If synonym found, recursively source parse with the target
-if [ -n "$synonym_target" ]; then
+if [ -n "$parse_synonym_target" ]; then
   [ $# -gt 0 ] && shift  # Remove the synonym word itself
   # Source parse recursively to handle the synonym target
   # Find parse using the same method as glosses
@@ -406,7 +405,7 @@ if [ -n "$synonym_target" ]; then
     *) set -f ;;
   esac
   # shellcheck disable=SC2086
-  set -- $synonym_target "$@"
+  set -- $parse_synonym_target "$@"
   if [ "$parse_had_noglob" -eq 0 ]; then
     set +f
   fi
@@ -417,7 +416,7 @@ if [ -n "$synonym_target" ]; then
     . "${WIZARDRY_DIR:-./.wizardry}/spells/.imps/lex/parse"
     parse_status=$?
   else
-    printf '%s\n' "parse: cannot find parse to handle synonym $first_word" >&2
+    printf '%s\n' "parse: cannot find parse to handle synonym $parse_first_word" >&2
     return 127
   fi
   if [ "$parse_had_depth" -eq 1 ]; then
@@ -429,7 +428,7 @@ if [ -n "$synonym_target" ]; then
   return "$parse_status"
 fi
 
-printf 'parse: %s: command not found\n' "$first_word" >&2
+printf 'parse: %s: command not found\n' "$parse_first_word" >&2
 return 127
 }
 

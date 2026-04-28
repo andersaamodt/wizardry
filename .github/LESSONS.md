@@ -86,6 +86,7 @@
 - Menu readers should strip carriage returns from hand-edited synonym metadata before building labels or commands.
 - Parser fallbacks for found system commands must preserve the command's nonzero status instead of converting it to command-not-found.
 - Sourced parser internals should run inside a wrapper function so internal shifts and `set --` calls do not clobber caller positional parameters.
+- POSIX shell function variables are still global, so sourced parser scratch names must be parser-prefixed to avoid clobbering caller variables.
 
 
 - When a file is sourced (`. filename`), using `exit` exits the parent shell; use `return` instead (discovered via doppelganger failing to create directories) (3)
