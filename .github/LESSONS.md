@@ -229,3 +229,4 @@
 - Remote side-effect commands should reject extra operands before dependency checks or connection/unmount attempts.
 - Direct prompt reads should normalize EOF to empty and validate required fields before side effects.
 - User-controlled text passed to grep should use fixed-string matching, or path characters like `[` can break detection.
+- Delimited key files should compare the parsed key field literally; regex key matching can mutate or execute sibling records.

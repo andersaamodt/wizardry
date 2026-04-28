@@ -1137,11 +1137,43 @@ EOF
   fi
 }
 
+test_synonym_lookup_matches_literal_name() {
+  saved_wizdir="${WIZARDRY_DIR-}"
+  saved_spellbook="${SPELLBOOK_DIR-}"
+
+  tmpdir=$(make_tempdir)
+  test_spell_dir="$tmpdir/wizardry/spells/test"
+  spellbook="$tmpdir/spellbook"
+  mkdir -p "$test_spell_dir" "$spellbook"
+
+  cat > "$test_spell_dir/target-spell" <<'EOF'
+#!/bin/sh
+printf 'target-spell executed\n'
+EOF
+  chmod +x "$test_spell_dir/target-spell"
+  printf '%s\n' 'myXalias=target-spell' > "$spellbook/.synonyms"
+
+  export WIZARDRY_DIR="$tmpdir/wizardry"
+  export SPELLBOOK_DIR="$spellbook"
+  run_sourced_spell "spells/.imps/lex/parse" "my.alias"
+
+  if [ -n "$saved_wizdir" ]; then export WIZARDRY_DIR="$saved_wizdir"; else unset WIZARDRY_DIR; fi
+  if [ -n "$saved_spellbook" ]; then export SPELLBOOK_DIR="$saved_spellbook"; else unset SPELLBOOK_DIR; fi
+
+  assert_failure || return 1
+  if printf '%s' "$OUTPUT" | grep -F -q -e 'target-spell executed'; then
+    TEST_FAILURE_REASON="parse executed regex-matched synonym instead of literal name"
+    return 1
+  fi
+  assert_error_contains "my.alias: command not found" || return 1
+}
+
 run_test_case "Single-word spell with argument (issue: prioritize mytask)" test_single_word_spell_with_arg
 run_test_case "Multi-word spell with argument (issue: magic missile target)" test_multiword_spell_with_arg
 run_test_case "Longest match priority (cast spell fireball)" test_longest_match_priority
 run_test_case "Custom synonym multi-word castable (issue: leap to location)" test_custom_synonym_multiword
 run_test_case "Custom synonym multi-word uncastable (issue: leap to location sourcing)" test_custom_synonym_uncastable
+run_test_case "Synonym lookup matches literal names" test_synonym_lookup_matches_literal_name
 
 # Test parse-enabled=0 behavior
 test_parse_disabled() {

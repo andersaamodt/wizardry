@@ -741,6 +741,16 @@ if mount | grep -F -q -e " $mount_point "; then
 fi
 ```
 
+For delimited key files, compare the parsed key field instead of searching for a regex prefix. Reject the delimiter in keys before writing the file.
+
+```sh
+# Wrong: key is interpreted as a regular expression
+grep "^$key=" "$file"
+
+# Right: key field is compared literally
+awk -F= -v key="$key" '$1 == key { print; exit }' "$file"
+```
+
 ## Wizardry Patterns
 
 ```sh
