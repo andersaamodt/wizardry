@@ -786,10 +786,43 @@ EOF
   fi
 }
 
+test_first_word_gloss_uses_embedded_root_when_wizardry_dir_unset() {
+  tmpdir=$(make_tempdir)
+  wizardry_dir="$tmpdir/custom-root"
+  spellbook="$tmpdir/spellbook"
+  home_dir="$tmpdir/home"
+  spell_dir="$wizardry_dir/spells/test"
+  parse_dir="$wizardry_dir/spells/.imps/lex"
+  mkdir -p "$spell_dir" "$parse_dir" "$spellbook" "$home_dir"
+
+  cp "$ROOT_DIR/spells/.imps/lex/parse" "$parse_dir/parse"
+  chmod +x "$parse_dir/parse"
+
+  cat > "$spell_dir/magic-spell" <<'EOF'
+#!/bin/sh
+printf 'CUSTOM_ROOT_SPELL\n'
+EOF
+  chmod +x "$spell_dir/magic-spell"
+
+  WIZARDRY_DIR="$wizardry_dir" SPELLBOOK_DIR="$spellbook" \
+    run_spell spells/.wizardry/generate-glosses --output "$tmpdir/glosses" --quiet
+  assert_success || return 1
+
+  run_cmd env \
+    PATH="$parse_dir:$PATH" \
+    HOME="$home_dir" \
+    SPELLBOOK_DIR="$spellbook" \
+    sh -c 'unset WIZARDRY_DIR; . "$1"; magic spell' sh "$tmpdir/glosses"
+
+  assert_success || return 1
+  assert_output_contains "CUSTOM_ROOT_SPELL" || return 1
+}
+
 run_test_case "aliases with numbers actually execute in interactive shell" test_aliases_with_numbers_actually_execute
 run_test_case "aliases with special chars actually execute in interactive shell" test_aliases_with_special_chars_actually_execute
 run_test_case "generate-glosses skips first-word glosses that shadow system commands" test_generate_glosses_skips_system_command_prefixes
 run_test_case "first-word gloss synonym lookup matches literal names" test_first_word_gloss_synonym_lookup_matches_literal_name
 run_test_case "user synonym targets cannot inject generated functions" test_user_synonym_target_cannot_inject_generated_function
+run_test_case "first-word gloss uses embedded root when WIZARDRY_DIR is unset" test_first_word_gloss_uses_embedded_root_when_wizardry_dir_unset
 
 finish_tests
