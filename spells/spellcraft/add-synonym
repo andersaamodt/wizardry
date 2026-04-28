@@ -59,17 +59,22 @@ set -eu
     exit 2
   fi
 
+  newline='
+'
+
   # Check for invalid characters in synonym word
-  # Valid: alphanumeric, hyphens (not leading), and special chars: . : = + , @ ! ? % ^ ~
+  # Valid: alphanumeric, hyphens (not leading), and special chars: . : + , @ ! ? % ^ ~
   # Invalid: leading dash/dot, spaces, tabs, quotes, and shell special chars
   # Pattern breakdown:
-  #   *[/\ \	\'\"\$\`\\\|\&\;\(\)\<\>\*\[\]]* = contains any of: / space tab ' " $ ` \ | & ; ( ) < > * [ ]
+  #   *[/=\ \	\'\"\$\`\\\|\&\;\(\)\<\>\*\[\]]* = contains any of: / = space tab ' " $ ` \ | & ; ( ) < > * [ ]
   case $synonym_word in
-    *[/\ \	\'\"\$\`\\\|\&\;\(\)\<\>\*\[\]]*)
+    *"$newline"*|*[/=\ \	\'\"\$\`\\\|\&\;\(\)\<\>\*\[\]]*)
       # Detect and show specific invalid character for better user feedback
       detected_char=""
       case "$synonym_word" in
+        *"$newline"*) detected_char="(newline)" ;;
         */*) detected_char="/" ;;
+        *=*) detected_char="=" ;;
         *' '*) detected_char="(space)" ;;
         *'	'*) detected_char="(tab)" ;;
         *\'*) detected_char="'" ;;
@@ -93,8 +98,8 @@ set -eu
       if [ -n "$detected_char" ]; then
         printf '%s\n' "  Found: $detected_char" >&2
       fi
-      printf '%s\n' "  Invalid characters: / \\ | & ; ( ) < > * [ ] \$ \` ' \" space tab" >&2
-      printf '%s\n' "  Valid special characters: - . : = + , @ ! ? % ^ ~ (- and . cannot be first)" >&2
+      printf '%s\n' "  Invalid characters: / = \\ | & ; ( ) < > * [ ] \$ \` ' \" space tab newline" >&2
+      printf '%s\n' "  Valid special characters: - . : + , @ ! ? % ^ ~ (- and . cannot be first)" >&2
       exit 2
       ;;
     -*)
@@ -170,6 +175,12 @@ set -eu
     printf '%s\n' "add-synonym: target spell cannot be empty" >&2
     exit 2
   fi
+  case $target_spell in
+    *"$newline"*)
+      printf '%s\n' "add-synonym: target spell cannot contain line breaks" >&2
+      exit 2
+      ;;
+  esac
 
   # Check if target spell contains problematic characters that might not work in aliases
   case $target_spell in
@@ -215,20 +226,29 @@ set -eu
   existing_location=""
   existing_target=""
 
-  if [ -f "$custom_file" ] && grep -q "^$synonym_word=" "$custom_file" 2>/dev/null; then
+  custom_match=""
+  if [ -f "$custom_file" ]; then
+    custom_match=$(
+      awk -F= -v key="$synonym_word" '$1 == key { print; exit }' "$custom_file" 2>/dev/null || true
+    )
+  fi
+  if [ -n "$custom_match" ]; then
     already_exists=1
     existing_location="custom"
-    existing_target=$(grep "^$synonym_word=" "$custom_file" | \
-      sed "s/^$synonym_word=//")
+    existing_target=$(printf '%s' "$custom_match" | sed 's/^[^=]*=//')
   fi
 
   # Only check default if not already found in custom
-  default_match=$(grep "^$synonym_word=" "$default_file" 2>/dev/null || true)
-  if [ "$already_exists" -eq 0 ] && [ -f "$default_file" ] && [ -n "$default_match" ]; then
+  default_match=""
+  if [ "$already_exists" -eq 0 ] && [ -f "$default_file" ]; then
+    default_match=$(
+      awk -F= -v key="$synonym_word" '$1 == key { print; exit }' "$default_file" 2>/dev/null || true
+    )
+  fi
+  if [ "$already_exists" -eq 0 ] && [ -n "$default_match" ]; then
     already_exists=1
     existing_location="default"
-    existing_target=$(printf '%s' "$default_match" | \
-      sed "s/^$synonym_word=//")
+    existing_target=$(printf '%s' "$default_match" | sed 's/^[^=]*=//')
   fi
 
   if [ "$already_exists" -eq 1 ]; then
@@ -248,9 +268,9 @@ set -eu
     # If overwriting a default, we create/update in custom
     # If overwriting a custom, we update in custom
     # Remove old custom definition if it exists
-    if [ -f "$custom_file" ] && grep -q "^$synonym_word=" "$custom_file" 2>/dev/null; then
+    if [ -n "$custom_match" ]; then
       temp_file=$(temp-file synonyms) || exit 1
-      grep -v "^$synonym_word=" "$custom_file" > "$temp_file" || true
+      awk -F= -v key="$synonym_word" '$1 != key' "$custom_file" > "$temp_file"
       mv "$temp_file" "$custom_file"
     fi
   fi

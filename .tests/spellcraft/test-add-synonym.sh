@@ -7,6 +7,7 @@
 # - warns about shell builtins
 # - validates against shell keywords
 # - handles special characters properly
+# - rejects file-format delimiters and line breaks
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
@@ -157,6 +158,40 @@ test_allows_special_chars_in_word() {
   grep -q "^test@at=" "$synonyms_file" || return 1
 }
 
+test_rejects_word_with_equals() {
+  case_dir=$(make_tempdir)
+
+  SPELLBOOK_DIR="$case_dir" \
+    run_spell "spells/spellcraft/add-synonym" "bad=alias" echo
+
+  assert_failure || return 1
+  assert_error_contains "invalid character" || return 1
+}
+
+test_rejects_word_with_newline() {
+  case_dir=$(make_tempdir)
+
+  SPELLBOOK_DIR="$case_dir" \
+    run_spell "spells/spellcraft/add-synonym" "bad
+alias" echo
+
+  assert_failure || return 1
+  assert_error_contains "invalid character" || return 1
+}
+
+test_rejects_target_with_newline() {
+  case_dir=$(make_tempdir)
+  synonyms_file="$case_dir/.synonyms"
+
+  SPELLBOOK_DIR="$case_dir" \
+    run_spell "spells/spellcraft/add-synonym" myalias "echo
+printf"
+
+  assert_failure || return 1
+  assert_error_contains "target spell cannot contain line breaks" || return 1
+  assert_path_missing "$synonyms_file" || return 1
+}
+
 test_rejects_empty_spell() {
   case_dir=$(make_tempdir)
   
@@ -293,6 +328,9 @@ run_test_case "rejects word starting with dash" test_rejects_word_starting_with_
 run_test_case "rejects word starting with dot" test_rejects_word_starting_with_dot
 run_test_case "allows word starting with number (creates alias)" test_allows_word_starting_with_number
 run_test_case "allows special chars in word (creates alias)" test_allows_special_chars_in_word
+run_test_case "rejects word with equals delimiter" test_rejects_word_with_equals
+run_test_case "rejects word with newline" test_rejects_word_with_newline
+run_test_case "rejects target with newline" test_rejects_target_with_newline
 run_test_case "rejects empty spell" test_rejects_empty_spell
 run_test_case "allows overwriting synonym" test_allows_overwriting_existing_synonym
 run_test_case "handles complex target with args" test_handles_complex_target_with_args
