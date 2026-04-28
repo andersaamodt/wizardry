@@ -12,6 +12,16 @@ fi
 dis_cmd=$1
 shift
 
+dis_newline='
+'
+dis_carriage_return=$(printf '\r')
+case "$dis_cmd" in
+  ''|.|..|*/*|*"$dis_newline"*|*"$dis_carriage_return"*)
+    printf '%s\n' "disambiguate: invalid command name: $dis_cmd" >&2
+    exit 2
+    ;;
+esac
+
 dis_spellbook_dir="${SPELLBOOK_DIR:-$HOME/.spellbook}"
 dis_disambig_dir="$dis_spellbook_dir/.disambiguations"
 

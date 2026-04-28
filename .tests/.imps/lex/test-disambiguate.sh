@@ -40,9 +40,26 @@ EOF
   assert_output_contains "wizardry spell ran: [arg]" || return 1
 }
 
+test_disambiguate_rejects_path_shaped_command_names() {
+  tmp=$(make_tempdir)
+  spellbook="$tmp/spellbook"
+  mkdir -p "$spellbook/.disambiguations"
+  printf '%s\n' "/missing-command" > "$spellbook/escape"
+
+  SPELLBOOK_DIR="$spellbook" run_spell spells/.imps/lex/disambiguate ../escape
+
+  assert_failure || return 1
+  assert_error_contains "invalid command name" || return 1
+  if [ ! -f "$spellbook/escape" ]; then
+    TEST_FAILURE_REASON="disambiguate removed a file outside .disambiguations"
+    return 1
+  fi
+}
+
 run_test_case "disambiguate is executable" test_disambiguate_is_executable
 run_test_case "disambiguate with no args succeeds" test_disambiguate_no_args_succeeds
 run_test_case "disambiguate runs single command" test_disambiguate_runs_single_command
 run_test_case "disambiguate finds wizardry spell portably" test_disambiguate_finds_wizardry_spell_portably
+run_test_case "disambiguate rejects path-shaped command names" test_disambiguate_rejects_path_shaped_command_names
 
 finish_tests
