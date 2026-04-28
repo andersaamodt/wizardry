@@ -122,6 +122,49 @@ SH
 
 run_test_case "spellbook ESC/Exit behavior" test_esc_exit_behavior
 
+test_category_scribe_action_quotes_dir_with_spaces() {
+  skip-if-compiled || return $?
+  tmpdir=$(make_tempdir)
+  spellbook_dir="$tmpdir/spell book"
+  category_dir="$spellbook_dir/tools"
+  mkdir -p "$category_dir"
+
+  stub_dir=$(make_stub_dir)
+  stub-memorize-command "$stub_dir"
+  stub-require-command-simple "$stub_dir"
+
+  cat >"$stub_dir/menu" <<'SH'
+#!/bin/sh
+printf '%s\n' "$@" >>"$MENU_LOG"
+kill -TERM "$PPID" 2>/dev/null || exit 0
+exit 0
+SH
+  chmod +x "$stub_dir/menu"
+
+  cat >"$stub_dir/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$stub_dir/exit-label"
+
+  SPELLBOOK_DIR="$spellbook_dir" PATH="$stub_dir:$PATH" MENU_LOG="$stub_dir/log" \
+    run_spell "spells/menu/spellbook" tools
+  assert_success || return 1
+
+  args=$(cat "$stub_dir/log" 2>/dev/null || printf '')
+  expected="Scribe new spell%scribe-spell --dir '$category_dir'"
+  case "$args" in
+    *"$expected"*) : ;;
+    *)
+      TEST_FAILURE_REASON="category scribe action did not quote --dir path: $args"
+      return 1
+      ;;
+  esac
+}
+
+run_test_case "spellbook quotes category scribe dir paths with spaces" \
+  test_category_scribe_action_quotes_dir_with_spaces
+
 
 # Test via source-then-invoke pattern  
 
