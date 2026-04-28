@@ -145,9 +145,47 @@ EOF
   rm -rf "$web_root" "$stub_dir" "$state_dir"
 }
 
+test_repair_site_daemon_rejects_path_shaped_site_name() {
+  skip-if-compiled || return $?
+
+  tmpdir=$(make_tempdir)
+  web_root="$tmpdir/sites"
+  escape_dir="$tmpdir/escape"
+  mkdir -p "$web_root" "$escape_dir/site"
+  cat > "$escape_dir/site.conf" <<EOF
+site-user=$(id -un)
+EOF
+
+  stub_dir=$(temp-dir web-wizardry-stub)
+  stub-launchctl "$stub_dir"
+  stub-uname-darwin "$stub_dir"
+  stub-sudo "$stub_dir"
+  stub-forget-command systemctl "$stub_dir"
+  . "$stub_dir/forget-systemctl"
+
+  state_dir=$(temp-dir web-wizardry-state)
+  plist_dir="$stub_dir/Library/LaunchDaemons"
+  mkdir -p "$plist_dir"
+
+  PATH="$stub_dir:$PATH" WEB_WIZARDRY_ROOT="$web_root" WIZARDRY_DIR="$ROOT_DIR" \
+    LAUNCHCTL_STATE_DIR="$state_dir" LAUNCHD_PLIST_DIR="$plist_dir" \
+    run_spell spells/web/repair-site-daemon ../escape
+
+  assert_failure || return 1
+  assert_error_contains "invalid site name" || return 1
+  if [ -d "$escape_dir/nginx" ]; then
+    TEST_FAILURE_REASON="repair-site-daemon created daemon paths outside WEB_WIZARDRY_ROOT"
+    return 1
+  fi
+
+  rm -rf "$tmpdir" "$stub_dir" "$state_dir"
+}
+
 run_test_case "repair-site-daemon --help works" test_repair_site_daemon_help
 run_test_case "repair-site-daemon installs systemd unit" test_repair_site_daemon_installs_systemd_unit
 run_test_case "repair-site-daemon defaults launchctl daemon to disabled" \
   test_repair_site_daemon_launchctl_defaults_to_disabled
+run_test_case "repair-site-daemon rejects path-shaped site names" \
+  test_repair_site_daemon_rejects_path_shaped_site_name
 
 finish_tests

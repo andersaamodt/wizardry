@@ -25,6 +25,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Stop/restart commands must reject path-shaped names before PID-file cleanup, daemon label construction, or service-unit lookup.
 - Path arguments that are echoed in machine-readable status rows should reject line breaks even when the filesystem can technically represent them.
 - Names that become service units, daemon labels, process matches, or security users need the same strict validator as create/configure paths.
+- Daemon repair commands must validate labels before rendering service files or creating runtime directories such as nginx state paths.
 - If a value is both a label and a path component, test create, edit, rename, import, and repair paths for the same contract.
 - Template and import paths should share create-path validators because they often write both directories and profile metadata.
 - Template-based site creation must validate site names before creating the output root; template paths with spaces should still resolve.
