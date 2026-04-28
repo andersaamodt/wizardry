@@ -183,6 +183,26 @@ test_jump_rejects_relative_path() {
   assert_failure && assert_output_contains "contains a relative path"
 }
 
+test_jump_does_not_eval_quote_bearing_marker_path() {
+  skip-if-compiled || return $?
+
+  start_dir="$WIZARDRY_TMPDIR/start-quote-marker"
+  markers_dir="$WIZARDRY_TMPDIR/markers-quote"
+  payload_file="$WIZARDRY_TMPDIR/jump-marker-injected"
+  quoted_dir="$WIZARDRY_TMPDIR/portal'; touch '$payload_file'; echo '"
+  mkdir -p "$start_dir" "$markers_dir" "$quoted_dir"
+  rm -f "$payload_file"
+
+  printf '%s\n' "$quoted_dir" >"$markers_dir/1"
+  run_jump "1" "$markers_dir" "$start_dir"
+
+  if [ -e "$payload_file" ]; then
+    TEST_FAILURE_REASON="jump-to-marker evaluated marker path as shell code"
+    return 1
+  fi
+  assert_success
+}
+
 test_jump_detects_current_location_with_cd_hook() {
   destination="$WIZARDRY_TMPDIR/already-here-hook"
   markers_dir="$WIZARDRY_TMPDIR/markers-here-hook"
@@ -232,6 +252,7 @@ run_test_case "jump-to-marker fails when specific marker is missing" test_jump_r
 run_test_case "jump-to-marker fails when marker is blank" test_jump_rejects_blank_marker
 run_test_case "jump-to-marker fails when destination is missing" test_jump_rejects_missing_destination
 run_test_case "jump-to-marker rejects relative paths in markers" test_jump_rejects_relative_path
+run_test_case "jump-to-marker does not eval quote-bearing marker path" test_jump_does_not_eval_quote_bearing_marker_path
 run_test_case "jump-to-marker reports when already at destination" test_jump_detects_current_location
 run_test_case "jump-to-marker reports when already at destination with cd-hook" test_jump_detects_current_location_with_cd_hook
 run_test_case "jump-to-marker jumps to marked directory" test_jump_changes_directory

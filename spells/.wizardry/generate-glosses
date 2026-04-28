@@ -363,17 +363,15 @@ if [ "$spell_count" -eq 0 ]; then
   printf 'generate-glosses: WARNING: no executable files found in %s\n' "$wizardry_dir/spells" >&2
 fi
 
-# OPTIMIZATION: Single grep pass to find all uncastable spells
-# This is much faster than grepping each file individually (405 greps → 1 grep)
-# Use xargs to avoid "Argument list too long" error
+# Scan for uncastable spells without xargs so project paths with spaces work.
 [ "$quiet" -eq 0 ] && printf 'generate-glosses: Scanning for uncastable spells...\n' >&2
 uncastable_spells=" "  # Space-separated list
-if uncastable_files=$(cat "$tmpfile" | xargs grep -l "^# Uncastable pattern" 2>/dev/null); then
-  for uc_path in $uncastable_files; do
+while IFS= read -r uc_path; do
+  if grep -q "^# Uncastable pattern" "$uc_path" 2>/dev/null; then
     uc_name=${uc_path##*/}
     uncastable_spells="$uncastable_spells$uc_name "
-  done
-fi
+  fi
+done < "$tmpfile"
 
 [ "$quiet" -eq 0 ] && printf 'generate-glosses: Found %d uncastable spells\n' "$(printf '%s' "$uncastable_spells" | tr ' ' '\n' | grep -c .)" >&2
 

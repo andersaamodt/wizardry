@@ -92,6 +92,8 @@
 - Lex spell discovery must not use `find -executable`; BSD/macOS rejects it and makes valid wizardry commands disappear.
 - Disambiguation cache keys must reject path-shaped command names before stale-choice cleanup can remove files outside `.disambiguations`.
 - Disambiguation candidate storage must not parse filesystem paths with colon delimiters because valid spell paths can contain colons.
+- Generate-glosses must scan uncastable files with quoted read loops, not plain `xargs`, so wizardry roots with spaces still produce aliases.
+- Imported path values passed through `sh -c` must be supplied as argv instead of interpolated into the shell program string.
 
 
 - When a file is sourced (`. filename`), using `exit` exits the parent shell; use `return` instead (discovered via doppelganger failing to create directories) (3)

@@ -33,6 +33,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Domain/host identifiers imported from config need read-time validation before TLS tools, generated paths, service config, or machine-readable output reuse them.
 - Imported user/group names need validation before privilege changes, ownership changes, account creation, or service User/UserName rendering.
 - Allowlist/imported path files that drive recursive ownership or permission changes must reject root, project-root ancestors, non-directories, and other overly broad paths on both write and read.
+- Imported path values passed through `sh -c` must be supplied as argv or environment values, never interpolated into the shell program string.
 
 ### Argument Shape
 
@@ -65,6 +66,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Disable globbing before intentional word splitting of user-provided strings.
 - Test paths and values containing spaces, `*`, `-`, empty strings, and reserved words such as `from` or `to`.
 - Connector imps that append or prepend explicit operands should quote those operands separately from intentionally split accumulated argument strings.
+- Generated gloss scanners should test `WIZARDRY_DIR` and `SPELLBOOK_DIR` paths containing spaces, especially when feeding file lists to grep or find.
 - Use `--` when passing user paths to commands that support it.
 
 ### Numeric and Interactive Input

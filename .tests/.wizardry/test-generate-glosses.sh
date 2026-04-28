@@ -481,6 +481,49 @@ EOF
   assert_output_contains "Usage:" || return 1
 }
 
+test_uncastable_scan_handles_wizardry_dir_with_spaces() {
+  if ! command -v bash >/dev/null 2>&1; then
+    test_skip "requires bash"
+    return 0
+  fi
+
+  tmpdir=$(make_tempdir)
+  wizardry_dir="$tmpdir/wizardry root"
+  spellbook="$tmpdir/spell book"
+  mkdir -p "$wizardry_dir/spells/translocation" "$spellbook"
+  printf 'parse-enabled=0\n' > "$spellbook/.mud"
+
+  cat > "$wizardry_dir/spells/translocation/jump-to-marker" <<'EOF'
+#!/bin/sh
+# Uncastable pattern
+printf 'SPACE_PATH_UNCASTABLE\n'
+EOF
+  chmod +x "$wizardry_dir/spells/translocation/jump-to-marker"
+
+  WIZARDRY_DIR="$wizardry_dir" SPELLBOOK_DIR="$spellbook" \
+    run_spell spells/.wizardry/generate-glosses --output "$tmpdir/glosses" --quiet
+  assert_success || return 1
+
+  if ! grep -q "alias jump-to-marker=" "$tmpdir/glosses"; then
+    TEST_FAILURE_REASON="generate-glosses missed uncastable spell under WIZARDRY_DIR with spaces"
+    return 1
+  fi
+
+  cat > "$tmpdir/run.bash" <<EOF
+#!/usr/bin/env bash
+set -u
+shopt -s expand_aliases
+unset WIZARDRY_DIR
+. "$tmpdir/glosses"
+jump-to-marker
+EOF
+  chmod +x "$tmpdir/run.bash"
+
+  run_cmd env SPELLBOOK_DIR="$spellbook" bash "$tmpdir/run.bash"
+  assert_success || return 1
+  assert_output_contains "SPACE_PATH_UNCASTABLE" || return 1
+}
+
 test_crlf_synonym_target_executes_generated_function() {
   tmpdir=$(make_tempdir)
   wizardry_dir="$tmpdir/wizardry"
@@ -534,6 +577,7 @@ run_test_case "single-quote synonym targets do not break gloss file" test_single
 run_test_case "first-word gloss handles unset WIZARDRY_DIR under set -u" test_first_word_gloss_handles_unset_wizardry_dir_under_set_u
 run_test_case "CRLF parse-disabled config suppresses first-word glosses" test_parse_disabled_crlf_config_suppresses_first_word_glosses
 run_test_case "parse-disabled hyphenated aliases accept arguments" test_parse_disabled_hyphenated_alias_accepts_arguments
+run_test_case "uncastable scan handles WIZARDRY_DIR with spaces" test_uncastable_scan_handles_wizardry_dir_with_spaces
 run_test_case "CRLF synonym targets execute generated functions" test_crlf_synonym_target_executes_generated_function
 run_test_case "synonyms with truly invalid chars still rejected" test_synonym_invalid_chars_still_rejected
 

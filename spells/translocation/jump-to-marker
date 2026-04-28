@@ -280,9 +280,9 @@ current=$(pwd -P | sed 's|//|/|g')
 
 # Resolve destination path to real path (handles symlinks)
 # NOTE: On some systems (macOS/zsh), 'command cd' in a subshell created by $()
-# fails to actually change directory. We use 'sh -c' to run cd in a fresh shell
-# without any cd function overrides, which works reliably across platforms.
-normalized_destination=$(sh -c "cd '$destination' 2>/dev/null && pwd -P" 2>/dev/null)
+# fails to actually change directory. Pass the destination as argv to sh -c so
+# quote-bearing marker paths cannot alter the shell program.
+normalized_destination=$(sh -c 'cd "$1" 2>/dev/null && pwd -P' sh "$destination" 2>/dev/null)
 if [ -z "$normalized_destination" ]; then
         # cd failed - check why
         if [ ! -d "$destination" ]; then
