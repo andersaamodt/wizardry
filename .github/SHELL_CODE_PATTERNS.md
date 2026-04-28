@@ -725,6 +725,22 @@ old_ifs=$IFS; IFS=:; read -r f1 f2; IFS=$old_ifs
 [ -n "$tmpfile" ] && [ -f "$tmpfile" ] && rm -f "$tmpfile"
 ```
 
+## Grep With User Text
+
+Use fixed-string matching when the search text comes from a path, argument, metadata value, or other user-controlled string. Plain `grep "$value"` treats the value as a basic regular expression, so characters like `[`, `.`, `*`, and `\` can change the match or make it fail.
+
+```sh
+# Wrong: mount_point is interpreted as a regular expression
+if mount | grep -q " $mount_point "; then
+  mounted=1
+fi
+
+# Right: mount_point is matched literally; -e protects patterns that begin with -
+if mount | grep -F -q -e " $mount_point "; then
+  mounted=1
+fi
+```
+
 ## Wizardry Patterns
 
 ```sh

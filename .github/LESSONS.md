@@ -228,3 +228,4 @@
 - Commands that create navigation metadata should validate the stored destination before writing attributes.
 - Remote side-effect commands should reject extra operands before dependency checks or connection/unmount attempts.
 - Direct prompt reads should normalize EOF to empty and validate required fields before side effects.
+- User-controlled text passed to grep should use fixed-string matching, or path characters like `[` can break detection.

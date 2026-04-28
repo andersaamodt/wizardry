@@ -132,7 +132,7 @@ if ! mkdir -p "$local_mount"; then
 fi
 
 # Check if already mounted
-if mount | grep -q " $local_mount "; then
+if mount | grep -F -q -e " $local_mount "; then
   printf '%s\n' "open-portal: $local_mount is already mounted" >&2
   exit 1
 fi

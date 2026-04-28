@@ -42,7 +42,7 @@ list_portals() {
     [ -e "$dir" ] || continue
     
     # Check if it's mounted
-    if mount | grep -q " $dir "; then
+    if mount | grep -F -q -e " $dir "; then
       printf '%s\n' "$dir"
       found=1
     fi
@@ -68,7 +68,7 @@ if [ ! -d "$mount_point" ]; then
 fi
 
 # Check if it's actually mounted
-if ! mount | grep -q " $mount_point "; then
+if ! mount | grep -F -q -e " $mount_point "; then
   printf '%s\n' "close-portal: $mount_point is not mounted" >&2
   exit 1
 fi
