@@ -70,6 +70,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Helper-script stdout and filesystem entry names are untrusted when they are forwarded into GUI/backend records; test installed modules with delimiter-shaped filenames and status lines.
 - Catalog/list/count commands must apply the same identifier validator as the command that later executes the selected item.
 - Read/import paths for hand-edited metadata must revalidate the same delimiters and identifiers enforced by create/update commands.
+- Imported profile/config fields must be sanitized at output time even when only a subset of those fields drive filesystem or command actions.
 - Fallback readers for cache/state directories should be audited like importers: unsafe filenames and record delimiters can bypass the primary writer.
 - Metadata conversions should stage changes and replace originals only after all writes succeed.
 - Front-matter parsing must preserve delimiter-like body content after the closing delimiter.
