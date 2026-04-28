@@ -151,6 +151,67 @@ EOF
   rm -rf "$test_web_root" "$fake_wizardry_root"
 }
 
+test_update_handles_wizardry_dir_with_spaces() {
+  skip-if-compiled || return $?
+
+  test_web_root=$(temp-dir web-wizardry-test)
+  tmp_parent=$(temp-dir wizardry-template-parent)
+  fake_wizardry_root="$tmp_parent/wizardry root"
+  template_root="$fake_wizardry_root/web/minimal"
+
+  mkdir -p "$template_root/pages"
+  cat > "$template_root/pages/index.md" <<'EOF'
+# from space root v1
+EOF
+
+  WIZARDRY_DIR="$fake_wizardry_root" WEB_WIZARDRY_ROOT="$test_web_root" \
+    run_spell spells/web/create-from-template minisite minimal
+  assert_success || return 1
+
+  cat > "$template_root/pages/index.md" <<'EOF'
+# from space root v2
+EOF
+
+  WIZARDRY_DIR="$fake_wizardry_root" WEB_WIZARDRY_ROOT="$test_web_root" \
+    run_spell spells/web/update-from-template minisite --force
+  assert_success || return 1
+
+  if ! grep -q "from space root v2" "$test_web_root/minisite/site/pages/index.md"; then
+    TEST_FAILURE_REASON="update-from-template did not resolve WIZARDRY_DIR with spaces"
+    rm -rf "$test_web_root" "$tmp_parent"
+    return 1
+  fi
+
+  rm -rf "$test_web_root" "$tmp_parent"
+}
+
+test_update_rejects_path_shaped_site_name() {
+  skip-if-compiled || return $?
+
+  tmpdir=$(make_tempdir)
+  web_root="$tmpdir/sites"
+  escape_dir="$tmpdir/escape"
+  fake_wizardry_root="$tmpdir/wizardry"
+  mkdir -p "$web_root" "$escape_dir/site/pages" "$fake_wizardry_root/web/minimal/pages"
+  printf '%s\n' keep > "$escape_dir/site/pages/keep"
+  cat > "$escape_dir/site.conf" <<'EOF'
+template=minimal
+EOF
+  cat > "$fake_wizardry_root/web/minimal/pages/index.md" <<'EOF'
+# Minimal
+EOF
+
+  WIZARDRY_DIR="$fake_wizardry_root" WEB_WIZARDRY_ROOT="$web_root" \
+    run_spell spells/web/update-from-template ../escape --force
+
+  assert_failure || return 1
+  assert_error_contains "invalid site name" || return 1
+  if [ ! -f "$escape_dir/site/pages/keep" ]; then
+    TEST_FAILURE_REASON="update-from-template removed files outside WEB_WIZARDRY_ROOT"
+    return 1
+  fi
+}
+
 test_update_refreshes_requirements_file() {
   skip-if-compiled || return $?
 
@@ -238,6 +299,8 @@ run_test_case "update-from-template updates files from template" test_updates_fr
 run_test_case "update-from-template preserves uploads" test_preserves_uploads
 run_test_case "update-from-template fails for nonexistent site" test_fails_for_nonexistent_site
 run_test_case "update-from-template resolves templates from web" test_update_uses_web_template_directory
+run_test_case "update-from-template handles WIZARDRY_DIR paths with spaces" test_update_handles_wizardry_dir_with_spaces
+run_test_case "update-from-template rejects path-shaped site names" test_update_rejects_path_shaped_site_name
 run_test_case "update-from-template refreshes requirements file" test_update_refreshes_requirements_file
 run_test_case "update-from-template resolves external repo templates" test_update_resolves_external_repo_templates
 

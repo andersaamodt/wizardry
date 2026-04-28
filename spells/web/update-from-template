@@ -37,12 +37,15 @@ update_template_source_candidates() {
 }
 
 update_resolve_shared_theme_dir() {
-  for candidate in $(update_template_source_candidates); do
+  update_candidates=$(update_template_source_candidates)
+  while IFS= read -r candidate || [ -n "$candidate" ]; do
     if [ -d "$candidate/.themes" ]; then
       printf '%s\n' "$candidate/.themes"
       return 0
     fi
-  done
+  done <<EOF
+$update_candidates
+EOF
   if [ -d "$HOME/git/wizardry-apps/web/.themes" ]; then
     printf '%s\n' "$HOME/git/wizardry-apps/web/.themes"
     return 0
@@ -56,6 +59,12 @@ force_flag=0
 if [ -z "$site_name" ]; then
   die 2 "update-from-template: SITENAME required"
 fi
+
+case "$site_name" in
+  .|..|*[!a-zA-Z0-9._-]*)
+    die 2 "update-from-template: invalid site name"
+    ;;
+esac
 
 # Parse options
 shift
