@@ -32,6 +32,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Hand-edited config values that feed daemon/service config need read-time validation even when writer commands validate them.
 - Domain/host identifiers imported from config need read-time validation before TLS tools, generated paths, service config, or machine-readable output reuse them.
 - Imported user/group names need validation before privilege changes, ownership changes, account creation, or service User/UserName rendering.
+- Allowlist/imported path files that drive recursive ownership or permission changes must reject root, project-root ancestors, non-directories, and other overly broad paths on both write and read.
 
 ### Argument Shape
 
