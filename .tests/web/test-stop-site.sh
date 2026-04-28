@@ -150,6 +150,34 @@ EOF
   rm -rf "$web_root" "$stub_dir" "$state_dir"
 }
 
+test_stop_site_rejects_path_shaped_site_name() {
+  skip-if-compiled || return $?
+
+  tmpdir=$(make_tempdir)
+  web_root="$tmpdir/sites"
+  escape_dir="$tmpdir/escape"
+  mkdir -p "$web_root" "$escape_dir/nginx"
+  : > "$escape_dir/nginx/nginx.pid"
+
+  stub_dir=$(temp-dir web-wizardry-stub)
+  stub-systemctl-simple "$stub_dir"
+  stub-uname-linux "$stub_dir"
+  stub-sudo "$stub_dir"
+  state_dir=$(temp-dir web-wizardry-state)
+
+  PATH="$stub_dir:$PATH" WEB_WIZARDRY_ROOT="$web_root" SYSTEMCTL_STATE_DIR="$state_dir" \
+    run_spell spells/web/stop-site ../escape
+
+  assert_failure || return 1
+  assert_error_contains "invalid site name" || return 1
+  if [ ! -f "$escape_dir/nginx/nginx.pid" ]; then
+    TEST_FAILURE_REASON="stop-site removed nginx pid outside WEB_WIZARDRY_ROOT"
+    return 1
+  fi
+
+  rm -rf "$tmpdir" "$stub_dir" "$state_dir"
+}
+
 run_test_case "stop-site --help" test_stop_site_help
 run_test_case "stop-site uses system launchctl bootout on macOS" \
   test_stop_site_uses_system_launchctl_bootout
@@ -157,5 +185,7 @@ run_test_case "stop-site kills nginx PID when daemon config is missing" \
   test_stop_site_kills_nginx_pid_when_daemon_missing
 run_test_case "stop-site ignores unrelated stale PID files when daemon is missing" \
   test_stop_site_does_not_kill_unrelated_pid_when_daemon_missing
+run_test_case "stop-site rejects path-shaped site names" \
+  test_stop_site_rejects_path_shaped_site_name
 
 finish_tests
