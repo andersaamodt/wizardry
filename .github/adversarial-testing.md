@@ -66,6 +66,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Machine-readable `key=value` output must reject CR/LF in echoed values so hostile input cannot forge later keys.
 - If a command must execute a control-character-bearing path, keep the execution value separate from the sanitized display/status value printed as `key=value`.
 - Helper-script stdout and filesystem entry names are untrusted when they are forwarded into GUI/backend records; test installed modules with delimiter-shaped filenames and status lines.
+- Catalog/list/count commands must apply the same identifier validator as the command that later executes the selected item.
 - Metadata conversions should stage changes and replace originals only after all writes succeed.
 - Front-matter parsing must preserve delimiter-like body content after the closing delimiter.
 - Config paths rendered into another language or config format must reject that renderer's quote, variable, comment, and statement delimiters.
