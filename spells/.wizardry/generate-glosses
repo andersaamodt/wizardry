@@ -588,6 +588,13 @@ if [ -f "$synonym_file" ]; then
       [ "$quiet" -eq 0 ] && warn "Invalid synonym: $word" >&2
       continue
     fi
+
+    case "$target" in
+      *\'*)
+        [ "$quiet" -eq 0 ] && warn "Invalid synonym target for $word" >&2
+        continue
+        ;;
+    esac
     
     # Check for duplicates
     case "$synonyms_seen" in
@@ -652,6 +659,14 @@ if [ -f "$default_synonym_file" ]; then
       default_synonym_errors=$((default_synonym_errors + 1))
       continue
     fi
+
+    case "$target" in
+      *\'*)
+        printf '%s\n' "ERROR: invalid default synonym target: $word" >&2
+        default_synonym_errors=$((default_synonym_errors + 1))
+        continue
+        ;;
+    esac
     
     # Check for duplicates (user synonyms take precedence)
     case "$synonyms_seen" in
