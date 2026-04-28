@@ -3,6 +3,7 @@
 # - Shows usage with --help
 # - Requires torify command
 # - Requires MUD_PLAYER environment variable
+# - Rejects extra operands before connecting
 
 set -eu
 
@@ -53,9 +54,38 @@ EOF
   assert_error_contains "MUD_PLAYER" || return 1
 }
 
+test_rejects_extra_operands_before_connecting() {
+  tmpdir=$(make_tempdir)
+  stubdir=$tmpdir/bin
+  home=$tmpdir/home
+  log=$tmpdir/torify.log
+  mkdir -p "$stubdir" "$home/.ssh"
+  : > "$home/.ssh/test_player"
+  cat > "$stubdir/torify" <<EOF
+#!/bin/sh
+printf '%s\n' "torify \$*" >> "$log"
+exit 0
+EOF
+  chmod +x "$stubdir/torify"
+  for util in sh env printf; do
+    if command -v "$util" >/dev/null 2>&1; then
+      ln -sf "$(command -v "$util")" "$stubdir/$util" 2>/dev/null || true
+    fi
+  done
+
+  run_cmd env PATH="$stubdir:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:/bin:/usr/bin" HOME="$home" MUD_PLAYER=test_player "$ROOT_DIR/spells/translocation/open-teletype" host.example user extra
+  assert_failure || return 1
+  assert_error_contains "at most two" || return 1
+  if [ -f "$log" ]; then
+    TEST_FAILURE_REASON="open-teletype connected after receiving extra operands"
+    return 1
+  fi
+}
+
 run_test_case "open-teletype shows usage text" test_help
 run_test_case "open-teletype requires torify" test_requires_torify
 run_test_case "open-teletype requires MUD_PLAYER" test_requires_mud_player
+run_test_case "open-teletype rejects extra operands before connecting" test_rejects_extra_operands_before_connecting
 
 
 # Test via source-then-invoke pattern  

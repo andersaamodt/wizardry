@@ -226,3 +226,4 @@
 - Eval-printing navigation commands must fail before printing shell code when their destination is invalid.
 - Navigation commands should reject extra operands because callers may eval their stdout.
 - Commands that create navigation metadata should validate the stored destination before writing attributes.
+- Remote side-effect commands should reject extra operands before dependency checks or connection/unmount attempts.

@@ -24,6 +24,11 @@ esac
 set -eu
 . env-clear
 
+if [ "$#" -gt 1 ]; then
+  printf '%s\n' "close-portal: at most one mount point expected" >&2
+  exit 2
+fi
+
 # Function to list active portals
 list_portals() {
   if [ ! -d "/mnt" ]; then

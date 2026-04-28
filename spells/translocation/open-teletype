@@ -17,6 +17,11 @@ esac
 set -eu
 . env-clear
 
+if [ "$#" -gt 2 ]; then
+        printf '%s\n' "open-teletype: at most two arguments expected" >&2
+        exit 2
+fi
+
 # Check for required commands
 if ! command -v torify >/dev/null 2>&1; then
         printf '%s\n' "open-teletype: torify (tor) not found." >&2
