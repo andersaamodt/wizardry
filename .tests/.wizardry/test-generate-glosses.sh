@@ -504,8 +504,58 @@ ssh() {"*|ssh\(\)\ \{*)
   esac
 }
 
+test_first_word_gloss_synonym_lookup_matches_literal_name() {
+  tmpdir=$(make_tempdir)
+  wizardry_dir="$tmpdir/wizardry"
+  spellbook="$tmpdir/spellbook"
+  mkdir -p "$wizardry_dir/spells/test" "$spellbook"
+
+  cat > "$wizardry_dir/spells/test/my.alias-do" <<'EOF'
+#!/bin/sh
+printf 'GOOD_LITERAL_SPELL\n'
+EOF
+  chmod +x "$wizardry_dir/spells/test/my.alias-do"
+
+  cat > "$wizardry_dir/spells/test/bad-uncastable" <<'EOF'
+#!/bin/sh
+# Uncastable pattern
+printf 'BAD_REGEX_SYNONYM\n'
+EOF
+  chmod +x "$wizardry_dir/spells/test/bad-uncastable"
+
+  printf '%s\n' 'myXalias-do=bad-uncastable' > "$spellbook/.synonyms"
+
+  WIZARDRY_DIR="$wizardry_dir" SPELLBOOK_DIR="$spellbook" \
+    run_spell spells/.wizardry/generate-glosses --output "$tmpdir/glosses" --quiet
+  assert_success || return 1
+
+  cat > "$tmpdir/run.sh" <<EOF
+#!/bin/sh
+set -eu
+PATH="$ROOT_DIR/spells/.imps/lex:\$PATH"
+export PATH
+WIZARDRY_DIR="$wizardry_dir"
+SPELLBOOK_DIR="$spellbook"
+export WIZARDRY_DIR SPELLBOOK_DIR
+. "$tmpdir/glosses"
+my.alias do
+EOF
+  chmod +x "$tmpdir/run.sh"
+
+  run_cmd sh "$tmpdir/run.sh"
+  assert_success || return 1
+  assert_output_contains "GOOD_LITERAL_SPELL" || return 1
+  case "$OUTPUT" in
+    *BAD_REGEX_SYNONYM*)
+      TEST_FAILURE_REASON="generated gloss used regex-matched synonym key"
+      return 1
+      ;;
+  esac
+}
+
 run_test_case "aliases with numbers actually execute in interactive shell" test_aliases_with_numbers_actually_execute
 run_test_case "aliases with special chars actually execute in interactive shell" test_aliases_with_special_chars_actually_execute
 run_test_case "generate-glosses skips first-word glosses that shadow system commands" test_generate_glosses_skips_system_command_prefixes
+run_test_case "first-word gloss synonym lookup matches literal names" test_first_word_gloss_synonym_lookup_matches_literal_name
 
 finish_tests
