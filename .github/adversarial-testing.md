@@ -30,6 +30,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Template-based site creation must validate site names before creating the output root; template paths with spaces should still resolve.
 - Template refresh commands must share creation-time site-name validation before removing template-owned subtrees.
 - Mutation commands must enforce the same path output contract as list/status commands before writing metadata or renaming folders.
+- Wrapper commands must validate before their own early writes; relying on downstream command validation can still leave partial config changes.
 - Rebuild/run/install-style commands that print machine-readable rows must reject line-break paths before executing side effects, not only before status-only reads.
 - Build commands must validate site/path labels before creating generated output, cache directories, hooks, or feed artifacts.
 - Values interpolated into regex matching need stricter name validation than path quoting alone provides.
@@ -182,6 +183,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Release helper scripts should revalidate manifest fields they print, not rely only on CI ordering around a separate validator.
 - Manifest and catalog validators should test future hostile records, not only the current checked-in data, because workflows often iterate those records into paths, package IDs, API calls, and generated files.
 - Catalog source subdirectories are repo-internal paths; reject absolute paths, empty components, `.`, `..`, backslashes, tabs, and CR/LF before clone/copy/cache replacement code runs.
+- Git branch names can be valid refs while still unsafe in compare-page URLs; reject or encode URL delimiter characters before opening PR links.
 - "Single-line" validators should reject tabs when the same values can later appear in TSV or other delimiter-based GUI rows.
 - When staging generated assets, test partial output directories; each expected file should have an explicit fallback instead of relying on a glob to mean the directory is complete.
 - Platform icon staging should verify generated icon sets are complete before copying them; partial sets should fall back or fail loudly.

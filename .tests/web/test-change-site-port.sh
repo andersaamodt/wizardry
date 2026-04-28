@@ -50,8 +50,32 @@ test_change_site_port_validates_port() {
   rm -rf "$test_web_root"
 }
 
+test_change_site_port_rejects_path_shaped_site_name() {
+  skip-if-compiled || return $?
+
+  tmpdir=$(make_tempdir)
+  web_root="$tmpdir/sites"
+  escape_dir="$tmpdir/escape"
+  mkdir -p "$web_root" "$escape_dir"
+  printf 'site-name=escape\nport=8080\ndomain=localhost\nhttps=false\n' > "$escape_dir/site.conf"
+
+  WEB_WIZARDRY_ROOT="$web_root" WIZARDRY_SITES_DIR="$web_root" \
+    run_spell spells/web/change-site-port ../escape 9090
+
+  assert_failure || return 1
+  assert_error_contains "invalid site name" || return 1
+  if ! grep -q '^port=8080$' "$escape_dir/site.conf"; then
+    TEST_FAILURE_REASON="change-site-port modified config outside WEB_WIZARDRY_ROOT"
+    return 1
+  fi
+
+  rm -rf "$tmpdir"
+}
+
 run_test_case "change-site-port --help" test_change_site_port_help
 run_test_case "change-site-port validates sitename" test_change_site_port_validates_sitename
 run_test_case "change-site-port validates port" test_change_site_port_validates_port
+run_test_case "change-site-port rejects path-shaped site names" \
+  test_change_site_port_rejects_path_shaped_site_name
 
 finish_tests
