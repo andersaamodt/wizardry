@@ -56,11 +56,22 @@ test_config_has_requires_key_arg() {
   assert_error_contains "key required"
 }
 
+test_config_has_rejects_extra_args() {
+  tmpdir=$(make_tempdir)
+  config="$tmpdir/config"
+  printf 'key=value\n' > "$config"
+
+  run_spell spells/.imps/fs/config-has "$config" "key" "extra"
+  assert_failure
+  assert_error_contains "too many arguments"
+}
+
 run_test_case "config-has finds existing key" test_config_has_finds_existing_key
 run_test_case "config-has missing key fails" test_config_has_missing_key_fails
 run_test_case "config-has missing file fails" test_config_has_missing_file_fails
 run_test_case "config-has rejects invalid key" test_config_has_rejects_invalid_key
 run_test_case "config-has requires file arg" test_config_has_requires_file_arg
 run_test_case "config-has requires key arg" test_config_has_requires_key_arg
+run_test_case "config-has rejects extra args" test_config_has_rejects_extra_args
 
 finish_tests

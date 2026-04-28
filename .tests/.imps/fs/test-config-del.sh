@@ -67,11 +67,26 @@ test_config_del_requires_key_arg() {
   assert_error_contains "key required"
 }
 
+test_config_del_rejects_extra_args() {
+  tmpdir=$(make_tempdir)
+  config="$tmpdir/config"
+  printf 'key=value\nother=keep\n' > "$config"
+
+  run_spell spells/.imps/fs/config-del "$config" "key" "extra"
+  assert_failure
+  assert_error_contains "too many arguments"
+  grep -q '^key=value$' "$config" || {
+    TEST_FAILURE_REASON="config-del mutated file after extra arg"
+    return 1
+  }
+}
+
 run_test_case "config-del removes key" test_config_del_removes_key
 run_test_case "config-del missing key succeeds" test_config_del_missing_key_succeeds
 run_test_case "config-del missing file succeeds" test_config_del_missing_file_succeeds
 run_test_case "config-del rejects invalid key" test_config_del_rejects_invalid_key
 run_test_case "config-del requires file arg" test_config_del_requires_file_arg
 run_test_case "config-del requires key arg" test_config_del_requires_key_arg
+run_test_case "config-del rejects extra args" test_config_del_rejects_extra_args
 
 finish_tests

@@ -5,6 +5,10 @@
 
 set -eu
 
+if [ "$#" -gt 3 ]; then
+  printf 'config-set: too many arguments\n' >&2
+  exit 2
+fi
 
 cs_file=${1:?config-set: file path required}
 cs_key=${2:?config-set: key required}

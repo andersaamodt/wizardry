@@ -112,6 +112,16 @@ test_config_set_requires_key_arg() {
   assert_error_contains "key required"
 }
 
+test_config_set_rejects_extra_args() {
+  tmpdir=$(make_tempdir)
+  config="$tmpdir/config"
+
+  run_spell spells/.imps/fs/config-set "$config" "key" "value" "extra"
+  assert_failure
+  assert_error_contains "too many arguments"
+  assert_path_missing "$config"
+}
+
 test_config_set_allows_empty_value() {
   tmpdir=$(make_tempdir)
   config="$tmpdir/config"
@@ -134,6 +144,7 @@ run_test_case "config-set rejects newline in value" test_config_set_rejects_newl
 run_test_case "config-set rejects invalid key" test_config_set_rejects_invalid_key
 run_test_case "config-set requires file arg" test_config_set_requires_file_arg
 run_test_case "config-set requires key arg" test_config_set_requires_key_arg
+run_test_case "config-set rejects extra args" test_config_set_rejects_extra_args
 run_test_case "config-set allows empty value" test_config_set_allows_empty_value
 
 finish_tests

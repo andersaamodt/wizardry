@@ -64,6 +64,16 @@ test_config_get_requires_key_arg() {
   assert_error_contains "key required"
 }
 
+test_config_get_rejects_extra_args() {
+  tmpdir=$(make_tempdir)
+  config="$tmpdir/config"
+  printf 'key=value\n' > "$config"
+
+  run_spell spells/.imps/fs/config-get "$config" "key" "extra"
+  assert_failure
+  assert_error_contains "too many arguments"
+}
+
 test_config_get_rejects_invalid_key() {
   tmpdir=$(make_tempdir)
   config="$tmpdir/config"
@@ -80,6 +90,7 @@ run_test_case "config-get missing key returns empty" test_config_get_missing_key
 run_test_case "config-get handles equals in value" test_config_get_handles_equals_in_value
 run_test_case "config-get requires file arg" test_config_get_requires_file_arg
 run_test_case "config-get requires key arg" test_config_get_requires_key_arg
+run_test_case "config-get rejects extra args" test_config_get_rejects_extra_args
 run_test_case "config-get rejects invalid key" test_config_get_rejects_invalid_key
 
 finish_tests

@@ -4,6 +4,10 @@
 
 set -eu
 
+if [ "$#" -gt 2 ]; then
+  printf 'config-has: too many arguments\n' >&2
+  exit 2
+fi
 
 ch_file=${1:?config-has: file path required}
 ch_key=${2:?config-has: key required}

@@ -22,6 +22,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Values used as path segments must reject `.`, `..`, `/`, `\`, empty values, and line breaks before side effects.
 - If a value is both a label and a path component, test create, edit, rename, import, and repair paths for the same contract.
 - Template and import paths should share create-path validators because they often write both directories and profile metadata.
+- Values interpolated into regex matching need stricter name validation than path quoting alone provides.
 - Composite refs such as `source:name` must reject unsupported namespaces, missing separators, repeated separators, and trailing words.
 - After rejecting a path-like value, assert sibling/outside files were not created, modified, chmodded, or deleted.
 - Test path-like values in config files too; imported metadata is input, not trusted source code.

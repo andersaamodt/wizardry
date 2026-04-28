@@ -5,6 +5,10 @@
 
 set -eu
 
+if [ "$#" -gt 2 ]; then
+  printf 'config-get: too many arguments\n' >&2
+  exit 2
+fi
 
 cg_file=${1:?config-get: file path required}
 cg_key=${2:?config-get: key required}
