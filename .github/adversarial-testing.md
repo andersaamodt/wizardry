@@ -92,6 +92,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Exercise BSD/GNU differences for `find`, `stat`, `sed`, `date`, permission predicates, and xattr tools.
 - Test behavior when optional helper commands are missing by stubbing `PATH`.
 - Keep temporary artifacts in `WIZARDRY_TMPDIR`, `TMPDIR`, or another ignored external location.
+- Treat repository sync/import scripts as release tools: reject missing or recursive source/target paths, test dotfile copies, and preserve local-only generated/host directories.
 
 ### Eval-Printing Commands
 

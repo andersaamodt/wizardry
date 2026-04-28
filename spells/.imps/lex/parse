@@ -67,8 +67,6 @@ if [ "$parse_depth" -gt 10 ]; then
   return 1
 fi
 
-export WIZARDRY_PARSE_DEPTH=$parse_depth
-
 # If no arguments, just succeed
 if [ $# -eq 0 ]; then
   return 0
@@ -124,7 +122,7 @@ while [ $attempt_len -gt 0 ]; do
   # Build command name from first N words joined with hyphens
   # IMPORTANT: Only use command words (skip flags and pure numbers)
   cmd_name=""
-  i=0
+  parse_i=0
   for loop_arg in "$@"; do
     # Skip flags and pure numeric arguments (same logic as counting loop)
     case "$loop_arg" in
@@ -133,7 +131,7 @@ while [ $attempt_len -gt 0 ]; do
       *) break ;;    # Pure numeric - stop
     esac
     
-    if [ $i -ge $attempt_len ]; then
+    if [ $parse_i -ge $attempt_len ]; then
       break
     fi
     if [ -z "$cmd_name" ]; then
@@ -141,7 +139,7 @@ while [ $attempt_len -gt 0 ]; do
     else
       cmd_name="${cmd_name}-${loop_arg}"
     fi
-    i=$((i + 1))
+    parse_i=$((parse_i + 1))
   done
   
   # Try all possible spell locations
@@ -240,10 +238,10 @@ while [ $attempt_len -gt 0 ]; do
       # If synonym target is uncastable, source it
       if [ -n "$synonym_target_path" ]; then
         # Skip first $attempt_len args (the synonym name parts)
-        n=0
-        while [ $n -lt $attempt_len ] && [ $# -gt 0 ]; do
+        parse_shift_count=0
+        while [ $parse_shift_count -lt $attempt_len ] && [ $# -gt 0 ]; do
           shift
-          n=$((n + 1))
+          parse_shift_count=$((parse_shift_count + 1))
         done
         # Source the uncastable spell
         . "$synonym_target_path"
@@ -252,36 +250,51 @@ while [ $attempt_len -gt 0 ]; do
       
       # Synonym target is castable - recursively source parse
       # Skip first $attempt_len args (the synonym name parts)
-      n=0
-      while [ $n -lt $attempt_len ] && [ $# -gt 0 ]; do
+      parse_shift_count=0
+      while [ $parse_shift_count -lt $attempt_len ] && [ $# -gt 0 ]; do
         shift
-        n=$((n + 1))
+        parse_shift_count=$((parse_shift_count + 1))
       done
       # Source parse recursively to handle the synonym target
       # Find parse using the same method as glosses
+      parse_had_depth=0
+      parse_saved_depth=${WIZARDRY_PARSE_DEPTH-}
+      if [ "${WIZARDRY_PARSE_DEPTH+x}" = x ]; then
+        parse_had_depth=1
+      fi
+      WIZARDRY_PARSE_DEPTH=$parse_depth
+      export WIZARDRY_PARSE_DEPTH
       if command -v parse >/dev/null 2>&1; then
         set -- "$synonym_target" "$@"
         . parse
+        parse_status=$?
       elif [ -f "${WIZARDRY_DIR:-./.wizardry}/spells/.imps/lex/parse" ]; then
         set -- "$synonym_target" "$@"
         . "${WIZARDRY_DIR:-./.wizardry}/spells/.imps/lex/parse"
+        parse_status=$?
       else
         printf '%s\n' "parse: cannot find parse to handle synonym $cmd_name" >&2
         return 127
       fi
-      return $?
+      if [ "$parse_had_depth" -eq 1 ]; then
+        WIZARDRY_PARSE_DEPTH=$parse_saved_depth
+        export WIZARDRY_PARSE_DEPTH
+      else
+        unset WIZARDRY_PARSE_DEPTH
+      fi
+      return "$parse_status"
     fi
   fi
   
   # If found, source or execute the spell
   if [ -n "$spell_path" ]; then
     # Skip first $attempt_len args to get remaining args for the spell
-    n=0
-    while [ $n -lt $attempt_len ]; do
+    parse_shift_count=0
+    while [ $parse_shift_count -lt $attempt_len ]; do
       if [ $# -gt 0 ]; then
         shift
       fi
-      n=$((n + 1))
+      parse_shift_count=$((parse_shift_count + 1))
     done
     
     # Check if spell is uncastable (must be sourced)
@@ -357,25 +370,36 @@ if [ -n "$synonym_target" ]; then
   [ $# -gt 0 ] && shift  # Remove the synonym word itself
   # Source parse recursively to handle the synonym target
   # Find parse using the same method as glosses
+  parse_had_depth=0
+  parse_saved_depth=${WIZARDRY_PARSE_DEPTH-}
+  if [ "${WIZARDRY_PARSE_DEPTH+x}" = x ]; then
+    parse_had_depth=1
+  fi
+  WIZARDRY_PARSE_DEPTH=$parse_depth
+  export WIZARDRY_PARSE_DEPTH
   if command -v parse >/dev/null 2>&1; then
     set -- "$synonym_target" "$@"
     . parse
+    parse_status=$?
   elif [ -f "${WIZARDRY_DIR:-./.wizardry}/spells/.imps/lex/parse" ]; then
     set -- "$synonym_target" "$@"
     . "${WIZARDRY_DIR:-./.wizardry}/spells/.imps/lex/parse"
+    parse_status=$?
   else
     printf '%s\n' "parse: cannot find parse to handle synonym $first_word" >&2
     return 127
   fi
-  return $?
+  if [ "$parse_had_depth" -eq 1 ]; then
+    WIZARDRY_PARSE_DEPTH=$parse_saved_depth
+    export WIZARDRY_PARSE_DEPTH
+  else
+    unset WIZARDRY_PARSE_DEPTH
+  fi
+  return "$parse_status"
 fi
 
 printf 'parse: %s: command not found\n' "$first_word" >&2
 return 127
-
-
-
-
 
 
 
