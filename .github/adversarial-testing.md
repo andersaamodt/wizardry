@@ -108,6 +108,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Any sync/import script that prints `key=value` status rows should reject line-break paths before echoing canonical source or target values.
 - Generated metadata that gets committed or synced should avoid machine-local absolute paths; readers should resolve relative paths against the project and ignore config paths that escape it.
 - Manifest and catalog validators should test future hostile records, not only the current checked-in data, because workflows often iterate those records into paths, package IDs, API calls, and generated files.
+- "Single-line" validators should reject tabs when the same values can later appear in TSV or other delimiter-based GUI rows.
 - When staging generated assets, test partial output directories; each expected file should have an explicit fallback instead of relying on a glob to mean the directory is complete.
 - Status output that echoes configured commands or generated log paths must sanitize CR/LF separately from execution semantics; shell comments can let hostile command text succeed while forging GUI rows.
 - GUI status commands that read manifests should sanitize the manifest fields they echo, even when a separate manifest validator exists.
