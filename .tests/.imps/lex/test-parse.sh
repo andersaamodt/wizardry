@@ -1304,6 +1304,35 @@ test_parse_disabled() {
   fi
 }
 
+test_parse_disabled_with_crlf_config() {
+  tmp=$(make_tempdir)
+  wizardry_dir="$tmp/wizardry"
+  export SPELLBOOK_DIR="$tmp/spellbook"
+  export WIZARDRY_DIR="$wizardry_dir"
+  mkdir -p "$SPELLBOOK_DIR" "$wizardry_dir/spells/test"
+
+  printf 'parse-enabled=0\r\n' > "$SPELLBOOK_DIR/.mud"
+  cat > "$wizardry_dir/spells/test/noop" <<'EOF'
+#!/bin/sh
+printf 'SHOULD_NOT_RUN\n'
+EOF
+  chmod +x "$wizardry_dir/spells/test/noop"
+
+  run_sourced_spell "spells/.imps/lex/parse" "noop"
+
+  if [ "$STATUS" -eq 127 ]; then
+    :
+  else
+    TEST_FAILURE_REASON="Expected exit code 127 for CRLF-disabled parse, got $STATUS"
+    return 1
+  fi
+  if printf '%s' "$OUTPUT" | grep -q "SHOULD_NOT_RUN"; then
+    TEST_FAILURE_REASON="parse ignored CRLF parse-enabled=0 and executed command"
+    return 1
+  fi
+}
+
 run_test_case "Parse disabled (parse-enabled=0)" test_parse_disabled
+run_test_case "Parse disabled with CRLF config" test_parse_disabled_with_crlf_config
 
 finish_tests

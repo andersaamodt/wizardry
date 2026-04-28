@@ -42,6 +42,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Generated gloss files should be syntax-checked with POSIX `sh -n` after adding aliases or first-word functions for names containing special characters.
 - Hand-edited synonym files are imported metadata; test quote-bearing targets so one malformed record cannot make every generated gloss unsourceable.
 - Generated parser/gloss functions should be executed under `set -u` with optional environment variables unset, not only syntax-checked.
+- Parser and gloss configuration readers should include CRLF config files so disabled flags are not bypassed by carriage returns.
 
 ### Shell Expansion
 
@@ -117,6 +118,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Manifest and catalog validators should test future hostile records, not only the current checked-in data, because workflows often iterate those records into paths, package IDs, API calls, and generated files.
 - "Single-line" validators should reject tabs when the same values can later appear in TSV or other delimiter-based GUI rows.
 - When staging generated assets, test partial output directories; each expected file should have an explicit fallback instead of relying on a glob to mean the directory is complete.
+- Platform icon staging should verify generated icon sets are complete before copying them; partial sets should fall back or fail loudly.
 - Status output that echoes configured commands or generated log paths must sanitize CR/LF separately from execution semantics; shell comments can let hostile command text succeed while forging GUI rows.
 - GUI status commands that read manifests should sanitize the manifest fields they echo, even when a separate manifest validator exists.
 - GUI preference/config readers should parse and revalidate hand-edited files instead of streaming them directly back to the bridge.

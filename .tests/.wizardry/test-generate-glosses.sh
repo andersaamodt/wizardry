@@ -428,6 +428,23 @@ test_first_word_gloss_handles_unset_wizardry_dir_under_set_u() {
   assert_output_contains "Usage:" || return 1
 }
 
+test_parse_disabled_crlf_config_suppresses_first_word_glosses() {
+  tmpdir=$(make_tempdir)
+  printf 'parse-enabled=0\r\n' > "$tmpdir/.mud"
+
+  WIZARDRY_DIR="$ROOT_DIR" SPELLBOOK_DIR="$tmpdir" \
+    run_spell spells/.wizardry/generate-glosses --quiet
+  assert_success || return 1
+
+  case "$OUTPUT" in
+    *"
+jump() {"*|jump\(\)\ \{*)
+      TEST_FAILURE_REASON="CRLF parse-enabled=0 should suppress first-word glosses"
+      return 1
+      ;;
+  esac
+}
+
 test_synonym_invalid_chars_still_rejected() {
   # Test that truly invalid characters are still rejected
   tmpdir=$(make_tempdir)
@@ -453,6 +470,7 @@ run_test_case "synonyms with special chars work (create alias)" test_synonym_wit
 run_test_case "hyphenated special-char synonyms do not emit invalid functions" test_special_char_hyphenated_synonym_does_not_emit_invalid_function
 run_test_case "single-quote synonym targets do not break gloss file" test_single_quote_synonym_target_does_not_break_gloss_file
 run_test_case "first-word gloss handles unset WIZARDRY_DIR under set -u" test_first_word_gloss_handles_unset_wizardry_dir_under_set_u
+run_test_case "CRLF parse-disabled config suppresses first-word glosses" test_parse_disabled_crlf_config_suppresses_first_word_glosses
 run_test_case "synonyms with truly invalid chars still rejected" test_synonym_invalid_chars_still_rejected
 
 # Realistic tests - actually execute aliases in interactive shell context
