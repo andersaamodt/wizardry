@@ -16,6 +16,17 @@ esac
 
 set -eu
 
+is_player_name_valid() {
+  case "$1" in
+    [A-Za-z][A-Za-z0-9_][A-Za-z0-9_]*)
+      [ "${#1}" -le 16 ]
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
 group_members_line() {
   if command -v getent >/dev/null 2>&1; then
     getent group mud 2>/dev/null | awk -F: 'NR==1 {print $4}'
@@ -69,6 +80,10 @@ printf '%-18s %-10s %s\n' "------" "-------" "----"
 
 printf '%s' "$members" | tr ',' '\n' | sed 's/^ *//;s/ *$//' | awk 'NF' | sort -u | \
   while IFS= read -r player; do
+  if ! is_player_name_valid "$player"; then
+    printf '%s\n' "list-players: ignoring invalid player name from group membership." >&2
+    continue
+  fi
   home=$(resolve_home "$player" 2>/dev/null || printf '?')
   has_key="no"
   if [ -n "$home" ] && [ "$home" != "?" ] && [ -s "$home/.ssh/authorized_keys" ]; then

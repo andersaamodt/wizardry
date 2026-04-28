@@ -256,3 +256,4 @@
 - Parser connector imps that intentionally split accumulated command-argument strings must temporarily disable globbing so literal `*` arguments do not expand against the caller's working directory.
 - Generated first-word glosses must pass their embedded install root into sourced parser fallbacks when `WIZARDRY_DIR` is unset; otherwise isolated installs accidentally parse against `~/.wizardry`.
 - Capability probes should not interpolate `TMPDIR` paths into `sh -c` strings; quote-bearing temp roots can break the probe or execute unintended shell syntax.
+- System membership readers must validate imported user names before tilde-expansion `eval`; hostile group records can otherwise execute command substitutions during status listing.
