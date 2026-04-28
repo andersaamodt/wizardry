@@ -143,6 +143,12 @@ emit_line ""
 # Returns 0 if allowed, 1 if blacklisted
 is_first_word_blacklisted() {
   check_word=$1
+
+  case "$check_word" in
+    ''|[!a-zA-Z_]*|*[!a-zA-Z0-9_]*)
+      return 1
+      ;;
+  esac
   
   # CRITICAL: Skip shell builtins and common system commands to avoid overriding them
   # GREYLIST: Some shell builtins CAN be safely overridden if ALL spells using that first word

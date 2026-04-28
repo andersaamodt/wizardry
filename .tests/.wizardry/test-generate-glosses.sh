@@ -365,6 +365,27 @@ EOF
   done
 }
 
+test_special_char_hyphenated_synonym_does_not_emit_invalid_function() {
+  tmpdir=$(make_tempdir)
+
+  cat > "$tmpdir/.synonyms" <<'EOF'
+test.dot-extra=echo DOT_EXTRA_WORKS
+EOF
+
+  WIZARDRY_DIR="$ROOT_DIR" SPELLBOOK_DIR="$tmpdir" \
+    run_spell spells/.wizardry/generate-glosses --quiet
+  assert_success || return 1
+
+  output_file="${WIZARDRY_TMPDIR}/_test_output"
+  if grep -q '^test\.dot()' "$output_file"; then
+    TEST_FAILURE_REASON="generate-glosses emitted non-POSIX function name test.dot()"
+    return 1
+  fi
+
+  run_cmd sh -n "$output_file"
+  assert_success || return 1
+}
+
 test_synonym_invalid_chars_still_rejected() {
   # Test that truly invalid characters are still rejected
   tmpdir=$(make_tempdir)
@@ -387,6 +408,7 @@ EOF
 
 run_test_case "synonyms with numbers at start work (create alias)" test_synonym_with_numbers
 run_test_case "synonyms with special chars work (create alias)" test_synonym_with_special_chars
+run_test_case "hyphenated special-char synonyms do not emit invalid functions" test_special_char_hyphenated_synonym_does_not_emit_invalid_function
 run_test_case "synonyms with truly invalid chars still rejected" test_synonym_invalid_chars_still_rejected
 
 # Realistic tests - actually execute aliases in interactive shell context
