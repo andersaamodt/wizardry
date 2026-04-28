@@ -53,6 +53,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Parser synonym targets should include category/path-prefixed spells and must resolve them only under the project spell tree.
 - Generated gloss files should be syntax-checked with POSIX `sh -n` after adding aliases or first-word functions for names containing special characters.
 - Hand-edited synonym files are imported metadata; test quote-bearing targets so one malformed record cannot make every generated gloss unsourceable.
+- Generated gloss synonym targets are shell code unless validated; reject shell metacharacters, globs, and control characters while preserving simple preset-argument targets.
 - Generated parser/gloss functions should be executed under `set -u` with optional environment variables unset, not only syntax-checked.
 - Parser and gloss configuration readers should include CRLF config files so disabled flags are not bypassed by carriage returns.
 - Parse-disabled generated aliases should be executed with trailing arguments, not only sourced or syntax-checked.
