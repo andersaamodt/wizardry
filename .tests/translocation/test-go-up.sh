@@ -4,6 +4,7 @@
 # - Outputs cd command for one level
 # - Outputs cd command for multiple levels
 # - Rejects invalid input
+# - Rejects extra operands
 
 set -eu
 
@@ -38,10 +39,17 @@ test_rejects_invalid() {
   assert_error_contains "positive integer" || return 1
 }
 
+test_rejects_extra_operands() {
+  run_spell "spells/translocation/go-up" 1 extra
+  assert_failure || return 1
+  assert_error_contains "at most one" || return 1
+}
+
 run_test_case "up shows usage text" test_help
 run_test_case "up outputs cd for one level by default" test_default_one_level
 run_test_case "up outputs cd for multiple levels" test_multiple_levels
 run_test_case "up rejects invalid input" test_rejects_invalid
+run_test_case "up rejects extra operands" test_rejects_extra_operands
 
 
 # Test via source-then-invoke pattern  

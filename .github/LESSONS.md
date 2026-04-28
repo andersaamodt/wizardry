@@ -223,3 +223,6 @@
 - Heredoc redirection belongs on the `cat` command, not inside the heredoc body; otherwise usage output leaks literal tokens like `>&2`.
 - Directory-listing commands should validate the argument is a directory and handle unmatched globs explicitly; otherwise missing paths can create listings containing literal `*`.
 - Generated listing files should be rewritten, not appended, unless append mode is explicitly part of the command contract.
+- Eval-printing navigation commands must fail before printing shell code when their destination is invalid.
+- Navigation commands should reject extra operands because callers may eval their stdout.
+- Commands that create navigation metadata should validate the stored destination before writing attributes.

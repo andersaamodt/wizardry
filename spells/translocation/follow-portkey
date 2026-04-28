@@ -17,9 +17,13 @@ esac
 set -eu
 . env-clear
 
-# Ensure file argument is provided
-if [ -z "${1-}" ]; then
+# Ensure exactly one file argument is provided
+if [ "$#" -eq 0 ]; then
         printf '%s\n' "follow-portkey: file path required" >&2
+        exit 2
+fi
+if [ "$#" -ne 1 ]; then
+        printf '%s\n' "follow-portkey: exactly one file path required" >&2
         exit 2
 fi
 
@@ -45,6 +49,7 @@ esac
 # Verify destination exists
 if [ ! -d "$context" ]; then
         printf '%s\n' "follow-portkey: destination does not exist: $context" >&2
+        exit 1
 fi
 
 # Output the cd command for eval

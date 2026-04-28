@@ -16,7 +16,7 @@ Wizardry is a collection of POSIX shell scripts themed as magical spells for the
 
 ```sh
 # Check spell style compliance
-lint-magic --strict spells/category/spell-name
+lint-magic spells/category/spell-name
 
 # Run tests
 .tests/common-tests.sh  # or use spells/system/test-magic
@@ -116,4 +116,5 @@ tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/prefix.XXXXXX")
 - See `.AGENTS.md` for detailed style guide
 - See `README.md` for project principles
 - See `.github/` for topic-specific guidance
+- See `.github/adversarial-testing.md` for adversarial audit technique and bug classes
 - See `.github/PUSH_READY_CHECKLIST.md` for canonical repo-hygiene and publish-surface rules

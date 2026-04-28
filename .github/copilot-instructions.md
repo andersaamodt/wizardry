@@ -69,6 +69,7 @@ This fetches test failures from PR description via GitHub API. Works immediately
 - `imps.md` — Imp (micro-helper) guide
 - `tests.md` — Testing framework and patterns
 - `logging.md` — Output and error handling
+- `adversarial-testing.md` — Adversarial audit technique and bug classes
 - `PUSH_READY_CHECKLIST.md` — Canonical repo-hygiene, artifact, and publish-surface checklist
 - `glossary-and-function-architecture.md` — Glossary system details
 - `bootstrapping.md` — Bootstrapping and uncastable pattern guide

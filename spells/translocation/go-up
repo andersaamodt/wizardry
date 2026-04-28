@@ -17,6 +17,11 @@ esac
 set -eu
 . env-clear
 
+if [ "$#" -gt 1 ]; then
+        die "up: at most one levels argument expected."
+        exit 2
+fi
+
 levels=${1:-1}
 
 # Validate levels is a positive integer

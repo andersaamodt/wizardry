@@ -22,6 +22,10 @@ if [ -z "${1-}" ]; then
         printf '%s\n' "enchant-portkey: file path required" >&2
         exit 2
 fi
+if [ "$#" -gt 2 ]; then
+        printf '%s\n' "enchant-portkey: at most two arguments expected" >&2
+        exit 2
+fi
 
 file=$1
 destination=${2-}
@@ -48,6 +52,10 @@ fi
 # Verify destination is valid
 if [ -z "$destination" ]; then
         printf '%s\n' "enchant-portkey: destination cannot be empty." >&2
+        exit 1
+fi
+if [ ! -d "$destination" ]; then
+        printf '%s\n' "enchant-portkey: destination does not exist: $destination" >&2
         exit 1
 fi
 
