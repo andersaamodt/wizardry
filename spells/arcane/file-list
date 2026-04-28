@@ -28,11 +28,19 @@ USAGE
 fi
 
 # Create a text file with the same name as the folder
-folder_name=$(basename "$1")
+folder=$1
+if [ ! -d "$folder" ]; then
+  printf '%s\n' "file-list: not a directory: $folder" >&2
+  exit 1
+fi
+
+folder_name=$(basename "$folder")
 text_file="$folder_name.txt"
 
 # Read all the filenames in the folder and put them in the text file
-for filename in "$1"/*; do
+> "$text_file"
+for filename in "$folder"/*; do
+  [ -e "$filename" ] || continue
   filename="${filename#./}"
   printf '%s\n' "$(basename "$filename")" >> "$text_file"
 done

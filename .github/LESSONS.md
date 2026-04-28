@@ -221,3 +221,5 @@
 - Commands that mutate files should reject extra operands before acting; silently ignoring extras can move or rewrite the wrong target.
 - Validate constrained option values before passing them to platform tools; suppressed tool stderr otherwise turns usage errors into silent failures.
 - Heredoc redirection belongs on the `cat` command, not inside the heredoc body; otherwise usage output leaks literal tokens like `>&2`.
+- Directory-listing commands should validate the argument is a directory and handle unmatched globs explicitly; otherwise missing paths can create listings containing literal `*`.
+- Generated listing files should be rewritten, not appended, unless append mode is explicitly part of the command contract.
