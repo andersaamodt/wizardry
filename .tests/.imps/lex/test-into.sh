@@ -26,6 +26,28 @@ test_into_appends_target() {
   fi
 }
 
+test_into_preserves_target_with_spaces() {
+  tmp=$(make_tempdir)
+  mkdir -p "$tmp/target dir"
+  printf '%s\n' "content" > "$tmp/source.txt"
+
+  run_spell spells/.imps/lex/into "cp" "$tmp/source.txt" "$tmp/target dir"
+  assert_success || return 1
+
+  if [ ! -f "$tmp/target dir/source.txt" ]; then
+    TEST_FAILURE_REASON="File not copied into target directory containing spaces"
+    return 1
+  fi
+}
+
+test_into_sources_parse_for_remaining_words() {
+  run_spell spells/.imps/lex/into "echo" "prefix" "target value" "after"
+  assert_success || return 1
+  assert_output_contains "prefix" || return 1
+  assert_output_contains "target value" || return 1
+  assert_output_contains "after" || return 1
+}
+
 test_into_requires_target() {
   run_spell spells/.imps/lex/into "echo" "hello"
   assert_failure || return 1
@@ -38,6 +60,8 @@ test_into_requires_command() {
 
 run_test_case "into is executable" test_into_is_executable
 run_test_case "into appends target to args" test_into_appends_target
+run_test_case "into preserves target with spaces" test_into_preserves_target_with_spaces
+run_test_case "into sources parse for remaining words" test_into_sources_parse_for_remaining_words
 run_test_case "into requires target" test_into_requires_target
 run_test_case "into requires command" test_into_requires_command
 

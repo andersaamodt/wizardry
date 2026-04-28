@@ -87,6 +87,8 @@
 - Parser fallbacks for found system commands must preserve the command's nonzero status instead of converting it to command-not-found.
 - Sourced parser internals should run inside a wrapper function so internal shifts and `set --` calls do not clobber caller positional parameters.
 - POSIX shell function variables are still global, so sourced parser scratch names must be parser-prefixed to avoid clobbering caller variables.
+- Parser connector imps must source parse during handoff and quote explicit source/target operands separately from accumulated argument strings.
+- Parser system-command fallback must shift off the command word before execution so system commands receive only their intended operands.
 
 
 - When a file is sourced (`. filename`), using `exit` exits the parent shell; use `return` instead (discovered via doppelganger failing to create directories) (3)

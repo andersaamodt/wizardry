@@ -25,6 +25,27 @@ test_to_appends_target() {
   fi
 }
 
+test_to_preserves_target_with_spaces() {
+  tmp=$(make_tempdir)
+  printf '%s\n' "content" > "$tmp/source.txt"
+
+  run_spell spells/.imps/lex/to "cp" "$tmp/source.txt" "$tmp/dest file.txt"
+  assert_success || return 1
+
+  if [ ! -f "$tmp/dest file.txt" ]; then
+    TEST_FAILURE_REASON="File not copied to destination containing spaces"
+    return 1
+  fi
+}
+
+test_to_sources_parse_for_remaining_words() {
+  run_spell spells/.imps/lex/to "echo" "prefix" "target value" "after"
+  assert_success || return 1
+  assert_output_contains "prefix" || return 1
+  assert_output_contains "target value" || return 1
+  assert_output_contains "after" || return 1
+}
+
 test_to_requires_target() {
   run_spell spells/.imps/lex/to "echo" "hello"
   assert_failure || return 1
@@ -37,6 +58,8 @@ test_to_requires_command() {
 
 run_test_case "to is executable" test_to_is_executable
 run_test_case "to appends target to args" test_to_appends_target
+run_test_case "to preserves target with spaces" test_to_preserves_target_with_spaces
+run_test_case "to sources parse for remaining words" test_to_sources_parse_for_remaining_words
 run_test_case "to requires target" test_to_requires_target
 run_test_case "to requires command" test_to_requires_command
 

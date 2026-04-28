@@ -40,6 +40,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Sourced parsers must be tested for repeated independent invocations in one shell, leaked recursion depth, and clobbered caller loop variables.
 - Sourced parsers should also preserve caller positional parameters after internal `shift` and `set --` operations.
 - Sourced parser scratch variables should use parser-specific names because POSIX shell function variables still leak into callers.
+- Parser connector imps that hand off to `parse` must source it, not execute it as a script, and should test the handoff path with remaining words.
 - Synonym targets that include preset arguments must be tested through direct parser recursion, not only through generated shell glosses.
 - Generated parser/gloss code must use the same literal lookup semantics as the runtime parser; test regex-shaped names against near-match records.
 - Parser synonym targets should include category/path-prefixed spells and must resolve them only under the project spell tree.
@@ -50,12 +51,14 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Parse-disabled generated aliases should be executed with trailing arguments, not only sourced or syntax-checked.
 - Parser and gloss synonym readers should execute CRLF synonym targets, not only syntax-check generated output; carriage returns in command names can pass `sh -n` and fail only at runtime.
 - Parser system-command fallbacks should preserve nonzero statuses from found utilities instead of rewriting failures as command-not-found.
+- Parser system-command fallbacks should execute the found command with only the remaining operands, not repeat the command word as argv[1].
 
 ### Shell Expansion
 
 - Quote every variable expansion unless intentionally splitting.
 - Disable globbing before intentional word splitting of user-provided strings.
 - Test paths and values containing spaces, `*`, `-`, empty strings, and reserved words such as `from` or `to`.
+- Connector imps that append or prepend explicit operands should quote those operands separately from intentionally split accumulated argument strings.
 - Use `--` when passing user paths to commands that support it.
 
 ### Numeric and Interactive Input

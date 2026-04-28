@@ -21,19 +21,18 @@ if [ -z "$into_cmd" ]; then
   exit 1
 fi
 
-if [ -n "$into_cmd_args" ]; then
-  into_new_args="$into_cmd_args $into_target"
-else
-  into_new_args=$into_target
-fi
-
 if [ $# -eq 0 ]; then
-  # shellcheck disable=SC2086
-  "$into_cmd" $into_new_args
+  if [ -n "$into_cmd_args" ]; then
+    # shellcheck disable=SC2086
+    "$into_cmd" $into_cmd_args "$into_target"
+  else
+    "$into_cmd" "$into_target"
+  fi
   exit $?
 fi
 
 into_lex_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 # shellcheck disable=SC2086
-"$into_lex_dir/parse" "$into_cmd" $into_new_args "$@"
-
+set -- "$into_cmd" $into_cmd_args "$into_target" "$@"
+. "$into_lex_dir/parse"
+exit $?
