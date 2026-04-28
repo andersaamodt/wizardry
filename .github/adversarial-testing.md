@@ -64,6 +64,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - CSV-like values must reject leading/trailing commas, empty entries, unsupported characters, and line-break injection.
 - Tab-, pipe-, and comma-delimited records must reject delimiter characters in fields before persisting or printing rows for another parser.
 - Machine-readable `key=value` output must reject CR/LF in echoed values so hostile input cannot forge later keys.
+- If a command must execute a control-character-bearing path, keep the execution value separate from the sanitized display/status value printed as `key=value`.
 - Helper-script stdout and filesystem entry names are untrusted when they are forwarded into GUI/backend records; test installed modules with delimiter-shaped filenames and status lines.
 - Metadata conversions should stage changes and replace originals only after all writes succeed.
 - Front-matter parsing must preserve delimiter-like body content after the closing delimiter.
