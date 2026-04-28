@@ -61,6 +61,7 @@ set -eu
 
   newline='
 '
+  carriage_return=$(printf '\r')
 
   # Check for invalid characters in synonym word
   # Valid: alphanumeric, hyphens (not leading), and special chars: . : + , @ ! ? % ^ ~
@@ -68,11 +69,12 @@ set -eu
   # Pattern breakdown:
   #   *[/=\ \	\'\"\$\`\\\|\&\;\(\)\<\>\*\[\]]* = contains any of: / = space tab ' " $ ` \ | & ; ( ) < > * [ ]
   case $synonym_word in
-    *"$newline"*|*[/=\ \	\'\"\$\`\\\|\&\;\(\)\<\>\*\[\]]*)
+    *"$newline"*|*"$carriage_return"*|*[/=\ \	\'\"\$\`\\\|\&\;\(\)\<\>\*\[\]]*)
       # Detect and show specific invalid character for better user feedback
       detected_char=""
       case "$synonym_word" in
         *"$newline"*) detected_char="(newline)" ;;
+        *"$carriage_return"*) detected_char="(carriage return)" ;;
         */*) detected_char="/" ;;
         *=*) detected_char="=" ;;
         *' '*) detected_char="(space)" ;;
@@ -98,7 +100,7 @@ set -eu
       if [ -n "$detected_char" ]; then
         printf '%s\n' "  Found: $detected_char" >&2
       fi
-      printf '%s\n' "  Invalid characters: / = \\ | & ; ( ) < > * [ ] \$ \` ' \" space tab newline" >&2
+      printf '%s\n' "  Invalid characters: / = \\ | & ; ( ) < > * [ ] \$ \` ' \" space tab newline carriage-return" >&2
       printf '%s\n' "  Valid special characters: - . : + , @ ! ? % ^ ~ (- and . cannot be first)" >&2
       exit 2
       ;;
@@ -176,7 +178,7 @@ set -eu
     exit 2
   fi
   case $target_spell in
-    *"$newline"*)
+    *"$newline"*|*"$carriage_return"*)
       printf '%s\n' "add-synonym: target spell cannot contain line breaks" >&2
       exit 2
       ;;

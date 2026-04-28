@@ -31,6 +31,7 @@ set -eu
   default_file="$spell_home/.default-synonyms"
   newline='
 '
+  carriage_return=$(printf '\r')
   
   # Parse arguments
   if [ "$#" -lt 1 ]; then
@@ -120,8 +121,8 @@ set -eu
       fi
       
       case $new_value in
-        *"$newline"*|*[/=\ ]*)
-          printf '%s\n' "edit-synonym: synonym word cannot contain spaces or slashes" >&2
+        *"$newline"*|*"$carriage_return"*|*[/=\ ]*)
+          printf '%s\n' "edit-synonym: synonym word cannot contain line breaks, spaces, equals signs, or slashes" >&2
           exit 2
           ;;
         -*)
@@ -164,7 +165,7 @@ set -eu
         exit 2
       fi
       case $new_value in
-        *"$newline"*)
+        *"$newline"*|*"$carriage_return"*)
           printf '%s\n' "edit-synonym: target spell cannot contain line breaks" >&2
           exit 2
           ;;

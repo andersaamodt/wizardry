@@ -82,6 +82,7 @@
 - Parse must strip carriage returns from `parse-enabled` config values so CRLF `.mud` files cannot bypass a disabled parser.
 - Parse-disabled hyphenated aliases must route through generated helper functions so trailing arguments are passed to the sourced spell instead of becoming invalid alias-body syntax.
 - Parser and generated gloss synonym targets must strip carriage returns because CRLF metadata can create command names that syntax-check but fail at runtime.
+- Synonym writers must reject carriage returns, not only newlines, so reader-side CRLF cleanup cannot silently rename persisted keys.
 
 
 - When a file is sourced (`. filename`), using `exit` exits the parent shell; use `return` instead (discovered via doppelganger failing to create directories) (3)

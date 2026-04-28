@@ -69,6 +69,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 ### Metadata and Structured Data
 
 - Key-value files must keep keys allowlisted and values single-line unless multi-line values are the explicit file format.
+- Metadata writers and editors must reject both LF and CR line breaks; reader-side CR stripping can otherwise silently change persisted identifiers.
 - CSV-like values must reject leading/trailing commas, empty entries, unsupported characters, and line-break injection.
 - Tab-, pipe-, and comma-delimited records must reject delimiter characters in fields before persisting or printing rows for another parser.
 - Use delimiter-specific output sanitizers for row formats; `key=value` CR/LF cleanup does not protect TSV or pipe-separated columns.
@@ -92,6 +93,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Validate every release credential identifier consistently across build, upload, and promote helpers before passing them to platform tools.
 - Release tag/version strings become generated project metadata; validate them before rendering build-system files.
 - Remote API response fields should be revalidated after structured parsing before they are reused in URLs or status rows.
+- Service account JSON should be treated as imported release metadata; validate identity fields before JWT rendering.
 - Validate remote metadata before downloads, extraction, install paths, chmod, JWT signing, API URLs, or platform tools run.
 - Git remote URLs can contain CR/LF and path-shaped slugs; validate before printing status rows or constructing GitHub API URLs.
 - Stub network tools and feed hostile metadata instead of relying on live services for adversarial release tests.

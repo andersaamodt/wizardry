@@ -179,6 +179,19 @@ alias" echo
   assert_error_contains "invalid character" || return 1
 }
 
+test_rejects_word_with_carriage_return() {
+  case_dir=$(make_tempdir)
+  synonyms_file="$case_dir/.synonyms"
+  carriage_return=$(printf '\r')
+
+  SPELLBOOK_DIR="$case_dir" \
+    run_spell "spells/spellcraft/add-synonym" "bad${carriage_return}alias" echo
+
+  assert_failure || return 1
+  assert_error_contains "invalid character" || return 1
+  assert_path_missing "$synonyms_file" || return 1
+}
+
 test_rejects_target_with_newline() {
   case_dir=$(make_tempdir)
   synonyms_file="$case_dir/.synonyms"
@@ -186,6 +199,19 @@ test_rejects_target_with_newline() {
   SPELLBOOK_DIR="$case_dir" \
     run_spell "spells/spellcraft/add-synonym" myalias "echo
 printf"
+
+  assert_failure || return 1
+  assert_error_contains "target spell cannot contain line breaks" || return 1
+  assert_path_missing "$synonyms_file" || return 1
+}
+
+test_rejects_target_with_carriage_return() {
+  case_dir=$(make_tempdir)
+  synonyms_file="$case_dir/.synonyms"
+  carriage_return=$(printf '\r')
+
+  SPELLBOOK_DIR="$case_dir" \
+    run_spell "spells/spellcraft/add-synonym" myalias "echo${carriage_return}printf"
 
   assert_failure || return 1
   assert_error_contains "target spell cannot contain line breaks" || return 1
@@ -330,7 +356,9 @@ run_test_case "allows word starting with number (creates alias)" test_allows_wor
 run_test_case "allows special chars in word (creates alias)" test_allows_special_chars_in_word
 run_test_case "rejects word with equals delimiter" test_rejects_word_with_equals
 run_test_case "rejects word with newline" test_rejects_word_with_newline
+run_test_case "rejects word with carriage return" test_rejects_word_with_carriage_return
 run_test_case "rejects target with newline" test_rejects_target_with_newline
+run_test_case "rejects target with carriage return" test_rejects_target_with_carriage_return
 run_test_case "rejects empty spell" test_rejects_empty_spell
 run_test_case "allows overwriting synonym" test_allows_overwriting_existing_synonym
 run_test_case "handles complex target with args" test_handles_complex_target_with_args

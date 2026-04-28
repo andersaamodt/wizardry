@@ -111,6 +111,46 @@ test_rejects_invalid_new_word() {
   assert_failure || return 1
 }
 
+test_rejects_new_word_with_carriage_return() {
+  case_dir=$(make_tempdir)
+  synonyms_file="$case_dir/.synonyms"
+  carriage_return=$(printf '\r')
+
+  SPELLBOOK_DIR="$case_dir" \
+    run_spell "spells/spellcraft/add-synonym" myalias echo
+  assert_success || return 1
+
+  SPELLBOOK_DIR="$case_dir" \
+    run_spell "spells/spellcraft/edit-synonym" myalias --word "bad${carriage_return}alias"
+
+  assert_failure || return 1
+  assert_error_contains "line breaks" || return 1
+  if ! grep -F -q -e 'myalias=echo' "$synonyms_file"; then
+    TEST_FAILURE_REASON="edit-synonym mutated file after CR in new word"
+    return 1
+  fi
+}
+
+test_rejects_new_target_with_carriage_return() {
+  case_dir=$(make_tempdir)
+  synonyms_file="$case_dir/.synonyms"
+  carriage_return=$(printf '\r')
+
+  SPELLBOOK_DIR="$case_dir" \
+    run_spell "spells/spellcraft/add-synonym" myalias echo
+  assert_success || return 1
+
+  SPELLBOOK_DIR="$case_dir" \
+    run_spell "spells/spellcraft/edit-synonym" myalias --spell "printf${carriage_return}echo"
+
+  assert_failure || return 1
+  assert_error_contains "target spell cannot contain line breaks" || return 1
+  if ! grep -F -q -e 'myalias=echo' "$synonyms_file"; then
+    TEST_FAILURE_REASON="edit-synonym mutated file after CR in target spell"
+    return 1
+  fi
+}
+
 test_prevents_duplicate_word() {
   case_dir=$(make_tempdir)
   
@@ -159,6 +199,8 @@ run_test_case "edits target spell" test_edits_target_spell
 run_test_case "fails when synonym not found" test_fails_when_synonym_not_found
 run_test_case "requires edit mode flag" test_requires_edit_mode
 run_test_case "rejects invalid new word" test_rejects_invalid_new_word
+run_test_case "rejects CR in new word" test_rejects_new_word_with_carriage_return
+run_test_case "rejects CR in new target" test_rejects_new_target_with_carriage_return
 run_test_case "prevents duplicate word" test_prevents_duplicate_word
 run_test_case "does not create aliases from regex false matches" test_does_not_create_from_regex_false_match
 
