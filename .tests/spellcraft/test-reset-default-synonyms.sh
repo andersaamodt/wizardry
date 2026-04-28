@@ -4,6 +4,7 @@
 # - reset-default-synonyms shows usage with --help
 # - reset-default-synonyms asks for confirmation
 # - reset-default-synonyms does not affect custom synonyms
+# - reset-default-synonyms rejects extra operands before mutation
 
 set -eu
 
@@ -186,6 +187,29 @@ test_works_without_wizardry_dir() {
 }
 
 run_test_case "reset-default-synonyms works without WIZARDRY_DIR" test_works_without_wizardry_dir
+
+test_rejects_extra_operands_before_reset() {
+  tmpdir=$(make_tempdir)
+  spellbook="$tmpdir/.spellbook"
+  mkdir -p "$spellbook"
+  printf '%s\n' 'old=default' > "$spellbook/.default-synonyms"
+  touch "$spellbook/.default-synonyms-initialized"
+
+  SPELLBOOK_DIR="$spellbook" run_spell "spells/spellcraft/reset-default-synonyms" extra
+
+  assert_failure || return 1
+  assert_error_contains "too many arguments" || return 1
+  if ! grep -q '^old=default$' "$spellbook/.default-synonyms"; then
+    TEST_FAILURE_REASON="reset-default-synonyms mutated defaults after extra operand"
+    return 1
+  fi
+  if [ ! -f "$spellbook/.default-synonyms-initialized" ]; then
+    TEST_FAILURE_REASON="reset-default-synonyms removed initialization marker after extra operand"
+    return 1
+  fi
+}
+
+run_test_case "reset-default-synonyms rejects extra operands" test_rejects_extra_operands_before_reset
 
 
 # Test via source-then-invoke pattern  

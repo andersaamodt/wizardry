@@ -23,6 +23,11 @@ fi
 set -eu
 . env-clear
 
+  if [ "$#" -gt 0 ]; then
+    printf '%s\n' "reset-default-synonyms: too many arguments" >&2
+    exit 2
+  fi
+
   spell_home=$(env-or SPELLBOOK_DIR "${HOME:-.}/.spellbook")
   default_synonyms_file="$spell_home/.default-synonyms"
   
