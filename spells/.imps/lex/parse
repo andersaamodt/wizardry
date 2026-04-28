@@ -186,27 +186,37 @@ while [ $parse_attempt_len -gt 0 ]; do
   
   # Try spell category directories
   if [ -z "$parse_spell_path" ]; then
-    for parse_category_dir in "$parse_wizardry_dir/spells"/*; do
-      [ -d "$parse_category_dir" ] || continue
-      case "$parse_category_dir" in
-        */.|*/..|*/.imps|*/.wizardry) continue ;;
-      esac
-      if [ -x "$parse_category_dir/$parse_cmd_name" ]; then
-        parse_spell_path="$parse_category_dir/$parse_cmd_name"
-        break
-      fi
-    done
+    case "$parse_cmd_name" in
+      */*) ;;
+      *)
+        for parse_category_dir in "$parse_wizardry_dir/spells"/*; do
+          [ -d "$parse_category_dir" ] || continue
+          case "$parse_category_dir" in
+            */.|*/..|*/.imps|*/.wizardry) continue ;;
+          esac
+          if [ -x "$parse_category_dir/$parse_cmd_name" ]; then
+            parse_spell_path="$parse_category_dir/$parse_cmd_name"
+            break
+          fi
+        done
+        ;;
+    esac
   fi
   
   # Also try .arcana subdirectories if not found yet
   if [ -z "$parse_spell_path" ] && [ -d "$parse_wizardry_dir/spells/.arcana" ]; then
-    for parse_category_dir in "$parse_wizardry_dir/spells/.arcana"/*; do
-      [ -d "$parse_category_dir" ] || continue
-      if [ -x "$parse_category_dir/$parse_cmd_name" ]; then
-        parse_spell_path="$parse_category_dir/$parse_cmd_name"
-        break
-      fi
-    done
+    case "$parse_cmd_name" in
+      */*) ;;
+      *)
+        for parse_category_dir in "$parse_wizardry_dir/spells/.arcana"/*; do
+          [ -d "$parse_category_dir" ] || continue
+          if [ -x "$parse_category_dir/$parse_cmd_name" ]; then
+            parse_spell_path="$parse_category_dir/$parse_cmd_name"
+            break
+          fi
+        done
+        ;;
+    esac
   fi
   
   # Check if this command name is a synonym
@@ -236,19 +246,31 @@ while [ $parse_attempt_len -gt 0 ]; do
       parse_synonym_target_path=""
       
       # Search for the synonym target in spell directories
-      for parse_category_dir in "$parse_wizardry_dir/spells"/*; do
-        [ -d "$parse_category_dir" ] || continue
-        case "$parse_category_dir" in
-          */.|*/..|*/.imps|*/.wizardry|*/.arcana) continue ;;
-        esac
-        if [ -f "$parse_category_dir/$parse_synonym_target" ]; then
-          if grep -q "^# Uncastable pattern" "$parse_category_dir/$parse_synonym_target" 2>/dev/null; then
-            # Found uncastable synonym target - source it with remaining args
-            parse_synonym_target_path="$parse_category_dir/$parse_synonym_target"
-            break
+      case "$parse_synonym_target" in
+        /*|..|../*|*/..|*/../*|*//*) ;;
+        */*)
+          if [ -f "$parse_wizardry_dir/spells/$parse_synonym_target" ]; then
+            if grep -q "^# Uncastable pattern" "$parse_wizardry_dir/spells/$parse_synonym_target" 2>/dev/null; then
+              parse_synonym_target_path="$parse_wizardry_dir/spells/$parse_synonym_target"
+            fi
           fi
-        fi
-      done
+          ;;
+        *)
+          for parse_category_dir in "$parse_wizardry_dir/spells"/*; do
+            [ -d "$parse_category_dir" ] || continue
+            case "$parse_category_dir" in
+              */.|*/..|*/.imps|*/.wizardry|*/.arcana) continue ;;
+            esac
+            if [ -f "$parse_category_dir/$parse_synonym_target" ]; then
+              if grep -q "^# Uncastable pattern" "$parse_category_dir/$parse_synonym_target" 2>/dev/null; then
+                # Found uncastable synonym target - source it with remaining args
+                parse_synonym_target_path="$parse_category_dir/$parse_synonym_target"
+                break
+              fi
+            fi
+          done
+          ;;
+      esac
       
       # If synonym target is uncastable, source it
       if [ -n "$parse_synonym_target_path" ]; then

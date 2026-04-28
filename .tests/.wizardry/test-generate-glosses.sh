@@ -786,6 +786,27 @@ EOF
   fi
 }
 
+test_user_synonym_target_cannot_escape_spell_tree() {
+  tmpdir=$(make_tempdir)
+  spellbook="$tmpdir/spellbook"
+  mkdir -p "$spellbook"
+
+  printf '%s\n' 'go=../../outside/evil' 'safe=custom/path-target preset' > "$spellbook/.synonyms"
+
+  WIZARDRY_DIR="$ROOT_DIR" SPELLBOOK_DIR="$spellbook" \
+    run_spell spells/.wizardry/generate-glosses --output "$tmpdir/glosses" --quiet
+  assert_success || return 1
+
+  if grep -q '^go()' "$tmpdir/glosses" || grep -q '^alias go=' "$tmpdir/glosses"; then
+    TEST_FAILURE_REASON="generate-glosses emitted path-traversing synonym target"
+    return 1
+  fi
+  if ! grep -q '^safe()' "$tmpdir/glosses"; then
+    TEST_FAILURE_REASON="generate-glosses should keep safe spell-relative target"
+    return 1
+  fi
+}
+
 test_first_word_gloss_uses_embedded_root_when_wizardry_dir_unset() {
   tmpdir=$(make_tempdir)
   wizardry_dir="$tmpdir/custom-root"
@@ -823,6 +844,7 @@ run_test_case "aliases with special chars actually execute in interactive shell"
 run_test_case "generate-glosses skips first-word glosses that shadow system commands" test_generate_glosses_skips_system_command_prefixes
 run_test_case "first-word gloss synonym lookup matches literal names" test_first_word_gloss_synonym_lookup_matches_literal_name
 run_test_case "user synonym targets cannot inject generated functions" test_user_synonym_target_cannot_inject_generated_function
+run_test_case "user synonym targets cannot escape spell tree" test_user_synonym_target_cannot_escape_spell_tree
 run_test_case "first-word gloss uses embedded root when WIZARDRY_DIR is unset" test_first_word_gloss_uses_embedded_root_when_wizardry_dir_unset
 
 finish_tests

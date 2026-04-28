@@ -585,6 +585,12 @@ is_synonym_target_valid() {
   esac
 
   case "$syn_target" in
+    /*|..|../*|*/..|*/../*|*//*)
+      return 1
+      ;;
+  esac
+
+  case "$syn_target" in
     *[\#\'\"\$\`\\\|\&\;\(\)\<\>\*\?\[\]]*)
       return 1
       ;;

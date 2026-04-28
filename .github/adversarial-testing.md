@@ -67,6 +67,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Synonym targets that include preset arguments must be tested through direct parser recursion, not only through generated shell glosses.
 - Generated parser/gloss code must use the same literal lookup semantics as the runtime parser; test regex-shaped names against near-match records.
 - Parser synonym targets should include category/path-prefixed spells and must resolve them only under the project spell tree.
+- Parser synonym target tests should include path traversal variants alongside valid spell-relative paths, because later fallback scans can bypass an earlier safe-path branch.
 - Generated gloss files should be syntax-checked with POSIX `sh -n` after adding aliases or first-word functions for names containing special characters.
 - Hand-edited synonym files are imported metadata; test quote-bearing targets so one malformed record cannot make every generated gloss unsourceable.
 - Generated gloss synonym targets are shell code unless validated; reject shell metacharacters, globs, and control characters while preserving simple preset-argument targets.

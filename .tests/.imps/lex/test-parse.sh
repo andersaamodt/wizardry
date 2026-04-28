@@ -1272,6 +1272,36 @@ EOF
   assert_output_contains "path target args: [preset extra]" || return 1
 }
 
+test_synonym_target_cannot_escape_spell_tree() {
+  saved_wizdir="${WIZARDRY_DIR-}"
+  saved_spellbook="${SPELLBOOK_DIR-}"
+
+  tmpdir=$(make_tempdir)
+  wizardry_dir="$tmpdir/wizardry"
+  spellbook="$tmpdir/spellbook"
+  mkdir -p "$wizardry_dir/spells/custom" "$wizardry_dir/outside" "$spellbook"
+
+  cat > "$wizardry_dir/outside/evil" <<'EOF'
+#!/bin/sh
+printf 'ESCAPED_SYNONYM_TARGET\n'
+EOF
+  chmod +x "$wizardry_dir/outside/evil"
+  printf '%s\n' 'go=../../outside/evil' > "$spellbook/.synonyms"
+
+  export WIZARDRY_DIR="$wizardry_dir"
+  export SPELLBOOK_DIR="$spellbook"
+  run_sourced_spell "spells/.imps/lex/parse" "go"
+
+  if [ -n "$saved_wizdir" ]; then export WIZARDRY_DIR="$saved_wizdir"; else unset WIZARDRY_DIR; fi
+  if [ -n "$saved_spellbook" ]; then export SPELLBOOK_DIR="$saved_spellbook"; else unset SPELLBOOK_DIR; fi
+
+  assert_failure || return 1
+  if printf '%s' "$OUTPUT" | grep -q "ESCAPED_SYNONYM_TARGET"; then
+    TEST_FAILURE_REASON="parse executed a synonym target outside the spell tree"
+    return 1
+  fi
+}
+
 test_synonym_target_strips_crlf() {
   saved_wizdir="${WIZARDRY_DIR-}"
   saved_spellbook="${SPELLBOOK_DIR-}"
@@ -1422,6 +1452,7 @@ run_test_case "Custom synonym multi-word uncastable (issue: leap to location sou
 run_test_case "Synonym lookup matches literal names" test_synonym_lookup_matches_literal_name
 run_test_case "Synonym target arguments are split" test_synonym_target_arguments_are_split
 run_test_case "Synonym target can use spell-relative path" test_synonym_target_can_use_spell_relative_path
+run_test_case "Synonym target cannot escape spell tree" test_synonym_target_cannot_escape_spell_tree
 run_test_case "Synonym target strips CRLF line endings" test_synonym_target_strips_crlf
 run_test_case "Parse depth does not leak between calls" test_parse_depth_does_not_leak_between_calls
 run_test_case "Parse does not clobber caller positionals" test_parse_does_not_clobber_caller_positionals
