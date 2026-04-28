@@ -36,6 +36,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Imported user/group names need validation before privilege changes, ownership changes, account creation, or service User/UserName rendering.
 - Allowlist/imported path files that drive recursive ownership or permission changes must reject root, project-root ancestors, non-directories, and other overly broad paths on both write and read.
 - Imported path values passed through `sh -c` must be supplied as argv or environment values, never interpolated into the shell program string.
+- Temporary directories derived from `TMPDIR` are imported paths too; probe scripts should test quote-bearing `TMPDIR` values before using `sh -c`.
 
 ### Argument Shape
 

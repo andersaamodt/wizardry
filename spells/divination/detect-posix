@@ -154,7 +154,7 @@ for probe in $probe_set; do
       fi
       ;;
     find)
-      if [ -n "$tmpdir" ] && sh -c "find '$tmpdir' -type f -name probe | grep -q 'probe'"; then
+      if [ -n "$tmpdir" ] && find "$tmpdir" -type f -name probe | grep -q 'probe'; then
         if [ "$verbose" -eq 1 ]; then
           printf '  ✓ %s\n' "find basics"
         fi
