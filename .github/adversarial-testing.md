@@ -67,6 +67,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Disable globbing before intentional word splitting of user-provided strings.
 - Test paths and values containing spaces, `*`, `-`, empty strings, and reserved words such as `from` or `to`.
 - Connector imps that append or prepend explicit operands should quote those operands separately from intentionally split accumulated argument strings.
+- Connector imps that replay accumulated command-argument strings should disable globbing around the intentional split, then restore the prior globbing mode.
 - Generated gloss scanners should test `WIZARDRY_DIR` and `SPELLBOOK_DIR` paths containing spaces, especially when feeding file lists to grep or find.
 - Use `--` when passing user paths to commands that support it.
 

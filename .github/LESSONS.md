@@ -253,3 +253,4 @@
 - User-controlled text passed to grep should use fixed-string matching, or path characters like `[` can break detection.
 - Delimited key files should compare the parsed key field literally; regex key matching can mutate or execute sibling records.
 - Generated shell glosses must validate imported synonym targets for shell metacharacters before emitting functions or aliases; rejecting only quotes still allows semicolon command injection.
+- Parser connector imps that intentionally split accumulated command-argument strings must temporarily disable globbing so literal `*` arguments do not expand against the caller's working directory.

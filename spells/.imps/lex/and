@@ -9,11 +9,19 @@ and_cmd_args=${2:-}
 shift 2 2>/dev/null || shift $#
 
 if [ -n "$and_cmd" ]; then
+  and_had_noglob=0
+  case $- in
+    *f*) and_had_noglob=1 ;;
+    *) set -f ;;
+  esac
   # shellcheck disable=SC2086
-  if "$and_cmd" $and_cmd_args; then
-    : # success
-  else
-    exit $?
+  "$and_cmd" $and_cmd_args
+  and_status=$?
+  if [ "$and_had_noglob" -eq 0 ]; then
+    set +f
+  fi
+  if [ "$and_status" -ne 0 ]; then
+    exit "$and_status"
   fi
 fi
 
@@ -23,4 +31,3 @@ fi
 
 and_lex_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 . "$and_lex_dir/parse"
-

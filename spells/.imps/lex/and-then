@@ -13,11 +13,19 @@ elif [ $# -gt 0 ]; then
 fi
 
 if [ -n "$at_cmd" ]; then
+  at_had_noglob=0
+  case $- in
+    *f*) at_had_noglob=1 ;;
+    *) set -f ;;
+  esac
   # shellcheck disable=SC2086
-  if "$at_cmd" $at_cmd_args; then
-    : # success
-  else
-    exit $?
+  "$at_cmd" $at_cmd_args
+  at_status=$?
+  if [ "$at_had_noglob" -eq 0 ]; then
+    set +f
+  fi
+  if [ "$at_status" -ne 0 ]; then
+    exit "$at_status"
   fi
 fi
 
@@ -27,4 +35,3 @@ fi
 
 at_lex_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 . "$at_lex_dir/parse"
-

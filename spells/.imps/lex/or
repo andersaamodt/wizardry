@@ -9,8 +9,18 @@ or_cmd_args=${2:-}
 shift 2 2>/dev/null || shift $#
 
 if [ -n "$or_cmd" ]; then
+  or_had_noglob=0
+  case $- in
+    *f*) or_had_noglob=1 ;;
+    *) set -f ;;
+  esac
   # shellcheck disable=SC2086
-  if "$or_cmd" $or_cmd_args; then
+  "$or_cmd" $or_cmd_args
+  or_status=$?
+  if [ "$or_had_noglob" -eq 0 ]; then
+    set +f
+  fi
+  if [ "$or_status" -eq 0 ]; then
     exit 0
   fi
 fi
@@ -21,4 +31,3 @@ fi
 
 or_lex_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 . "$or_lex_dir/parse"
-
