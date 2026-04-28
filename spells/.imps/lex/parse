@@ -219,7 +219,7 @@ while [ $attempt_len -gt 0 ]; do
       synonym_match=$(
         awk -F= -v key="$cmd_name" '$1 == key { print; exit }' "$spell_home/.synonyms" 2>/dev/null || true
       )
-      synonym_target=$(printf '%s' "$synonym_match" | sed 's/^[^=]*=//')
+      synonym_target=$(printf '%s' "$synonym_match" | sed 's/^[^=]*=//' | tr -d '\r')
     fi
     
     # Check default synonyms if not found in user synonyms
@@ -227,7 +227,7 @@ while [ $attempt_len -gt 0 ]; do
       synonym_match=$(
         awk -F= -v key="$cmd_name" '$1 == key { print; exit }' "$spell_home/.default-synonyms" 2>/dev/null || true
       )
-      synonym_target=$(printf '%s' "$synonym_match" | sed 's/^[^=]*=//')
+      synonym_target=$(printf '%s' "$synonym_match" | sed 's/^[^=]*=//' | tr -d '\r')
     fi
     
     # If synonym found, check if target is uncastable before recursing
@@ -377,7 +377,7 @@ if [ -f "$spell_home/.synonyms" ]; then
   synonym_match=$(
     awk -F= -v key="$first_word" '$1 == key { print; exit }' "$spell_home/.synonyms" 2>/dev/null || true
   )
-  synonym_target=$(printf '%s' "$synonym_match" | sed 's/^[^=]*=//')
+  synonym_target=$(printf '%s' "$synonym_match" | sed 's/^[^=]*=//' | tr -d '\r')
 fi
 
 # Check default synonyms if not found in user synonyms
@@ -385,7 +385,7 @@ if [ -z "$synonym_target" ] && [ -f "$spell_home/.default-synonyms" ]; then
   synonym_match=$(
     awk -F= -v key="$first_word" '$1 == key { print; exit }' "$spell_home/.default-synonyms" 2>/dev/null || true
   )
-  synonym_target=$(printf '%s' "$synonym_match" | sed 's/^[^=]*=//')
+  synonym_target=$(printf '%s' "$synonym_match" | sed 's/^[^=]*=//' | tr -d '\r')
 fi
 
 # If synonym found, recursively source parse with the target
@@ -431,7 +431,6 @@ fi
 
 printf 'parse: %s: command not found\n' "$first_word" >&2
 return 127
-
 
 
 

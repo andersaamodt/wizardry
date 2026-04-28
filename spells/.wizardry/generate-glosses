@@ -98,7 +98,7 @@ parse_enabled=1
 mud_config_file="$spell_home/.mud"
 if [ -f "$mud_config_file" ]; then
   # Read parse-enabled setting from config file
-  parse_setting=$(grep '^parse-enabled=' "$mud_config_file" 2>/dev/null | cut -d= -f2)
+  parse_setting=$(grep '^parse-enabled=' "$mud_config_file" 2>/dev/null | cut -d= -f2- | tr -d '\r')
   if [ -n "$parse_setting" ]; then
     parse_enabled=$parse_setting
   fi
@@ -582,6 +582,8 @@ synonym_file="$spell_home/.synonyms"
 if [ -f "$synonym_file" ]; then
   [ "$quiet" -eq 0 ] && info "Processing user synonyms..." >&2
   while IFS= read -r line || [ -n "$line" ]; do
+    line=$(printf '%s' "$line" | tr -d '\r')
+
     # Skip empty lines and comments
     case "$line" in
       ''|\#*) continue ;;
@@ -652,6 +654,8 @@ default_synonym_errors=0
 if [ -f "$default_synonym_file" ]; then
   [ "$quiet" -eq 0 ] && info "Processing default synonyms..." >&2
   while IFS= read -r line || [ -n "$line" ]; do
+    line=$(printf '%s' "$line" | tr -d '\r')
+
     # Skip empty lines and comments
     case "$line" in
       ''|\#*) continue ;;

@@ -44,6 +44,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Generated parser/gloss functions should be executed under `set -u` with optional environment variables unset, not only syntax-checked.
 - Parser and gloss configuration readers should include CRLF config files so disabled flags are not bypassed by carriage returns.
 - Parse-disabled generated aliases should be executed with trailing arguments, not only sourced or syntax-checked.
+- Parser and gloss synonym readers should execute CRLF synonym targets, not only syntax-check generated output; carriage returns in command names can pass `sh -n` and fail only at runtime.
 
 ### Shell Expansion
 
@@ -90,6 +91,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Treat release asset names, package names, bundle IDs, API filter values, and remote branch/track names as hostile input.
 - Validate every release credential identifier consistently across build, upload, and promote helpers before passing them to platform tools.
 - Release tag/version strings become generated project metadata; validate them before rendering build-system files.
+- Remote API response fields should be revalidated after structured parsing before they are reused in URLs or status rows.
 - Validate remote metadata before downloads, extraction, install paths, chmod, JWT signing, API URLs, or platform tools run.
 - Git remote URLs can contain CR/LF and path-shaped slugs; validate before printing status rows or constructing GitHub API URLs.
 - Stub network tools and feed hostile metadata instead of relying on live services for adversarial release tests.

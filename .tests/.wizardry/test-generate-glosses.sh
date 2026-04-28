@@ -443,6 +443,11 @@ jump() {"*|jump\(\)\ \{*)
       return 1
       ;;
   esac
+
+  if printf '%s' "$ERROR" | grep -q "integer expression expected"; then
+    TEST_FAILURE_REASON="CRLF parse-enabled=0 should not emit integer errors"
+    return 1
+  fi
 }
 
 test_parse_disabled_hyphenated_alias_accepts_arguments() {
@@ -476,6 +481,32 @@ EOF
   assert_output_contains "Usage:" || return 1
 }
 
+test_crlf_synonym_target_executes_generated_function() {
+  tmpdir=$(make_tempdir)
+  wizardry_dir="$tmpdir/wizardry"
+  spellbook="$tmpdir/spellbook"
+  spell_dir="$wizardry_dir/spells/test"
+  mkdir -p "$spell_dir" "$spellbook"
+
+  cat > "$spell_dir/target-spell" <<'EOF'
+#!/bin/sh
+printf 'target args: [%s]\n' "$*"
+EOF
+  chmod +x "$spell_dir/target-spell"
+  printf 'bad=target-spell\r\n' > "$spellbook/.synonyms"
+
+  WIZARDRY_DIR="$wizardry_dir" SPELLBOOK_DIR="$spellbook" \
+    run_spell spells/.wizardry/generate-glosses --output "$tmpdir/glosses" --quiet
+  assert_success || return 1
+
+  run_cmd env \
+    PATH="$spell_dir:$PATH" \
+    sh -c '. "$1"; bad arg' sh "$tmpdir/glosses"
+
+  assert_success || return 1
+  assert_output_contains "target args: [arg]" || return 1
+}
+
 test_synonym_invalid_chars_still_rejected() {
   # Test that truly invalid characters are still rejected
   tmpdir=$(make_tempdir)
@@ -503,6 +534,7 @@ run_test_case "single-quote synonym targets do not break gloss file" test_single
 run_test_case "first-word gloss handles unset WIZARDRY_DIR under set -u" test_first_word_gloss_handles_unset_wizardry_dir_under_set_u
 run_test_case "CRLF parse-disabled config suppresses first-word glosses" test_parse_disabled_crlf_config_suppresses_first_word_glosses
 run_test_case "parse-disabled hyphenated aliases accept arguments" test_parse_disabled_hyphenated_alias_accepts_arguments
+run_test_case "CRLF synonym targets execute generated functions" test_crlf_synonym_target_executes_generated_function
 run_test_case "synonyms with truly invalid chars still rejected" test_synonym_invalid_chars_still_rejected
 
 # Realistic tests - actually execute aliases in interactive shell context
