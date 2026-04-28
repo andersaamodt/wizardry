@@ -259,3 +259,4 @@
 - System membership readers must validate imported user names before tilde-expansion `eval`; hostile group records can otherwise execute command substitutions during status listing.
 - Candidate path lists should use newline-delimited records, not space-delimited strings; `$HOME` or config paths with spaces otherwise split into bogus candidates.
 - Site maintenance commands must validate site-name path segments before creating metadata files; create-time validation does not protect hand-created or path-shaped directories.
+- Newline-delimited internal lists must reject CR/LF at insertion time, or machine-readable output guards can run after a hostile value has already been split into benign-looking rows.

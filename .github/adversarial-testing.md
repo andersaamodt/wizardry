@@ -100,6 +100,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Tab-, pipe-, and comma-delimited records must reject delimiter characters in fields before persisting or printing rows for another parser.
 - Use delimiter-specific output sanitizers for row formats; `key=value` CR/LF cleanup does not protect TSV or pipe-separated columns.
 - Machine-readable `key=value` output must reject CR/LF in echoed values so hostile input cannot forge later keys.
+- Reject CR/LF before adding values to newline-delimited candidate lists, not only immediately before output; otherwise the list parser can split hostile values into safe-looking fragments.
 - Environment-derived fields such as shell, cwd, platform, and detected helper labels are untrusted when echoed in machine-readable status output.
 - Diagnostic/status commands are not exempt from output-shape rules; treat their paths and environment fields as hostile key/value values.
 - Validators that print `key=value` summaries should validate or sanitize the file paths they echo, not only the structured data being validated.
