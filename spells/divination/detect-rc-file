@@ -69,15 +69,18 @@ add_candidate() {
         if [ -z "$file" ]; then
                 return 0
         fi
-        for candidate in $rc_candidates; do
+        while IFS= read -r candidate || [ -n "$candidate" ]; do
                 if [ "$candidate" = "$file" ]; then
                         return 0
                 fi
-        done
+        done <<EOF
+$rc_candidates
+EOF
         if [ -z "$rc_candidates" ]; then
                 rc_candidates=$file
         else
-                rc_candidates="$rc_candidates $file"
+                rc_candidates="$rc_candidates
+$file"
         fi
 }
 
@@ -178,18 +181,24 @@ if [ -z "$rc_candidates" ]; then
 fi
 
 rc_file=''
-for candidate in $rc_candidates; do
+while IFS= read -r candidate || [ -n "$candidate" ]; do
+        [ -n "$candidate" ] || continue
         if [ -f "$candidate" ]; then
                 rc_file=$candidate
                 break
         fi
-done
+done <<EOF
+$rc_candidates
+EOF
 
 if [ -z "$rc_file" ]; then
-        for candidate in $rc_candidates; do
+        while IFS= read -r candidate || [ -n "$candidate" ]; do
+                [ -n "$candidate" ] || continue
                 rc_file=$candidate
                 break
-        done
+        done <<EOF
+$rc_candidates
+EOF
 fi
 
 if [ -z "$rc_file" ]; then

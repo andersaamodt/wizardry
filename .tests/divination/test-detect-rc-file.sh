@@ -79,6 +79,22 @@ test_prefers_shell_file_when_platform_unknown() {
   assert_output_contains "format=shell" || return 1
 }
 
+test_handles_home_path_with_spaces() {
+  tmpdir=$(make_tempdir)
+  home_dir="$tmpdir/home with spaces"
+  mkdir -p "$home_dir"
+  touch "$home_dir/.zshrc"
+
+  run_cmd env DETECT_RC_FILE_PLATFORM=unknown HOME="$home_dir" SHELL=/bin/zsh sh -c '
+    exec spells/divination/detect-rc-file
+  '
+
+  assert_success || return 1
+  assert_output_contains "platform=unknown" || return 1
+  assert_output_contains "rc_file=$home_dir/.zshrc" || return 1
+  assert_output_contains "format=shell" || return 1
+}
+
 test_handles_missing_home() {
   run_cmd env DETECT_RC_FILE_PLATFORM=unknown HOME= SHELL=sh sh -c '
     exec spells/divination/detect-rc-file
@@ -222,6 +238,7 @@ run_test_case "detect-rc-file picks preferred files for platform" test_picks_kno
 run_test_case "detect-rc-file emits nix formatting hints" test_emits_nix_format_hint
 run_test_case "detect-rc-file favors existing platform candidates" test_prefers_existing_platform_file
 run_test_case "detect-rc-file respects shell defaults on unknown platforms" test_prefers_shell_file_when_platform_unknown
+run_test_case "detect-rc-file handles HOME paths with spaces" test_handles_home_path_with_spaces
 run_test_case "detect-rc-file tolerates missing HOME" test_handles_missing_home
 run_test_case "detect-rc-file falls back to shell on NixOS without home-manager" test_nixos_falls_back_to_shell_rc
 run_test_case "detect-rc-file detects new home-manager path" test_nixos_detects_new_home_manager_path
