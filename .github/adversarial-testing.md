@@ -63,6 +63,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Sourced parser scratch variables should use parser-specific names because POSIX shell function variables still leak into callers.
 - Parser connector imps that hand off to `parse` must source it, not execute it as a script, and should test the handoff path with remaining words.
 - Parser-adjacent caches keyed by command name should reject path-shaped names before reading, deleting, or writing remembered choices.
+- Parser-adjacent caches should revalidate cached choice values against the current candidate set before execution.
 - Parser-adjacent candidate lists should not use `:`-delimited records for filesystem paths; valid paths can contain colons.
 - Synonym targets that include preset arguments must be tested through direct parser recursion, not only through generated shell glosses.
 - Generated parser/gloss code must use the same literal lookup semantics as the runtime parser; test regex-shaped names against near-match records.

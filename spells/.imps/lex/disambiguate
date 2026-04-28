@@ -25,15 +25,6 @@ esac
 dis_spellbook_dir="${SPELLBOOK_DIR:-$HOME/.spellbook}"
 dis_disambig_dir="$dis_spellbook_dir/.disambiguations"
 
-if [ -f "$dis_disambig_dir/$dis_cmd" ]; then
-  dis_saved_choice=$(cat "$dis_disambig_dir/$dis_cmd")
-  if command -v "$dis_saved_choice" >/dev/null 2>&1; then
-    "$dis_saved_choice" "$@"
-    exit $?
-  fi
-  rm -f "$dis_disambig_dir/$dis_cmd"
-fi
-
 dis_count=0
 dis_spell_path=""
 dis_sys_cmd=""
@@ -86,6 +77,16 @@ dis_sys_cmd=$(PATH="$dis_clean_path" command -v "$dis_cmd" 2>/dev/null || true)
 
 if [ -n "$dis_sys_cmd" ]; then
   dis_count=$((dis_count + 1))
+fi
+
+if [ -f "$dis_disambig_dir/$dis_cmd" ]; then
+  dis_saved_choice=$(cat "$dis_disambig_dir/$dis_cmd")
+  if [ -n "$dis_saved_choice" ] &&
+    { [ "$dis_saved_choice" = "$dis_spell_path" ] || [ "$dis_saved_choice" = "$dis_sys_cmd" ]; }; then
+    "$dis_saved_choice" "$@"
+    exit $?
+  fi
+  rm -f "$dis_disambig_dir/$dis_cmd"
 fi
 
 if [ "$dis_count" -eq 0 ]; then

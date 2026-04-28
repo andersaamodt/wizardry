@@ -73,11 +73,33 @@ test_disambiguate_rejects_path_shaped_command_names() {
   fi
 }
 
+test_disambiguate_ignores_untrusted_saved_choice() {
+  tmp=$(make_tempdir)
+  spellbook="$tmp/spellbook"
+  mkdir -p "$spellbook/.disambiguations"
+
+  cat > "$tmp/evil" <<'EOF'
+#!/bin/sh
+printf 'UNTRUSTED_CACHE_EXECUTED\n'
+EOF
+  chmod +x "$tmp/evil"
+  printf '%s\n' "$tmp/evil" > "$spellbook/.disambiguations/hello"
+
+  SPELLBOOK_DIR="$spellbook" run_spell spells/.imps/lex/disambiguate hello
+
+  assert_failure || return 1
+  if printf '%s' "$OUTPUT" | grep -q "UNTRUSTED_CACHE_EXECUTED"; then
+    TEST_FAILURE_REASON="disambiguate executed an untrusted saved choice"
+    return 1
+  fi
+}
+
 run_test_case "disambiguate is executable" test_disambiguate_is_executable
 run_test_case "disambiguate with no args succeeds" test_disambiguate_no_args_succeeds
 run_test_case "disambiguate runs single command" test_disambiguate_runs_single_command
 run_test_case "disambiguate finds wizardry spell portably" test_disambiguate_finds_wizardry_spell_portably
 run_test_case "disambiguate handles colon in spell path" test_disambiguate_handles_colon_in_spell_path
 run_test_case "disambiguate rejects path-shaped command names" test_disambiguate_rejects_path_shaped_command_names
+run_test_case "disambiguate ignores untrusted saved choice" test_disambiguate_ignores_untrusted_saved_choice
 
 finish_tests
