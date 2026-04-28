@@ -1168,12 +1168,47 @@ EOF
   assert_error_contains "my.alias: command not found" || return 1
 }
 
+test_parse_depth_does_not_leak_between_calls() {
+  saved_wizdir="${WIZARDRY_DIR-}"
+  tmpdir=$(make_tempdir)
+  test_spell_dir="$tmpdir/wizardry/spells/test"
+  mkdir -p "$test_spell_dir"
+
+  cat > "$test_spell_dir/noop" <<'EOF'
+#!/bin/sh
+printf 'noop\n'
+EOF
+  chmod +x "$test_spell_dir/noop"
+
+  export WIZARDRY_DIR="$tmpdir/wizardry"
+  run_cmd sh -c '
+    set -eu
+    i=0
+    while [ "$i" -lt 12 ]; do
+      set -- noop
+      . "$ROOT_DIR/spells/.imps/lex/parse"
+      i=$((i + 1))
+    done
+  '
+
+  if [ -n "$saved_wizdir" ]; then export WIZARDRY_DIR="$saved_wizdir"; else unset WIZARDRY_DIR; fi
+
+  assert_success || return 1
+  case "$ERROR" in
+    *"Maximum recursion depth"*)
+      TEST_FAILURE_REASON="parse depth leaked between independent calls"
+      return 1
+      ;;
+  esac
+}
+
 run_test_case "Single-word spell with argument (issue: prioritize mytask)" test_single_word_spell_with_arg
 run_test_case "Multi-word spell with argument (issue: magic missile target)" test_multiword_spell_with_arg
 run_test_case "Longest match priority (cast spell fireball)" test_longest_match_priority
 run_test_case "Custom synonym multi-word castable (issue: leap to location)" test_custom_synonym_multiword
 run_test_case "Custom synonym multi-word uncastable (issue: leap to location sourcing)" test_custom_synonym_uncastable
 run_test_case "Synonym lookup matches literal names" test_synonym_lookup_matches_literal_name
+run_test_case "Parse depth does not leak between calls" test_parse_depth_does_not_leak_between_calls
 
 # Test parse-enabled=0 behavior
 test_parse_disabled() {
