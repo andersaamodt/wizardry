@@ -43,6 +43,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Hand-edited synonym files are imported metadata; test quote-bearing targets so one malformed record cannot make every generated gloss unsourceable.
 - Generated parser/gloss functions should be executed under `set -u` with optional environment variables unset, not only syntax-checked.
 - Parser and gloss configuration readers should include CRLF config files so disabled flags are not bypassed by carriage returns.
+- Parse-disabled generated aliases should be executed with trailing arguments, not only sourced or syntax-checked.
 
 ### Shell Expansion
 

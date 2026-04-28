@@ -80,6 +80,7 @@
 - Generate-glosses must skip quote-bearing user synonym targets and hard-fail quote-bearing default targets so imported metadata cannot break the emitted shell file.
 - Generated first-word glosses must carry a generation-time `WIZARDRY_DIR` fallback so sourced glosses still work under `set -u` when the variable is not exported.
 - Parse must strip carriage returns from `parse-enabled` config values so CRLF `.mud` files cannot bypass a disabled parser.
+- Parse-disabled hyphenated aliases must route through generated helper functions so trailing arguments are passed to the sourced spell instead of becoming invalid alias-body syntax.
 
 
 - When a file is sourced (`. filename`), using `exit` exits the parent shell; use `return` instead (discovered via doppelganger failing to create directories) (3)
