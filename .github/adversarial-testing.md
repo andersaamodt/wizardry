@@ -21,6 +21,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 
 - Values used as path segments must reject `.`, `..`, `/`, `\`, empty values, and line breaks before side effects.
 - Site-name arguments for maintenance commands need the same path-segment validation as site creation before reading or creating per-site metadata.
+- Status, menu, daemon, and HTTPS wrappers need site-name validation too; read-only helpers can still leak outside state, re-exec as an imported user, or mutate daemon/certificate artifacts before downstream validators run.
 - Destructive site commands must reject path-shaped names before deriving both the site directory and companion data directory.
 - Stop/restart commands must reject path-shaped names before PID-file cleanup, daemon label construction, or service-unit lookup.
 - Path arguments that are echoed in machine-readable status rows should reject line breaks even when the filesystem can technically represent them.

@@ -51,6 +51,11 @@ if [ -z "$site_name" ]; then
       ;;
   esac
 fi
+case "$site_name" in
+  .|..|*[!a-zA-Z0-9._-]*)
+    die 2 "site-menu: invalid site name"
+    ;;
+esac
 
 sites_dir="$web_root"
 site_dir="$sites_dir/$site_name"
