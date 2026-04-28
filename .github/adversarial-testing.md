@@ -88,6 +88,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 ### Release And Remote Metadata
 
 - Treat release asset names, package names, bundle IDs, API filter values, and remote branch/track names as hostile input.
+- Validate every release credential identifier consistently across build, upload, and promote helpers before passing them to platform tools.
 - Validate remote metadata before downloads, extraction, install paths, chmod, JWT signing, API URLs, or platform tools run.
 - Git remote URLs can contain CR/LF and path-shaped slugs; validate before printing status rows or constructing GitHub API URLs.
 - Stub network tools and feed hostile metadata instead of relying on live services for adversarial release tests.
