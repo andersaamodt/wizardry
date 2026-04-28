@@ -110,6 +110,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Build helpers should reject explicit artifact output paths outside the artifact shape they own before recursive replacement.
 - Validate remote metadata before downloads, extraction, install paths, chmod, JWT signing, API URLs, or platform tools run.
 - Git remote URLs can contain CR/LF and path-shaped slugs; validate before printing status rows or constructing GitHub API URLs.
+- Git remote write commands should reject CR/LF before persisting URLs, even if imported remote status readers sanitize later.
 - Stub network tools and feed hostile metadata instead of relying on live services for adversarial release tests.
 
 ### GUI And Bridge Surfaces
