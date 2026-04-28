@@ -505,6 +505,11 @@ ssh() {"*|ssh\(\)\ \{*)
 }
 
 test_first_word_gloss_synonym_lookup_matches_literal_name() {
+  if ! command -v bash >/dev/null 2>&1; then
+    test_skip "requires bash"
+    return 0
+  fi
+
   tmpdir=$(make_tempdir)
   wizardry_dir="$tmpdir/wizardry"
   spellbook="$tmpdir/spellbook"
@@ -530,8 +535,9 @@ EOF
   assert_success || return 1
 
   cat > "$tmpdir/run.sh" <<EOF
-#!/bin/sh
+#!/usr/bin/env bash
 set -eu
+shopt -s expand_aliases
 PATH="$ROOT_DIR/spells/.imps/lex:\$PATH"
 export PATH
 WIZARDRY_DIR="$wizardry_dir"
@@ -542,7 +548,7 @@ my.alias do
 EOF
   chmod +x "$tmpdir/run.sh"
 
-  run_cmd sh "$tmpdir/run.sh"
+  run_cmd bash "$tmpdir/run.sh"
   assert_success || return 1
   assert_output_contains "GOOD_LITERAL_SPELL" || return 1
   case "$OUTPUT" in
