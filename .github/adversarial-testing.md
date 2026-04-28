@@ -96,6 +96,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Service account JSON should be treated as imported release metadata; validate identity fields before JWT rendering.
 - Deploy/signing environment values should be validated before remote-shell, codesign, or notarization tooling receives them.
 - Asset generators that print status rows should reject line-break paths and unsafe stored file extensions before writing metadata.
+- Platform asset staging should preflight required outputs before copying so missing fallbacks cannot leave stale files behind.
 - Validate remote metadata before downloads, extraction, install paths, chmod, JWT signing, API URLs, or platform tools run.
 - Git remote URLs can contain CR/LF and path-shaped slugs; validate before printing status rows or constructing GitHub API URLs.
 - Stub network tools and feed hostile metadata instead of relying on live services for adversarial release tests.
