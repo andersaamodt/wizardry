@@ -264,12 +264,20 @@ while [ $attempt_len -gt 0 ]; do
       fi
       WIZARDRY_PARSE_DEPTH=$parse_depth
       export WIZARDRY_PARSE_DEPTH
+      parse_had_noglob=0
+      case $- in
+        *f*) parse_had_noglob=1 ;;
+        *) set -f ;;
+      esac
+      # shellcheck disable=SC2086
+      set -- $synonym_target "$@"
+      if [ "$parse_had_noglob" -eq 0 ]; then
+        set +f
+      fi
       if command -v parse >/dev/null 2>&1; then
-        set -- "$synonym_target" "$@"
         . parse
         parse_status=$?
       elif [ -f "${WIZARDRY_DIR:-./.wizardry}/spells/.imps/lex/parse" ]; then
-        set -- "$synonym_target" "$@"
         . "${WIZARDRY_DIR:-./.wizardry}/spells/.imps/lex/parse"
         parse_status=$?
       else
@@ -377,12 +385,20 @@ if [ -n "$synonym_target" ]; then
   fi
   WIZARDRY_PARSE_DEPTH=$parse_depth
   export WIZARDRY_PARSE_DEPTH
+  parse_had_noglob=0
+  case $- in
+    *f*) parse_had_noglob=1 ;;
+    *) set -f ;;
+  esac
+  # shellcheck disable=SC2086
+  set -- $synonym_target "$@"
+  if [ "$parse_had_noglob" -eq 0 ]; then
+    set +f
+  fi
   if command -v parse >/dev/null 2>&1; then
-    set -- "$synonym_target" "$@"
     . parse
     parse_status=$?
   elif [ -f "${WIZARDRY_DIR:-./.wizardry}/spells/.imps/lex/parse" ]; then
-    set -- "$synonym_target" "$@"
     . "${WIZARDRY_DIR:-./.wizardry}/spells/.imps/lex/parse"
     parse_status=$?
   else
@@ -400,7 +416,6 @@ fi
 
 printf 'parse: %s: command not found\n' "$first_word" >&2
 return 127
-
 
 
 
