@@ -77,6 +77,7 @@
 - Generated first-word glosses must use literal synonym key matching just like parse, or regex-shaped command names can route to near-match synonyms.
 - Parser synonym targets with category prefixes must resolve as spell-relative paths under `WIZARDRY_DIR/spells`, not as ordinary command names or arbitrary filesystem paths.
 - Generate first-word gloss functions only for POSIX function identifiers; special-character spell or synonym names can otherwise make the whole generated gloss file unsourceable.
+- Generate-glosses must skip quote-bearing user synonym targets and hard-fail quote-bearing default targets so imported metadata cannot break the emitted shell file.
 
 
 - When a file is sourced (`. filename`), using `exit` exits the parent shell; use `return` instead (discovered via doppelganger failing to create directories) (3)
