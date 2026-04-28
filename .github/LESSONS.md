@@ -262,6 +262,7 @@
 - Destructive site commands must validate site-name path segments before deriving deletion paths; confirmation prompts do not protect against `../` deleting outside the sites root.
 - Stop commands must validate site-name path segments before PID-file cleanup; stale PID cleanup is still a filesystem write.
 - Permission repair commands must validate site-name path segments before mkdir, chown, chmod, and allowlist processing.
+- Build commands must validate site-name path segments before generated output, cache fallback, hooks, or feed artifacts are created.
 - Template creation commands must validate site names before making the output directory, and resolver candidate lists must preserve spaces in `WIZARDRY_DIR` and `$HOME`.
 - Template update commands must share creation-time site-name validation and newline-safe template root resolution before deleting template-owned subtrees.
 - Newline-delimited internal lists must reject CR/LF at insertion time, or machine-readable output guards can run after a hostile value has already been split into benign-looking rows.

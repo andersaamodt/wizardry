@@ -31,6 +31,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Template refresh commands must share creation-time site-name validation before removing template-owned subtrees.
 - Mutation commands must enforce the same path output contract as list/status commands before writing metadata or renaming folders.
 - Rebuild/run/install-style commands that print machine-readable rows must reject line-break paths before executing side effects, not only before status-only reads.
+- Build commands must validate site/path labels before creating generated output, cache directories, hooks, or feed artifacts.
 - Values interpolated into regex matching need stricter name validation than path quoting alone provides.
 - Composite refs such as `source:name` must reject unsupported namespaces, missing separators, repeated separators, and trailing words.
 - After rejecting a path-like value, assert sibling/outside files were not created, modified, chmodded, or deleted.

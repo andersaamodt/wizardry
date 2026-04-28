@@ -31,6 +31,12 @@ if [ -z "$site_name" ]; then
   die 2 "build: SITENAME required"
 fi
 
+case "$site_name" in
+  .|..|*[!a-zA-Z0-9._-]*)
+    die 2 "build: invalid site name"
+    ;;
+esac
+
 # Parse options
 full_rebuild=0
 watch_mode=0

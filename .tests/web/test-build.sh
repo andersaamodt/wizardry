@@ -412,11 +412,41 @@ EOF
   rm -rf "$test_web_root" "$stub_dir"
 }
 
+test_build_rejects_path_shaped_site_name() {
+  skip-if-compiled || return $?
+
+  tmpdir=$(make_tempdir)
+  web_root="$tmpdir/sites"
+  escape_dir="$tmpdir/escape"
+  mkdir -p "$web_root" "$escape_dir/site/pages"
+  cat > "$escape_dir/site.conf" <<'EOF'
+template=demo
+EOF
+  cat > "$escape_dir/site/pages/index.md" <<'EOF'
+# Escape
+EOF
+
+  stub_dir=$(make_build_stub_dir)
+
+  PATH="$stub_dir:$PATH" WEB_WIZARDRY_ROOT="$web_root" WIZARDRY_DIR="$ROOT_DIR" \
+    run_spell spells/web/build ../escape --full
+
+  assert_failure || return 1
+  assert_error_contains "invalid site name" || return 1
+  if [ -d "$escape_dir/build" ]; then
+    TEST_FAILURE_REASON="build created output outside WEB_WIZARDRY_ROOT"
+    return 1
+  fi
+
+  rm -rf "$tmpdir" "$stub_dir"
+}
+
 run_test_case "build --help works" test_build_help
 run_test_case "build generates output for every template" test_build_generates_html_for_every_template
 run_test_case "build cache falls back to site data cache" test_build_cache_falls_back_to_site_data_only
 run_test_case "build runs site pre-build hook" test_build_runs_site_pre_build_hook
 run_test_case "build appends cache bust tokens to local static assets" test_build_adds_cache_bust_for_local_static_assets
+run_test_case "build rejects path-shaped site names" test_build_rejects_path_shaped_site_name
 if [ -d "$ROOT_DIR/web/blog" ]; then
   run_test_case "blog build renders nested posts and feeds" test_build_blog_generates_posts_and_feeds
 fi
