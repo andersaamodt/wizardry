@@ -32,6 +32,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Test path-like values in config files too; imported metadata is input, not trusted source code.
 - Hand-edited config values that feed daemon/service config need read-time validation even when writer commands validate them.
 - Domain/host identifiers imported from config need read-time validation before TLS tools, generated paths, service config, or machine-readable output reuse them.
+- URL fields assembled from generated config need each component revalidated immediately before printing, even when the generator normally writes safe defaults.
 - Imported user/group names need validation before privilege changes, ownership changes, account creation, or service User/UserName rendering.
 - Allowlist/imported path files that drive recursive ownership or permission changes must reject root, project-root ancestors, non-directories, and other overly broad paths on both write and read.
 - Imported path values passed through `sh -c` must be supplied as argv or environment values, never interpolated into the shell program string.
