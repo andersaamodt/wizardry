@@ -14,6 +14,9 @@ USAGE
 esac
 
 set -eu
+syncthing_cmd=${SYNCTHING:-syncthing}
+syncthing_curl=${CURL:-curl}
+syncthing_xdg_bin_home=${XDG_BIN_HOME-}
 . env-clear
 
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
@@ -26,10 +29,37 @@ syncthing_has_cmd() {
   command -v "$1" >/dev/null 2>&1
 }
 
+syncthing_curl_cmd() {
+  printf '%s\n' "$syncthing_curl"
+}
+
+syncthing_has_curl() {
+  command -v "$(syncthing_curl_cmd)" >/dev/null 2>&1
+}
+
+syncthing_fetch_url() {
+  "$(syncthing_curl_cmd)" -fsSL "$@"
+}
+
+syncthing_download_url_is_safe() {
+  url=${1-}
+  case "$url" in
+    *[[:space:]]*)
+      return 1
+      ;;
+  esac
+  case "$url" in
+    https://github.com/syncthing/syncthing/releases/download/*)
+      return 0
+      ;;
+  esac
+  return 1
+}
+
 install_syncthing_cli_supported() {
-  syncthing_has_cmd syncthing || return 1
-  syncthing version 2>/dev/null | grep -Eiq '^syncthing v|^syncthing '
-  syncthing cli --help 2>/dev/null | grep -q 'Command line interface'
+  command -v "$syncthing_cmd" >/dev/null 2>&1 || return 1
+  "$syncthing_cmd" version 2>/dev/null | grep -Eiq '^syncthing v|^syncthing '
+  "$syncthing_cmd" cli --help 2>/dev/null | grep -q 'Command line interface'
 }
 
 syncthing_run_privileged() {
@@ -52,6 +82,10 @@ syncthing_run_privileged() {
 }
 
 install_syncthing_target_bin_dir() {
+  if [ -n "$syncthing_xdg_bin_home" ]; then
+    printf '%s\n' "$syncthing_xdg_bin_home"
+    return 0
+  fi
   if [ "$(id -u)" -eq 0 ]; then
     printf '%s\n' /usr/local/bin
     return 0
@@ -117,13 +151,15 @@ install_syncthing_platform_suffix() {
 }
 
 install_syncthing_release_binary() {
-  syncthing_has_cmd curl || return 1
+  syncthing_has_curl || return 1
   syncthing_has_cmd tar || return 1
   platform=$(install_syncthing_platform_suffix 2>/dev/null || true)
   [ -n "$platform" ] || return 1
 
   release_json=$(
-    curl -fsSL https://api.github.com/repos/syncthing/syncthing/releases/latest 2>/dev/null || true
+    syncthing_fetch_url \
+      https://api.github.com/repos/syncthing/syncthing/releases/latest \
+      2>/dev/null || true
   )
   [ -n "$release_json" ] || return 1
   release_json_one_line=$(printf '%s' "$release_json" | tr '\n' ' ')
@@ -137,12 +173,17 @@ install_syncthing_release_binary() {
       asset_ext=".tar.gz"
       ;;
   esac
-  download_url=$(printf '%s\n' "$release_json_one_line" | sed -n "s/.*\"browser_download_url\":[[:space:]]*\"\\([^\"]*${asset_suffix}[^\"]*${asset_ext}\\)\".*/\\1/p" | head -n 1)
+  download_url=$(
+    printf '%s\n' "$release_json_one_line" |
+      sed -n "s/.*\"browser_download_url\":[[:space:]]*\"\\([^\"]*${asset_suffix}[^\"]*${asset_ext}\\)\".*/\\1/p" |
+      head -n 1
+  )
   [ -n "$download_url" ] || return 1
+  syncthing_download_url_is_safe "$download_url" || return 1
 
   tmp_dir=$(mktemp -d "${TMPDIR:-/tmp}/syncthing-release.XXXXXX")
   archive_path="$tmp_dir/archive${asset_ext}"
-  curl -fsSL "$download_url" -o "$archive_path" || {
+  syncthing_fetch_url "$download_url" -o "$archive_path" || {
     rm -rf "$tmp_dir"
     return 1
   }
@@ -211,5 +252,6 @@ if install_syncthing_cli_supported; then
   exit 0
 fi
 
-syncthing_say "install-syncthing: installation incomplete. Ensure a modern Syncthing with CLI support is on PATH." >&2
+syncthing_say \
+  "install-syncthing: installation incomplete. Ensure a modern Syncthing with CLI support is on PATH." >&2
 exit 1
