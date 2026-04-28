@@ -67,6 +67,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - If a command must execute a control-character-bearing path, keep the execution value separate from the sanitized display/status value printed as `key=value`.
 - Helper-script stdout and filesystem entry names are untrusted when they are forwarded into GUI/backend records; test installed modules with delimiter-shaped filenames and status lines.
 - Catalog/list/count commands must apply the same identifier validator as the command that later executes the selected item.
+- Read/import paths for hand-edited metadata must revalidate the same delimiters and identifiers enforced by create/update commands.
 - Metadata conversions should stage changes and replace originals only after all writes succeed.
 - Front-matter parsing must preserve delimiter-like body content after the closing delimiter.
 - Config paths rendered into another language or config format must reject that renderer's quote, variable, comment, and statement delimiters.
