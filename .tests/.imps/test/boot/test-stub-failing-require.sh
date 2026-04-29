@@ -10,13 +10,13 @@ done
 test_creates_stub() {
   tmpdir=$(make_tempdir)
   stub_failing_require "$tmpdir"
-  [ -x "$tmpdir/require" ]
+  [ -x "$tmpdir/require-command" ]
 }
 
 test_stub_fails_with_message() {
   tmpdir=$(make_tempdir)
   stub_failing_require "$tmpdir"
-  output=$("$tmpdir/require" 2>&1 || true)
+  output=$("$tmpdir/require-command" ignored menu 2>&1 || true)
   case "$output" in
     *"menu"*) : ;;
     *) return 1 ;;
