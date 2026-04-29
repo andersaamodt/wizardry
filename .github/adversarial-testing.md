@@ -179,6 +179,8 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Platform asset staging should preflight required outputs before copying so missing fallbacks cannot leave stale files behind.
 - Preflight path canonicalization must be side-effect-free; rejected destinations should not create missing parent directories under source trees.
 - Installer-generated shell or desktop launchers must reject or structurally escape path values containing shell-expansion characters.
+- Linux `.desktop` `Exec` fields need quoted paths and must treat `%` in generated paths as field-code injection unless escaped.
+- AppImage and launcher installers should reject remote artifact names that would break generated shell scripts, including `"`, `$`, backticks, and backslashes.
 - Native packaging entrypoints should validate bundle IDs again before rendering plist or project metadata.
 - Native app installers should move an existing app bundle to a restorable backup before moving the staged replacement into place; never delete the existing bundle before the final replacement operation succeeds.
 - Backend status rows should sanitize XDG/env-derived file paths, including preference write confirmations.
