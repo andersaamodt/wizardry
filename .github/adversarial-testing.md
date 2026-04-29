@@ -55,6 +55,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Temporary directories derived from `TMPDIR` are imported paths too; probe scripts should test quote-bearing `TMPDIR` values before using `sh -c`.
 - PTY/socat helpers should execute a generated, shell-quoted command script instead of flattening `"$@"` into one `EXEC:` string; test command paths and arguments containing spaces.
 - Shell snippets embedded in tool address strings, such as socat `SYSTEM:` addresses, must shell-quote temp-file paths because `TMPDIR` is imported metadata.
+- Prefer one maintained PTY runner over duplicate socat command builders; wrapper helpers should delegate so argv quoting and timeout behavior stay consistent.
 
 ### Argument Shape
 
@@ -85,6 +86,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Parser and gloss synonym readers should execute CRLF synonym targets, not only syntax-check generated output; carriage returns in command names can pass `sh -n` and fail only at runtime.
 - Parser system-command fallbacks should preserve nonzero statuses from found utilities instead of rewriting failures as command-not-found.
 - Parser system-command fallbacks should execute the found command with only the remaining operands, not repeat the command word as argv[1].
+- Test files should call the current bootstrap helper names and current spell paths; stale underscored helper names can hide complete test-file non-execution.
 
 ### Shell Expansion
 
@@ -208,10 +210,12 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Do not suppress tool stderr until after validating user-facing option errors.
 - Check cleanup and temp-file removal on both success and failure paths.
 - Test skip helpers are part of harness correctness: a skipped case should return the harness skip status and increment skip counters, not print an error and pass.
+- Test-suite file modes are part of the contract; executable test files must be committed with executable bits so sweeps do not depend on the caller using `sh test-file`.
 
 ### Platform Differences
 
 - Prefer POSIX constructs and document any exception.
+- When a `case` statement appears directly inside `$()`, use the leading-parenthesis pattern form such as `(Linux*)`; some `/bin/sh` implementations reject `Linux*)` there even though interactive shells may accept it.
 - Exercise BSD/GNU differences for `find`, `stat`, `sed`, `date`, permission predicates, and xattr tools.
 - Spell discovery should avoid `find -executable`; use `find -type f` plus `[ -x ]` filtering and test on BSD/macOS.
 - Test behavior when optional helper commands are missing by stubbing `PATH`.

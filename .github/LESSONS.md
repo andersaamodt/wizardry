@@ -300,3 +300,7 @@
 - PTY helpers must not flatten `"$@"` into socat `EXEC:` strings; generate a command script with each argv element shell-quoted so paths and arguments containing spaces survive.
 - Socat `SYSTEM:` address fragments are shell programs; quote imported temp-file paths before embedding them because quote-bearing `TMPDIR` can otherwise break the helper.
 - Test skip helpers must return the harness skip status, not just print skip text; otherwise skipped adversarial cases can be reported as passes with hidden shell errors.
+- Prefer delegating old PTY wrappers to the maintained PTY runner instead of keeping parallel socat command construction logic.
+- Test files are executable artifacts; missing executable bits are real sweep failures when tests are invoked directly.
+- Test files need adversarial audits too: stale helper names, stale spell paths, and stale stub contracts can make entire tests fail or stop exercising the intended behavior.
+- In `/bin/sh`, `case` statements directly inside `$()` may need leading-parenthesis patterns like `(Darwin*)`; syntax that works in zsh can fail before a test ever runs.
