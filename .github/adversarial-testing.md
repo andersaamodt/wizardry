@@ -127,8 +127,10 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Imported profile/config fields must be sanitized at output time even when only a subset of those fields drive filesystem or command actions.
 - Fallback readers for cache/state directories should be audited like importers: unsafe filenames and record delimiters can bypass the primary writer.
 - Metadata conversions should stage changes and replace originals only after all writes succeed.
+- Optional catalog/project tests should skip when an optional checkout is absent but still fail when the checkout exists and required files are broken.
 - Front-matter parsing must preserve delimiter-like body content after the closing delimiter.
 - Config paths rendered into another language or config format must reject that renderer's quote, variable, comment, and statement delimiters.
+- Display names are release inputs when they become bundle paths, archive names, plist text, or build metadata; validate them beyond "single line".
 - Config scalars rendered into daemon/server config files should be revalidated at render time; create-time prompts do not protect hand-edited `key=value` files.
 - Renderer-specific validation should cover every imported field embedded in that renderer, not just the obvious public URL fields.
 - Site names rendered into nginx/Tor/service config must be validated before file writes and before regex matching against existing config.
