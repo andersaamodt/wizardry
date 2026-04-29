@@ -124,6 +124,11 @@ fi
 site_user_default="ww_$(printf '%s' "$site_name" | tr 'A-Z' 'a-z' | tr '.-' '__')"
 site_user=$(config-get "$site_dir/site.conf" site-user 2>/dev/null || printf '')
 [ -z "$site_user" ] && site_user="$site_user_default"
+case "$site_user" in
+  ''|.|..|-*|*[!a-zA-Z0-9._-]*)
+    die 2 "configure-nginx: invalid site-user in site.conf"
+    ;;
+esac
 
 # Note: configure-nginx runs as actual user to modify both nginx.conf and site.conf
 # nginx.conf is owned by site user, but we can write to it as actual user

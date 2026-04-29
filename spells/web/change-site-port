@@ -52,6 +52,11 @@ fi
 site_user_default="ww_$(printf '%s' "$site_name" | tr 'A-Z' 'a-z' | tr '.-' '__')"
 site_user=$(config-get "$site_dir/site.conf" site-user 2>/dev/null || printf '')
 [ -z "$site_user" ] && site_user="$site_user_default"
+case "$site_user" in
+  ''|.|..|-*|*[!a-zA-Z0-9._-]*)
+    die 2 "change-site-port: invalid site-user in site.conf"
+    ;;
+esac
 interactive_input=0
 if [ -t 0 ] || [ -r /dev/tty ]; then
   interactive_input=1

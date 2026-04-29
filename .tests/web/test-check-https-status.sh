@@ -58,8 +58,32 @@ test_check_https_status_configured() {
   rm -rf "$test_cert_dir"
 }
 
+test_check_https_status_rejects_invalid_imported_site_user() {
+  skip-if-compiled || return $?
+
+  test_web_root=$(temp-dir web-wizardry-test)
+  export WEB_WIZARDRY_ROOT="$test_web_root"
+
+  mkdir -p "$test_web_root/mytestsite"
+  cat > "$test_web_root/mytestsite/site.conf" <<'EOF'
+site-name=mytestsite
+site-user=#0
+port=8080
+domain=localhost
+https=false
+EOF
+
+  run_spell spells/web/check-https-status mytestsite
+  assert_status 2 || return 1
+  assert_error_contains "invalid site-user" || return 1
+
+  rm -rf "$test_web_root"
+}
+
 run_test_case "check-https-status --help" test_check_https_status_help
 run_test_case "check-https-status returns 1 when HTTPS not configured" test_check_https_status_not_configured
 run_test_case "check-https-status returns 0 when HTTPS configured" test_check_https_status_configured
+run_test_case "check-https-status rejects invalid imported site-user" \
+  test_check_https_status_rejects_invalid_imported_site_user
 
 finish_tests
