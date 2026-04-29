@@ -70,6 +70,35 @@ site_user_default="ww_$(printf '%s' "$site_name" | tr 'A-Z' 'a-z' | tr '.-' '__'
 site_user=$(config-get "$site_dir/site.conf" site-user 2>/dev/null || printf '')
 [ -z "$site_user" ] && site_user="$site_user_default"
 
+shell_quote() {
+  printf "'"
+  printf '%s' "$1" | sed "s/'/'\\\\''/g"
+  printf "'"
+}
+
+valid_port() {
+  port_value=$1
+  case "$port_value" in
+    ''|*[!0-9]*)
+      return 1
+      ;;
+  esac
+  [ "$port_value" -ge 1 ] && [ "$port_value" -le 65535 ]
+}
+
+valid_requirement_id() {
+  requirement_value=$1
+  case "$requirement_value" in
+    ''|.|..|*/*|*\\*|*[!A-Za-z0-9._-]*)
+      return 1
+      ;;
+  esac
+}
+
+quoted_site_name=$(shell_quote "$site_name")
+quoted_site_dir=$(shell_quote "$site_dir")
+quoted_site_data_dir=$(shell_quote "$site_data_dir")
+
 # Note: We don't re-exec as site user here - individual commands will use sudo if needed
 # This allows "Open site directory" and "Open site data" to work as the actual user
 if [ -n "$site_user" ] && ! id -u "$site_user" >/dev/null 2>&1; then
@@ -108,6 +137,10 @@ while true; do
   # Get port from config
   port=$(config-get "$site_dir/site.conf" port 2>/dev/null || true)
   [ -z "$port" ] && port=8080
+  if ! valid_port "$port"; then
+    warn "site-menu: invalid configured port '$port'; using 8080 for menu actions."
+    port=8080
+  fi
 
   # Check if tor hosting is enabled for this site
   # Only show tor hosting option if tor is installed
@@ -119,15 +152,15 @@ while true; do
       if [ -n "$tor_config_path" ] && [ -f "$tor_config_path" ]; then
         if grep -q "^HiddenServiceDir.*${site_name}" "$tor_config_path" 2>/dev/null; then
           tor_hosting_enabled=1
-          tor_hosting_option="[X] Tor hosting%toggle-site-tor-hosting \"$site_name\""
+          tor_hosting_option="[X] Tor hosting%toggle-site-tor-hosting $quoted_site_name"
         else
-          tor_hosting_option="[ ] Tor hosting%toggle-site-tor-hosting \"$site_name\""
+          tor_hosting_option="[ ] Tor hosting%toggle-site-tor-hosting $quoted_site_name"
         fi
       else
-        tor_hosting_option="[ ] Tor hosting%toggle-site-tor-hosting \"$site_name\""
+        tor_hosting_option="[ ] Tor hosting%toggle-site-tor-hosting $quoted_site_name"
       fi
     else
-      tor_hosting_option="[ ] Tor hosting%toggle-site-tor-hosting \"$site_name\""
+      tor_hosting_option="[ ] Tor hosting%toggle-site-tor-hosting $quoted_site_name"
     fi
   fi
 
@@ -151,19 +184,19 @@ while true; do
   https_option=""
   if check-https-status "$site_name" 2>/dev/null; then
     # HTTPS is configured - show renew and disable options
-    https_option="Renew HTTPS%renew-https \"$site_name\""
-    https_disable_option="Disable HTTPS%disable-https \"$site_name\""
+    https_option="Renew HTTPS%renew-https $quoted_site_name"
+    https_disable_option="Disable HTTPS%disable-https $quoted_site_name"
   else
     # HTTPS is not configured - show setup option
-    https_option="Set up HTTPS%setup-https \"$site_name\""
+    https_option="Set up HTTPS%setup-https $quoted_site_name"
     https_disable_option=""
   fi
 
   serve_on_startup_option=""
   if is-site-daemon-enabled "$site_name" 2>/dev/null; then
-    serve_on_startup_option="[X] Serve on startup%disable-site-daemon \"$site_name\""
+    serve_on_startup_option="[X] Serve on startup%disable-site-daemon $quoted_site_name"
   else
-    serve_on_startup_option="[ ] Serve on startup%enable-site-daemon \"$site_name\""
+    serve_on_startup_option="[ ] Serve on startup%enable-site-daemon $quoted_site_name"
   fi
 
   autorebuild_toggle_option=""
@@ -171,9 +204,9 @@ while true; do
   autorebuild_enabled=0
   if printf '%s\n' "$autorebuild_status_output" | grep -q '^enabled=yes$'; then
     autorebuild_enabled=1
-    autorebuild_toggle_option="[X] Auto-rebuild watcher%site-autorebuild toggle \"$site_name\""
+    autorebuild_toggle_option="[X] Auto-rebuild watcher%site-autorebuild toggle $quoted_site_name"
   else
-    autorebuild_toggle_option="[ ] Auto-rebuild watcher%site-autorebuild toggle \"$site_name\""
+    autorebuild_toggle_option="[ ] Auto-rebuild watcher%site-autorebuild toggle $quoted_site_name"
   fi
 
   exit_label=$(exit-label)
@@ -204,19 +237,20 @@ while true; do
   # Conditional: Open in browser (serving only)
   open_browser_option=""
   if [ "$is_serving" -eq 1 ]; then
-    open_browser_cmd="browse-url \"http://localhost:$port\""
+    open_browser_url=$(shell_quote "http://localhost:$port")
+    open_browser_cmd="browse-url $open_browser_url"
     open_browser_cmd_wrapped=$(wrap_cmd "Open in browser" "$open_browser_cmd")
     open_browser_option="Open in browser%$open_browser_cmd_wrapped"
   fi
   
   # Always: Build all & restart server
-  build_restart_cmd="web-wizardry rebuild \"$site_name\""
+  build_restart_cmd="web-wizardry rebuild $quoted_site_name"
   build_restart_cmd_wrapped=$(wrap_cmd "Build all & restart server" \
     "$build_restart_cmd")
   
   # Always: Update from template
   update_template_cmd_wrapped=$(wrap_cmd "Update from template" \
-    "update-from-template \"$site_name\"")
+    "update-from-template $quoted_site_name")
 
   site_requirements_file="$site_dir/wizardry-server-requirements.conf"
   if [ ! -f "$site_requirements_file" ] && [ "$site_template" = "blog" ] && [ -f "$HOME/git/nostr-blog/wizardry-server-requirements.conf" ]; then
@@ -256,6 +290,10 @@ while true; do
       requirement_id=${requirement_line%%=*}
       requirement_id=$(printf '%s' "$requirement_id" | tr -d '[:space:]')
       [ -n "$requirement_id" ] || continue
+      if ! valid_requirement_id "$requirement_id"; then
+        warn "site-menu: skipping invalid requirement id '$requirement_id'"
+        continue
+      fi
       label=$(requirement_meta_value "$requirement_id" label 2>/dev/null || \
         printf '%s' "$requirement_id")
       install_label=$(requirement_meta_value "$requirement_id" install_label 2>/dev/null || \
@@ -280,7 +318,7 @@ while true; do
   mirror_nostr_option=""
   if [ "$site_template" = "blog" ]; then
     mirror_nostr_cmd_wrapped=$(wrap_cmd "Mirror Nostr events" \
-      "blog-nostr-mirror \"$site_name\"")
+      "blog-nostr-mirror $quoted_site_name")
     mirror_nostr_option="Mirror Nostr events%$mirror_nostr_cmd_wrapped"
   fi
   
@@ -293,34 +331,34 @@ while true; do
   
   # Always: Open site directory
   open_dir_cmd_wrapped=$(wrap_cmd "Open site directory" \
-    "browse \"$site_dir\"")
+    "browse $quoted_site_dir")
   
   # Always: Open site data
   open_data_cmd_wrapped=$(wrap_cmd "Open site data" \
-    "browse \"$site_data_dir\"")
+    "browse $quoted_site_data_dir")
   
   # Conditional: Restart server (serving only)
   restart_server_option=""
   if [ "$is_serving" -eq 1 ]; then
     restart_cmd_wrapped=$(wrap_cmd "Restart server" \
-      "restart-site \"$site_name\"")
+      "restart-site $quoted_site_name")
     restart_server_option="Restart server%$restart_cmd_wrapped"
   fi
   
   # Always: Start/Stop server toggle
   if [ "$is_serving" -eq 1 ]; then
-    server_toggle_cmd=$(wrap_cmd "Stop server" "stop-site \"$site_name\"")
+    server_toggle_cmd=$(wrap_cmd "Stop server" "stop-site $quoted_site_name")
     server_toggle_option="Stop server%$server_toggle_cmd"
   else
-    server_toggle_cmd=$(wrap_cmd "Start server" "serve-site \"$site_name\"")
+    server_toggle_cmd=$(wrap_cmd "Start server" "serve-site $quoted_site_name")
     server_toggle_option="Start server%$server_toggle_cmd"
   fi
   
   # Always: Build
-  build_cmd_wrapped=$(wrap_cmd "Build" "build \"$site_name\"")
+  build_cmd_wrapped=$(wrap_cmd "Build" "build $quoted_site_name")
   
   # Always: Build all
-  build_all_cmd_wrapped=$(wrap_cmd "Build all" "build \"$site_name\" --full")
+  build_all_cmd_wrapped=$(wrap_cmd "Build all" "build $quoted_site_name --full")
   
   
   # Conditional: Tor hosting toggle
@@ -350,7 +388,7 @@ while true; do
   
   # Always: Change port
   port_cmd_wrapped=$(wrap_cmd "Change port (current: $port)" \
-    "change-site-port \"$site_name\"")
+    "change-site-port $quoted_site_name")
   
   # Conditional: HTTPS setup/renew
   if [ -n "$https_option" ]; then
@@ -371,22 +409,22 @@ while true; do
   
   # Always: Rebuild nginx.conf
   nginx_conf_cmd_wrapped=$(wrap_cmd "Rebuild nginx.conf" \
-    "configure-nginx \"$site_name\"")
+    "configure-nginx $quoted_site_name")
   
   # Always: Repair/Create server daemon
   daemon_cmd_wrapped=$(wrap_cmd "$daemon_label" \
-    "repair-site-daemon \"$site_name\"")
+    "repair-site-daemon $quoted_site_name")
   
   # Always: Fix permissions
   perms_cmd_wrapped=$(wrap_cmd "Fix permissions" \
-    "fix-site-security \"$site_name\"")
+    "fix-site-security $quoted_site_name")
   
   # Always: Manage allowed dirs
   dirs_cmd_wrapped=$(wrap_cmd "Manage allowed dirs" \
-    "manage-allowed-dirs \"$site_name\"")
+    "manage-allowed-dirs $quoted_site_name")
 
   # Always: Delete site
-  delete_cmd_wrapped=$(wrap_cmd "Delete site" "delete-site \"$site_name\"")
+  delete_cmd_wrapped=$(wrap_cmd "Delete site" "delete-site $quoted_site_name")
   
   # Always: Exit
   exit_cmd_wrapped=$(wrap_cmd "$exit_label" "kill -TERM \$PPID")

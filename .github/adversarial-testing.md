@@ -172,6 +172,8 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Menu action strings that include paths should be tested with spaces and quotes because menu execution commonly evals the action payload.
 - Menu action strings that include names/labels should be tested with shell metacharacters too; downstream validation does not protect the menu eval boundary.
 - Menu actions built from imported metadata should shell-quote every embedded field, including fields that the destination command will validate later.
+- Menu actions that render config-derived URLs or ports should validate those fields before interpolation; double-quoted command strings still evaluate command substitutions.
+- Menu metadata registry keys imported from project config should be validated as single path segments before looking up labels or install commands.
 - For Wizardry app GUI specifics, read `/Users/andersaamodt/git/wizardry-apps/.github/adversarial-testing.md`.
 
 ### Pipelines and Exit Status
