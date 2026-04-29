@@ -147,6 +147,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Fallback readers for cache/state directories should be audited like importers: unsafe filenames and record delimiters can bypass the primary writer.
 - Metadata conversions should stage changes and replace originals only after all writes succeed.
 - Optional catalog/project tests should skip when an optional checkout is absent but still fail when the checkout exists and required files are broken.
+- Optional app tests should check the optional checkout directory before sourcing app files; missing sourced files can print errors while still letting a test script exit 0.
 - Front-matter parsing must preserve delimiter-like body content after the closing delimiter.
 - Config paths rendered into another language or config format must reject that renderer's quote, variable, comment, and statement delimiters.
 - Display names are release inputs when they become bundle paths, archive names, plist text, or build metadata; validate them beyond "single line".
