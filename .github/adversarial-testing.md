@@ -106,6 +106,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 ### Numeric and Interactive Input
 
 - Signed integer validators must reject a bare sign before arithmetic comparison.
+- Process-count, retry-count, timeout, and concurrency environment overrides should be range-validated before spawning helpers or entering loops.
 - Empty input, EOF, non-interactive stdin, defaults, min/max inversions, and retry loops need regression coverage.
 - Usage output should be clean on stderr for invalid invocation and stdout for help.
 
