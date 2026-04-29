@@ -18,32 +18,32 @@ printf '=== Test Environment Facts ===\n'
 # ============================================================================
 
 TEST_ENV_OS=$(case "$(uname -s)" in
-  Linux*) printf 'linux' ;;
-  Darwin*) printf 'macos' ;;
-  *BSD) printf 'bsd' ;;
-  *) printf 'unknown' ;;
+  (Linux*) printf 'linux' ;;
+  (Darwin*) printf 'macos' ;;
+  (*BSD) printf 'bsd' ;;
+  (*) printf 'unknown' ;;
 esac)
 
 TEST_ENV_DISTRO=$(if [ -f /etc/os-release ]; then
   # shellcheck disable=SC1091
   . /etc/os-release
   case "${ID-}" in
-    debian) printf 'debian' ;;
-    ubuntu) printf 'ubuntu' ;;
-    arch) printf 'arch' ;;
-    nixos) printf 'nixos' ;;
-    alpine) printf 'alpine' ;;
-    *) printf 'unknown' ;;
+    (debian) printf 'debian' ;;
+    (ubuntu) printf 'ubuntu' ;;
+    (arch) printf 'arch' ;;
+    (nixos) printf 'nixos' ;;
+    (alpine) printf 'alpine' ;;
+    (*) printf 'unknown' ;;
   esac
 else
   printf 'unknown'
 fi)
 
 TEST_ENV_ARCH=$(case "$(uname -m)" in
-  x86_64|amd64) printf 'x86_64' ;;
-  aarch64|arm64) printf 'arm64' ;;
-  i?86) printf 'i386' ;;
-  *) printf 'unknown' ;;
+  (x86_64|amd64) printf 'x86_64' ;;
+  (aarch64|arm64) printf 'arm64' ;;
+  (i?86) printf 'i386' ;;
+  (*) printf 'unknown' ;;
 esac)
 
 printf 'Platform: %s/%s/%s\n' "$TEST_ENV_OS" "$TEST_ENV_DISTRO" "$TEST_ENV_ARCH"

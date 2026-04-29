@@ -180,6 +180,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Launcher root paths that are persisted for future app starts should reject line breaks before writing config files.
 - Install/uninstall helpers should reject explicit replacement or removal paths outside the artifact shape they own before recursive deletion.
 - macOS app installers should stage and verify replacement bundles before copying over an existing Applications bundle; never delete the installed app before the replacement copy succeeds.
+- macOS app bundle builders with explicit output paths should copy and sign a staged replacement before moving aside an existing output bundle.
 - Build helpers should reject explicit artifact output paths outside the artifact shape they own before recursive replacement.
 - Validate remote metadata before downloads, extraction, install paths, chmod, JWT signing, API URLs, or platform tools run.
 - Git remote URLs can contain CR/LF and path-shaped slugs; validate before printing status rows or constructing GitHub API URLs.

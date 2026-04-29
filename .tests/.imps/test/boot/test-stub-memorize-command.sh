@@ -17,16 +17,16 @@ test_stub_adds_command() {
   tmpdir=$(make_tempdir)
   stub_memorize_command "$tmpdir"
   export WIZARDRY_CAST_DIR="$tmpdir/cast"
-  "$tmpdir/memorize" add testcmd echo hello
+  "$tmpdir/memorize" testcmd
   [ -f "$tmpdir/cast/.memorized" ]
-  [ -x "$tmpdir/cast/testcmd" ]
+  grep -q "testcmd" "$tmpdir/cast/.memorized"
 }
 
 test_stub_lists_commands() {
   tmpdir=$(make_tempdir)
   stub_memorize_command "$tmpdir"
   export WIZARDRY_CAST_DIR="$tmpdir/cast"
-  "$tmpdir/memorize" add testcmd echo hello
+  "$tmpdir/memorize" testcmd
   result=$("$tmpdir/memorize" list)
   case "$result" in
     *testcmd*) : ;;
