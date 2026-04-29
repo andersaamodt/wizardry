@@ -10,7 +10,7 @@ Wizardry is a collection of POSIX shell scripts themed as magical spells for the
 
 - **Language**: POSIX sh only (`#!/bin/sh`)
 - **Style checker**: `lint-magic` and `checkbashisms`
-- **Testing**: `.tests/` directory with `test_common.sh` framework
+- **Testing**: `.tests/` directory with `spells/.imps/test/test-bootstrap`
 
 ## Essential Commands
 
@@ -69,6 +69,13 @@ spells/.imps/     # Micro-helper scripts (imps)
 - Do not introduce ad hoc `bin/` + `lib/` layouts for Wizardry-style shell repos.
 - Keep user-facing commands in `spells/`, internal/non-user-facing helpers in `spells/.imps/`, and behavioral tests in mirrored `.tests/` paths.
 
+## Documentation Style
+
+- Prefer atomic bullets like `.github/LESSONS.md`: one durable rule per line.
+- Keep canonical details in one topic doc and link to it instead of repeating long explanations.
+- Update docs when behavior changes; delete stale examples instead of preserving contradictory guidance.
+- Add new bug classes to `.github/adversarial-testing.md`; add one-line debugging lessons to `.github/LESSONS.md`.
+
 ## Spell Template
 
 ```sh
@@ -76,17 +83,13 @@ spells/.imps/     # Micro-helper scripts (imps)
 
 # Brief description of what this spell does.
 
-show_usage() {
+case "${1-}" in
+--help|--usage|-h)
   cat <<'USAGE'
 Usage: spell-name [options] [arguments]
 
 Description of what the spell does.
 USAGE
-}
-
-case "${1-}" in
---help|--usage|-h)
-  show_usage
   exit 0
   ;;
 esac

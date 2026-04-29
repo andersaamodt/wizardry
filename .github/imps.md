@@ -2,47 +2,24 @@
 
 applyTo: "spells/.imps/**"
 
-## What Are Imps?
+## Imp Definition
 
-Imps are micro-helper scripts—the smallest semantic building blocks in wizardry. They live in `spells/.imps/` and abstract common shell patterns into readable, well-documented microscripts.
-
-### Imp Definition (Critical for AI)
-
-**Imps serve two purposes:**
-
-1. **Small, reusable helpers** - Microscripts that abstract common patterns (traditional definition)
-2. **Non-user-facing scripts** - Anything that shouldn't be directly invoked by users
-
-**Key Principle:** Not all imps are small. Some imps are complex because they handle internal functionality that users should never call directly.
-
-**Examples of valid complex imps:**
-- **CGI scripts** (`.imps/cgi/*`) - Web endpoints, SSE streams, multipart uploads
-  - MUST stay in `.imps/cgi/` for web server configuration
-  - Can be 100-300+ lines (complexity justified by non-user-facing nature)
-  - May have functions if needed for internal structure
-- **Internal helpers** - Scripts called by spells but not meant for direct user invocation
-
-**When to use an imp vs. spell:**
-- **Spell:** User-facing command with `--help`, designed to be called directly
-- **Imp:** Internal helper OR non-user-facing endpoint (even if complex)
-
-**Critical for audits:** CGI imps in `.imps/cgi/` are correctly classified even if they exceed typical imp size limits. They must remain in this directory for web server routing.
+- Imps live in `spells/.imps/`.
+- Imps are reusable micro-helpers or non-user-facing scripts.
+- Spells are user-facing commands with `--help`.
+- Imps are internal helpers or endpoints users should not call directly.
+- Most imps are small, flat scripts.
+- Complex imps are allowed when they are non-user-facing infrastructure.
+- CGI imps stay in `.imps/cgi/` for web server routing.
+- CGI imps may be 100-300+ lines and may use functions when internal routing/state requires it.
 
 ## Creating New Imps
 
-**CRITICAL**: When creating a new imp, you MUST also create a corresponding test file:
 - Imp location: `spells/.imps/family/imp-name`
-- Test location: `.tests/.imps/family/test_imp-name.sh`
-
-Test files are NOT optional. Every imp requires tests covering its behavior.
-
-**After creating tests, you MUST run them and report actual results:**
-```sh
-.tests/.imps/family/test_imp-name.sh
-```
-Never claim tests pass without actually executing them. Report the actual pass/fail counts.
-
-See `.github/tests.md` for test patterns.
+- Test location: `.tests/.imps/family/test-imp-name.sh`
+- Every imp needs a behavior test.
+- Run tests and report actual pass/fail counts.
+- See `.github/tests.md` for test patterns.
 
 ## Imp Requirements
 
@@ -50,27 +27,18 @@ See `.github/tests.md` for test patterns.
 - **Shebang**: `#!/bin/sh` (POSIX only)
 - **Opening comment**: Brief description of what it does
 
-### Strict Mode (`set -eu`)
+### Strict Mode
 
-**⚠️ CRITICAL: Only ONE `set -eu` per imp file!**
-
-**NEVER duplicate `set -eu`** before the case statement. This breaks invoke-wizardry and causes terminal hangs. See `.github/imps.md` for full details.
-
-**Action imps** that perform actions (produce output, modify state) should have ONE `set -eu` at the top:
-- `fs/`, `out/`, `paths/`, `pkg/`, `str/`, `sys/`, `text/`, `input/`, `lang/` families
-
-**Conditional imps** that return exit codes for flow control should have NO `set -eu`:
-- `cond/` family — `has`, `there`, `is`, `yes`, `no`, `empty`, `nonempty`, etc.
-- `lex/` family — parsing helpers that signal success/failure via exit code
-- `menu/` family — menu helpers that return true/false
-
-This exception exists because conditional imps are designed to be used in `if` statements and `&&`/`||` chains, where non-zero exit codes indicate false rather than error.
-
-**Automated test:** `.tests/spellcraft/test-no-duplicate-set-eu.sh` enforces this rule in CI.
+- Use exactly one `set -eu` in action imps.
+- Never duplicate `set -eu`; duplicate strict-mode lines break invoke-wizardry and can hang terminals.
+- Action families normally use `set -eu`: `fs/`, `out/`, `paths/`, `pkg/`, `str/`, `sys/`, `text/`, `input/`, `lang/`.
+- Conditional imps use no `set -eu` because nonzero exit codes mean false, not failure.
+- Conditional families include `cond/`, `lex/`, and `menu/`.
+- Structural common tests enforce strict-mode rules.
 
 ### Relaxed Rules (compared to spells)
-- **No `--help` required**: The opening comment serves as the imp's spec
-- **No `show_usage()` required**: Keep imps minimal
+- No `--help` required: the opening comment is the spec.
+- No usage function required.
 
 ## Imp Template
 
@@ -129,13 +97,11 @@ Imps are organized in folders ("demon families") by function:
 
 ### Special: CGI Family
 
-The `cgi/` family contains web endpoints and server-sent events handlers. These imps:
-- **Must stay in `.imps/cgi/`** for web server routing
-- **Can exceed typical size limits** (100-300+ lines acceptable)
-- **May use functions** when needed for internal structure
-- **Are non-user-facing** (called by web server, not directly by users)
-
-Examples: blog-*, chat-*, http-*, sse-*, drag-drop-upload
+- `cgi/` contains web endpoints and server-sent events handlers.
+- `cgi/` files must stay in `.imps/cgi/` for web server routing.
+- `cgi/` files can exceed typical imp size limits.
+- `cgi/` files may use functions for internal structure.
+- Examples: `blog-*`, `chat-*`, `http-*`, `sse-*`, `drag-drop-upload`.
 
 ## Error Handling and Output Imps
 

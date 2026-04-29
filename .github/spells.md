@@ -2,30 +2,14 @@
 
 applyTo: "spells/**"
 
-## Creating New Spells
+## Spell Rules
 
-**Ecosystem rule**: Standalone Wizardry-ecosystem shell projects should organize themselves like Wizardry itself.
-- Use `spells/` for user-facing entrypoints.
-- Use `spells/.imps/` for internal helpers and non-user-facing scripts.
-- Use mirrored `.tests/` paths for behavioral coverage.
-- Do not substitute `bin/` + `lib/` when the project is fundamentally a Wizardry-style shell tool.
-
-**CRITICAL**: When creating a new spell, you MUST also create a corresponding test file:
-- Spell location: `spells/category/spell-name`
-- Test location: `.tests/category/test-spell-name.sh`
-
-Test files are NOT optional. Every spell requires tests covering:
-1. `--help` output
-2. Success cases
-3. Error cases
-
-**After creating tests, you MUST run them and report actual results:**
-```sh
-.tests/category/test-spell-name.sh
-```
-Never claim tests pass without actually executing them. Report the actual pass/fail counts.
-
-See `.github/tests.md` for test patterns.
+- Standalone Wizardry-style shell projects use `spells/`, `spells/.imps/`, and mirrored `.tests/` paths.
+- Do not substitute `bin/` + `lib/` for Wizardry-style shell tools.
+- Every spell needs a matching test: `spells/category/spell-name` -> `.tests/category/test-spell-name.sh`.
+- Spell tests cover `--help`, success cases, error cases, and relevant adversarial cases.
+- Run tests and report actual pass/fail counts.
+- See `.github/tests.md` for test patterns.
 
 ## Spell Template
 
@@ -53,50 +37,29 @@ set -eu
 
 ## Required Elements
 
-1. **Shebang**: `#!/bin/sh` (POSIX only)
-2. **Opening comment**: 1-2 lines describing what it does
-3. **Strict mode**: `set -eu`
-
-## Recommended Elements
-
-1. **Inline help handler** with heredoc (no function)
-2. **Help handler** before `set -eu` for `--help`, `--usage`, `-h`
+- `#!/bin/sh` shebang.
+- Opening comment with 1-2 lines describing the spell.
+- Inline help handler for `--help`, `--usage`, and `-h`.
+- Help handler before `set -eu`.
+- Exactly one `set -eu` before main logic.
 
 ## Code Style
 
 ### Function Naming
 
-**CRITICAL**: Usage/help text should be inline (in case statement), NOT in a function.
-
-All helper functions in spells must use **snake_case** naming:
+- Usage/help text is inline in the help `case`, not in a function.
+- Helper functions use `snake_case`.
+- Helper functions do not use leading underscores.
+- Function names cannot contain hyphens.
 
 ```sh
-# CORRECT (helper function if absolutely needed)
 detect_os() { ... }
 validate_name() { ... }
-
-# WRONG - usage should NOT be in a function
 show_usage() { ... }  # Use inline heredoc instead!
-
-# WRONG - do not use underscore prefix in spells
 _jump() { ... }
 _helper_function() { ... }
-
-# WRONG - do not use hyphens in function names
 my-function() { ... }
 ```
-
-**Convention**:  📐
-- **Spells**: Use `snake_case` for helper functions (maximum 1, more requires EXEMPTIONS.md documentation)
-- **Usage**: MUST be inline in case statement with heredoc, NOT in a function
-- **Imps**: Are flat scripts with NO functions - they execute directly
-
-**Rationale**:
-- `snake_case` is the dominant convention in POSIX shell for helper functions
-- Usage inline keeps spells simple and follows flat script philosophy
-- Imps are now flat, linear scripts without function wrappers
-- Consistent naming makes code easier to read and maintain
-- Helper functions should be minimal - more than 1 helper function requires documentation in EXEMPTIONS.md
 
 ### Variables
 ```sh
@@ -153,7 +116,7 @@ on-exit cleanup-file "$tmpfile"
 # Cleanup happens automatically on exit/interrupt
 ```
 
-### Error Messages  ⚠️💬
+### Error Messages
 Print to stderr with spell name prefix—descriptive, not imperative:
 ```sh
 # CORRECT
@@ -165,26 +128,14 @@ die "Please install sshfs"
 warn "You must create a configuration file"
 ```
 
-### Error Handling Helpers (Legacy)
-
-For reference, direct stderr output (prefer using imps instead):
-
-```sh
-# Direct output (use die/warn/fail instead)
-printf '%s\n' "spell-name: sshfs not found." >&2
-```
-
 ### Functions
-Prefer linear, flat code flow over excessive function wrapping.
 
-**Function Discipline**:
-- `show_usage()` is required (except for imps)
-- 0-1 additional helper functions: freely allowed (the "spell-heart helper")
+- Prefer linear, flat code flow.
+- Usage/help text is inline in the help case, not in `show_usage()`.
+- 0-1 helper functions: freely allowed (the "spell-heart helper")
 - 2 additional functions: acceptable with warning (must be invoked from multiple paths, not suitable as imps)
 - 3 additional functions: marginal case with strong warning
 - 4+ additional functions: indicates proto-library, must decompose into multiple spells and/or imps
-
-**Rationale**: A spell is a scroll, not a miniature program. It narrates one coherent magical action expressed linearly. Multiple internal subroutines indicate the action is conceptually fractured and should be refactored.
 
 ### Exit Codes
 - `0`: Success
@@ -201,7 +152,7 @@ Signs a spell needs refactoring:
 - Multiple modes or usage lines
 - More than 5-10 lines of help text
 - Complex nested conditionals
-- **4+ additional functions beyond `show_usage()` (proto-library)**
+- **4+ helper functions (proto-library)**
 
 Solutions:
 - Split into multiple smaller spells

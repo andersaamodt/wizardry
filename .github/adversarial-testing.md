@@ -6,6 +6,7 @@ This is a living standard. Every AI developer working on Wizardry is responsible
 
 ## Standing Requirements
 
+- Keep this file atomic and AI-scannable: one durable adversarial rule or technique per bullet.
 - Every non-trivial feature, bug fix, parser change, installer/release change, metadata reader, renderer, bridge, menu action, CGI endpoint, or filesystem mutation must receive at least one adversarial test focused on the riskiest input or state transition.
 - When a change touches an existing bug class below, reuse the documented technique and add focused regression coverage before or with the implementation.
 - When a change exposes a new kind of failure not covered here, add the bug class, technique, and at least one representative test pattern to this file before finishing.
