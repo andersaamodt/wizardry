@@ -149,9 +149,11 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Service account JSON should be treated as imported release metadata; validate identity fields before JWT rendering.
 - Deploy/signing environment values should be validated before remote-shell, codesign, or notarization tooling receives them.
 - Asset generators that print status rows should reject line-break paths and unsafe stored file extensions before writing metadata.
+- Asset generators should validate stored source extensions before creating output trees so invalid image metadata leaves no partial assets.
 - File-artifact builders should validate output suffixes and reject line-break paths before overwriting files or printing status rows.
 - Packaging and upload helpers should reject CR/LF in artifact directories, app bundles, and upload paths before staging, signing, or invoking platform tools.
 - Platform asset staging should preflight required outputs before copying so missing fallbacks cannot leave stale files behind.
+- Preflight path canonicalization must be side-effect-free; rejected destinations should not create missing parent directories under source trees.
 - Installer-generated shell or desktop launchers must reject or structurally escape path values containing shell-expansion characters.
 - Native packaging entrypoints should validate bundle IDs again before rendering plist or project metadata.
 - Backend status rows should sanitize XDG/env-derived file paths, including preference write confirmations.
