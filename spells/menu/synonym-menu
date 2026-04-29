@@ -76,6 +76,7 @@ set -eu
   
   # Escape single quotes for safe passing
   escaped_word=$(printf '%s' "$synonym_word" | sed "s/'/'\\\\''/g")
+  escaped_target=$(printf '%s' "$target_spell" | sed "s/'/'\\\\''/g")
   
   while :; do
     set --
@@ -83,7 +84,7 @@ set -eu
     # For default synonyms, editing creates a custom override
     if [ "$synonym_type" = "default" ]; then
       # Edit creates custom override
-      edit_word_cmd="printf 'New synonym word: ' >&2 && read new_word && add-synonym \"\$new_word\" '$target_spell' && info 'Created custom synonym (original default preserved)'"
+      edit_word_cmd="printf 'New synonym word: ' >&2 && read new_word && add-synonym \"\$new_word\" '$escaped_target' && info 'Created custom synonym (original default preserved)'"
       set -- "$@" "Override word%$edit_word_cmd"
       
       edit_spell_cmd="printf 'New target spell: ' >&2 && read new_spell && add-synonym '$escaped_word' \"\$new_spell\" && info 'Created custom synonym (original default preserved)'"

@@ -124,6 +124,38 @@ SH
 
 run_test_case "synonym-menu strips CRLF target before menu label" test_strips_crlf_target_before_menu_label
 
+test_quotes_default_target_in_override_action() {
+  tmpdir=$(make_tempdir)
+  spellbook="$tmpdir/.spellbook"
+  stubdir="$tmpdir/bin"
+  menu_log="$tmpdir/menu.log"
+  mkdir -p "$spellbook" "$stubdir"
+  hostile_target="bad'; touch '$tmpdir/pwned'; echo '"
+  printf '%s\n' "bad=$hostile_target" > "$spellbook/.default-synonyms"
+
+  cat > "$stubdir/menu" <<'SH'
+#!/bin/sh
+printf '%s\n' "$@" > "$MENU_LOG"
+exit 130
+SH
+  chmod +x "$stubdir/menu"
+
+  SPELLBOOK_DIR="$spellbook" MENU_LOG="$menu_log" PATH="$stubdir:$PATH" \
+    run_cmd "$ROOT_DIR/spells/menu/synonym-menu" bad
+
+  assert_success || return 1
+  assert_path_exists "$menu_log" || return 1
+
+  args=$(cat "$menu_log")
+  expected="add-synonym \"\$new_word\" 'bad'\\''; touch '\\''$tmpdir/pwned'\\''; echo '\\'''"
+  case "$args" in
+    *"$expected"*) : ;;
+    *) TEST_FAILURE_REASON="default target should be shell-quoted in override action: $args"; return 1 ;;
+  esac
+}
+
+run_test_case "synonym-menu quotes default target in override action" test_quotes_default_target_in_override_action
+
 # Test via source-then-invoke pattern  
 
 finish_tests
