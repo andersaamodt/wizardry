@@ -95,6 +95,23 @@ valid_requirement_id() {
   esac
 }
 
+hidden_service_dir_for_site() {
+  torrc_file=$1
+  while IFS= read -r line; do
+    case "$line" in
+      HiddenServiceDir*)
+        hidden_service_match_dir=$(printf '%s\n' "$line" | awk '{print $2; exit}')
+        hidden_service_match_dir=${hidden_service_match_dir%/}
+        if [ "${hidden_service_match_dir##*/}" = "$site_name" ]; then
+          printf '%s\n' "$hidden_service_match_dir"
+          return 0
+        fi
+        ;;
+    esac
+  done < "$torrc_file"
+  return 1
+}
+
 quoted_site_name=$(shell_quote "$site_name")
 quoted_site_dir=$(shell_quote "$site_dir")
 quoted_site_data_dir=$(shell_quote "$site_data_dir")
@@ -150,7 +167,7 @@ while true; do
     if command -v torrc-path >/dev/null 2>&1; then
       tor_config_path=$(torrc-path 2>/dev/null || echo "")
       if [ -n "$tor_config_path" ] && [ -f "$tor_config_path" ]; then
-        if grep -q "^HiddenServiceDir.*${site_name}" "$tor_config_path" 2>/dev/null; then
+        if hidden_service_dir_for_site "$tor_config_path" >/dev/null; then
           tor_hosting_enabled=1
           tor_hosting_option="[X] Tor hosting%toggle-site-tor-hosting $quoted_site_name"
         else
@@ -168,8 +185,7 @@ while true; do
   copy_site_onion=""
   if [ "$tor_hosting_enabled" -eq 1 ] && [ -n "$tor_config_path" ]; then
     # Extract the HiddenServiceDir path from torrc for this site
-    site_hostname_dir=$(grep "^HiddenServiceDir.*${site_name}" "$tor_config_path" 2>/dev/null \
-      | awk '{print $2}' | head -1)
+    site_hostname_dir=$(hidden_service_dir_for_site "$tor_config_path" 2>/dev/null || printf '')
     if [ -n "$site_hostname_dir" ]; then
       # Remove trailing slash if present
       site_hostname_dir="${site_hostname_dir%/}"

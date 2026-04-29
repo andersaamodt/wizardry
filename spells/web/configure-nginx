@@ -73,6 +73,20 @@ valid_nginx_quoted_path() {
   esac
 }
 
+hidden_service_line_matches_site() {
+  line=$1
+  case "$line" in
+    HiddenServiceDir*)
+      hidden_service_match_dir=$(printf '%s\n' "$line" | awk '{print $2; exit}')
+      hidden_service_match_dir=${hidden_service_match_dir%/}
+      [ "${hidden_service_match_dir##*/}" = "$site_name" ]
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
 while [ $# -gt 0 ]; do
   case "$1" in
     --port)
@@ -418,9 +432,14 @@ if is-tor-installed; then
   tor_config_path=$(torrc-path 2>/dev/null || echo "")
   if [ -n "$tor_config_path" ] && [ -f "$tor_config_path" ]; then
     # Check if Tor hosting is enabled by looking for this site's HiddenServiceDir
-    # Use a more specific pattern to avoid false matches with similar site names
-    if grep -q "^HiddenServiceDir.*/${site_name}/\?\$" "$tor_config_path" 2>/dev/null || \
-       grep -q "^HiddenServiceDir.*/${site_name}\$" "$tor_config_path" 2>/dev/null; then
+    tor_hosting_enabled=0
+    while IFS= read -r line; do
+      if hidden_service_line_matches_site "$line"; then
+        tor_hosting_enabled=1
+        break
+      fi
+    done < "$tor_config_path"
+    if [ "$tor_hosting_enabled" -eq 1 ]; then
       # Tor hosting is enabled for this site - update the port
       step "Updating Tor hidden service port to $port..."
       
@@ -429,9 +448,7 @@ if is-tor-installed; then
       
       while IFS= read -r line; do
         # Check if we're entering this site's hidden service block
-        # Match lines ending with /site_name or /site_name/
-        if printf '%s' "$line" | grep -q "^HiddenServiceDir.*/${site_name}/\?\$" || \
-           printf '%s' "$line" | grep -q "^HiddenServiceDir.*/${site_name}\$"; then
+        if hidden_service_line_matches_site "$line"; then
           in_site_block=1
           printf '%s\n' "$line" >> "$temp_torrc"
           continue

@@ -132,6 +132,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Config scalars rendered into daemon/server config files should be revalidated at render time; create-time prompts do not protect hand-edited `key=value` files.
 - Renderer-specific validation should cover every imported field embedded in that renderer, not just the obvious public URL fields.
 - Site names rendered into nginx/Tor/service config must be validated before file writes and before regex matching against existing config.
+- Identifier values that may contain regex metacharacters, such as dotted site names, should be compared literally after parsing records instead of interpolated into grep patterns.
 - Round-trip tests should include empty values, multi-line values, repeated delimiters, and write failures.
 
 ### Release And Remote Metadata
