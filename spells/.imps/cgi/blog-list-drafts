@@ -7,6 +7,13 @@ http-status 200 "OK"
 http-header "Content-Type" "application/json"
 http-end-headers
 
+json_escape() {
+  printf '%s' "$1" | sed \
+    -e 's/\\/\\\\/g' \
+    -e 's/"/\\"/g' \
+    -e 's/'"$(printf '\r')"'/ /g'
+}
+
 # Parse query parameters
 session_token=$(get-query-param "session_token")
 
@@ -41,7 +48,7 @@ fi
 # Check if user is admin
 is_admin="false"
 if id "$username" >/dev/null 2>&1; then
-  if id -nG "$username" 2>/dev/null | grep -q "blog-admin"; then
+  if id -nG "$username" 2>/dev/null | tr ' ' '\n' | grep -Fx "blog-admin" >/dev/null 2>&1; then
     is_admin="true"
   fi
 fi
@@ -75,8 +82,10 @@ if [ -d "$posts_dir" ]; then
       filename=$(basename "$post_file")
       title=$(head -n 20 "$post_file" | grep -E '^title:' \
         | sed 's/^title: *"\?\([^"]*\)"\?/\1/' || echo "$filename")
+      filename_json=$(json_escape "$filename")
+      title_json=$(json_escape "$title")
       
-      printf '{"filename":"%s","title":"%s"}' "$filename" "$title"
+      printf '{"filename":"%s","title":"%s"}' "$filename_json" "$title_json"
     fi
   done
 fi

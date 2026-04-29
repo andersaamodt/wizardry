@@ -44,7 +44,7 @@ fi
 # Check if user is admin
 is_admin="false"
 if id "$username" >/dev/null 2>&1; then
-  if id -nG "$username" 2>/dev/null | grep -q "blog-admin"; then
+  if id -nG "$username" 2>/dev/null | tr ' ' '\n' | grep -Fx "blog-admin" >/dev/null 2>&1; then
     is_admin="true"
   fi
 fi

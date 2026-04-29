@@ -127,6 +127,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Helper-script stdout and filesystem entry names are untrusted when they are forwarded into GUI/backend records; test installed modules with delimiter-shaped filenames and status lines.
 - CGI upload and file-info handlers should test URL-decoded filenames containing path separators, quotes, and HTML delimiters before writing files or reflecting names in HTML.
 - File-backed CGI auth should test path-shaped session tokens, generated token alphabets, and username traversal before reading or writing session/user directories.
+- CGI JSON endpoints should test quote-bearing config values, filenames, and titles, plus privilege-group near misses such as `blog-admins`.
 - Catalog/list/count commands must apply the same identifier validator as the command that later executes the selected item.
 - Read/import paths for hand-edited metadata must revalidate the same delimiters and identifiers enforced by create/update commands.
 - Imported profile/config fields must be sanitized at output time even when only a subset of those fields drive filesystem or command actions.

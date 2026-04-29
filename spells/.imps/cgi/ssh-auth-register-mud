@@ -87,7 +87,7 @@ printf '%s' "$fingerprint" > "$user_dir/ssh_fingerprint"
 
 # Check if user is in blog-admin group for initial admin status
 is_admin="false"
-if id -nG "$username" 2>/dev/null | grep -q "blog-admin"; then
+if id -nG "$username" 2>/dev/null | tr ' ' '\n' | grep -Fx "blog-admin" >/dev/null 2>&1; then
   is_admin="true"
   printf '%s' "$is_admin" > "$user_dir/is_admin"
 fi

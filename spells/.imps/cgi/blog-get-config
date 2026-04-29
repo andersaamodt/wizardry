@@ -7,6 +7,25 @@ http-status 200 "OK"
 http-header "Content-Type" "application/json"
 http-end-headers
 
+json_escape() {
+  printf '%s' "$1" | sed \
+    -e 's/\\/\\\\/g' \
+    -e 's/"/\\"/g' \
+    -e 's/'"$(printf '\r')"'/ /g'
+}
+
+valid_theme() {
+  case "$1" in
+    archmage|wizard|warlock|sorcerer|sorceress|technomancer|thaumaturge|thelemite\
+    |theurgist|wadjet|enchanter|illusionist|lich|druid|empath|shaman|geomancer\
+    |hermeticist|hierophant|necromancer|conjurer|pyromancer|chronomancer\
+    |alchemist|seer|adept)
+      return 0
+      ;;
+  esac
+  return 1
+}
+
 # Get site config
 site_root=$(get-site-data-dir "..")
 site_config="$site_root/site.conf"
@@ -16,18 +35,26 @@ registration_enabled=$(config-get "$site_config" registration_enabled 2>/dev/nul
 site_title=$(config-get "$site_config" site_title 2>/dev/null || echo "")
 theme=$(config-get "$site_config" theme 2>/dev/null || echo "")
 
-if [ -z "$registration_enabled" ]; then
+case "$registration_enabled" in
+  true|false) ;;
+  *)
   registration_enabled="true"
-fi
+    ;;
+esac
 
-if [ -z "$site_title" ]; then
-  site_title="My Blog"
-fi
+case "$site_title" in
+  ''|*"$(printf '\r')"*)
+    site_title="My Blog"
+    ;;
+esac
 
-if [ -z "$theme" ]; then
+if ! valid_theme "$theme"; then
   theme="archmage"
 fi
 
+site_title_json=$(json_escape "$site_title")
+theme_json=$(json_escape "$theme")
+
 # Return config
 printf '{"success":true,"registration_enabled":%s,"site_title":"%s","theme":"%s"}\n' \
-  "$registration_enabled" "$site_title" "$theme"
+  "$registration_enabled" "$site_title_json" "$theme_json"
