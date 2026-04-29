@@ -127,6 +127,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Helper-script stdout and filesystem entry names are untrusted when they are forwarded into GUI/backend records; test installed modules with delimiter-shaped filenames and status lines.
 - CGI upload and file-info handlers should test URL-decoded filenames containing path separators, quotes, and HTML delimiters before writing files or reflecting names in HTML.
 - File-backed CGI auth should test path-shaped session tokens, generated token alphabets, and username traversal before reading or writing session/user directories.
+- Chat room/avatar CGI endpoints should test URL-decoded room and username path segments before any create, delete, or rename filesystem operation.
 - CGI JSON endpoints should test quote-bearing config values, filenames, and titles, plus privilege-group near misses such as `blog-admins`.
 - Shared CGI data-root helpers should reject path-shaped site-name environment values before composing storage paths for other handlers.
 - Chat-style CGI state should test create/delete/rename/send parity for room and avatar names; every endpoint that composes a room path needs the same validator.
