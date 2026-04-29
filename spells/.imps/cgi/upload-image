@@ -9,6 +9,28 @@ http-ok-html
 
 query="${QUERY_STRING:-}"
 
+html_escape() {
+  printf '%s' "$1" | sed \
+    -e 's/&/\&amp;/g' \
+    -e 's/</\&lt;/g' \
+    -e 's/>/\&gt;/g' \
+    -e 's/"/\&quot;/g' \
+    -e "s/'/\&#39;/g"
+}
+
+sanitize_filename() {
+  raw_name=$1
+  raw_name=$(printf '%s' "$raw_name" | sed 's/.*[\\\/]//')
+  raw_name=$(basename "$raw_name" 2>/dev/null || printf '%s' "$raw_name")
+  safe_name=$(printf '%s' "$raw_name" | sed 's/[^a-zA-Z0-9._-]/_/g')
+  case "$safe_name" in
+    ''|.|..)
+      safe_name=test.png
+      ;;
+  esac
+  printf '%s' "$safe_name"
+}
+
 if [ -z "$query" ]; then
   cat <<HTML
 <div class="demo-result">
@@ -21,6 +43,8 @@ fi
 # Parse the simulated upload (format: filename=name.png)
 filename=$(get-query-param "filename")
 filename=${filename:-test.png}
+filename=$(sanitize_filename "$filename")
+filename_html=$(html_escape "$filename")
 
 upload_dir="${TMPDIR:-/tmp}/wizardry-uploads"
 mkdir -p "$upload_dir"
@@ -57,7 +81,7 @@ svg_encoded=$(printf '%s' "$svg_content" | sed '
 cat <<HTML
 <div class="demo-result upload success">
   <h3>✅ Image Uploaded &amp; Displayed!</h3>
-  <p>📁 Filename: <strong>$filename</strong></p>
+  <p>📁 Filename: <strong>$filename_html</strong></p>
   <p>⏰ Uploaded: <strong>$(date +"%Y-%m-%d %H:%M:%S")</strong></p>
   <div class="upload-preview">
     <h4>Real-time Display:</h4>

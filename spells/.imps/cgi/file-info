@@ -7,6 +7,28 @@ http-ok-html
 # Parse query string for uploaded file info
 query="${QUERY_STRING:-}"
 
+html_escape() {
+  printf '%s' "$1" | sed \
+    -e 's/&/\&amp;/g' \
+    -e 's/</\&lt;/g' \
+    -e 's/>/\&gt;/g' \
+    -e 's/"/\&quot;/g' \
+    -e "s/'/\&#39;/g"
+}
+
+sanitize_filename() {
+  raw_name=$1
+  raw_name=$(printf '%s' "$raw_name" | sed 's/.*[\\\/]//')
+  raw_name=$(basename "$raw_name" 2>/dev/null || printf '%s' "$raw_name")
+  safe_name=$(printf '%s' "$raw_name" | sed 's/[^a-zA-Z0-9._-]/_/g')
+  case "$safe_name" in
+    ''|.|..)
+      safe_name=uploaded-file.bin
+      ;;
+  esac
+  printf '%s' "$safe_name"
+}
+
 # In a real implementation, this would process multipart/form-data from POST
 # For the demo, we simulate upload by accepting base64 data in query string
 # Format: data=base64data&name=filename&type=mimetype
@@ -28,14 +50,9 @@ mkdir -p "$upload_dir"
 
 # Extract filename from query
 filename=$(get-query-param "name")
-
-# Remove any Windows-style fake paths (browsers sometimes add these)
-# Strip everything up to and including last backslash or forward slash
-filename=$(printf '%s' "$filename" | sed 's/.*[\\\/]//')
-
-# Clean filename (remove any path components and sanitize)
-filename=$(basename "$filename" 2>/dev/null || printf '%s' "$filename")
 filename=${filename:-uploaded-file.bin}
+filename=$(sanitize_filename "$filename")
+filename_html=$(html_escape "$filename")
 
 # For demo: create a simple test file with YYYY-MM-DD timestamp
 timestamp=$(date +%Y-%m-%d-%H%M%S)
@@ -46,14 +63,15 @@ printf 'Demo upload: %s at %s\n' "$filename" "$(date)" > "$test_file"
 
 # Get file info
 size=$(wc -c < "$test_file" 2>/dev/null || echo "0")
+test_file_html=$(html_escape "$test_file")
 
 cat <<HTML
 <div class="demo-result upload success">
   <h3>✅ File Uploaded Successfully!</h3>
-  <p>📁 Filename: <strong>$filename</strong></p>
+  <p>📁 Filename: <strong>$filename_html</strong></p>
   <p>📊 Size: <strong>${size} bytes</strong></p>
   <p>📅 Uploaded: <strong>$(date)</strong></p>
-  <p>💾 Saved to: <code>$test_file</code></p>
+  <p>💾 Saved to: <code>$test_file_html</code></p>
   <div class="upload-preview">
     <p><em>File has been saved server-side and is ready for use.</em></p>
   </div>
