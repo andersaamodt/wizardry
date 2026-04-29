@@ -1,4 +1,5 @@
 #!/bin/sh
+# Remove SuperCollider app bundles, CLI links, or supported package-manager installs.
 
 case "${1-}" in
 --help|--usage|-h)
@@ -27,7 +28,7 @@ run_privileged() {
   if "$@" 2>/dev/null; then
     return 0
   fi
-  if type run_sudo_cmd >/dev/null 2>&1; then
+  if command -v run_sudo_cmd >/dev/null 2>&1; then
     run_sudo_cmd "$@"
     return 0
   fi
@@ -45,7 +46,8 @@ run_privileged() {
 removed=0
 
 if has_cmd apt-get; then
-  run_privileged env DEBIAN_FRONTEND=noninteractive apt-get remove -y supercollider >/dev/null 2>&1 || true
+  run_privileged env DEBIAN_FRONTEND=noninteractive \
+    apt-get remove -y supercollider >/dev/null 2>&1 || true
   removed=1
 elif has_cmd dnf; then
   run_privileged dnf remove -y supercollider >/dev/null 2>&1 || true
@@ -80,7 +82,14 @@ for app_path in /Applications/SuperCollider.app "$HOME/Applications/SuperCollide
   fi
 done
 
-for bin_path in /usr/local/bin/sclang /usr/local/bin/scsynth /usr/local/bin/supernova "${XDG_BIN_HOME:-$HOME/.local/bin}/sclang" "${XDG_BIN_HOME:-$HOME/.local/bin}/scsynth" "${XDG_BIN_HOME:-$HOME/.local/bin}/supernova"; do
+for bin_path in \
+  /usr/local/bin/sclang \
+  /usr/local/bin/scsynth \
+  /usr/local/bin/supernova \
+  "${XDG_BIN_HOME:-$HOME/.local/bin}/sclang" \
+  "${XDG_BIN_HOME:-$HOME/.local/bin}/scsynth" \
+  "${XDG_BIN_HOME:-$HOME/.local/bin}/supernova"
+do
   if [ -L "$bin_path" ]; then
     rm -f "$bin_path" >/dev/null 2>&1 || true
   fi
