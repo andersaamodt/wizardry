@@ -34,8 +34,16 @@ test_defaults_to_home_sites_dir() {
   printf '%s' "$OUTPUT" | grep -q "sites/.sitedata/mysite" || return 1
 }
 
+test_rejects_path_shaped_site_name() {
+  WIZARDRY_SITE_NAME="../escape" WIZARDRY_SITES_DIR="/tmp/sites" \
+    run_spell "spells/.imps/cgi/get-site-data-dir"
+  [ "$STATUS" -ne 0 ] || return 1
+  printf '%s' "$ERROR" | grep -q "invalid site name" || return 1
+}
+
 run_test_case "returns base sitedata directory" test_returns_base_sitedata_dir
 run_test_case "returns subdirectory path when provided" test_returns_subdir_path
 run_test_case "defaults to 'default' site name" test_defaults_to_default_site
 run_test_case "defaults to HOME/sites for sites directory" test_defaults_to_home_sites_dir
+run_test_case "rejects path-shaped site names" test_rejects_path_shaped_site_name
 finish_tests

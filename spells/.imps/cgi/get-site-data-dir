@@ -12,6 +12,12 @@ if [ -n "${WIZARDRY_SITE_NAME:-}" ]; then
 else
   site_id="default"
 fi
+case "$site_id" in
+  .|..|*[!a-zA-Z0-9._-]*)
+    printf '%s\n' "get-site-data-dir: invalid site name" >&2
+    exit 2
+    ;;
+esac
 
 # Get sites directory from env or default
 SITES_DIR="${WIZARDRY_SITES_DIR:-$HOME/sites}"

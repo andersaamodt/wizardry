@@ -292,3 +292,4 @@
 - CGI auth tokens and user names are path segments when backed by flat files; generate base64url-style tokens and reject `/`, `+`, `=`, `.`, `..`, and delimiter-bearing values before session/user file lookup.
 - CGI JSON emitters must revalidate imported config scalars and JSON-escape filenames/titles at output time; config files and markdown basenames are imported metadata.
 - CGI privilege checks should compare group names as exact fields, not substrings; `blog-admins` must not satisfy `blog-admin`.
+- Shared CGI path helpers must validate `WIZARDRY_SITE_NAME`; every downstream upload, chat, auth, or blog handler inherits that path boundary.
