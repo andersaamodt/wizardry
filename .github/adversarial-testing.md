@@ -203,6 +203,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Test create/edit parity: values rejected during creation must not become valid through rename, settings, import, or advanced fields.
 - Bridge actions should route to fixed commands with positional args, never user-selected executables or shell fragments.
 - Help/about-style bridge actions should map friendly labels to a fixed allowlist instead of executing arbitrary command names with `--help`.
+- GUI bridge availability must distinguish a loaded JavaScript shim from a real native transport; Safari browser-preview mode should show unavailable instead of connected.
 - Direct menu-run and terminal-launch paths should share one-line argument validation so one GUI path cannot accept forged row text the other rejects.
 - Menu action strings that include paths should be tested with spaces and quotes because menu execution commonly evals the action payload.
 - Menu actions built from allowlist/config files should treat every path as imported metadata and quote it before interpolation into an action string.
