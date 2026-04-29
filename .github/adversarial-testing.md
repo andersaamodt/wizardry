@@ -174,6 +174,8 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - File-artifact builders should validate output suffixes and reject line-break paths before overwriting files or printing status rows.
 - Packaging and upload helpers should reject CR/LF in artifact directories, app bundles, and upload paths before staging, signing, or invoking platform tools.
 - Upload helpers that print artifact paths should reject CR/LF in artifact input files as well as output directories.
+- Release helpers with fixed usage should reject extra operands before credentials, uploaders, signers, deployers, or deletion/replacement code can run.
+- Upload/signing helpers should verify artifact shape such as `.ipa`, `.aab`, or `.app` before invoking store or platform tooling.
 - Platform asset staging should preflight required outputs before copying so missing fallbacks cannot leave stale files behind.
 - Preflight path canonicalization must be side-effect-free; rejected destinations should not create missing parent directories under source trees.
 - Installer-generated shell or desktop launchers must reject or structurally escape path values containing shell-expansion characters.
