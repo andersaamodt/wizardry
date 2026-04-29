@@ -297,3 +297,6 @@
 - Blog CGI renderers must HTML-escape front-matter titles, summaries, dates, tags, and filenames at render time; checked-in markdown is still imported content.
 - Blog search/tag matching should use fixed-string matching for user queries and tags; regex-shaped values like `[` or `a.b` are valid content, not patterns.
 - Shared room-name validators should encode the full filesystem-label contract, not only traversal rejection; streaming/list endpoints often rely solely on the shared validator.
+- PTY helpers must not flatten `"$@"` into socat `EXEC:` strings; generate a command script with each argv element shell-quoted so paths and arguments containing spaces survive.
+- Socat `SYSTEM:` address fragments are shell programs; quote imported temp-file paths before embedding them because quote-bearing `TMPDIR` can otherwise break the helper.
+- Test skip helpers must return the harness skip status, not just print skip text; otherwise skipped adversarial cases can be reported as passes with hidden shell errors.

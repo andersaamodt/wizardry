@@ -53,6 +53,8 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Allowlist path managers should test both the writer UI and the repair reader; hand-edited allowlist files can bypass add-time validation.
 - Imported path values passed through `sh -c` must be supplied as argv or environment values, never interpolated into the shell program string.
 - Temporary directories derived from `TMPDIR` are imported paths too; probe scripts should test quote-bearing `TMPDIR` values before using `sh -c`.
+- PTY/socat helpers should execute a generated, shell-quoted command script instead of flattening `"$@"` into one `EXEC:` string; test command paths and arguments containing spaces.
+- Shell snippets embedded in tool address strings, such as socat `SYSTEM:` addresses, must shell-quote temp-file paths because `TMPDIR` is imported metadata.
 
 ### Argument Shape
 
@@ -204,6 +206,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Under `set -e`, pipelines that may legitimately find no rows need explicit status normalization.
 - Do not suppress tool stderr until after validating user-facing option errors.
 - Check cleanup and temp-file removal on both success and failure paths.
+- Test skip helpers are part of harness correctness: a skipped case should return the harness skip status and increment skip counters, not print an error and pass.
 
 ### Platform Differences
 
