@@ -21,7 +21,12 @@ test_exports_run_spell() {
   assert_success
 }
 
+test_skip_marks_case_skipped() {
+  test_skip "bootstrap skip reason"
+}
+
 run_test_case "test-bootstrap finds repository root" test_exports_find_repo_root
 run_test_case "test-bootstrap exports run_spell helper" test_exports_run_spell
+run_test_case "test-bootstrap test_skip marks case skipped" test_skip_marks_case_skipped
 
 finish_tests

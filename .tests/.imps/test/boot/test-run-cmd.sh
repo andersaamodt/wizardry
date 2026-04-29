@@ -22,8 +22,18 @@ test_captures_stderr() {
   [ "$ERROR" = "error" ]
 }
 
+test_preserves_web_site_dir() {
+  tmpdir=$(make_tempdir)
+  site_dir="$tmpdir/site dir"
+  mkdir -p "$site_dir"
+
+  WEB_SITE_DIR="$site_dir" run_cmd sh -c 'printf "%s" "$WEB_SITE_DIR"'
+  [ "$OUTPUT" = "$site_dir" ]
+}
+
 run_test_case "run-cmd captures stdout" test_captures_stdout
 run_test_case "run-cmd captures exit status" test_captures_exit_status
 run_test_case "run-cmd captures stderr" test_captures_stderr
+run_test_case "run-cmd preserves WEB_SITE_DIR" test_preserves_web_site_dir
 
 finish_tests

@@ -253,6 +253,22 @@ run_test_case() {
   fi
 }
 
+test_skip() {
+  case "$#" in
+    0)
+      TEST_SKIP_REASON=
+      ;;
+    1)
+      TEST_SKIP_REASON=$1
+      ;;
+    *)
+      TEST_SKIP_REASON=$2
+      ;;
+  esac
+  export TEST_SKIP_REASON
+  return 222
+}
+
 # Special handling for run_spell - it needs to set STATUS/OUTPUT/ERROR in parent shell
 # run-cmd writes these to files, run_spell reads them back
 run_spell() {
@@ -365,6 +381,7 @@ for boot_imp in "$ROOT_DIR"/spells/.imps/test/boot/*; do
   [ "$boot_name" = "run-spell" ] && continue
   [ "$boot_name" = "run-cmd" ] && continue
   [ "$boot_name" = "run-spell-in-dir" ] && continue
+  [ "$boot_name" = "test-skip" ] && continue
   
   # Skip if name has no hyphens (already matches underscore version)
   case "$boot_name" in

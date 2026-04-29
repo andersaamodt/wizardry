@@ -28,6 +28,7 @@ trap 'rm -rf "$pty_dir"' EXIT INT TERM
 # Create files for communication
 input_file="$pty_dir/input"
 output_file="$pty_dir/output"
+command_script="$pty_dir/cmd.sh"
 
 # Create input file with default input (can be overridden via stdin or env)
 # For now, just send enter to complete interactive prompts
@@ -35,16 +36,50 @@ printf '\r' > "$input_file"
 
 # Configurable timeout (default 2 seconds, can be overridden)
 timeout_seconds=${SOCAT_TIMEOUT:-2}
+case "$timeout_seconds" in
+  ''|*[!0-9]*)
+    timeout_seconds=2
+    ;;
+esac
+
+quote_for_sh() {
+  quoted_value=$(printf '%s' "$1" | sed "s/'/'\\\\''/g")
+  printf "'%s'" "$quoted_value"
+}
+
+{
+  printf '%s\n' '#!/bin/sh'
+  printf 'PATH=%s AWAIT_KEYPRESS_DEVICE=$(tty 2>/dev/null || printf "/dev/stdin") exec' "$(quote_for_sh "$PATH")"
+  for arg in "$@"; do
+    printf ' %s' "$(quote_for_sh "$arg")"
+  done
+  printf '\n'
+} > "$command_script"
+chmod +x "$command_script"
+
+input_file_arg=$(quote_for_sh "$input_file")
+
+timeout_cmd=''
+if command -v timeout >/dev/null 2>&1; then
+  timeout_cmd=timeout
+elif command -v gtimeout >/dev/null 2>&1; then
+  timeout_cmd=gtimeout
+fi
 
 # Start the command with PTY on one side and input from file on the other
 # This allows the command to think it's running in a real terminal
 (
-  # Use script approach with timeout to prevent hanging
-  # The command runs in a PTY, input comes from our file, output goes to our file
-  timeout "$timeout_seconds" socat \
-    "EXEC:$*,pty,setsid,ctty,stderr" \
-    "SYSTEM:cat '$input_file'; sleep 0.5" \
-    > "$output_file" 2>&1 || true
+  if [ -n "$timeout_cmd" ]; then
+    "$timeout_cmd" "$timeout_seconds" socat \
+      "EXEC:$command_script,pty,setsid,ctty,stderr" \
+      "SYSTEM:cat $input_file_arg; sleep 0.5" \
+      > "$output_file" 2>&1 || true
+  else
+    socat -T "$timeout_seconds" \
+      "EXEC:$command_script,pty,setsid,ctty,stderr" \
+      "SYSTEM:cat $input_file_arg; sleep 0.5" \
+      > "$output_file" 2>&1 || true
+  fi
 ) &
 wait $!
 
@@ -54,5 +89,4 @@ if [ -f "$output_file" ]; then
 fi
 
 # Cleanup is handled by trap
-
 
