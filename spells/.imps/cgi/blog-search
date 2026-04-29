@@ -6,6 +6,19 @@ set -eu
 # Parse query string
 query=$(get-query-param "q")
 
+html_escape() {
+  printf '%s' "$1" | sed \
+    -e 's/&/\&amp;/g' \
+    -e 's/</\&lt;/g' \
+    -e 's/>/\&gt;/g' \
+    -e 's/"/\&quot;/g' \
+    -e "s/'/\&#39;/g"
+}
+
+safe_fragment() {
+  printf '%s' "$1" | sed 's/[^a-zA-Z0-9._-]/-/g'
+}
+
 # Output headers
 http-ok-html
 
@@ -34,8 +47,9 @@ fi
 printf '<div class="search-form">\n'
 printf '  <form method="get" action="/cgi/blog-search">\n'
 search_placeholder="Search posts..."
+query_html=$(html_escape "$query")
 printf '    <input type="text" name="q" value="%s" placeholder="%s" autofocus />\n' \
-  "$query" "$search_placeholder"
+  "$query_html" "$search_placeholder"
 printf '    <button type="submit">Search</button>\n'
 printf '  </form>\n'
 printf '</div>\n'
@@ -68,10 +82,8 @@ find "$POSTS_DIR" -name "*.md" -type f | sort -r | while read -r post_file; do
   
   # Search in title, tags, summary, and content (case-insensitive)
   combined_text=$(printf '%s\n%s\n%s\n%s' "$title" "$tags" "$summary" "$content")
-  search_text=$(printf '%s' "$combined_text" | tr 'A-Z' 'a-z')
-  query_lower=$(printf '%s' "$query" | tr 'A-Z' 'a-z')
   
-  if printf '%s' "$search_text" | grep -q "$query_lower"; then
+  if printf '%s' "$combined_text" | grep -Fqi -- "$query"; then
     printf '%s\n' "$post_file"
   fi
 done > "$temp_results"
@@ -82,11 +94,11 @@ result_count=$(wc -l < "$temp_results" | sed 's/^ *//')
 # Display results
 if [ "$result_count" -eq 0 ]; then
   printf '<div class="search-results">\n'
-  printf '  <p>No results found for "<strong>%s</strong>".</p>\n' "$query"
+  printf '  <p>No results found for "<strong>%s</strong>".</p>\n' "$query_html"
   printf '</div>\n'
 else
   printf '<div class="search-results">\n'
-  printf '  <h2>Found %s result(s) for "<strong>%s</strong>"</h2>\n' "$result_count" "$query"
+  printf '  <h2>Found %s result(s) for "<strong>%s</strong>"</h2>\n' "$result_count" "$query_html"
   printf '  <div class="post-list">\n'
   
   while read -r post_file; do
@@ -105,6 +117,8 @@ else
     # Get base filename for link
     base_name=${post_file##*/}
     base_name=${base_name%.md}
+    base_name_attr=$(html_escape "$base_name")
+    title_html=$(html_escape "$title")
     
     # Format published date
     if [ -n "$published_at" ]; then
@@ -112,14 +126,15 @@ else
     else
       pub_date="Unknown date"
     fi
+    pub_date_html=$(html_escape "$pub_date")
     
     # Output post item
     printf '    <article class="post-item">\n'
     post_url="/pages/posts/%s.html"
     printf '      <h3 class="post-title"><a href="'"$post_url"'">%s</a></h3>\n' \
-      "$base_name" "$title"
+      "$base_name_attr" "$title_html"
     printf '      <div class="post-meta">\n'
-    printf '        <span class="post-date">%s</span>\n' "$pub_date"
+    printf '        <span class="post-date">%s</span>\n' "$pub_date_html"
     printf '      </div>\n'
     
     # Output tags if present
@@ -129,7 +144,9 @@ else
       printf '%s\n' "$tags" | tr ',' '\n' | while read -r tag; do
         tag=$(printf '%s' "$tag" | sed 's/^ *//;s/ *$//')
         if [ -n "$tag" ]; then
-          printf '        <a href="/pages/tags.html#%s" class="tag">%s</a>\n' "$tag" "$tag"
+          tag_href=$(safe_fragment "$tag")
+          tag_html=$(html_escape "$tag")
+          printf '        <a href="/pages/tags.html#%s" class="tag">%s</a>\n' "$tag_href" "$tag_html"
         fi
       done
       printf '      </div>\n'
@@ -137,7 +154,8 @@ else
     
     # Output summary if present
     if [ -n "$summary" ]; then
-      printf '      <p class="post-summary">%s</p>\n' "$summary"
+      summary_html=$(html_escape "$summary")
+      printf '      <p class="post-summary">%s</p>\n' "$summary_html"
     fi
     
     printf '    </article>\n\n'

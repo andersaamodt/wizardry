@@ -6,6 +6,19 @@ set -eu
 # Output headers
 http-ok-html
 
+html_escape() {
+  printf '%s' "$1" | sed \
+    -e 's/&/\&amp;/g' \
+    -e 's/</\&lt;/g' \
+    -e 's/>/\&gt;/g' \
+    -e 's/"/\&quot;/g' \
+    -e "s/'/\&#39;/g"
+}
+
+safe_fragment() {
+  printf '%s' "$1" | sed 's/[^a-zA-Z0-9._-]/-/g'
+}
+
 # Get site directory from environment or default
 SITE_DIR=${WEB_SITE_DIR:-$HOME/sites/current}
 POSTS_DIR="$SITE_DIR/site/pages/posts"
@@ -51,7 +64,10 @@ if [ -s "$temp_tags" ]; then
   sort "$temp_tags" | uniq -c | sort -rn | while read -r count tag; do
     # Trim whitespace from count
     count=$(printf '%s' "$count" | sed 's/^ *//')
-    printf '  <a href="#%s" class="tag">%s <span class="tag-count">(%s)</span></a>\n' "$tag" "$tag" "$count"
+    tag_href=$(safe_fragment "$tag")
+    tag_html=$(html_escape "$tag")
+    count_html=$(html_escape "$count")
+    printf '  <a href="#%s" class="tag">%s <span class="tag-count">(%s)</span></a>\n' "$tag_href" "$tag_html" "$count_html"
   done
   
   printf '</div>\n'
@@ -60,8 +76,10 @@ if [ -s "$temp_tags" ]; then
   printf '\n<div class="tag-sections">\n'
   
   sort "$temp_tags" | uniq | while read -r tag; do
-    printf '<section id="%s" class="tag-section">\n' "$tag"
-    printf '  <h2>Posts tagged "%s"</h2>\n' "$tag"
+    tag_href=$(safe_fragment "$tag")
+    tag_html=$(html_escape "$tag")
+    printf '<section id="%s" class="tag-section">\n' "$tag_href"
+    printf '  <h2>Posts tagged "%s"</h2>\n' "$tag_html"
     printf '  <ul class="post-list">\n'
     
     # Find posts with this tag
@@ -79,7 +97,7 @@ if [ -s "$temp_tags" ]; then
       
       # Check if tag is in post_tags (normalize spaces around commas)
       normalized_tags=$(printf '%s' "$post_tags" | sed 's/ *, */,/g')
-      if printf ',%s,' "$normalized_tags" | grep -q ",$tag,"; then
+      if printf ',%s,' "$normalized_tags" | grep -Fq -- ",$tag,"; then
         # Extract post info
         title=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^title:' | sed 's/^title: *//;s/"//g;s/'"'"'//g' || printf 'Untitled')
         published_at=$(sed -n '/^---$/,/^---$/p' "$post_file" | grep '^published_at:' | sed 's/^published_at: *//;s/"//g' || printf '')
@@ -87,6 +105,8 @@ if [ -s "$temp_tags" ]; then
         # Get base filename for link
         base_name=${post_file##*/}
         base_name=${base_name%.md}
+        base_name_attr=$(html_escape "$base_name")
+        title_html=$(html_escape "$title")
         
         # Format date
         if [ -n "$published_at" ]; then
@@ -94,11 +114,12 @@ if [ -s "$temp_tags" ]; then
         else
           pub_date=""
         fi
+        pub_date_html=$(html_escape "$pub_date")
         
         printf '    <li class="post-item">\n'
-        printf '      <a href="/pages/posts/%s.html">%s</a>\n' "$base_name" "$title"
+        printf '      <a href="/pages/posts/%s.html">%s</a>\n' "$base_name_attr" "$title_html"
         if [ -n "$pub_date" ]; then
-          printf '      <span class="post-date">(%s)</span>\n' "$pub_date"
+          printf '      <span class="post-date">(%s)</span>\n' "$pub_date_html"
         fi
         printf '    </li>\n'
       fi
