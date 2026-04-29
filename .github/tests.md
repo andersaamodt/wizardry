@@ -26,6 +26,20 @@ applyTo: ".tests/**"
 
 **Every spell and imp MUST have a corresponding test file.** Tests are not optional.
 
+## CRITICAL: Adversarial Testing Is Core Testing
+
+Adversarial tests are required whenever code touches user input, imported metadata, filesystem paths, shell evaluation, generated code, remote data, GUI/menu bridge actions, CGI endpoints, installers, release flows, or destructive side effects.
+
+Adversarial testing means using hostile-but-plausible inputs and states to prove the command contract:
+- path-shaped names such as `.`, `..`, slashes, backslashes, leading dashes, spaces, and line breaks
+- hand-edited config/cache/metadata that bypasses the normal writer
+- quote, glob, delimiter, regex, CRLF, and shell-metacharacter values
+- missing, stale, partial, symlinked, or permission-denied filesystem state
+- fake network/package-manager/tool outputs instead of live services
+- parser/gloss/menu/PTY inputs that exercise caller state and command boundaries
+
+Use `.github/adversarial-testing.md` as the canonical standard. If you discover a new adversarial bug class, update that file and add a short lesson or topic-doc entry so future AI developers automatically test it.
+
 ## CRITICAL: Test-Driven Development
 
 **Create realistic unit tests for every feature BEFORE writing or fixing code.**
@@ -40,9 +54,11 @@ Tests are the fastest path to working code for several reasons:
 **When debugging or adding features:**
 1. Write tests that reproduce the bug or test the new feature FIRST
 2. Run tests to verify they fail (proving the bug exists or feature is missing)
-3. Fix the code
-4. Run tests again to verify they pass
-5. Only then report the fix as complete
+3. Add at least one adversarial test for the highest-risk input, metadata, or state boundary touched by the change
+4. Fix the code
+5. Run tests again to verify they pass
+6. Update `.github/adversarial-testing.md` and `.github/LESSONS.md` when a new reusable bug class or lesson is found
+7. Only then report the fix as complete
 
 **Never claim code works without running actual tests.** Manual testing misses edge cases.
 

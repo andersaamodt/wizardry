@@ -69,7 +69,7 @@ This fetches test failures from PR description via GitHub API. Works immediately
 - `imps.md` — Imp (micro-helper) guide
 - `tests.md` — Testing framework and patterns
 - `logging.md` — Output and error handling
-- `adversarial-testing.md` — Adversarial audit technique and bug classes
+- `adversarial-testing.md` — Living adversarial audit standard and required bug classes
 - `PUSH_READY_CHECKLIST.md` — Canonical repo-hygiene, artifact, and publish-surface checklist
 - `glossary-and-function-architecture.md` — Glossary system details
 - `bootstrapping.md` — Bootstrapping and uncastable pattern guide
@@ -98,6 +98,8 @@ A collection of POSIX shell scripts themed as magical spells for the terminal. T
    - ALWAYS create test files in `.tests/` when creating spells or imps
    - Test naming: `spells/category/spell-name` → `.tests/category/test-spell-name.sh` (hyphens, not underscores!)
    - Use test-driven development (TDD) when possible
+   - Include adversarial tests for risky inputs, imported metadata, path boundaries, shell evaluation, generated code, remote data, and failure states
+   - Update `.github/adversarial-testing.md` when you discover a new bug class or audit technique
    - **ONLY report actual test results** — NEVER assume or guess tests will pass
    - Run tests and report exact pass/fail counts
 
@@ -146,6 +148,12 @@ A collection of POSIX shell scripts themed as magical spells for the terminal. T
    - Don't duplicate lessons already documented in other AI-facing documentation
    - Keep lessons extremely succinct (one sentence)
    - When approaching 1000 lines, remove least-important or most-conquered lessons
+
+9. **Adversarial testing is a living standard** 🧪
+   - Treat `.github/adversarial-testing.md` as required reading for non-trivial changes
+   - Apply existing adversarial bug-class checks without waiting for user prompting
+   - Standardize newly discovered bug classes in the doc so future AI developers test them automatically
+   - Prefer focused regression tests over broad speculative hardening
 
 ## Core Principles (Must Follow)
 

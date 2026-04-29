@@ -25,6 +25,20 @@ lint-magic spells/category/spell-name
 checkbashisms spells/category/spell-name
 ```
 
+## Core Testing Strategy
+
+Adversarial testing is mandatory for Wizardry development, not a separate optional audit. For every meaningful change, combine normal behavior tests with at least one hostile-but-plausible input or state test from `.github/adversarial-testing.md`.
+
+Default adversarial questions:
+- Can a path/name/config value escape its intended root or forge output rows?
+- Can hand-edited metadata bypass writer-side validation?
+- Can shell quoting, globbing, `sh -c`, menu actions, generated glosses, or parser recursion execute the wrong command?
+- Can missing, stale, symlinked, partial, or permission-denied filesystem state corrupt data or hide failure?
+- Can fake remote metadata, package-manager output, or restricted `PATH` make installer/release code do the wrong thing?
+- Can test harness stubs, executable bits, skips, or env overrides make a test pass without exercising the intended behavior?
+
+When you find a new bug class, update `.github/adversarial-testing.md` and add a concise lesson to `.github/LESSONS.md` unless the lesson is already captured.
+
 ## Code Standards
 
 ### Always
@@ -35,6 +49,7 @@ checkbashisms spells/category/spell-name
 - Use `=` not `==` for string comparison
 - Use `printf` not `echo`
 - Use `command -v` not `which`
+- Add focused adversarial regression coverage for risky inputs, imported metadata, and failure states
 
 ### Never
 - Bash-isms: arrays, `local`, `source`, `[[ ]]`, `$RANDOM`

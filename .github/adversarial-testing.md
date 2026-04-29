@@ -2,6 +2,18 @@
 
 Use this standard when auditing Wizardry spells, imps, installers, generated apps, and Wizardry-style shell projects. The goal is to find realistic bugs through hostile-but-plausible inputs and failure paths, then fix the issues that are wise to fix without adding broad, speculative hardening.
 
+This is a living standard. Every AI developer working on Wizardry is responsible for applying it proactively, extending it when a new bug class is discovered, and keeping the examples current enough that future work naturally covers the same class without user prompting. Treat adversarial testing as a core testing strategy alongside unit tests, integration tests, POSIX checks, and smoke sweeps.
+
+## Standing Requirements
+
+- Every non-trivial feature, bug fix, parser change, installer/release change, metadata reader, renderer, bridge, menu action, CGI endpoint, or filesystem mutation must receive at least one adversarial test focused on the riskiest input or state transition.
+- When a change touches an existing bug class below, reuse the documented technique and add focused regression coverage before or with the implementation.
+- When a change exposes a new kind of failure not covered here, add the bug class, technique, and at least one representative test pattern to this file before finishing.
+- When a bug fix yields a concise reusable lesson, add it to `.github/LESSONS.md` unless this file already captures the lesson fully.
+- When a bug class belongs more naturally in another AI-facing standard, update that standard and cross-reference it here.
+- Do not wait for a user to request adversarial testing; include it in normal engineering judgment whenever user input, imported metadata, filesystem state, shell evaluation, remote data, generated code, or destructive side effects are involved.
+- Keep adversarial hardening proportional: validate values that cross trust boundaries or affect side effects, but avoid speculative frameworks that do not correspond to a realistic failure mode.
+
 ## Core Method
 
 1. Read the relevant `.github/` standards before changing code.
@@ -14,6 +26,22 @@ Use this standard when auditing Wizardry spells, imps, installers, generated app
 8. Commit the completed batch before continuing.
 
 Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turning simple commands into large validation frameworks unless the bug can corrupt data, run the wrong action, print eval-able unsafe output, or hide a meaningful failure.
+
+## Audit Coverage Checklist
+
+Before considering a feature or fix complete, scan this checklist and test every relevant item:
+
+- Arguments: missing operands, extra operands, option order, unsupported constrained values, option-like values, empty strings.
+- Path/name boundaries: `.`, `..`, slashes, backslashes, line breaks, leading dashes, spaces, symlinks, stale paths, sibling escape attempts.
+- Imported metadata: hand-edited config, key/value files, cache files, manifests, generated records, filenames, remote JSON, release metadata.
+- Shell expansion and eval: quotes, globs, semicolons, command substitutions, spaces, colons in paths, `sh -c` argv handling, menu action strings.
+- Parser/gloss behavior: repeated sourced calls, caller state preservation, CRLF files, synonym targets with arguments, regex-shaped names, disabled parser modes.
+- Output contracts: `key=value`, TSV, JSON, HTML, status rows, logs consumed by GUIs, stderr/stdout separation, forged line breaks.
+- Filesystem state: missing directories, empty directories, existing outputs, partial outputs, permissions, cleanup on failure, destructive rollback.
+- Interactive and GUI bridges: PTY input, ESC/Ctrl-C, quoted menu actions, backend-side validation, stale or forged row text.
+- Install/release/update flows: fake network tools, hostile remote metadata, package-manager absence, replacement rollback, PATH precedence, artifacts outside repo.
+- Platform variance: BSD/GNU tools, macOS launchd, Linux systemd, missing optional helpers, restricted PATH, spaces in install roots.
+- Test harness integrity: executable bits, stale helper names, skipped tests that pass accidentally, environment overrides that do not reach subprocesses.
 
 ## High-Value Bug Classes
 
