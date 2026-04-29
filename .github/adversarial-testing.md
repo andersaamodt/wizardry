@@ -184,6 +184,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - macOS app installers should stage and verify replacement bundles before copying over an existing Applications bundle; never delete the installed app before the replacement copy succeeds.
 - macOS app bundle builders with explicit output paths should copy and sign a staged replacement before moving aside an existing output bundle.
 - Build helpers should reject explicit artifact output paths outside the artifact shape they own before recursive replacement.
+- Explicit artifact paths passed to BSD tools should reject bare leading-dash basenames unless every downstream command consistently uses `--`.
 - Validate remote metadata before downloads, extraction, install paths, chmod, JWT signing, API URLs, or platform tools run.
 - Git remote URLs can contain CR/LF and path-shaped slugs; validate before printing status rows or constructing GitHub API URLs.
 - Git remote write commands should reject CR/LF before persisting URLs, even if imported remote status readers sanitize later.
