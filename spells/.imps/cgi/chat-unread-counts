@@ -75,6 +75,10 @@ if [ -z "$username" ]; then
   send_sse_event error "Username required"
   exit 1
 fi
+if ! validate-username "$username"; then
+  send_sse_event error "Invalid username"
+  exit 1
+fi
 
 # Function to count unread messages in a room
 count_unread_in_room() {

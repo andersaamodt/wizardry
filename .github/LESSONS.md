@@ -296,3 +296,4 @@
 - Chat CGI handlers must reuse room and username validators on every action, not only create/send paths; delete and rename endpoints compose the same filesystem paths.
 - Blog CGI renderers must HTML-escape front-matter titles, summaries, dates, tags, and filenames at render time; checked-in markdown is still imported content.
 - Blog search/tag matching should use fixed-string matching for user queries and tags; regex-shaped values like `[` or `a.b` are valid content, not patterns.
+- Shared room-name validators should encode the full filesystem-label contract, not only traversal rejection; streaming/list endpoints often rely solely on the shared validator.

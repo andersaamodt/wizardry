@@ -132,6 +132,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Shared CGI data-root helpers should reject path-shaped site-name environment values before composing storage paths for other handlers.
 - Chat-style CGI state should test create/delete/rename/send parity for room and avatar names; every endpoint that composes a room path needs the same validator.
 - Blog/content CGI renderers should test quote/HTML-bearing front matter, regex-shaped search queries, regex-shaped tags, and invalid numeric pagination values.
+- Shared CGI validators should include the stricter label contract expected by all consumers, then rerun stream/list/delete variants that rely on that validator without extra local checks.
 - Catalog/list/count commands must apply the same identifier validator as the command that later executes the selected item.
 - Read/import paths for hand-edited metadata must revalidate the same delimiters and identifiers enforced by create/update commands.
 - Imported profile/config fields must be sanitized at output time even when only a subset of those fields drive filesystem or command actions.
@@ -176,6 +177,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Plain-text backend outputs still need argument shape checks when GUI code treats the first line as authoritative state.
 - Launcher root paths that are persisted for future app starts should reject line breaks before writing config files.
 - Install/uninstall helpers should reject explicit replacement or removal paths outside the artifact shape they own before recursive deletion.
+- macOS app installers should stage and verify replacement bundles before copying over an existing Applications bundle; never delete the installed app before the replacement copy succeeds.
 - Build helpers should reject explicit artifact output paths outside the artifact shape they own before recursive replacement.
 - Validate remote metadata before downloads, extraction, install paths, chmod, JWT signing, API URLs, or platform tools run.
 - Git remote URLs can contain CR/LF and path-shaped slugs; validate before printing status rows or constructing GitHub API URLs.

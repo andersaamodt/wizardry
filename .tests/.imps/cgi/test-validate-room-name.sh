@@ -31,6 +31,13 @@ test_invalid_room_names() {
   # Backslashes
   run_spell "spells/.imps/cgi/validate-room-name" "room\\admin"
   [ "$STATUS" -ne 0 ] || return 1
+
+  # Spaces and punctuation
+  run_spell "spells/.imps/cgi/validate-room-name" "room admin"
+  [ "$STATUS" -ne 0 ] || return 1
+
+  run_spell "spells/.imps/cgi/validate-room-name" "room.admin"
+  [ "$STATUS" -ne 0 ] || return 1
   
   # Empty
   run_spell "spells/.imps/cgi/validate-room-name" ""
