@@ -23,7 +23,29 @@ test_ssh_auth_register_creates_fingerprint() {
   printf '%s' "$output" | grep -q '"challenge"'
 }
 
+test_ssh_auth_register_rejects_path_username() {
+  skip-if-compiled || return $?
+
+  sites_dir=$(temp-dir ssh-auth-sites)
+  QUERY_STRING='username=..%2Fescape&ssh_public_key=ssh-ed25519+AAAAC3NzaC1lZDI1NTE5AAAAItest' \
+    WIZARDRY_SITE_NAME=testsite WIZARDRY_SITES_DIR="$sites_dir" \
+    run_cmd spells/.imps/cgi/ssh-auth-register
+  assert_success || return 1
+  assert_output_contains '"success":false' || return 1
+  assert_output_contains 'Invalid username' || return 1
+
+  if [ -e "$sites_dir/.sitedata/testsite/ssh-auth/escape" ]; then
+    TEST_FAILURE_REASON="ssh-auth-register wrote outside users directory for path username"
+    rm -rf "$sites_dir"
+    return 1
+  fi
+
+  rm -rf "$sites_dir"
+}
+
 run_test_case "ssh-auth-register is executable" test_ssh_auth_register_exists
 run_test_case "ssh-auth-register rejects missing params" test_ssh_auth_register_missing_params
 run_test_case "ssh-auth-register creates fingerprint" test_ssh_auth_register_creates_fingerprint
+run_test_case "ssh-auth-register rejects path-shaped username" \
+  test_ssh_auth_register_rejects_path_username
 finish_tests

@@ -15,6 +15,10 @@ if [ -z "$session_token" ]; then
   printf '{"success":false,"error":"Not authenticated"}\n'
   exit 0
 fi
+if ! validate-session-token "$session_token"; then
+  printf '{"success":false,"error":"Invalid session"}\n'
+  exit 0
+fi
 
 # Get data directory
 data_dir=$(get-site-data-dir "ssh-auth")
@@ -29,6 +33,10 @@ fi
 
 # Get username from session
 username=$(grep -o '"username":"[^"]*"' "$session_file" | cut -d'"' -f4)
+if ! validate-username "$username"; then
+  printf '{"success":false,"error":"Invalid session"}\n'
+  exit 0
+fi
 
 # Check if user is admin
 is_admin="false"

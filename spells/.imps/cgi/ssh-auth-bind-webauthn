@@ -19,6 +19,10 @@ if [ -z "$username" ] || [ -z "$credential_id" ] || \
   printf '{"success":false,"error":"Missing required parameters"}\n'
   exit 0
 fi
+if ! validate-username "$username"; then
+  printf '{"success":false,"error":"Invalid username"}\n'
+  exit 0
+fi
 
 # Get data directory
 data_dir=$(get-site-data-dir "ssh-auth")
@@ -41,7 +45,8 @@ delegates_dir="$user_dir/delegates"
 mkdir -p "$delegates_dir"
 
 # Generate unique delegate ID
-delegate_id=$(dd if=/dev/urandom bs=16 count=1 2>/dev/null | base64 | tr -d '\n' | tr '+/' '-_')
+delegate_id=$(dd if=/dev/urandom bs=16 count=1 2>/dev/null | \
+  base64 | tr '+/' '-_' | tr -d '=\n')
 
 # Store WebAuthn credential
 delegate_file="$delegates_dir/$delegate_id"

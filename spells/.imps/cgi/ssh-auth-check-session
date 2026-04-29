@@ -15,6 +15,10 @@ if [ -z "$session_token" ]; then
   printf '{"success":false,"authenticated":false}\n'
   exit 0
 fi
+if ! validate-session-token "$session_token"; then
+  printf '{"success":false,"authenticated":false}\n'
+  exit 0
+fi
 
 # Get data directory
 data_dir=$(get-site-data-dir "ssh-auth")
@@ -31,7 +35,7 @@ fi
 username=$(grep -o '"username":"[^"]*"' "$session_file" | cut -d'"' -f4)
 fingerprint=$(grep -o '"fingerprint":"[^"]*"' "$session_file" | cut -d'"' -f4)
 
-if [ -z "$username" ]; then
+if ! validate-username "$username"; then
   printf '{"success":false,"authenticated":false}\n'
   exit 0
 fi

@@ -289,3 +289,4 @@
 - Menu action strings built from allowlist/config paths must shell-quote quote-bearing paths, because the menu eval boundary is separate from downstream command validation.
 - Imported `site-user` values must reject option-like and uid-like names such as `#0` before sudo re-exec or service rendering; quoting the value does not make it a safe account selector.
 - CGI upload handlers must sanitize decoded filenames before filesystem writes and HTML-escape every reflected filename/path; query decoding turns `%3C...%3E` into active markup.
+- CGI auth tokens and user names are path segments when backed by flat files; generate base64url-style tokens and reject `/`, `+`, `=`, `.`, `..`, and delimiter-bearing values before session/user file lookup.

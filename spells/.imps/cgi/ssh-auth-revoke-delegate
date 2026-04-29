@@ -16,6 +16,14 @@ if [ -z "$username" ] || [ -z "$delegate_id" ]; then
   printf '{"success":false,"error":"Missing username or delegate_id"}\n'
   exit 0
 fi
+if ! validate-username "$username"; then
+  printf '{"success":false,"error":"Invalid username"}\n'
+  exit 0
+fi
+if ! validate-session-token "$delegate_id"; then
+  printf '{"success":false,"error":"Invalid delegate_id"}\n'
+  exit 0
+fi
 
 # Get data directory
 data_dir=$(get-site-data-dir "ssh-auth")

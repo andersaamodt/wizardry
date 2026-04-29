@@ -45,6 +45,10 @@ if [ -d "$data_dir/users" ]; then
       stored_credential_id=$(grep -o '"credential_id":"[^"]*"' "$delegate_file" | cut -d'"' -f4)
       if [ "$stored_credential_id" = "$credential_id" ]; then
         username=$(basename "$user_dir")
+        if ! validate-username "$username"; then
+          username=""
+          continue
+        fi
         fingerprint=$(cat "$user_dir/ssh_fingerprint")
         delegate_id=$(basename "$delegate_file")
         break 2
@@ -60,7 +64,8 @@ if [ -z "$username" ]; then
 fi
 
 # Generate session token
-session_token=$(dd if=/dev/urandom bs=32 count=1 2>/dev/null | base64 | tr -d '\n')
+session_token=$(dd if=/dev/urandom bs=32 count=1 2>/dev/null | \
+  base64 | tr '+/' '-_' | tr -d '=\n')
 
 # Store session
 sessions_dir="$data_dir/sessions"

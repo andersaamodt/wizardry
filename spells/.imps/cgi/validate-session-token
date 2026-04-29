@@ -1,0 +1,16 @@
+#!/bin/sh
+# validate-session-token TOKEN - validate a session token is a safe path segment.
+
+set -eu
+
+token=${1-}
+
+[ -z "$token" ] && exit 1
+
+case "$token" in
+  .|..|*[!a-zA-Z0-9._-]*)
+    exit 1
+    ;;
+esac
+
+exit 0

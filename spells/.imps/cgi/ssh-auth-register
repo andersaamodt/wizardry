@@ -16,6 +16,10 @@ if [ -z "$username" ] || [ -z "$ssh_public_key" ]; then
   printf '{"success":false,"error":"Missing username or ssh_public_key"}\n'
   exit 0
 fi
+if ! validate-username "$username"; then
+  printf '{"success":false,"error":"Invalid username"}\n'
+  exit 0
+fi
 
 # Get data directory
 data_dir=$(get-site-data-dir "ssh-auth")
