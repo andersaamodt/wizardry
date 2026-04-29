@@ -18,9 +18,8 @@ require-wizardry || exit 1
 set -eu
 . env-clear
 . colors
-: "${BOLD:=}"
-: "${CYAN:=}"
-: "${RESET:=}"
+bold=${BOLD-}
+cyan=${CYAN-}
 
 # Catch Ctrl-C and TERM signal to exit cleanly
 # INT (Ctrl-C) should exit 130, TERM should exit 0
@@ -29,7 +28,7 @@ trap 'exit 0' TERM
 
 # Displays the menu
 bitcoin_menu_display_menu() {
-  title="${BOLD}${CYAN}Bitcoin: $(bitcoin-status)"
+  title="${bold}${cyan}Bitcoin: $(bitcoin-status)"
   blockchain_info="Display Blockchain Info%bitcoin-cli getblockchaininfo"
   wallet_menu="Wallet Menu%wallet-menu"
   guided_wallet="Create Wallet (Guided)%generate-bitcoin-wallet"

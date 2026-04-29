@@ -28,9 +28,9 @@ case "$site_name" in
     ;;
 esac
 
-WEB_ROOT=${WEB_WIZARDRY_ROOT:-$HOME/sites}
-SITE_DIR="$WEB_ROOT/$site_name"
-if [ ! -d "$SITE_DIR" ]; then
+web_root=${WEB_WIZARDRY_ROOT:-$HOME/sites}
+site_dir="$web_root/$site_name"
+if [ ! -d "$site_dir" ]; then
   die "restart-site: site '$site_name' not found"
 fi
 

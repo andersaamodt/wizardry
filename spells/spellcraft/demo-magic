@@ -215,8 +215,8 @@ demo_level() {
 
       jump_script="$WIZARDRY_DIR/spells/translocation/jump-to-marker"
       jump_output=$(
-        JUMP_TO_MARKER_SCRIPT=$jump_script sh -c '
-          jump_script=$JUMP_TO_MARKER_SCRIPT
+        jump_to_marker_script=$jump_script sh -c '
+          jump_script=$jump_to_marker_script
           cd / || exit 1
           set -- hearth
           . "$jump_script" >/dev/null

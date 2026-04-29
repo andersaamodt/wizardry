@@ -18,9 +18,8 @@ require-wizardry || exit 1
 set -eu
 . env-clear
 . colors
-: "${BOLD:=}"
-: "${CYAN:=}"
-: "${RESET:=}"
+bold=${BOLD-}
+cyan=${CYAN-}
 
 # Catch Ctrl-C and TERM signal to exit cleanly
 # INT (Ctrl-C) should exit 130, TERM should exit 0
@@ -37,7 +36,7 @@ while true; do
   fi
 
   # Build wallet menu
-  title="${BOLD}${CYAN}Lightning Wallet"
+  title="${bold}${cyan}Lightning Wallet"
   exit_label=$(exit-label)
   exit_option="${exit_label}%kill -TERM \$PPID"
   

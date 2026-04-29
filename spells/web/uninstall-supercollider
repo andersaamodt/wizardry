@@ -16,15 +16,15 @@ set -eu
 
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
 
-say() {
+uninstall_supercollider_say() {
   printf '%s\n' "$1"
 }
 
-has_cmd() {
+uninstall_supercollider_has_cmd() {
   command -v "$1" >/dev/null 2>&1
 }
 
-run_privileged() {
+uninstall_supercollider_run_privileged() {
   if "$@" 2>/dev/null; then
     return 0
   fi
@@ -36,7 +36,7 @@ run_privileged() {
     "$@"
     return 0
   fi
-  if has_cmd sudo; then
+  if uninstall_supercollider_has_cmd sudo; then
     sudo "$@"
     return 0
   fi
@@ -45,39 +45,39 @@ run_privileged() {
 
 removed=0
 
-if has_cmd apt-get; then
-  run_privileged env DEBIAN_FRONTEND=noninteractive \
+if uninstall_supercollider_has_cmd apt-get; then
+  uninstall_supercollider_run_privileged env DEBIAN_FRONTEND=noninteractive \
     apt-get remove -y supercollider >/dev/null 2>&1 || true
   removed=1
-elif has_cmd dnf; then
-  run_privileged dnf remove -y supercollider >/dev/null 2>&1 || true
+elif uninstall_supercollider_has_cmd dnf; then
+  uninstall_supercollider_run_privileged dnf remove -y supercollider >/dev/null 2>&1 || true
   removed=1
-elif has_cmd pacman; then
-  run_privileged pacman -Rns --noconfirm supercollider >/dev/null 2>&1 || true
+elif uninstall_supercollider_has_cmd pacman; then
+  uninstall_supercollider_run_privileged pacman -Rns --noconfirm supercollider >/dev/null 2>&1 || true
   removed=1
-elif has_cmd zypper; then
-  run_privileged zypper --non-interactive remove supercollider >/dev/null 2>&1 || true
+elif uninstall_supercollider_has_cmd zypper; then
+  uninstall_supercollider_run_privileged zypper --non-interactive remove supercollider >/dev/null 2>&1 || true
   removed=1
-elif has_cmd apk; then
-  run_privileged apk del supercollider >/dev/null 2>&1 || true
+elif uninstall_supercollider_has_cmd apk; then
+  uninstall_supercollider_run_privileged apk del supercollider >/dev/null 2>&1 || true
   removed=1
-elif has_cmd nix-env; then
+elif uninstall_supercollider_has_cmd nix-env; then
   nix-env -e supercollider >/dev/null 2>&1 || true
   removed=1
-elif has_cmd pkg; then
-  run_privileged pkg delete -y supercollider >/dev/null 2>&1 || true
+elif uninstall_supercollider_has_cmd pkg; then
+  uninstall_supercollider_run_privileged pkg delete -y supercollider >/dev/null 2>&1 || true
   removed=1
-elif has_cmd pkg_delete; then
-  run_privileged pkg_delete supercollider >/dev/null 2>&1 || true
+elif uninstall_supercollider_has_cmd pkg_delete; then
+  uninstall_supercollider_run_privileged pkg_delete supercollider >/dev/null 2>&1 || true
   removed=1
-elif has_cmd brew; then
+elif uninstall_supercollider_has_cmd brew; then
   brew uninstall --cask supercollider >/dev/null 2>&1 || true
   removed=1
 fi
 
 for app_path in /Applications/SuperCollider.app "$HOME/Applications/SuperCollider.app"; do
   if [ -d "$app_path" ]; then
-    run_privileged rm -rf "$app_path" >/dev/null 2>&1 || true
+    uninstall_supercollider_run_privileged rm -rf "$app_path" >/dev/null 2>&1 || true
     removed=1
   fi
 done
@@ -96,18 +96,18 @@ do
 done
 
 if command -v sclang >/dev/null 2>&1; then
-  say "uninstall-supercollider: SuperCollider is still present on PATH" >&2
+  uninstall_supercollider_say "uninstall-supercollider: SuperCollider is still present on PATH" >&2
   exit 1
 fi
 
 if [ -d /Applications/SuperCollider.app ] || [ -d "$HOME/Applications/SuperCollider.app" ]; then
-  say "uninstall-supercollider: SuperCollider.app is still present" >&2
+  uninstall_supercollider_say "uninstall-supercollider: SuperCollider.app is still present" >&2
   exit 1
 fi
 
 if [ "$removed" -eq 0 ]; then
-  say "SuperCollider is not installed"
+  uninstall_supercollider_say "SuperCollider is not installed"
   exit 0
 fi
 
-say "Uninstalled SuperCollider"
+uninstall_supercollider_say "Uninstalled SuperCollider"

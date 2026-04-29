@@ -55,7 +55,7 @@ enable_run_priv() {
 unit="wizardry-site-${site_name}.service"
 plist="${LAUNCHD_PLIST_DIR:-/Library/LaunchDaemons}/org.wizardry.web.${site_name}.plist"
 
-plist_bool_value() {
+enable_plist_bool_value() {
   key_name=$1
   awk -v key="$key_name" '
     $0 ~ "<key>" key "</key>" { found=1; next }
@@ -67,7 +67,7 @@ plist_bool_value() {
   ' "$plist"
 }
 
-set_plist_bool() {
+enable_set_plist_bool() {
   key_name=$1
   bool_value=$2
   tmp_file=$(temp-file enable-site-daemon)
@@ -119,14 +119,14 @@ if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
 
   # Startup behavior on macOS is controlled by plist flags, not launchctl disable.
   # This keeps startup toggle independent from manual start/stop.
-  set_plist_bool RunAtLoad true
-  set_plist_bool KeepAlive true
+  enable_set_plist_bool RunAtLoad true
+  enable_set_plist_bool KeepAlive true
 
   # Compatibility: clear stale disabled overrides from older implementations.
   enable_run_priv launchctl enable "system/$label" 2>/dev/null || true
 
-  run_at_load=$(plist_bool_value RunAtLoad || printf '')
-  keep_alive=$(plist_bool_value KeepAlive || printf '')
+  run_at_load=$(enable_plist_bool_value RunAtLoad || printf '')
+  keep_alive=$(enable_plist_bool_value KeepAlive || printf '')
   if [ "$run_at_load" != "true" ] || [ "$keep_alive" != "true" ]; then
     die "enable-site-daemon: failed to enable daemon on startup for $site_name"
   fi

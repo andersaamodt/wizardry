@@ -9,7 +9,7 @@ dir=$2
 # Tests should source this file after invoke-wizardry
 cat >"$dir/forget-${command_name}" <<OVERRIDE
 # Override has function to hide $command_name
-_original_has_impl() {
+original_has_impl() {
   command -v "\$1" >/dev/null 2>&1
 }
 
@@ -17,7 +17,7 @@ has() {
   if [ "\$1" = "$command_name" ]; then
     return 1  # Command not found
   fi
-  _original_has_impl "\$@"
+  original_has_impl "\$@"
 }
 OVERRIDE
 

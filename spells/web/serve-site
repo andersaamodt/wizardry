@@ -52,7 +52,7 @@ serve_site_run_priv() {
   die "serve-site: root or sudo is required"
 }
 
-is_site_nginx_pid_running() {
+serve_site_nginx_pid_running() {
   pid=$1
   case "$pid" in
     ''|*[!0-9]*)
@@ -91,7 +91,7 @@ fi
 # Check if site is already running
 if [ -f "$site_dir/nginx/nginx.pid" ]; then
   pid=$(cat "$site_dir/nginx/nginx.pid" 2>/dev/null || echo "")
-  if is_site_nginx_pid_running "$pid"; then
+  if serve_site_nginx_pid_running "$pid"; then
     warn "serve-site: $site_name is already running (PID $pid)"
     # Read port and show URL
     port=$(config-get "$site_dir/site.conf" port 2>/dev/null || echo "8080")
@@ -174,7 +174,7 @@ is_serving=0
 for _ in 1 2 3 4 5; do
   if [ -f "$site_dir/nginx/nginx.pid" ]; then
     pid=$(cat "$site_dir/nginx/nginx.pid" 2>/dev/null || echo "")
-    if is_site_nginx_pid_running "$pid"; then
+    if serve_site_nginx_pid_running "$pid"; then
       is_serving=1
       break
     fi

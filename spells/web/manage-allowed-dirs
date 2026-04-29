@@ -52,13 +52,13 @@ if [ -n "$site_user" ] && [ "$(id -un)" != "$site_user" ] && [ -z "${WIZARDRY_SI
   fi
 fi
 
-shell_quote() {
+manage_allowed_dirs_shell_quote() {
   printf "'"
   printf '%s' "$1" | sed "s/'/'\\\\''/g"
   printf "'"
 }
 
-canonical_dir() {
+manage_allowed_dirs_canonical_dir() {
   (CDPATH= cd -- "$1" 2>/dev/null && pwd -P)
 }
 
@@ -84,16 +84,16 @@ validate_allowlist_dir() {
     return 1
   fi
 
-  allow_real=$(canonical_dir "$allow_path") || {
+  allow_real=$(manage_allowed_dirs_canonical_dir "$allow_path") || {
     warn "Path cannot be resolved: $allow_path"
     return 1
   }
-  sites_real=$(canonical_dir "$sites_dir") || sites_real=$sites_dir
-  site_real=$(canonical_dir "$site_dir") || site_real=$site_dir
-  sitedata_root_real=$(canonical_dir "$sites_dir/.sitedata" 2>/dev/null || printf '')
+  sites_real=$(manage_allowed_dirs_canonical_dir "$sites_dir") || sites_real=$sites_dir
+  site_real=$(manage_allowed_dirs_canonical_dir "$site_dir") || site_real=$site_dir
+  sitedata_root_real=$(manage_allowed_dirs_canonical_dir "$sites_dir/.sitedata" 2>/dev/null || printf '')
   home_real=
   if [ -n "${HOME-}" ]; then
-    home_real=$(canonical_dir "$HOME" 2>/dev/null || printf '')
+    home_real=$(manage_allowed_dirs_canonical_dir "$HOME" 2>/dev/null || printf '')
   fi
 
   case "$allow_real" in
@@ -209,7 +209,7 @@ while true; do
 
   set -- "Add allowed dir%add_allowlist_entry" "---"
   while IFS= read -r entry; do
-    quoted_entry=$(shell_quote "$entry")
+    quoted_entry=$(manage_allowed_dirs_shell_quote "$entry")
     set -- "$@" "$entry%remove_allowlist_entry $quoted_entry"
   done <<EOF
 $entries

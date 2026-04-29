@@ -23,7 +23,7 @@ esac
 set -eu
 . env-clear
 
-run_priv() {
+rename_site_run_priv() {
   if [ "$(id -u)" -eq 0 ]; then
     "$@"
     return 0
@@ -194,9 +194,9 @@ if [ "$old_artifact_exists" -eq 1 ]; then
   if [ -n "$old_daemon_artifact" ] && [ -f "$old_daemon_artifact" ]; then
     printf 'Change: removing old daemon artifact\n'
     printf '  path: %s\n' "$old_daemon_artifact"
-    run_priv rm -f "$old_daemon_artifact"
+    rename_site_run_priv rm -f "$old_daemon_artifact"
     if has systemctl; then
-      run_priv systemctl daemon-reload
+      rename_site_run_priv systemctl daemon-reload
     fi
   fi
   printf 'Change: creating daemon artifact for new site name\n'

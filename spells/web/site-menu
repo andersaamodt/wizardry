@@ -75,13 +75,13 @@ case "$site_user" in
     ;;
 esac
 
-shell_quote() {
+site_menu_shell_quote() {
   printf "'"
   printf '%s' "$1" | sed "s/'/'\\\\''/g"
   printf "'"
 }
 
-valid_port() {
+site_menu_valid_port() {
   port_value=$1
   case "$port_value" in
     ''|*[!0-9]*)
@@ -117,9 +117,9 @@ hidden_service_dir_for_site() {
   return 1
 }
 
-quoted_site_name=$(shell_quote "$site_name")
-quoted_site_dir=$(shell_quote "$site_dir")
-quoted_site_data_dir=$(shell_quote "$site_data_dir")
+quoted_site_name=$(site_menu_shell_quote "$site_name")
+quoted_site_dir=$(site_menu_shell_quote "$site_dir")
+quoted_site_data_dir=$(site_menu_shell_quote "$site_data_dir")
 
 # Note: We don't re-exec as site user here - individual commands will use sudo if needed
 # This allows "Open site directory" and "Open site data" to work as the actual user
@@ -159,7 +159,7 @@ while true; do
   # Get port from config
   port=$(config-get "$site_dir/site.conf" port 2>/dev/null || true)
   [ -z "$port" ] && port=8080
-  if ! valid_port "$port"; then
+  if ! site_menu_valid_port "$port"; then
     warn "site-menu: invalid configured port '$port'; using 8080 for menu actions."
     port=8080
   fi
@@ -258,7 +258,7 @@ while true; do
   # Conditional: Open in browser (serving only)
   open_browser_option=""
   if [ "$is_serving" -eq 1 ]; then
-    open_browser_url=$(shell_quote "http://localhost:$port")
+    open_browser_url=$(site_menu_shell_quote "http://localhost:$port")
     open_browser_cmd="browse-url $open_browser_url"
     open_browser_cmd_wrapped=$(wrap_cmd "Open in browser" "$open_browser_cmd")
     open_browser_option="Open in browser%$open_browser_cmd_wrapped"

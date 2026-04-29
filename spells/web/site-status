@@ -47,7 +47,7 @@ fi
 # Check if serving
 serve_status="not serving"
 
-is_site_nginx_pid_running() {
+site_status_nginx_pid_running() {
   pid=$1
   case "$pid" in
     ''|*[!0-9]*)
@@ -74,7 +74,7 @@ is_site_nginx_pid_running() {
 
 if [ -f "$site_dir/nginx/nginx.pid" ]; then
   pid=$(cat "$site_dir/nginx/nginx.pid" 2>/dev/null || echo "")
-  if is_site_nginx_pid_running "$pid"; then
+  if site_status_nginx_pid_running "$pid"; then
     serve_status="serving"
   fi
 fi

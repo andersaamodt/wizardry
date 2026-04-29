@@ -51,7 +51,7 @@ valid_port() {
   [ "$port_value" -ge 1 ] && [ "$port_value" -le 65535 ]
 }
 
-hidden_service_line_matches_site() {
+toggle_site_tor_hidden_service_line_matches_site() {
   line=$1
   case "$line" in
     HiddenServiceDir*)
@@ -76,7 +76,7 @@ fi
 tor_config_path=$(torrc-path) || exit 1
 hs_configured=0
 while IFS= read -r line; do
-  if hidden_service_line_matches_site "$line"; then
+  if toggle_site_tor_hidden_service_line_matches_site "$line"; then
     hs_configured=1
     break
   fi
@@ -160,7 +160,7 @@ esac
 # Check if this site already has a hidden service configured
 hs_configured=0
 while IFS= read -r line; do
-  if hidden_service_line_matches_site "$line"; then
+  if toggle_site_tor_hidden_service_line_matches_site "$line"; then
     hs_configured=1
     break
   fi
@@ -173,7 +173,7 @@ if [ "$hs_configured" -eq 1 ]; then
     temp_torrc=$(mktemp)
     in_hs_block=0
     while IFS= read -r line; do
-      if hidden_service_line_matches_site "$line"; then
+      if toggle_site_tor_hidden_service_line_matches_site "$line"; then
         in_hs_block=1
         continue
       fi

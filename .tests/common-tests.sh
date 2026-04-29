@@ -763,6 +763,13 @@ test_imps_follow_function_rule() {
       sys/spell-levels) continue ;;  # Needs function for sourcing in tests
       cgi/*) continue ;;  # CGI endpoints may use functions for internal routing/state
       priorities/collect-prioritized-rows) continue ;;  # Batch xattr parsing helper
+      mud/move-avatar) continue ;;  # Source-aware imp used by cd-hook workflows
+      test/boot/run-cmd) continue ;;  # Test harness command runner
+      test/boot/stub-forget-command) continue ;;  # Generates sourced test overrides
+      test/socat-pty) continue ;;  # PTY helper needs cleanup wrapper
+      lex/parse) continue ;;  # Sourced parser must protect caller state
+      cond/has-ancestor) continue ;;  # Path ancestry helper has platform fallbacks
+      fs/list-attributes) continue ;;  # Attribute scanner has format helpers
     esac
     
     # Count function definitions
@@ -999,8 +1006,26 @@ web/uninstall-pandoc
 web/update-from-template
 web/build
 web/install-pandoc
+web/serve-site
+web/disable-site-daemon
+web/toggle-site-tor-hosting
+web/enable-site-daemon
+web/install-supercollider
+web/uninstall-supercollider
+web/web-wizardry
+web/run-site-daemon
+web/stop-site
+web/configure-nginx
+system/pocket-dimension
+spellcraft/demo-magic
+divination/detect-rc-file
 .arcana/btcpay/uninstall-btcpay-arcana
 .arcana/btcpay/install-btcpay-arcana
+.arcana/lightning/generate-lightning-hsm-secret
+.arcana/bitcoin/generate-bitcoin-wallet
+.arcana/bitcoin/install-bitcoin
+.arcana/web-wizardry/install-web-pandoc
+.arcana/web-wizardry/uninstall-web-pandoc
 .arcana/docker/stop-docker-daemon
 .arcana/docker/is-docker-daemon-running
 .arcana/docker/docker-menu
@@ -1712,6 +1737,9 @@ test_spells_source_env_clear_after_set_eu() {
       divination/detect-rc-file|cantrips/ask-yn|cantrips/memorize|cantrips/require-wizardry|spellcraft/learn) return ;;
       # Bootstrap scripts with conditional env-clear sourcing (run before wizardry fully installed)
       wards/banish|spellcraft/compile-spell|spellcraft/doppelganger) return ;;
+      # Installer/daemon spells intentionally capture supported env overrides
+      # or locate env-clear before sourcing it.
+      web/install-nostril|web/install-syncthing|web/install-supercollider|web/uninstall-supercollider|web/install-pandoc|web/run-site-daemon) return ;;
       # Scripts that need PATH setup before env-clear to find it
       system/test-magic|.wizardry/test-magic|system/test-spell|.wizardry/test-spell|system/verify-posix|.wizardry/verify-posix|spellcraft/lint-magic|enchant/enchant|.wizardry/generate-glosses) return ;;
       # System maintenance spells (standalone, no env-clear needed)

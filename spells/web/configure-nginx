@@ -42,7 +42,7 @@ port=8080
 domain=localhost
 use_https=false
 
-valid_port() {
+configure_nginx_valid_port() {
   port_value=$1
   case "$port_value" in
     ''|*[!0-9]*|??????*)
@@ -52,7 +52,7 @@ valid_port() {
   [ "$port_value" -ge 1 ] && [ "$port_value" -le 65535 ]
 }
 
-valid_domain() {
+configure_nginx_valid_domain() {
   domain_value=$1
   case "$domain_value" in
     ''|.|..|.*|*.|*..*|*[!A-Za-z0-9._-]*)
@@ -73,7 +73,7 @@ valid_nginx_quoted_path() {
   esac
 }
 
-hidden_service_line_matches_site() {
+configure_nginx_hidden_service_line_matches_site() {
   line=$1
   case "$line" in
     HiddenServiceDir*)
@@ -161,11 +161,11 @@ if [ "$use_https" = "false" ] && [ -f "$site_dir/site.conf" ]; then
   fi
 fi
 
-if ! valid_port "$port"; then
+if ! configure_nginx_valid_port "$port"; then
   die 2 "configure-nginx: invalid port"
 fi
 
-if ! valid_domain "$domain"; then
+if ! configure_nginx_valid_domain "$domain"; then
   die 2 "configure-nginx: invalid domain"
 fi
 
@@ -439,7 +439,7 @@ if is-tor-installed; then
     # Check if Tor hosting is enabled by looking for this site's HiddenServiceDir
     tor_hosting_enabled=0
     while IFS= read -r line; do
-      if hidden_service_line_matches_site "$line"; then
+      if configure_nginx_hidden_service_line_matches_site "$line"; then
         tor_hosting_enabled=1
         break
       fi
@@ -453,7 +453,7 @@ if is-tor-installed; then
       
       while IFS= read -r line; do
         # Check if we're entering this site's hidden service block
-        if hidden_service_line_matches_site "$line"; then
+        if configure_nginx_hidden_service_line_matches_site "$line"; then
           in_site_block=1
           printf '%s\n' "$line" >> "$temp_torrc"
           continue

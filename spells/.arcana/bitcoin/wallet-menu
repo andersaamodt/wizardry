@@ -22,14 +22,9 @@ set -eu
 if command -v colors >/dev/null 2>&1; then
   # shellcheck source=/dev/null
   . colors
-else
-  BOLD=""
-  CYAN=""
-  RESET=""
 fi
-: "${BOLD:=}"
-: "${CYAN:=}"
-: "${RESET:=}"
+bold=${BOLD-}
+cyan=${CYAN-}
 
 # Catch Ctrl-C and TERM signal to exit cleanly
 # INT (Ctrl-C) should exit 130, TERM should exit 0
@@ -39,7 +34,7 @@ trap 'exit 0' TERM
 first_run=1
 
 bitcoin_wallet_menu() {
-  title="${BOLD}${CYAN}Bitcoin Wallet"
+  title="${bold}${cyan}Bitcoin Wallet"
   if ! is-bitcoin-installed >/dev/null 2>&1; then
     install_option="Install or Upgrade Bitcoin%install-bitcoin"
     exit_label=$(exit-label)

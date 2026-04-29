@@ -99,7 +99,7 @@ if [ "$new_port" -lt 1 ] || [ "$new_port" -gt 65535 ]; then
   die 2 "change-site-port: port must be between 1 and 65535"
 fi
 
-hidden_service_line_matches_site() {
+change_site_port_hidden_service_line_matches_site() {
   line=$1
   case "$line" in
     HiddenServiceDir*)
@@ -151,7 +151,7 @@ if is-tor-installed; then
   tor_config_path=$(torrc-path 2>/dev/null || echo "")
   if [ -n "$tor_config_path" ] && [ -f "$tor_config_path" ]; then
     while IFS= read -r line; do
-      if hidden_service_line_matches_site "$line"; then
+      if change_site_port_hidden_service_line_matches_site "$line"; then
         tor_hosting_enabled=1
         break
       fi
@@ -169,7 +169,7 @@ if [ "$tor_hosting_enabled" -eq 1 ]; then
   
   while IFS= read -r line; do
     # Check if we're entering this site's hidden service block
-    if hidden_service_line_matches_site "$line"; then
+    if change_site_port_hidden_service_line_matches_site "$line"; then
       in_site_block=1
       printf '%s\n' "$line" >> "$temp_torrc"
       continue

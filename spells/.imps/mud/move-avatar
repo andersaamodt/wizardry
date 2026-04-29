@@ -4,16 +4,16 @@
 
 set -eu
 
-_move_avatar_sourced=0
+move_avatar_sourced=0
 case "$(basename "$0" 2>/dev/null || printf '%s\n' "$0")" in
-    sh|dash|bash|zsh|ksh|mksh) _move_avatar_sourced=1 ;;
-    move-avatar) _move_avatar_sourced=0 ;;
-    *) _move_avatar_sourced=1 ;;
+    sh|dash|bash|zsh|ksh|mksh) move_avatar_sourced=1 ;;
+    move-avatar) move_avatar_sourced=0 ;;
+    *) move_avatar_sourced=1 ;;
 esac
 
 move_avatar_exit() {
     code=${1:-0}
-    if [ "$_move_avatar_sourced" -eq 1 ]; then
+    if [ "$move_avatar_sourced" -eq 1 ]; then
         return "$code"
     fi
     exit "$code"

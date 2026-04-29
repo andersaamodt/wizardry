@@ -74,12 +74,12 @@ find_nginx_bin() {
   return 1
 }
 
-NGINX_BIN=$(find_nginx_bin || printf '')
-if [ -z "$NGINX_BIN" ]; then
+nginx_bin=$(find_nginx_bin || printf '')
+if [ -z "$nginx_bin" ]; then
   printf 'run-site-daemon: nginx is not installed\n' >&2
   exit 1
 fi
-printf 'Using nginx binary: %s\n' "$NGINX_BIN" >&2
+printf 'Using nginx binary: %s\n' "$nginx_bin" >&2
 
 # Build site if not built
 if [ ! -f "$site_dir/build/pages/index.html" ]; then

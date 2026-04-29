@@ -37,7 +37,7 @@ if [ ! -d "$site_dir" ]; then
   die "stop-site: site '$site_name' not found"
 fi
 
-run_priv() {
+stop_site_run_priv() {
   if [ "$(id -u)" -eq 0 ]; then
     "$@"
     return
@@ -56,7 +56,7 @@ run_priv() {
 nginx_pid_file="$site_dir/nginx/nginx.pid"
 nginx_was_running=0
 
-is_site_nginx_pid_running() {
+stop_site_nginx_pid_running() {
   pid=$1
   case "$pid" in
     ''|*[!0-9]*)
@@ -105,7 +105,7 @@ stop_nginx_process() {
     return 0
   fi
 
-  if ! is_site_nginx_pid_running "$pid"; then
+  if ! stop_site_nginx_pid_running "$pid"; then
     rm -f "$nginx_pid_file"
     return 0
   fi
@@ -129,7 +129,7 @@ stop_nginx_process() {
   }')
 
   if ! kill -QUIT "$pid" 2>/dev/null; then
-    run_priv kill -QUIT "$pid" 2>/dev/null || true
+    stop_site_run_priv kill -QUIT "$pid" 2>/dev/null || true
   fi
 
   i=1
@@ -145,7 +145,7 @@ stop_nginx_process() {
   if kill -0 "$pid" 2>/dev/null; then
     warn "stop-site: graceful shutdown timed out after ${shutdown_grace_seconds}s, forcing..."
     if ! kill -KILL "$pid" 2>/dev/null; then
-      run_priv kill -KILL "$pid" 2>/dev/null || true
+      stop_site_run_priv kill -KILL "$pid" 2>/dev/null || true
     fi
   fi
   sleep 1
@@ -176,16 +176,16 @@ if [ -f "$daemon_artifact" ]; then
   step "Stopping daemon for $site_name..."
 
   if [ "$daemon_mode" = "launchd" ]; then
-    if run_priv launchctl bootout "system/$label" >/dev/null 2>&1 \
-      || run_priv launchctl bootout system "$daemon_artifact" >/dev/null 2>&1 \
-      || run_priv launchctl unload "$daemon_artifact" >/dev/null 2>&1; then
+    if stop_site_run_priv launchctl bootout "system/$label" >/dev/null 2>&1 \
+      || stop_site_run_priv launchctl bootout system "$daemon_artifact" >/dev/null 2>&1 \
+      || stop_site_run_priv launchctl unload "$daemon_artifact" >/dev/null 2>&1; then
       daemon_stopped=1
-    elif run_priv launchctl print "system/$label" >/dev/null 2>&1; then
+    elif stop_site_run_priv launchctl print "system/$label" >/dev/null 2>&1; then
       die "stop-site: failed to stop daemon for '$site_name'"
     fi
   elif [ "$daemon_mode" = "systemd" ]; then
     if systemctl is-active --quiet "$unit" 2>/dev/null; then
-      run_priv systemctl stop "$unit"
+      stop_site_run_priv systemctl stop "$unit"
       daemon_stopped=1
     fi
   fi
