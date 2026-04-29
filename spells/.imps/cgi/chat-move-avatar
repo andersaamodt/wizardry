@@ -31,27 +31,20 @@ if [ -z "$room_name" ] || [ -z "$user_name" ] || [ -z "$old_room" ]; then
 fi
 
 # Validate username doesn't contain invalid characters (allow only alphanumeric, underscore, hyphen)
-case "$user_name" in
-  *[!a-zA-Z0-9_-]*)
-    printf '{"error":"Username contains invalid characters"}\n'
-    exit 0
-    ;;
-esac
+if ! validate-username "$user_name"; then
+  printf '{"error":"Username contains invalid characters"}\n'
+  exit 0
+fi
 
-# Validate room names don't contain path traversal sequences
-case "$room_name" in
-  *..*|*/*|*\\*)
-    printf '{"error":"Invalid room name"}\n'
-    exit 0
-    ;;
-esac
+if ! validate-room-name "$room_name"; then
+  printf '{"error":"Invalid room name"}\n'
+  exit 0
+fi
 
-case "$old_room" in
-  *..*|*/*|*\\*)
-    printf '{"error":"Invalid old room name"}\n'
-    exit 0
-    ;;
-esac
+if ! validate-room-name "$old_room"; then
+  printf '{"error":"Invalid old room name"}\n'
+  exit 0
+fi
 
 # Chat rooms directory - use site-specific location (same as other chat scripts)
 CHAT_DIR=$(get-site-data-dir "chatrooms")

@@ -140,6 +140,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Chat-style CGI state should test create/delete/rename/send parity for room and avatar names; every endpoint that composes a room path needs the same validator.
 - Blog/content CGI renderers should test quote/HTML-bearing front matter, regex-shaped search queries, regex-shaped tags, and invalid numeric pagination values.
 - Shared CGI validators should include the stricter label contract expected by all consumers, then rerun stream/list/delete variants that rely on that validator without extra local checks.
+- Read-only CGI list/count endpoints must revalidate imported filesystem names before composing paths, JSON, HTML, or counts; create-time validators do not protect hand-created state.
 - Catalog/list/count commands must apply the same identifier validator as the command that later executes the selected item.
 - Read/import paths for hand-edited metadata must revalidate the same delimiters and identifiers enforced by create/update commands.
 - Imported profile/config fields must be sanitized at output time even when only a subset of those fields drive filesystem or command actions.

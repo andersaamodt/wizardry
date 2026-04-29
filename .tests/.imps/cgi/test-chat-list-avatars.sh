@@ -298,6 +298,63 @@ test_list_avatars_old_avatar_still_shown() {
   return 0
 }
 
+test_list_avatars_rejects_path_room() {
+  setup_test_env
+
+  mkdir -p "$WIZARDRY_SITES_DIR/.sitedata/default/.escaped"
+
+  export QUERY_STRING="room=.."
+  output=$(chat-list-avatars 2>&1)
+  status=$?
+
+  cleanup_test_env
+
+  if [ $status -ne 0 ]; then
+    TEST_FAILURE_REASON="Script failed with status $status"
+    return 1
+  fi
+
+  json=$(printf '%s' "$output" | sed -n '/^{/,$p')
+  if ! printf '%s' "$json" | grep -q '{"error": "Invalid room name"}'; then
+    TEST_FAILURE_REASON="Expected invalid room error, got: $json"
+    return 1
+  fi
+
+  return 0
+}
+
+test_list_avatars_skips_invalid_avatar_names() {
+  setup_test_env
+
+  room_name="test-invalid-avatar"
+  room_dir="$CHAT_DIR/$room_name"
+  mkdir -p "$room_dir/.gooduser" "$room_dir/.bad\"user"
+  touch "$room_dir/.log"
+
+  export QUERY_STRING="room=$room_name"
+  output=$(chat-list-avatars 2>&1)
+  status=$?
+
+  cleanup_test_env
+
+  if [ $status -ne 0 ]; then
+    TEST_FAILURE_REASON="Script failed with status $status"
+    return 1
+  fi
+
+  json=$(printf '%s' "$output" | sed -n '/^{/,$p')
+  if ! printf '%s' "$json" | grep -q '"username": "gooduser"'; then
+    TEST_FAILURE_REASON="Expected gooduser in output, got: $json"
+    return 1
+  fi
+  if printf '%s' "$json" | grep -F 'bad"user' >/dev/null 2>&1; then
+    TEST_FAILURE_REASON="Invalid avatar name leaked into JSON: $json"
+    return 1
+  fi
+
+  return 0
+}
+
 # Run all tests
 run_test_case "List avatars: empty room" test_list_avatars_empty_room
 run_test_case "List avatars: one avatar" test_list_avatars_one_avatar
@@ -306,5 +363,7 @@ run_test_case "List avatars: mixed web and MUD avatars" test_list_avatars_mixed_
 run_test_case "List avatars: room not found" test_list_avatars_room_not_found
 run_test_case "List avatars: no room name" test_list_avatars_no_room_name
 run_test_case "List avatars: old avatar still shown (no cleanup)" test_list_avatars_old_avatar_still_shown
+run_test_case "List avatars: rejects path-shaped room" test_list_avatars_rejects_path_room
+run_test_case "List avatars: skips invalid avatar names" test_list_avatars_skips_invalid_avatar_names
 
 finish_tests

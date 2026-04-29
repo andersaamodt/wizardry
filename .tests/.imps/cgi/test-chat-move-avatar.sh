@@ -128,6 +128,24 @@ test_move_rejects_path_traversal() {
   printf '%s' "$output" | grep -q 'Status: 200 OK'
 }
 
+test_move_rejects_invalid_room_label() {
+  setup_test_env
+
+  CHAT_DIR="$WIZARDRY_SITES_DIR/.sitedata/default/chatrooms"
+  mkdir -p "$CHAT_DIR/room1"
+
+  output=$(printf '{"room":"bad room","username":"testuser","oldRoom":"room1"}' | chat-move-avatar 2>&1)
+  bad_dir_created=0
+  [ -d "$CHAT_DIR/bad room" ] && bad_dir_created=1
+
+  cleanup_test_env
+
+  [ "$bad_dir_created" -eq 0 ] && \
+  printf '%s' "$output" | grep -q '"error"' && \
+  printf '%s' "$output" | grep -q 'Invalid room name' && \
+  printf '%s' "$output" | grep -q 'Status: 200 OK'
+}
+
 # Test that script sends headers early (prevents 502 errors)
 test_sends_headers_early() {
   setup_test_env
@@ -150,6 +168,7 @@ run_test_case "chat-move-avatar creates avatar when old doesn't exist" test_move
 run_test_case "chat-move-avatar rejects invalid username" test_move_rejects_invalid_username
 run_test_case "chat-move-avatar rejects missing parameters" test_move_rejects_missing_params
 run_test_case "chat-move-avatar rejects path traversal" test_move_rejects_path_traversal
+run_test_case "chat-move-avatar rejects invalid room labels" test_move_rejects_invalid_room_label
 run_test_case "chat-move-avatar sends headers early to prevent 502" test_sends_headers_early
 
 finish_tests

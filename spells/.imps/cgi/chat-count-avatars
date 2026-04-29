@@ -15,6 +15,11 @@ if [ -z "$room_name" ]; then
   exit 0
 fi
 
+if ! validate-room-name "$room_name"; then
+  printf '{"error": "Invalid room name"}\n'
+  exit 0
+fi
+
 # Chat rooms directory - use site-specific location
 CHAT_DIR=$(get-site-data-dir "chatrooms")
 ROOM_DIR="$CHAT_DIR/$room_name"
@@ -35,6 +40,10 @@ for avatar_dir in "$ROOM_DIR"/.*; do
     .|..) continue ;;
     .log) continue ;;
   esac
+  username=$(printf '%s' "$avatar_name" | sed 's/^\.//')
+  if ! validate-username "$username"; then
+    continue
+  fi
   
   count=$((count + 1))
 done

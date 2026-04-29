@@ -4,6 +4,15 @@ set -eu
 
 http-ok-html
 
+html_escape() {
+  printf '%s' "$1" | sed \
+    -e 's/&/\&amp;/g' \
+    -e 's/</\&lt;/g' \
+    -e 's/>/\&gt;/g' \
+    -e 's/"/\&quot;/g' \
+    -e "s/'/\&#39;/g"
+}
+
 # Chat rooms directory - use site-specific location
 CHAT_DIR=$(get-site-data-dir "chatrooms")
 mkdir -p "$CHAT_DIR"
@@ -17,6 +26,9 @@ if [ -d "$CHAT_DIR" ]; then
   for room_dir in "$CHAT_DIR"/*; do
     [ -d "$room_dir" ] || continue
     room_name=$(basename "$room_dir")
+    if ! validate-room-name "$room_name"; then
+      continue
+    fi
     
     # Count messages in room
     msg_count=0
@@ -29,12 +41,13 @@ if [ -d "$CHAT_DIR" ]; then
     if [ -f "$room_dir/.log" ]; then
       last_msg=$(tail -1 "$room_dir/.log" 2>/dev/null || echo "")
     fi
+    last_msg_html=$(html_escape "$last_msg")
     
     printf '  <li class="room-item" data-room="%s">\n' "$room_name"
     printf '    <span class="room-icon">#</span><strong>%s</strong>\n' "$room_name"
     printf '    <span class="unread-badge hidden" data-room="%s">0</span>\n' "$room_name"
     if [ -n "$last_msg" ]; then
-      printf '    <div class="last-msg">%s</div>\n' "$last_msg"
+      printf '    <div class="last-msg">%s</div>\n' "$last_msg_html"
     fi
     printf '  </li>\n'
   done
