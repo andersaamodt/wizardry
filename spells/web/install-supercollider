@@ -13,6 +13,10 @@ esac
 
 set -eu
 
+supercollider_curl=${CURL:-curl}
+supercollider_sclang=${SCLANG:-sclang}
+supercollider_app_path=${SUPERCOLLIDER_APP_PATH-}
+
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
 
 say() {
@@ -21,6 +25,33 @@ say() {
 
 has_cmd() {
   command -v "$1" >/dev/null 2>&1
+}
+
+curl_cmd() {
+  printf '%s\n' "$supercollider_curl"
+}
+
+has_curl() {
+  command -v "$(curl_cmd)" >/dev/null 2>&1
+}
+
+fetch_url() {
+  "$(curl_cmd)" -fsSL "$@"
+}
+
+download_url_is_safe() {
+  url=${1-}
+  case "$url" in
+    *[[:space:]]*)
+      return 1
+      ;;
+  esac
+  case "$url" in
+    https://github.com/supercollider/supercollider/releases/download/*)
+      return 0
+      ;;
+  esac
+  return 1
 }
 
 run_privileged() {
@@ -55,12 +86,16 @@ install_target_bin_dir() {
 }
 
 supercollider_installed() {
-  if has_cmd sclang; then
+  if has_cmd "$supercollider_sclang"; then
     return 0
   fi
   case "$(uname -s 2>/dev/null || printf '')" in
     Darwin)
-      [ -d /Applications/SuperCollider.app ] || [ -d "$HOME/Applications/SuperCollider.app" ]
+      if [ -n "$supercollider_app_path" ]; then
+        [ -d "$supercollider_app_path" ]
+      else
+        [ -d /Applications/SuperCollider.app ] || [ -d "$HOME/Applications/SuperCollider.app" ]
+      fi
       ;;
     *)
       return 1
@@ -69,8 +104,8 @@ supercollider_installed() {
 }
 
 release_json_latest() {
-  has_cmd curl || return 1
-  curl -fsSL https://api.github.com/repos/supercollider/supercollider/releases/latest 2>/dev/null || return 1
+  has_curl || return 1
+  fetch_url https://api.github.com/repos/supercollider/supercollider/releases/latest 2>/dev/null || return 1
 }
 
 install_macos_cli_links() {
@@ -88,13 +123,14 @@ install_macos_cli_links() {
 }
 
 install_supercollider_macos_release() {
-  has_cmd curl || return 1
+  has_curl || return 1
   has_cmd hdiutil || return 1
 
   release_json=$(release_json_latest) || return 1
   release_json_one_line=$(printf '%s' "$release_json" | tr '\n' ' ')
   download_url=$(printf '%s\n' "$release_json_one_line" | sed -n 's/.*"browser_download_url":[[:space:]]*"\([^"]*SuperCollider-[^"]*-macOS-universal\.dmg\)".*/\1/p' | head -n 1)
   [ -n "$download_url" ] || return 1
+  download_url_is_safe "$download_url" || return 1
 
   tmp_root=$(mktemp -d "${TMPDIR:-/tmp}/supercollider-release.XXXXXX")
   archive_path="$tmp_root/SuperCollider.dmg"
@@ -111,7 +147,7 @@ install_supercollider_macos_release() {
   fi
 
   mkdir -p "$mount_dir" "$stage_root"
-  curl -fsSL "$download_url" -o "$archive_path" || {
+  fetch_url "$download_url" -o "$archive_path" || {
     rm -rf "$tmp_root"
     return 1
   }

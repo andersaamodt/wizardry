@@ -257,32 +257,35 @@ set -eu
       fi
       
       # Toggle for custom synonyms
+      escaped_custom_enabled_file=$(printf '%s' "$custom_enabled_file" | sed "s/'/'\\\\''/g")
       if [ "$custom_enabled" -eq 1 ]; then
         custom_toggle_label="[X] Custom synonyms"
-        custom_toggle_cmd="printf '0' > '$custom_enabled_file'"
+        custom_toggle_cmd="printf '0' > '$escaped_custom_enabled_file'"
       else
         custom_toggle_label="[ ] Custom synonyms"
-        custom_toggle_cmd="printf '1' > '$custom_enabled_file'"
+        custom_toggle_cmd="printf '1' > '$escaped_custom_enabled_file'"
       fi
       set -- "$@" "$custom_toggle_label%$custom_toggle_cmd"
       
       # Toggle for default synonyms
+      escaped_default_enabled_file=$(printf '%s' "$default_enabled_file" | sed "s/'/'\\\\''/g")
       if [ "$default_enabled" -eq 1 ]; then
         default_toggle_label="[X] Default synonyms"
-        default_toggle_cmd="printf '0' > '$default_enabled_file'"
+        default_toggle_cmd="printf '0' > '$escaped_default_enabled_file'"
       else
         default_toggle_label="[ ] Default synonyms"
-        default_toggle_cmd="printf '1' > '$default_enabled_file'"
+        default_toggle_cmd="printf '1' > '$escaped_default_enabled_file'"
       fi
       set -- "$@" "$default_toggle_label%$default_toggle_cmd"
       
       # Toggle for enabling/disabling all synonyms
+      escaped_synonyms_enabled_file=$(printf '%s' "$synonyms_enabled_file" | sed "s/'/'\\\\''/g")
       if [ "$synonyms_enabled" -eq 1 ]; then
         toggle_label="[X] All synonyms enabled"
-        toggle_cmd="printf '0' > '$synonyms_enabled_file'"
+        toggle_cmd="printf '0' > '$escaped_synonyms_enabled_file'"
       else
         toggle_label="[ ] All synonyms enabled"
-        toggle_cmd="printf '1' > '$synonyms_enabled_file'"
+        toggle_cmd="printf '1' > '$escaped_synonyms_enabled_file'"
       fi
       set -- "$@" "$toggle_label%$toggle_cmd"
     fi

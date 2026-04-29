@@ -160,6 +160,40 @@ test_list_strips_crlf_synonym_records() {
 
 run_test_case "thesaurus --list strips CRLF synonym records" test_list_strips_crlf_synonym_records
 
+test_quotes_toggle_file_paths() {
+  skip-if-compiled || return $?
+  tmpdir=$(make_tempdir)
+  spellbook="$tmpdir/spell'book"
+  stubdir="$tmpdir/bin"
+  menu_log="$tmpdir/menu.log"
+  mkdir -p "$spellbook" "$stubdir"
+  printf '%s\n' 'bad=target' > "$spellbook/.synonyms"
+  printf '# Empty\n' > "$spellbook/.default-synonyms"
+  touch "$spellbook/.default-synonyms-initialized"
+
+  cat > "$stubdir/menu" <<'SH'
+#!/bin/sh
+printf '%s\n' "$@" > "$MENU_LOG"
+exit 130
+SH
+  chmod +x "$stubdir/menu"
+
+  SPELLBOOK_DIR="$spellbook" MENU_LOG="$menu_log" PATH="$stubdir:$PATH" \
+    run_cmd "$ROOT_DIR/spells/menu/thesaurus"
+
+  assert_success || return 1
+  assert_path_exists "$menu_log" || return 1
+  escaped_spellbook=$(printf '%s' "$spellbook" | sed "s/'/'\\\\''/g")
+  expected="printf '0' > '$escaped_spellbook/.custom-synonyms-enabled'"
+  args=$(cat "$menu_log")
+  case "$args" in
+    *"$expected"*) : ;;
+    *) TEST_FAILURE_REASON="thesaurus toggle paths should be shell-quoted: $args"; return 1 ;;
+  esac
+}
+
+run_test_case "thesaurus quotes toggle file paths" test_quotes_toggle_file_paths
+
 
 # Test via source-then-invoke pattern  
 

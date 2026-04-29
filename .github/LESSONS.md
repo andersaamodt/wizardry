@@ -255,6 +255,7 @@
 - Generated shell glosses must validate imported synonym targets for shell metacharacters before emitting functions or aliases; rejecting only quotes still allows semicolon command injection.
 - Generated `sh -c` wrappers must test command text containing single quotes; the shell-quote escape must emit `'\''`, not repeated raw quotes.
 - Menu actions that embed paths must quote paths before handing the action string to menu eval; test spellbook/home paths containing spaces.
+- Menu actions that embed state-file paths must test quote-bearing roots, not only spaces.
 - Menu actions that embed spell names or imported targets must shell-quote those values, even if the eventual command validates them again.
 - Parser connector imps that intentionally split accumulated command-argument strings must temporarily disable globbing so literal `*` arguments do not expand against the caller's working directory. (2)
 - Generated first-word glosses must pass their embedded install root into sourced parser fallbacks when `WIZARDRY_DIR` is unset; otherwise isolated installs accidentally parse against `~/.wizardry`.
