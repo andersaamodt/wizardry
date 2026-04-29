@@ -41,8 +41,21 @@ if [ ! -d "$site_dir" ]; then
   die "toggle-site-tor-hosting: site '$site_name' not found"
 fi
 
+valid_port() {
+  port_value=$1
+  case "$port_value" in
+    ''|*[!0-9]*|??????*)
+      return 1
+      ;;
+  esac
+  [ "$port_value" -ge 1 ] && [ "$port_value" -le 65535 ]
+}
+
 # Get the site's port
 port=$(config-get "$site_dir/site.conf" port 2>/dev/null || echo "8080")
+if ! valid_port "$port"; then
+  die 2 "toggle-site-tor-hosting: invalid port"
+fi
 
 # Only check tor dependencies when ENABLING (not when disabling)
 # Check if this site already has a hidden service configured

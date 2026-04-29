@@ -42,6 +42,25 @@ port=8080
 domain=localhost
 use_https=false
 
+valid_port() {
+  port_value=$1
+  case "$port_value" in
+    ''|*[!0-9]*|??????*)
+      return 1
+      ;;
+  esac
+  [ "$port_value" -ge 1 ] && [ "$port_value" -le 65535 ]
+}
+
+valid_domain() {
+  domain_value=$1
+  case "$domain_value" in
+    ''|.|..|.*|*.|*..*|*[!A-Za-z0-9._-]*)
+      return 1
+      ;;
+  esac
+}
+
 while [ $# -gt 0 ]; do
   case "$1" in
     --port)
@@ -109,6 +128,14 @@ if [ "$use_https" = "false" ] && [ -f "$site_dir/site.conf" ]; then
   if [ "$existing_https" = "true" ]; then
     use_https=true
   fi
+fi
+
+if ! valid_port "$port"; then
+  die 2 "configure-nginx: invalid port"
+fi
+
+if ! valid_domain "$domain"; then
+  die 2 "configure-nginx: invalid domain"
 fi
 
 # Create nginx config directory

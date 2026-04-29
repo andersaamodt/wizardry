@@ -191,11 +191,75 @@ test_configure_nginx_rejects_path_shaped_site_name() {
   rm -rf "$tmpdir" "$stub_dir"
 }
 
+test_configure_nginx_rejects_imported_port_injection() {
+  skip-if-compiled || return $?
+
+  test_web_root=$(temp-dir web-wizardry-test)
+  export WEB_WIZARDRY_ROOT="$test_web_root"
+
+  stub_dir=$(temp-dir web-wizardry-stub)
+  stub-sudo "$stub_dir"
+  export PATH="$stub_dir:$PATH"
+
+  mkdir -p "$test_web_root/mytestsite"
+  cat >"$test_web_root/mytestsite/site.conf" <<'EOF'
+site-name=mytestsite
+port=8080;
+include /tmp/evil.conf
+domain=localhost
+https=false
+EOF
+
+  run_spell spells/web/configure-nginx mytestsite
+  assert_failure || return 1
+  assert_error_contains "invalid port" || return 1
+  if [ -f "$test_web_root/mytestsite/nginx/nginx.conf" ]; then
+    TEST_FAILURE_REASON="configure-nginx wrote nginx.conf for invalid imported port"
+    return 1
+  fi
+
+  rm -rf "$test_web_root" "$stub_dir"
+}
+
+test_configure_nginx_rejects_imported_domain_injection() {
+  skip-if-compiled || return $?
+
+  test_web_root=$(temp-dir web-wizardry-test)
+  export WEB_WIZARDRY_ROOT="$test_web_root"
+
+  stub_dir=$(temp-dir web-wizardry-stub)
+  stub-sudo "$stub_dir"
+  export PATH="$stub_dir:$PATH"
+
+  mkdir -p "$test_web_root/mytestsite"
+  cat >"$test_web_root/mytestsite/site.conf" <<'EOF'
+site-name=mytestsite
+port=8080
+domain=example.com;
+include /tmp/evil.conf
+https=false
+EOF
+
+  run_spell spells/web/configure-nginx mytestsite
+  assert_failure || return 1
+  assert_error_contains "invalid domain" || return 1
+  if [ -f "$test_web_root/mytestsite/nginx/nginx.conf" ]; then
+    TEST_FAILURE_REASON="configure-nginx wrote nginx.conf for invalid imported domain"
+    return 1
+  fi
+
+  rm -rf "$test_web_root" "$stub_dir"
+}
+
 run_test_case "configure-nginx --help" test_configure_nginx_help
 run_test_case "configure-nginx creates local mime.types" test_configure_nginx_creates_local_mimetypes
 run_test_case "configure-nginx supports .onion addresses" test_configure_nginx_supports_onion_addresses
 run_test_case "configure-nginx preserves existing port" test_configure_nginx_preserves_existing_port
 run_test_case "configure-nginx rejects path-shaped site names" \
   test_configure_nginx_rejects_path_shaped_site_name
+run_test_case "configure-nginx rejects imported port injection" \
+  test_configure_nginx_rejects_imported_port_injection
+run_test_case "configure-nginx rejects imported domain injection" \
+  test_configure_nginx_rejects_imported_domain_injection
 
 finish_tests

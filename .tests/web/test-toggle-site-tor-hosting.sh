@@ -43,4 +43,25 @@ rejects_path_shaped_site_name() {
 
 run_test_case "toggle-site-tor-hosting rejects path-shaped site names" \
   rejects_path_shaped_site_name
+
+rejects_imported_port_injection() {
+  tmpdir=$(temp-dir toggle-site-tor-hosting-port-test)
+  web_root="$tmpdir/sites"
+  site_dir="$web_root/mysite"
+  mkdir -p "$site_dir"
+  cat >"$site_dir/site.conf" <<'EOF'
+site-name=mysite
+port=8080;
+HiddenServiceDir /tmp/evil
+EOF
+
+  WIZARDRY_SITES_DIR="$web_root" run_spell spells/web/toggle-site-tor-hosting mysite
+  assert_failure || return 1
+  assert_error_contains "invalid port" || return 1
+
+  rm -rf "$tmpdir"
+}
+
+run_test_case "toggle-site-tor-hosting rejects imported port injection" \
+  rejects_imported_port_injection
 finish_tests
