@@ -149,15 +149,18 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Installer tests for hostile remote metadata should pass downloader and install-target overrides through the sandbox so the test cannot fall back to host tools.
 - Service account JSON should be treated as imported release metadata; validate identity fields before JWT rendering.
 - Deploy/signing environment values should be validated before remote-shell, codesign, or notarization tooling receives them.
+- Remote-shell command strings such as `rsync -e` need shell quoting inside the string; test `TMPDIR` or key paths containing spaces and quotes.
 - Asset generators that print status rows should reject line-break paths and unsafe stored file extensions before writing metadata.
 - Asset generators should validate stored source extensions before creating output trees so invalid image metadata leaves no partial assets.
 - File-artifact builders should validate output suffixes and reject line-break paths before overwriting files or printing status rows.
 - Packaging and upload helpers should reject CR/LF in artifact directories, app bundles, and upload paths before staging, signing, or invoking platform tools.
+- Upload helpers that print artifact paths should reject CR/LF in artifact input files as well as output directories.
 - Platform asset staging should preflight required outputs before copying so missing fallbacks cannot leave stale files behind.
 - Preflight path canonicalization must be side-effect-free; rejected destinations should not create missing parent directories under source trees.
 - Installer-generated shell or desktop launchers must reject or structurally escape path values containing shell-expansion characters.
 - Native packaging entrypoints should validate bundle IDs again before rendering plist or project metadata.
 - Backend status rows should sanitize XDG/env-derived file paths, including preference write confirmations.
+- Shared root resolvers should reject line-break roots before returning, because downstream commands often echo or persist root paths.
 - Plain-text backend outputs still need argument shape checks when GUI code treats the first line as authoritative state.
 - Launcher root paths that are persisted for future app starts should reject line breaks before writing config files.
 - Install/uninstall helpers should reject explicit replacement or removal paths outside the artifact shape they own before recursive deletion.
