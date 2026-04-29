@@ -26,12 +26,14 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Destructive site commands must reject path-shaped names before deriving both the site directory and companion data directory.
 - Stop/restart commands must reject path-shaped names before PID-file cleanup, daemon label construction, or service-unit lookup.
 - Scheduler/autorebuild helpers must validate local site labels, managed user labels, and relative content roots before cron entries, lock paths, release paths, or ownership changes are formed.
+- Managed release helpers must validate imported current-release symlink targets and staged-release names before copying trees or constructing release paths.
 - Path arguments that are echoed in machine-readable status rows should reject line breaks even when the filesystem can technically represent them.
 - Names that become service units, daemon labels, process matches, or security users need the same strict validator as create/configure paths.
 - Daemon repair commands must validate labels before rendering service files or creating runtime directories such as nginx state paths.
 - If a value is both a label and a path component, test create, edit, rename, import, and repair paths for the same contract.
 - Template and import paths should share create-path validators because they often write both directories and profile metadata.
 - Template-based site creation must validate site names before creating the output root; template paths with spaces should still resolve.
+- Template names must be validated as labels on both creation and read-time update paths; a hand-edited `template=../name` can otherwise resolve outside the template catalog.
 - Template refresh commands must share creation-time site-name validation before removing template-owned subtrees.
 - Mutation commands must enforce the same path output contract as list/status commands before writing metadata or renaming folders.
 - Wrapper commands must validate before their own early writes; relying on downstream command validation can still leave partial config changes.

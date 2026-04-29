@@ -212,6 +212,28 @@ EOF
   fi
 }
 
+test_create_from_template_rejects_path_shaped_template_name() {
+  skip-if-compiled || return $?
+
+  tmpdir=$(make_tempdir)
+  web_root="$tmpdir/sites"
+  fake_wizardry_root="$tmpdir/wizardry"
+  mkdir -p "$web_root" "$fake_wizardry_root/web/.themes/pages"
+  cat > "$fake_wizardry_root/web/.themes/pages/index.md" <<'EOF'
+# Not A Template
+EOF
+
+  WIZARDRY_DIR="$fake_wizardry_root" WEB_WIZARDRY_ROOT="$web_root" \
+    run_spell spells/web/create-from-template minisite ../.themes
+
+  assert_failure || return 1
+  assert_error_contains "invalid template name" || return 1
+  if [ -e "$web_root/minisite" ]; then
+    TEST_FAILURE_REASON="create-from-template created a site from a path-shaped template name"
+    return 1
+  fi
+}
+
 test_create_from_template_resolves_external_repo_templates() {
   skip-if-compiled || return $?
 
@@ -281,6 +303,7 @@ run_test_case "all templates create expected site structure" test_all_web_templa
 run_test_case "create-from-template resolves templates from web" test_create_from_template_uses_web_directory
 run_test_case "create-from-template handles WIZARDRY_DIR paths with spaces" test_create_from_template_handles_wizardry_dir_with_spaces
 run_test_case "create-from-template rejects path-shaped site names" test_create_from_template_rejects_path_shaped_site_name
+run_test_case "create-from-template rejects path-shaped template names" test_create_from_template_rejects_path_shaped_template_name
 run_test_case "create-from-template resolves external repo templates" test_create_from_template_resolves_external_repo_templates
 
 finish_tests

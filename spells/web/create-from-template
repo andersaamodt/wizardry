@@ -54,8 +54,18 @@ external_template_candidates() {
   esac
 }
 
+template_name_is_safe() {
+  case "${1-}" in
+    .|..|''|*[!a-zA-Z0-9._-]*)
+      return 1
+      ;;
+  esac
+  return 0
+}
+
 resolve_template_dir() {
   template_name=$1
+  template_name_is_safe "$template_name" || return 1
   template_candidates=$(template_source_candidates)
   while IFS= read -r candidate || [ -n "$candidate" ]; do
     if [ -d "$candidate/$template_name" ]; then
@@ -107,6 +117,9 @@ case "${1-}" in
     if [ -z "${2-}" ]; then
       die 2 "create-from-template: TEMPLATE required for --resolve-template-dir"
     fi
+    if ! template_name_is_safe "$2"; then
+      die 2 "create-from-template: invalid template name"
+    fi
     resolve_template_dir "$2" || exit 1
     exit 0
     ;;
@@ -126,6 +139,9 @@ esac
 
 if [ -z "$template" ]; then
   die 2 "create-from-template: TEMPLATE required"
+fi
+if ! template_name_is_safe "$template"; then
+  die 2 "create-from-template: invalid template name"
 fi
 
 web_root=${WEB_WIZARDRY_ROOT:-$HOME/sites}

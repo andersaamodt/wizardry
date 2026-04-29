@@ -219,6 +219,33 @@ EOF
   fi
 }
 
+test_update_rejects_path_shaped_template_name() {
+  skip-if-compiled || return $?
+
+  tmpdir=$(make_tempdir)
+  web_root="$tmpdir/sites"
+  fake_wizardry_root="$tmpdir/wizardry"
+  site_dir="$web_root/minisite"
+  mkdir -p "$site_dir/site/pages" "$fake_wizardry_root/web/.themes/pages"
+  printf '%s\n' keep > "$site_dir/site/pages/keep"
+  cat > "$site_dir/site.conf" <<'EOF'
+template=../.themes
+EOF
+  cat > "$fake_wizardry_root/web/.themes/pages/index.md" <<'EOF'
+# Not A Template
+EOF
+
+  WIZARDRY_DIR="$fake_wizardry_root" WEB_WIZARDRY_ROOT="$web_root" \
+    run_spell spells/web/update-from-template minisite --force
+
+  assert_failure || return 1
+  assert_error_contains "invalid template name" || return 1
+  if [ ! -f "$site_dir/site/pages/keep" ]; then
+    TEST_FAILURE_REASON="update-from-template removed existing pages before rejecting template traversal"
+    return 1
+  fi
+}
+
 test_update_refreshes_requirements_file() {
   skip-if-compiled || return $?
 
@@ -308,6 +335,7 @@ run_test_case "update-from-template fails for nonexistent site" test_fails_for_n
 run_test_case "update-from-template resolves templates from web" test_update_uses_web_template_directory
 run_test_case "update-from-template handles WIZARDRY_DIR paths with spaces" test_update_handles_wizardry_dir_with_spaces
 run_test_case "update-from-template rejects path-shaped site names" test_update_rejects_path_shaped_site_name
+run_test_case "update-from-template rejects path-shaped template names" test_update_rejects_path_shaped_template_name
 run_test_case "update-from-template refreshes requirements file" test_update_refreshes_requirements_file
 run_test_case "update-from-template resolves external repo templates" test_update_resolves_external_repo_templates
 

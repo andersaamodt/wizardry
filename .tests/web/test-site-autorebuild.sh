@@ -490,6 +490,48 @@ test_site_autorebuild_managed_run_uses_suffix_on_release_collision() {
   fi
 }
 
+test_site_autorebuild_managed_run_rejects_current_link_traversal() {
+  skip-if-compiled || return $?
+  setup_managed_site_autorebuild_fixture
+
+  rm -f "$site_root/site"
+  mkdir -p "$site_root/escape/build"
+  printf '%s\n' outside > "$site_root/escape/build/outside.txt"
+  ln -s "releases/../escape" "$site_root/site"
+
+  run_managed_site_autorebuild run --managed "$site_user" --site-root "$site_root"
+  assert_failure || return 1
+  assert_error_contains "managed current release link is missing or invalid" || return 1
+
+  release_count=$(find "$site_root/releases" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')
+  if [ "$release_count" != 1 ]; then
+    TEST_FAILURE_REASON="managed run staged a release from a traversal current link"
+    return 1
+  fi
+}
+
+test_site_autorebuild_managed_run_rejects_stage_stamp_traversal() {
+  skip-if-compiled || return $?
+  setup_managed_site_autorebuild_fixture
+
+  run_cmd env \
+    PATH="$stub_dir:/usr/bin:/bin:/usr/sbin:/sbin" \
+    SITE_AUTOREBUILD_STAGE_STAMP="../escape" \
+    SITE_AUTOREBUILD_FAKE_CRON_ROOT="$fake_cron_root" \
+    SITE_AUTOREBUILD_SITE_ROOT="$site_root" \
+    SITE_AUTOREBUILD_STUB_DIR="$stub_dir" \
+    SITE_AUTOREBUILD_BUILD_LOG="$build_log" \
+    WIZARDRY_DIR="$site_root/.wizardry" \
+    sh "$ROOT_DIR/spells/web/site-autorebuild" run --managed "$site_user" --site-root "$site_root"
+  assert_failure || return 1
+  assert_error_contains "invalid stage stamp" || return 1
+
+  if [ -e "$site_root/escape" ]; then
+    TEST_FAILURE_REASON="managed run created a stage outside releases from hostile stamp"
+    return 1
+  fi
+}
+
 test_site_autorebuild_local_run_skips_when_lock_is_held() {
   skip-if-compiled || return $?
 
@@ -542,5 +584,9 @@ run_test_case "site-autorebuild managed run cleans failed staged releases" \
   test_site_autorebuild_managed_run_cleans_failed_stage
 run_test_case "site-autorebuild managed run uses suffix on release collision" \
   test_site_autorebuild_managed_run_uses_suffix_on_release_collision
+run_test_case "site-autorebuild managed run rejects current-link traversal" \
+  test_site_autorebuild_managed_run_rejects_current_link_traversal
+run_test_case "site-autorebuild managed run rejects stage-stamp traversal" \
+  test_site_autorebuild_managed_run_rejects_stage_stamp_traversal
 
 finish_tests

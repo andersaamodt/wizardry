@@ -82,6 +82,26 @@ relative_content_root_is_safe() {
   return 0
 }
 
+release_name_is_safe() {
+  case "${1-}" in
+    .|..|''|*[!a-zA-Z0-9._-]*)
+      return 1
+      ;;
+  esac
+  return 0
+}
+
+release_path_is_safe() {
+  release_path_value=${1-}
+  value_has_line_break "$release_path_value" && return 1
+  case "$release_path_value" in
+    *//*|*/./*|*/.|*/../*|*/..)
+      return 1
+      ;;
+  esac
+  return 0
+}
+
 while [ $# -gt 0 ]; do
   case "${1-}" in
     --managed)
@@ -372,11 +392,20 @@ resolve_managed_current_target() {
   fi
   link_value=$(readlink "$current_link" 2>/dev/null || true)
   case "$link_value" in
-    /home/*/releases/*)
-      printf '%s\n' "$link_value"
-      ;;
     releases/*)
-      printf '%s\n' "$site_root/$link_value"
+      resolved_link=$site_root/$link_value
+      if release_path_is_safe "$link_value" && release_path_is_safe "$resolved_link"; then
+        printf '%s\n' "$resolved_link"
+      else
+        printf '%s\n' ''
+      fi
+      ;;
+    "$releases_root"/*)
+      if release_path_is_safe "$link_value"; then
+        printf '%s\n' "$link_value"
+      else
+        printf '%s\n' ''
+      fi
       ;;
     *)
       printf '%s\n' ''
@@ -386,6 +415,10 @@ resolve_managed_current_target() {
 
 stage_timestamp() {
   if [ -n "${SITE_AUTOREBUILD_STAGE_STAMP:-}" ]; then
+    if ! release_name_is_safe "$SITE_AUTOREBUILD_STAGE_STAMP"; then
+      printf '%s\n' 'site-autorebuild: invalid stage stamp' >&2
+      return 1
+    fi
     printf '%s\n' "$SITE_AUTOREBUILD_STAGE_STAMP"
     return 0
   fi
@@ -393,7 +426,7 @@ stage_timestamp() {
 }
 
 managed_stage_target() {
-  stage_stamp=$(stage_timestamp)
+  stage_stamp=$(stage_timestamp) || return 1
   stage_target=$releases_root/$stage_stamp
   suffix=0
   while autorebuild_run_privileged test -e "$stage_target"; do
@@ -569,7 +602,7 @@ run_build_once() {
       printf '%s\n' 'site-autorebuild: managed current release link is missing or invalid' >&2
       return 1
     }
-    stage_target=$(managed_stage_target)
+    stage_target=$(managed_stage_target) || return 1
     managed_copy_release_tree "$current_target" "$stage_target" || {
       autorebuild_run_privileged rm -rf "$stage_target" 2>/dev/null || true
       return 1
