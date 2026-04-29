@@ -61,6 +61,18 @@ valid_domain() {
   esac
 }
 
+valid_nginx_quoted_path() {
+  path_value=$1
+  newline='
+'
+  carriage_return=$(printf '\r')
+  case "$path_value" in
+    ''|*\"*|*\\*|*';'*|*'{'*|*'}'*|*"$newline"*|*"$carriage_return"*)
+      return 1
+      ;;
+  esac
+}
+
 while [ $# -gt 0 ]; do
   case "$1" in
     --port)
@@ -168,6 +180,12 @@ if [ -z "$site_cgi_dir" ]; then
   site_cgi_dir="$site_dir/cgi"
 elif [ "${site_cgi_dir#/*}" = "$site_cgi_dir" ]; then
   site_cgi_dir="$site_dir/$site_cgi_dir"
+fi
+if ! valid_nginx_quoted_path "$site_cgi_dir"; then
+  die 2 "configure-nginx: invalid cgi-dir"
+fi
+if ! valid_nginx_quoted_path "$cgi_dir"; then
+  die 2 "configure-nginx: invalid wizardry cgi path"
 fi
 
 # Copy mime.types to local directory if not exists

@@ -260,6 +260,7 @@
 - Menu action builders must validate config-derived scalars such as ports before rendering them into command strings; double quotes still execute `$()` payloads.
 - Project-controlled requirement IDs must be validated as single registry path segments before metadata lookup, or `../` IDs can import command labels from outside the registry.
 - Nginx/Tor config renderers must revalidate imported ports and domains immediately before writing config files; hand-edited `site.conf` can bypass change-time validators.
+- Nginx config renderers must validate less-visible imported paths such as `cgi-dir` with the same renderer-specific delimiter rules as public URL fields.
 - Parser connector imps that intentionally split accumulated command-argument strings must temporarily disable globbing so literal `*` arguments do not expand against the caller's working directory. (2)
 - Generated first-word glosses must pass their embedded install root into sourced parser fallbacks when `WIZARDRY_DIR` is unset; otherwise isolated installs accidentally parse against `~/.wizardry`.
 - Parser and gloss synonym targets may allow spell-relative slashes, but must still reject absolute paths, `..` segments, and doubled slashes.
