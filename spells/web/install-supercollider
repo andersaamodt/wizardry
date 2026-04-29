@@ -1,4 +1,5 @@
 #!/bin/sh
+# Install SuperCollider from the system package manager or trusted macOS release assets.
 
 case "${1-}" in
 --help|--usage|-h)
@@ -58,7 +59,7 @@ run_privileged() {
   if "$@" 2>/dev/null; then
     return 0
   fi
-  if type run_sudo_cmd >/dev/null 2>&1; then
+  if command -v run_sudo_cmd >/dev/null 2>&1; then
     run_sudo_cmd "$@"
     return 0
   fi
@@ -78,7 +79,7 @@ install_target_bin_dir() {
     printf '%s\n' /usr/local/bin
     return 0
   fi
-  if has_cmd sudo || type run_sudo_cmd >/dev/null 2>&1; then
+  if has_cmd sudo || command -v run_sudo_cmd >/dev/null 2>&1; then
     printf '%s\n' /usr/local/bin
     return 0
   fi
@@ -94,7 +95,8 @@ supercollider_installed() {
       if [ -n "$supercollider_app_path" ]; then
         [ -d "$supercollider_app_path" ]
       else
-        [ -d /Applications/SuperCollider.app ] || [ -d "$HOME/Applications/SuperCollider.app" ]
+        [ -d /Applications/SuperCollider.app ] ||
+          [ -d "$HOME/Applications/SuperCollider.app" ]
       fi
       ;;
     *)
@@ -105,7 +107,8 @@ supercollider_installed() {
 
 release_json_latest() {
   has_curl || return 1
-  fetch_url https://api.github.com/repos/supercollider/supercollider/releases/latest 2>/dev/null || return 1
+  release_url=https://api.github.com/repos/supercollider/supercollider/releases/latest
+  fetch_url "$release_url" 2>/dev/null || return 1
 }
 
 install_macos_cli_links() {
@@ -128,7 +131,11 @@ install_supercollider_macos_release() {
 
   release_json=$(release_json_latest) || return 1
   release_json_one_line=$(printf '%s' "$release_json" | tr '\n' ' ')
-  download_url=$(printf '%s\n' "$release_json_one_line" | sed -n 's/.*"browser_download_url":[[:space:]]*"\([^"]*SuperCollider-[^"]*-macOS-universal\.dmg\)".*/\1/p' | head -n 1)
+  download_url=$(
+    printf '%s\n' "$release_json_one_line" |
+      sed -n 's/.*"browser_download_url":[[:space:]]*"\([^"]*SuperCollider-[^"]*-macOS-universal\.dmg\)".*/\1/p' |
+      head -n 1
+  )
   [ -n "$download_url" ] || return 1
   download_url_is_safe "$download_url" || return 1
 
@@ -141,7 +148,8 @@ install_supercollider_macos_release() {
   target_bundle="$target_parent/SuperCollider.app"
   mounted=0
 
-  if [ "$(id -u)" -eq 0 ] || has_cmd sudo || type run_sudo_cmd >/dev/null 2>&1; then
+  if [ "$(id -u)" -eq 0 ] || has_cmd sudo ||
+    command -v run_sudo_cmd >/dev/null 2>&1; then
     target_parent=/Applications
     target_bundle="$target_parent/SuperCollider.app"
   fi
@@ -273,5 +281,6 @@ if supercollider_installed; then
   exit 0
 fi
 
-say "install-supercollider: installation incomplete. Ensure SuperCollider is available on PATH." >&2
+say "install-supercollider: installation incomplete." >&2
+say "Ensure SuperCollider is available on PATH." >&2
 exit 1
