@@ -344,6 +344,87 @@ EOF
   rm -rf "$tmpdir" "$stub_dir"
 }
 
+test_fix_site_security_rejects_invalid_imported_site_user() {
+  skip-if-compiled || return $?
+
+  web_root=$(temp-dir web-wizardry-test)
+  site_dir="$web_root/mysite"
+  mkdir -p "$site_dir/site" "$web_root/.sitedata/mysite"
+  cat > "$site_dir/site.conf" <<'EOF'
+site-name=mysite
+site-user=bad;name
+EOF
+
+  WEB_WIZARDRY_ROOT="$web_root" run_spell spells/web/fix-site-security mysite
+
+  assert_failure || return 1
+  assert_error_contains "invalid site-user" || return 1
+
+  rm -rf "$web_root"
+}
+
+test_fix_site_security_skips_broad_allowlist_dirs() {
+  skip-if-compiled || return $?
+
+  web_root=$(temp-dir web-wizardry-test)
+  site_dir="$web_root/mysite"
+  safe_dir=$(temp-dir web-wizardry-allow)
+  state_dir=$(temp-dir web-wizardry-state)
+  mkdir -p "$site_dir/site" "$web_root/.sitedata/mysite"
+  cat > "$site_dir/site.conf" <<'EOF'
+site-name=mysite
+site-user=ww_mysite
+EOF
+  cat > "$site_dir/site.allowlist" <<EOF
+$web_root
+$site_dir/site
+$web_root/.sitedata
+$safe_dir
+EOF
+
+  stub_dir=$(temp-dir web-wizardry-stub)
+  write_fix_security_identity_stubs "$stub_dir" "ww_mysite"
+  rm -f "$stub_dir/chown"
+  cat > "$stub_dir/chown" <<'EOF'
+#!/bin/sh
+printf '%s\n' "$*" >> "$TEST_STATE_DIR/chown.log"
+exit 0
+EOF
+  cat > "$stub_dir/chmod" <<'EOF'
+#!/bin/sh
+exit 0
+EOF
+  chmod +x "$stub_dir/chown" "$stub_dir/chmod"
+  stub-uname-linux "$stub_dir"
+
+  PATH="$stub_dir:$PATH" TEST_STATE_DIR="$state_dir" WEB_WIZARDRY_ROOT="$web_root" \
+    run_spell spells/web/fix-site-security mysite
+  assert_success
+
+  if ! grep -F -- "-R ww_mysite:ww_mysite $safe_dir" "$state_dir/chown.log" >/dev/null 2>&1; then
+    TEST_FAILURE_REASON="safe allowlist directory was not repaired"
+    rm -rf "$web_root" "$stub_dir" "$safe_dir" "$state_dir"
+    return 1
+  fi
+  if grep -F -- "-R ww_mysite:ww_mysite $web_root" "$state_dir/chown.log" >/dev/null 2>&1; then
+    TEST_FAILURE_REASON="broad web root was recursively chowned from allowlist"
+    rm -rf "$web_root" "$stub_dir" "$safe_dir" "$state_dir"
+    return 1
+  fi
+  if grep -F -- "-R ww_mysite:ww_mysite $site_dir/site" "$state_dir/chown.log" >/dev/null 2>&1; then
+    TEST_FAILURE_REASON="managed site source dir was recursively chowned from allowlist"
+    rm -rf "$web_root" "$stub_dir" "$safe_dir" "$state_dir"
+    return 1
+  fi
+  if grep -F -- "-R ww_mysite:ww_mysite $web_root/.sitedata" "$state_dir/chown.log" >/dev/null 2>&1; then
+    TEST_FAILURE_REASON="managed .sitedata root was recursively chowned from allowlist"
+    rm -rf "$web_root" "$stub_dir" "$safe_dir" "$state_dir"
+    return 1
+  fi
+
+  rm -rf "$web_root" "$stub_dir" "$safe_dir" "$state_dir"
+}
+
 run_test_case "fix-site-security --help works" test_fix_site_security_help
 run_test_case "fix-site-security sets site-user" test_fix_site_security_sets_site_user
 run_test_case "fix-site-security repairs missing Linux private groups" \
@@ -354,5 +435,9 @@ run_test_case "fix-site-security makes nginx runtime paths group-writable" \
 run_test_case "fix-site-security does not create site .web-libs cache" test_fix_site_security_does_not_create_site_web_lib_cache
 run_test_case "fix-site-security rejects path-shaped site names" \
   test_fix_site_security_rejects_path_shaped_site_name
+run_test_case "fix-site-security rejects invalid imported site-user" \
+  test_fix_site_security_rejects_invalid_imported_site_user
+run_test_case "fix-site-security skips broad allowlist directories" \
+  test_fix_site_security_skips_broad_allowlist_dirs
 
 finish_tests

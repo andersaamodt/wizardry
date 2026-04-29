@@ -41,11 +41,85 @@ fi
 site_user_default="ww_$(printf '%s' "$site_name" | tr 'A-Z' 'a-z' | tr '.-' '__')"
 site_user=$(config-get "$site_dir/site.conf" site-user 2>/dev/null || printf '')
 [ -z "$site_user" ] && site_user="$site_user_default"
+case "$site_user" in
+  ''|.|..|-*|*[!a-zA-Z0-9._-]*)
+    die 2 "manage-allowed-dirs: invalid site-user in site.conf"
+    ;;
+esac
 if [ -n "$site_user" ] && [ "$(id -un)" != "$site_user" ] && [ -z "${WIZARDRY_SITE_USER_REEXEC-}" ]; then
   if has sudo; then
     exec sudo -u "$site_user" -- env WIZARDRY_SITE_USER_REEXEC=1 "$0" "$site_name" "$@"
   fi
 fi
+
+shell_quote() {
+  printf "'"
+  printf '%s' "$1" | sed "s/'/'\\\\''/g"
+  printf "'"
+}
+
+canonical_dir() {
+  (CDPATH= cd -- "$1" 2>/dev/null && pwd -P)
+}
+
+validate_allowlist_dir() {
+  allow_path=$1
+  if [ -z "$allow_path" ]; then
+    warn "No path entered"
+    return 1
+  fi
+  case "$allow_path" in
+    *"$(printf '\r')"*)
+      warn "Path must not contain control characters"
+      return 1
+      ;;
+    /*) ;;
+    *)
+      warn "Path must be absolute"
+      return 1
+      ;;
+  esac
+  if [ ! -d "$allow_path" ]; then
+    warn "Path must be an existing directory: $allow_path"
+    return 1
+  fi
+
+  allow_real=$(canonical_dir "$allow_path") || {
+    warn "Path cannot be resolved: $allow_path"
+    return 1
+  }
+  sites_real=$(canonical_dir "$sites_dir") || sites_real=$sites_dir
+  site_real=$(canonical_dir "$site_dir") || site_real=$site_dir
+  sitedata_root_real=$(canonical_dir "$sites_dir/.sitedata" 2>/dev/null || printf '')
+  home_real=
+  if [ -n "${HOME-}" ]; then
+    home_real=$(canonical_dir "$HOME" 2>/dev/null || printf '')
+  fi
+
+  case "$allow_real" in
+    /)
+      warn "Path is too broad to allowlist: $allow_path"
+      return 1
+      ;;
+    "$sites_real"|"$site_real"|"$site_real"/*)
+      warn "Path is managed by this site already: $allow_path"
+      return 1
+      ;;
+  esac
+  if [ -n "$sitedata_root_real" ]; then
+    case "$allow_real" in
+      "$sitedata_root_real"|"$sitedata_root_real"/*)
+        warn "Path is managed site data: $allow_path"
+        return 1
+        ;;
+    esac
+  fi
+  if [ -n "$home_real" ] && [ "$allow_real" = "$home_real" ]; then
+    warn "Path is too broad to allowlist: $allow_path"
+    return 1
+  fi
+  return 0
+}
 
 ensure_allowlist_file() {
   if [ -f "$allowlist_file" ]; then
@@ -72,19 +146,7 @@ add_allowlist_entry() {
   printf 'Enter absolute path to allow: '
   read -r new_path || return 1
   new_path=$(printf '%s' "$new_path" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-  if [ -z "$new_path" ]; then
-    warn "No path entered"
-    return 1
-  fi
-  case "$new_path" in
-    /*) ;;
-    *)
-      warn "Path must be absolute"
-      return 1
-      ;;
-  esac
-  if [ ! -e "$new_path" ]; then
-    warn "Path does not exist: $new_path"
+  if ! validate_allowlist_dir "$new_path"; then
     return 1
   fi
   if list_allowlist_entries | grep -Fx "$new_path" >/dev/null 2>&1; then
@@ -147,7 +209,8 @@ while true; do
 
   set -- "Add allowed dir%add_allowlist_entry" "---"
   while IFS= read -r entry; do
-    set -- "$@" "$entry%remove_allowlist_entry \"$entry\""
+    quoted_entry=$(shell_quote "$entry")
+    set -- "$@" "$entry%remove_allowlist_entry $quoted_entry"
   done <<EOF
 $entries
 EOF

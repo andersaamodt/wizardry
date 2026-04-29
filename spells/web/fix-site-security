@@ -69,6 +69,11 @@ if [ -z "$site_user" ]; then
     warn "fix-site-security: cannot update site.conf without root or sudo"
   fi
 fi
+case "$site_user" in
+  ''|.|..|-*|*[!a-zA-Z0-9._-]*)
+    die 2 "fix-site-security: invalid site-user in site.conf"
+    ;;
+esac
 site_group="$site_user"
 
 group_exists() {
@@ -227,6 +232,65 @@ set_secure_perms() {
   fix_security_run_priv find "$target" -type f -exec chmod 640 {} +
 }
 
+canonical_dir() {
+  (CDPATH= cd -- "$1" 2>/dev/null && pwd -P)
+}
+
+allowlist_dir_is_safe() {
+  allow_path=$1
+  case "$allow_path" in
+    *"$(printf '\r')"*)
+      warn "fix-site-security: allowlist path contains control characters"
+      return 1
+      ;;
+    /*) ;;
+    *)
+      warn "fix-site-security: allowlist path must be absolute: $allow_path"
+      return 1
+      ;;
+  esac
+  if [ ! -d "$allow_path" ]; then
+    warn "fix-site-security: allowlist path must be an existing directory: $allow_path"
+    return 1
+  fi
+
+  allow_real=$(canonical_dir "$allow_path") || {
+    warn "fix-site-security: allowlist path cannot be resolved: $allow_path"
+    return 1
+  }
+  sites_real=$(canonical_dir "$sites_dir") || sites_real=$sites_dir
+  site_real=$(canonical_dir "$site_dir") || site_real=$site_dir
+  sitedata_root_real=$(canonical_dir "$sites_dir/.sitedata" 2>/dev/null || printf '')
+  home_real=
+  if [ -n "${HOME-}" ]; then
+    home_real=$(canonical_dir "$HOME" 2>/dev/null || printf '')
+  fi
+
+  case "$allow_real" in
+    /)
+      warn "fix-site-security: allowlist path is too broad: $allow_path"
+      return 1
+      ;;
+    "$sites_real"|"$site_real"|"$site_real"/*)
+      warn "fix-site-security: allowlist path is managed by this site already: $allow_path"
+      return 1
+      ;;
+  esac
+  if [ -n "$sitedata_root_real" ]; then
+    case "$allow_real" in
+      "$sitedata_root_real"|"$sitedata_root_real"/*)
+        warn "fix-site-security: allowlist path is managed site data: $allow_path"
+        return 1
+        ;;
+    esac
+  fi
+  if [ -n "$home_real" ] && [ "$allow_real" = "$home_real" ]; then
+    warn "fix-site-security: allowlist path is too broad: $allow_path"
+    return 1
+  fi
+  return 0
+}
+
 apply_allowlist() {
   if [ ! -f "$allowlist_file" ]; then
     return 0
@@ -236,16 +300,7 @@ apply_allowlist() {
     line=$(printf '%s' "$line" | sed 's/#.*$//' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
     [ -z "$line" ] && continue
 
-    case "$line" in
-      /*) ;;
-      *)
-        warn "fix-site-security: allowlist path must be absolute: $line"
-        continue
-        ;;
-    esac
-
-    if [ ! -e "$line" ]; then
-      warn "fix-site-security: allowlist path not found: $line"
+    if ! allowlist_dir_is_safe "$line"; then
       continue
     fi
 

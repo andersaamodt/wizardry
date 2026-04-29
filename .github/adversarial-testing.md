@@ -49,6 +49,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Permission repair commands must validate site/path labels before ownership, chmod, mkdir, or allowlist processing.
 - Imported user/group names also need validation before shell-only conveniences such as tilde expansion; `eval "home=~$user"` is command execution if the name is hostile.
 - Allowlist/imported path files that drive recursive ownership or permission changes must reject root, project-root ancestors, non-directories, and other overly broad paths on both write and read.
+- Allowlist path managers should test both the writer UI and the repair reader; hand-edited allowlist files can bypass add-time validation.
 - Imported path values passed through `sh -c` must be supplied as argv or environment values, never interpolated into the shell program string.
 - Temporary directories derived from `TMPDIR` are imported paths too; probe scripts should test quote-bearing `TMPDIR` values before using `sh -c`.
 
@@ -181,6 +182,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Help/about-style bridge actions should map friendly labels to a fixed allowlist instead of executing arbitrary command names with `--help`.
 - Direct menu-run and terminal-launch paths should share one-line argument validation so one GUI path cannot accept forged row text the other rejects.
 - Menu action strings that include paths should be tested with spaces and quotes because menu execution commonly evals the action payload.
+- Menu actions built from allowlist/config files should treat every path as imported metadata and quote it before interpolation into an action string.
 - Menu action strings that include names/labels should be tested with shell metacharacters too; downstream validation does not protect the menu eval boundary.
 - Menu actions built from imported metadata should shell-quote every embedded field, including fields that the destination command will validate later.
 - Menu actions that render config-derived URLs or ports should validate those fields before interpolation; double-quoted command strings still evaluate command substitutions.
@@ -208,6 +210,11 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Release helper scripts should revalidate manifest fields they print, not rely only on CI ordering around a separate validator.
 - Manifest and catalog validators should test future hostile records, not only the current checked-in data, because workflows often iterate those records into paths, package IDs, API calls, and generated files.
 - Catalog source subdirectories are repo-internal paths; reject absolute paths, empty components, `.`, `..`, backslashes, tabs, and CR/LF before clone/copy/cache replacement code runs.
+- Catalog source subdirectories should be canonicalized after clone; a symlinked subdir that resolves outside the checkout is hostile even if the string passed validation.
+- Catalog source repos and refs become cache-lock metadata; reject line breaks before clone, refresh checks, or lock writes.
+- Target-list mutation commands need the same allowlist and duplicate rejection as manifest validators, not just delimiter-shape checks.
+- Generated app scaffolds should leave manifests valid immediately by writing safe target defaults with the new record.
+- Downloaded release archive contents are remote metadata; validate discovered bundle basenames before install paths or status rows are formed.
 - Git branch names can be valid refs while still unsafe in compare-page URLs; reject or encode URL delimiter characters before opening PR links.
 - "Single-line" validators should reject tabs when the same values can later appear in TSV or other delimiter-based GUI rows.
 - When staging generated assets, test partial output directories; each expected file should have an explicit fallback instead of relying on a glob to mean the directory is complete.

@@ -285,3 +285,5 @@
 - Template creation commands must validate site names before making the output directory, and resolver candidate lists must preserve spaces in `WIZARDRY_DIR` and `$HOME`.
 - Template update commands must share creation-time site-name validation and newline-safe template root resolution before deleting template-owned subtrees.
 - Newline-delimited internal lists must reject CR/LF at insertion time, or machine-readable output guards can run after a hostile value has already been split into benign-looking rows.
+- Site allowlist paths that feed recursive permission repair must be validated both when written and when read; reject broad managed roots, managed site data, non-directories, and control characters before chown/chmod.
+- Menu action strings built from allowlist/config paths must shell-quote quote-bearing paths, because the menu eval boundary is separate from downstream command validation.

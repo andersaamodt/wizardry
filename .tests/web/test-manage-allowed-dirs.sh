@@ -93,8 +93,76 @@ EOF
   fi
 }
 
+test_manage_allowed_dirs_shell_quotes_menu_paths() {
+  skip-if-compiled || return $?
+
+  web_root=$(temp-dir web-wizardry-test)
+  site_dir="$web_root/mysite"
+  mkdir -p "$site_dir/site"
+  current_user=$(id -un)
+  cat > "$site_dir/site.conf" <<EOF
+site-name=mysite
+site-user=$current_user
+EOF
+
+  allow_parent=$(temp-dir web-wizardry-allow)
+  allow_dir="$allow_parent/quote ' dir"
+  mkdir -p "$allow_dir"
+  printf '%s\n' "$allow_dir" > "$site_dir/site.allowlist"
+
+  stub_dir=$(temp-dir web-wizardry-stub)
+  stub-menu "$stub_dir"
+  menu_log="$stub_dir/menu.log"
+
+  run_cmd env PATH="$stub_dir:$PATH" WEB_WIZARDRY_ROOT="$web_root" MENU_LOG="$menu_log" \
+    "$ROOT_DIR/spells/web/manage-allowed-dirs" mysite
+  assert_success
+
+  escaped_allow_dir=$(printf '%s' "$allow_dir" | sed "s/'/'\\\\''/g")
+  expected_action="remove_allowlist_entry '$escaped_allow_dir'"
+  if ! grep -F "$expected_action" "$menu_log" >/dev/null 2>&1; then
+    TEST_FAILURE_REASON="menu action did not shell-quote quote-bearing allowlist path"
+    rm -rf "$web_root" "$stub_dir" "$allow_parent"
+    return 1
+  fi
+
+  rm -rf "$web_root" "$stub_dir" "$allow_parent"
+}
+
+test_manage_allowed_dirs_rejects_broad_paths() {
+  skip-if-compiled || return $?
+
+  web_root=$(temp-dir web-wizardry-test)
+  site_dir="$web_root/mysite"
+  mkdir -p "$site_dir/site"
+  current_user=$(id -un)
+  cat > "$site_dir/site.conf" <<EOF
+site-name=mysite
+site-user=$current_user
+EOF
+
+  stub_dir=$(temp-dir web-wizardry-stub)
+  stub-menu "$stub_dir"
+
+  run_cmd env PATH="$stub_dir:$PATH" WEB_WIZARDRY_ROOT="$web_root" MENU_LOG="$stub_dir/menu.log" \
+    sh -c "printf 'y\n%s\nn\n' '$web_root' | '$ROOT_DIR/spells/web/manage-allowed-dirs' mysite"
+  assert_success
+
+  if grep -Fx "$web_root" "$site_dir/site.allowlist" >/dev/null 2>&1; then
+    TEST_FAILURE_REASON="manage-allowed-dirs allowed broad web root path"
+    rm -rf "$web_root" "$stub_dir"
+    return 1
+  fi
+
+  rm -rf "$web_root" "$stub_dir"
+}
+
 run_test_case "manage-allowed-dirs --help works" test_manage_allowed_dirs_help
 run_test_case "manage-allowed-dirs adds allowlist entry" test_manage_allowed_dirs_adds_entry
 run_test_case "manage-allowed-dirs rejects path-shaped site names" test_manage_allowed_dirs_rejects_path_shaped_site_name
+run_test_case "manage-allowed-dirs shell-quotes menu paths" \
+  test_manage_allowed_dirs_shell_quotes_menu_paths
+run_test_case "manage-allowed-dirs rejects broad paths" \
+  test_manage_allowed_dirs_rejects_broad_paths
 
 finish_tests
