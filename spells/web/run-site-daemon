@@ -162,7 +162,7 @@ printf 'Starting nginx for %s...\n' "$site_name" >&2
 
 # Capture nginx startup errors to help debug issues  
 nginx_startup_log="$site_dir/nginx/startup.log"
-"$NGINX_BIN" -p "$site_dir" -e "$site_dir/nginx/error.log" -c "$site_dir/nginx/nginx.conf" 2>"$nginx_startup_log" &
+"$nginx_bin" -p "$site_dir" -e "$site_dir/nginx/error.log" -c "$site_dir/nginx/nginx.conf" 2>"$nginx_startup_log" &
 nginx_pid=$!
 
 sleep 1

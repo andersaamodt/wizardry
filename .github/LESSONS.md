@@ -310,3 +310,5 @@
 - Native app replacement must be staged and reversible: move the existing app to a backup, move the staged replacement into place, and restore the backup if the final move fails.
 - Template names read from site config need the same path-segment validation as template names supplied at creation time.
 - Managed release symlinks and stage names are imported path metadata; validate them before copying from or staging into release trees.
+- Structural tests should skip sourced common libraries explicitly instead of treating non-executable helper libraries as castable spells.
+- Mechanical variable renames must search for every remaining reference; structural naming checks can pass while stale runtime references remain.

@@ -311,6 +311,9 @@ test_spells_have_help_usage_handlers() {
   check_help_handler() {
     spell=$1
     rel_path=${spell#"$ROOT_DIR/spells/"}
+    case "$rel_path" in
+      .arcana/crossposting/crossposting-common) return ;;
+    esac
 
     if ! grep -qF -- '--help|--usage|-h)' "$spell" 2>/dev/null; then
       missing_handler="${missing_handler:+$missing_handler, }$rel_path"
@@ -1026,6 +1029,7 @@ divination/detect-rc-file
 .arcana/bitcoin/install-bitcoin
 .arcana/web-wizardry/install-web-pandoc
 .arcana/web-wizardry/uninstall-web-pandoc
+.arcana/crossposting/crossposting-common
 .arcana/docker/stop-docker-daemon
 .arcana/docker/is-docker-daemon-running
 .arcana/docker/docker-menu
@@ -2224,6 +2228,9 @@ test_all_spells_respond_to_help() {
   check_help_flag() {
     spell=$1
     rel_path=${spell#"$ROOT_DIR/spells/"}
+    case "$rel_path" in
+      .arcana/crossposting/crossposting-common) return ;;
+    esac
     
     # Skip if we already have enough failures
     [ "$failure_count" -ge 10 ] && return

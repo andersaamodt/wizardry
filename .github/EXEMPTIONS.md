@@ -12,8 +12,7 @@ Documents all deviations from project standards with justification.
 
 - **Style**: ✅ **353/353 files compliant** - All long-line and mixed tabs/spaces exemptions eliminated (2025-12-17)
 - **Code Structure**: Conditional imps exempt from `set -eu`; imps exempt from `--help` (architectural decisions)
-- **Function Discipline**: ✅ 0 spells with 4+ extra functions (57/57 spells refactored)
-  - 6 spells with 2-3 extra functions remain (documented below) - functions used 2-20x each, acceptable per guidelines
+- **Function Discipline**: Common structural tests pass; larger legacy spells and source-aware imps are explicitly exempted while they await deeper decomposition.
 - **Testing**: Bootstrap scripts can't use wizardry infrastructure (run before installation)
 - **Non-Shell Files**: Systemd service files exempt from all shell checks (2 files)
 - **CI**: No exemptions - all checks required
@@ -102,6 +101,38 @@ case "$0" in */has) _has "$@" ;; esac
 **Affected**: All `spells/.imps/*`
 
 **Reason**: Micro-helpers; opening comment serves as spec; `--help` would bloat them
+
+### Source-Aware and Harness Imps: Function Discipline
+
+**Affected**:
+- `spells/.imps/lex/parse`
+- `spells/.imps/mud/move-avatar`
+- `spells/.imps/fs/list-attributes`
+- `spells/.imps/cond/has-ancestor`
+- `spells/.imps/test/boot/run-cmd`
+- `spells/.imps/test/boot/stub-forget-command`
+- `spells/.imps/test/socat-pty`
+
+**Reason**: These imps are not simple one-shot predicates. They protect caller shell state, generate sourced test overrides, provide PTY cleanup, or handle platform-specific parsing fallbacks. They remain exempt from the zero-function imp rule until each can be decomposed without changing sourced-shell behavior.
+
+### Sourced Common Arcana Libraries
+
+**Affected**:
+- `spells/.arcana/crossposting/crossposting-common`
+
+**Reason**: This file is a sourced helper library for crossposting arcana, not a castable spell. It is intentionally non-executable and exempt from spell help and function-count checks.
+
+### Installer and Daemon Env-Clear Placement
+
+**Affected**:
+- `spells/web/install-nostril`
+- `spells/web/install-syncthing`
+- `spells/web/install-supercollider`
+- `spells/web/uninstall-supercollider`
+- `spells/web/install-pandoc`
+- `spells/web/run-site-daemon`
+
+**Reason**: These commands either capture supported environment overrides before environment clearing or locate `env-clear` through an absolute runtime path for daemon contexts where wizardry PATH setup is unavailable.
 
 ### Menu Imps: Flag Arguments Allowed
 
@@ -1014,4 +1045,3 @@ Test infrastructure is exempted from the 0-function rule:
 **Audit Status**: Phase 8 (2026-01-09) - APPROVED
 
 ---
-
