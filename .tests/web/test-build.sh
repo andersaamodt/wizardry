@@ -441,12 +441,88 @@ EOF
   rm -rf "$tmpdir" "$stub_dir"
 }
 
+test_build_rejects_imported_domain_renderer_injection() {
+  skip-if-compiled || return $?
+
+  test_web_root=$(temp-dir web-build-root)
+  stub_dir=$(make_build_stub_dir)
+  site_name="build-bad-domain"
+  site_dir="$test_web_root/$site_name"
+
+  mkdir -p "$site_dir/site/pages/posts"
+  cat > "$site_dir/site.conf" <<'EOF'
+site-name=build-bad-domain
+template=blog
+domain=example.com;include=/tmp/evil.conf
+https=false
+EOF
+  mkdir -p "$site_dir/site/pages/posts"
+  cat > "$site_dir/site/pages/posts/bad-domain.md" <<'EOF'
+---
+title: Bad Domain
+published_at: 2026-01-01T00:00:00Z
+---
+
+Body
+EOF
+
+  PATH="$stub_dir:$PATH" WEB_WIZARDRY_ROOT="$test_web_root" WIZARDRY_DIR="$ROOT_DIR" \
+    run_spell spells/web/build "$site_name" --full
+  assert_failure || return 1
+  assert_error_contains "invalid domain" || return 1
+
+  if [ -f "$site_dir/build/robots.txt" ] &&
+     grep -F "evil.conf" "$site_dir/build/robots.txt" >/dev/null 2>&1; then
+    TEST_FAILURE_REASON="build wrote forged robots.txt text from invalid domain"
+    return 1
+  fi
+
+  rm -rf "$test_web_root" "$stub_dir"
+}
+
+test_build_rejects_imported_https_setting() {
+  skip-if-compiled || return $?
+
+  test_web_root=$(temp-dir web-build-root)
+  stub_dir=$(make_build_stub_dir)
+  site_name="build-bad-https"
+  site_dir="$test_web_root/$site_name"
+
+  mkdir -p "$site_dir/site/pages/posts"
+  cat > "$site_dir/site.conf" <<'EOF'
+site-name=build-bad-https
+template=blog
+domain=localhost
+https=true; forged
+EOF
+  mkdir -p "$site_dir/site/pages/posts"
+  cat > "$site_dir/site/pages/posts/bad-https.md" <<'EOF'
+---
+title: Bad HTTPS
+published_at: 2026-01-01T00:00:00Z
+---
+
+Body
+EOF
+
+  PATH="$stub_dir:$PATH" WEB_WIZARDRY_ROOT="$test_web_root" WIZARDRY_DIR="$ROOT_DIR" \
+    run_spell spells/web/build "$site_name" --full
+  assert_failure || return 1
+  assert_error_contains "invalid https setting" || return 1
+
+  rm -rf "$test_web_root" "$stub_dir"
+}
+
 run_test_case "build --help works" test_build_help
 run_test_case "build generates output for every template" test_build_generates_html_for_every_template
 run_test_case "build cache falls back to site data cache" test_build_cache_falls_back_to_site_data_only
 run_test_case "build runs site pre-build hook" test_build_runs_site_pre_build_hook
 run_test_case "build appends cache bust tokens to local static assets" test_build_adds_cache_bust_for_local_static_assets
 run_test_case "build rejects path-shaped site names" test_build_rejects_path_shaped_site_name
+run_test_case "build rejects imported domain renderer injection" \
+  test_build_rejects_imported_domain_renderer_injection
+run_test_case "build rejects imported https setting" \
+  test_build_rejects_imported_https_setting
 if [ -d "$ROOT_DIR/web/blog" ]; then
   run_test_case "blog build renders nested posts and feeds" test_build_blog_generates_posts_and_feeds
 fi

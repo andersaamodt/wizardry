@@ -44,6 +44,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Hand-edited config values that feed daemon/service config need read-time validation even when writer commands validate them.
 - Domain/host identifiers imported from config need read-time validation before TLS tools, generated paths, service config, or machine-readable output reuse them.
 - URL fields assembled from generated config need each component revalidated immediately before printing, even when the generator normally writes safe defaults.
+- Static artifact generators that embed URLs in feeds, sitemaps, or robots files must revalidate imported URL components at generation time.
 - Imported user/group names need validation before privilege changes, ownership changes, account creation, or service User/UserName rendering.
 - Permission repair commands must validate site/path labels before ownership, chmod, mkdir, or allowlist processing.
 - Imported user/group names also need validation before shell-only conveniences such as tilde expansion; `eval "home=~$user"` is command execution if the name is hostile.

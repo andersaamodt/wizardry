@@ -205,6 +205,15 @@ cdata_safe() {
   printf '%s' "${1-}" | sed 's/]]>/]]]]><![CDATA[>/g'
 }
 
+valid_domain() {
+  domain_value=$1
+  case "$domain_value" in
+    ''|.|..|.*|*.|*..*|*[!A-Za-z0-9._-]*)
+      return 1
+      ;;
+  esac
+}
+
 iso_to_rfc822() {
   iso=${1-}
   if [ -z "$iso" ]; then
@@ -228,6 +237,13 @@ iso_to_rfc822() {
 site_base_url() {
   domain=$(config-get "$site_dir/site.conf" domain 2>/dev/null || printf 'localhost')
   use_https=$(config-get "$site_dir/site.conf" https 2>/dev/null || printf 'false')
+  if ! valid_domain "$domain"; then
+    die 2 "build: invalid domain"
+  fi
+  case "$use_https" in
+    true|false) ;;
+    *) die 2 "build: invalid https setting" ;;
+  esac
   scheme=http
   if [ "$use_https" = "true" ]; then
     scheme=https
