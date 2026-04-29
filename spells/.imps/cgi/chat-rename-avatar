@@ -26,6 +26,23 @@ if [ -z "$room_name" ] || [ -z "$old_user" ] || [ -z "$new_user" ]; then
 HTML
   exit 0
 fi
+if ! validate-room-name "$room_name" || \
+   ! printf '%s' "$room_name" | grep -qE '^[a-zA-Z0-9_-]+$'; then
+  cat <<HTML
+<div class="demo-result error">
+  <p>Invalid room name</p>
+</div>
+HTML
+  exit 0
+fi
+if ! validate-username "$old_user" || ! validate-username "$new_user"; then
+  cat <<HTML
+<div class="demo-result error">
+  <p>Invalid username</p>
+</div>
+HTML
+  exit 0
+fi
 
 # Chat rooms directory - use site-specific location
 CHAT_DIR=$(get-site-data-dir "chatrooms")

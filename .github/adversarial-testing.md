@@ -129,6 +129,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - File-backed CGI auth should test path-shaped session tokens, generated token alphabets, and username traversal before reading or writing session/user directories.
 - CGI JSON endpoints should test quote-bearing config values, filenames, and titles, plus privilege-group near misses such as `blog-admins`.
 - Shared CGI data-root helpers should reject path-shaped site-name environment values before composing storage paths for other handlers.
+- Chat-style CGI state should test create/delete/rename/send parity for room and avatar names; every endpoint that composes a room path needs the same validator.
 - Catalog/list/count commands must apply the same identifier validator as the command that later executes the selected item.
 - Read/import paths for hand-edited metadata must revalidate the same delimiters and identifiers enforced by create/update commands.
 - Imported profile/config fields must be sanitized at output time even when only a subset of those fields drive filesystem or command actions.
