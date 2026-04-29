@@ -71,8 +71,25 @@ EOF
   rm -rf "$tmp_bin"
 }
 
+test_replaces_existing_app_transactionally() {
+  if ! grep -q 'backup_bundle=' "$ROOT_DIR/$target"; then
+    TEST_FAILURE_REASON="installer should stage a backup before replacing an app bundle"
+    return 1
+  fi
+  if grep -q 'rm -rf "$target_bundle"' "$ROOT_DIR/$target"; then
+    TEST_FAILURE_REASON="installer should not delete the existing app before replacement"
+    return 1
+  fi
+  if ! grep -q 'mv "$backup_bundle" "$target_bundle"' "$ROOT_DIR/$target"; then
+    TEST_FAILURE_REASON="installer should restore the previous app if replacement fails"
+    return 1
+  fi
+}
+
 run_test_case "install-supercollider shows help" test_help
 run_test_case "install-supercollider rejects untrusted release URLs" \
   test_rejects_untrusted_release_url
+run_test_case "install-supercollider replaces existing app transactionally" \
+  test_replaces_existing_app_transactionally
 
 finish_tests

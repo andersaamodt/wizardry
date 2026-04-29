@@ -176,6 +176,7 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 - Preflight path canonicalization must be side-effect-free; rejected destinations should not create missing parent directories under source trees.
 - Installer-generated shell or desktop launchers must reject or structurally escape path values containing shell-expansion characters.
 - Native packaging entrypoints should validate bundle IDs again before rendering plist or project metadata.
+- Native app installers should move an existing app bundle to a restorable backup before moving the staged replacement into place; never delete the existing bundle before the final replacement operation succeeds.
 - Backend status rows should sanitize XDG/env-derived file paths, including preference write confirmations.
 - Shared root resolvers should reject line-break roots before returning, because downstream commands often echo or persist root paths.
 - Plain-text backend outputs still need argument shape checks when GUI code treats the first line as authoritative state.

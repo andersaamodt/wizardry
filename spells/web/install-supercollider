@@ -146,9 +146,13 @@ install_supercollider_macos_release() {
   stage_bundle="$stage_root/SuperCollider.app"
   target_parent="$HOME/Applications"
   target_bundle="$target_parent/SuperCollider.app"
+  backup_bundle=
   mounted=0
 
-  if [ "$(id -u)" -eq 0 ] || has_cmd sudo ||
+  if [ -n "$supercollider_app_path" ]; then
+    target_bundle=$supercollider_app_path
+    target_parent=$(dirname "$target_bundle")
+  elif [ "$(id -u)" -eq 0 ] || has_cmd sudo ||
     command -v run_sudo_cmd >/dev/null 2>&1; then
     target_parent=/Applications
     target_bundle="$target_parent/SuperCollider.app"
@@ -192,9 +196,23 @@ install_supercollider_macos_release() {
 
   run_privileged mkdir -p "$target_parent"
   if [ -d "$target_bundle" ]; then
-    run_privileged rm -rf "$target_bundle"
+    backup_bundle="$target_parent/.SuperCollider.app.wizardry-old.$$"
+    run_privileged rm -rf "$backup_bundle"
+    run_privileged mv "$target_bundle" "$backup_bundle" || {
+      rm -rf "$tmp_root"
+      return 1
+    }
   fi
-  run_privileged mv "$stage_bundle" "$target_bundle"
+  run_privileged mv "$stage_bundle" "$target_bundle" || {
+    if [ -n "$backup_bundle" ] && [ -d "$backup_bundle" ]; then
+      run_privileged mv "$backup_bundle" "$target_bundle" >/dev/null 2>&1 || true
+    fi
+    rm -rf "$tmp_root"
+    return 1
+  }
+  if [ -n "$backup_bundle" ]; then
+    run_privileged rm -rf "$backup_bundle" >/dev/null 2>&1 || true
+  fi
   install_macos_cli_links "$target_bundle"
 
   if [ "$mounted" -eq 1 ]; then

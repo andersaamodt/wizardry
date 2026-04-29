@@ -307,3 +307,4 @@
 - Under `set -e`, a helper function returning `1` as a meaningful state must be called through `if helper; then ... else status=$?; fi`; a plain call exits before status handling runs.
 - Tests that set environment overrides for shell-function helpers should prefer `run_cmd env VAR=value ...`; prefix assignments before shell functions can fail to reach the subprocess being tested.
 - A test that ends a help-path check with unconditional `true` is not a test; assert the real command, status, and usage output.
+- Native app replacement must be staged and reversible: move the existing app to a backup, move the staged replacement into place, and restore the backup if the final move fails.
