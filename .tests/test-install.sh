@@ -668,8 +668,9 @@ path_wizard_accepts_helper_overrides() {
 # === Help Tests ===
 
 shows_help() {
-  run_spell spells/install/install --help
-  true
+  run_cmd "$ROOT_DIR/install" --help
+  assert_success || return 1
+  assert_output_contains "Usage: install" || return 1
 }
 
 # === Bootstrapping Spell Independence Tests ===
@@ -1228,9 +1229,9 @@ install_mud_setup() {
   fi
 }
 
-install_mud_installs_cd_hook() {
+install_mud_does_not_install_cd_hook() {
   skip-if-compiled || return $?
-  # Test that MUD installation installs the CD hook
+  # MUD is discoverable by default, but the cd hook is still opt-in.
   fixture=$(make_fixture)
   provide_basic_tools "$fixture"
   link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
@@ -1253,11 +1254,10 @@ install_mud_installs_cd_hook() {
   # Should show MUD installation section
   assert_output_contains "Installing MUD" || return 1
   
-  # Should install CD hook (verify via output since bwrap permissions prevent file read)
-  assert_output_contains "CD hook" || return 1
-  
-  # Verify the cd cantrip was installed (via output message)
-  assert_output_contains "runs 'look' on directory change" || return 1
+  if printf '%s' "$OUTPUT" | grep -q "CD hook"; then
+    TEST_FAILURE_REASON="installer should not enable the CD hook implicitly"
+    return 1
+  fi
 }
 
 install_mud_enables_config_features() {
@@ -1293,9 +1293,9 @@ install_mud_enables_config_features() {
   assert_output_contains "installed" || return 1
 }
 
-install_without_mud_skips_mud_section() {
+install_defaults_to_mud_discoverable() {
   skip-if-compiled || return $?
-  # Test that install without MUD skips the MUD installation section
+  # MUD features are discoverable by default; users can disable them later.
   fixture=$(make_fixture)
   provide_basic_tools "$fixture"
   link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
@@ -1314,11 +1314,7 @@ install_without_mud_skips_mud_section() {
 
   assert_success || return 1
   
-  # Should NOT show MUD installation section
-  if printf '%s' "$OUTPUT" | grep -q "Installing MUD"; then
-    TEST_FAILURE_REASON="should not show MUD installation when not requested"
-    return 1
-  fi
+  assert_output_contains "Installing MUD" || return 1
   
   # CD hook should NOT be in the rc file
   if grep -q "wizardry cd cantrip" "$rc_file" 2>/dev/null; then
@@ -1344,8 +1340,9 @@ install_mud_shows_planned_features() {
 
   assert_success || return 1
   
-  # Should show MUD features were configured
-  assert_output_contains "MUD features configured" || return 1
+  # Should show MUD features are installed/discoverable
+  assert_output_contains "MUD features" || return 1
+  assert_output_contains "installed" || return 1
 }
 
 # === Mac Install Bug Fix Tests ===
@@ -1705,9 +1702,9 @@ run_test_case "learn-spellbook remove-all reports count" path_wizard_remove_all_
 run_test_case "learn-spellbook remove-all handles empty file" path_wizard_remove_all_handles_empty_file
 run_test_case "install no spell preinstallation" install_no_spell_preinstallation
 run_test_case "install MUD setup" install_mud_setup
-run_test_case "install MUD installs CD hook" install_mud_installs_cd_hook
+run_test_case "install MUD leaves CD hook opt-in" install_mud_does_not_install_cd_hook
 run_test_case "install MUD enables config features" install_mud_enables_config_features
-run_test_case "install without MUD skips MUD section" install_without_mud_skips_mud_section
+run_test_case "install defaults to MUD discoverable" install_defaults_to_mud_discoverable
 run_test_case "install MUD shows planned features" install_mud_shows_planned_features
 run_test_case "install sources invoke-wizardry successfully" install_sources_invoke_wizardry_successfully
 run_test_case "install rc file sources invoke-wizardry" install_rc_file_sources_invoke_wizardry

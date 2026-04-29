@@ -5,6 +5,17 @@ set -eu
 # After installation, wizardry will be available in new terminal windows.
 # To use it immediately in the current terminal, run the command shown at the end.
 
+case "${1-}" in
+--help|--usage|-h)
+        cat <<'USAGE'
+Usage: install
+
+Install Wizardry into the configured install directory.
+USAGE
+        exit 0
+        ;;
+esac
+
 # Abort if unexpected arguments are supplied so we do not accidentally discard
 # them when repurposing the positional parameters to track missing directories.
 if [ "$#" -ne 0 ]; then
@@ -183,7 +194,7 @@ if [ -n "${WIZARDRY_INSTALL_DIR-}" ]; then
 elif [ -n "${WIZARDRY_ROOT-}" ]; then
         INSTALL_INPUT=$WIZARDRY_ROOT
 else
-        message="Wizardry install directory (or press Enter for default)? [$PROMPT_DEFAULT] "
+        message="Wizardry install directory? (press Enter for default: $PROMPT_DEFAULT) "
         # Check for interactive input. When running via curl | sh, stdin is a pipe
         # containing the script content, not user input. We must check if we can
         # read from /dev/tty instead.
@@ -277,7 +288,11 @@ else
                 # Prefer git clone (creates proper git repo for update-wizardry),
                 # fall back to tarball download if git is not available.
                 repo_url=${WIZARDRY_REMOTE_REPO-https://github.com/andersaamodt/wizardry.git}
-                archive_url=${WIZARDRY_REMOTE_ARCHIVE-https://github.com/andersaamodt/wizardry/archive/refs/heads/main.tar.gz}
+                archive_url=${WIZARDRY_REMOTE_ARCHIVE-}
+                if [ -z "$archive_url" ]; then
+                        archive_base=https://github.com/andersaamodt/wizardry/archive
+                        archive_url=$archive_base/refs/heads/main.tar.gz
+                fi
                 
                 # Try git clone first if git is available
                 if command -v git >/dev/null 2>&1; then
@@ -461,9 +476,14 @@ detect_installation_status() {
         fi
 }
 
-# Detect installation status for better user messaging
-detect_installation_status
-install_status=$?
+# Detect installation status for better user messaging.  Status 1 and 2 are
+# meaningful states, not fatal errors, so capture them through an if statement
+# where set -e will not abort the installer.
+if detect_installation_status; then
+        install_status=0
+else
+        install_status=$?
+fi
 
 case $install_status in
         0)

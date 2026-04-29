@@ -33,7 +33,8 @@ exit 0
 EOF
   chmod +x "$tmp_bin/nostril" "$tmp_bin/nak"
 
-  XDG_BIN_HOME="$tmp_bin" PATH="$tmp_bin:/usr/bin:/bin:/usr/sbin:/sbin" run_spell spells/web/uninstall-nostril
+  run_cmd env XDG_BIN_HOME="$tmp_bin" PATH="$tmp_bin:$WIZARDRY_IMPS_PATH:/usr/bin:/bin:/usr/sbin:/sbin" \
+    "$ROOT_DIR/spells/web/uninstall-nostril"
   assert_success
   [ ! -f "$tmp_bin/nostril" ] || {
     TEST_FAILURE_REASON="nostril binary was not removed"

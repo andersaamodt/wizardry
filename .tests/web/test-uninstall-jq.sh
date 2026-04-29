@@ -29,7 +29,8 @@ exit 0
 EOF
   chmod +x "$tmp_bin/jq"
 
-  XDG_BIN_HOME="$tmp_bin" PATH="$tmp_bin:/usr/bin:/bin:/usr/sbin:/sbin" run_spell spells/web/uninstall-jq
+  run_cmd env XDG_BIN_HOME="$tmp_bin" PATH="$tmp_bin:$WIZARDRY_IMPS_PATH:/usr/bin:/bin:/usr/sbin:/sbin" \
+    "$ROOT_DIR/spells/web/uninstall-jq"
   assert_success
   [ ! -f "$tmp_bin/jq" ] || {
     TEST_FAILURE_REASON="jq binary was not removed"

@@ -208,10 +208,13 @@ Prefer cases a real user, shell, filesystem, or platform can trigger. Avoid turn
 ### Pipelines and Exit Status
 
 - Under `set -e`, pipelines that may legitimately find no rows need explicit status normalization.
+- Under `set -e`, helper functions that intentionally return meaningful nonzero states must be called from `if`, `case`, or another status-capturing context; plain calls can abort before the caller records the state.
 - Do not suppress tool stderr until after validating user-facing option errors.
 - Check cleanup and temp-file removal on both success and failure paths.
 - Test skip helpers are part of harness correctness: a skipped case should return the harness skip status and increment skip counters, not print an error and pass.
 - Test-suite file modes are part of the contract; executable test files must be committed with executable bits so sweeps do not depend on the caller using `sh test-file`.
+- Tests for exported environment overrides should use `run_cmd env VAR=value ...` or explicit exports; `VAR=value shell_function` can fail to exercise the intended subprocess environment.
+- Help tests should assert the real command path, success status, and usage text; `true` after a stale command path hides broken help handlers.
 
 ### Platform Differences
 

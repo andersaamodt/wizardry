@@ -57,7 +57,7 @@ test_no_duplicate_spells() {
     return 1
   fi
   
-  _assert_success
+  return 0
 }
 
 test_all_spells_covered() {
@@ -97,10 +97,10 @@ test_all_spells_covered() {
     return 1
   fi
   
-  _assert_success
+  return 0
 }
 
-_run_test_case "no spell appears in multiple levels" test_no_duplicate_spells
-_run_test_case "all spells are assigned to a level" test_all_spells_covered
+run_test_case "no spell appears in multiple levels" test_no_duplicate_spells
+run_test_case "all spells are assigned to a level" test_all_spells_covered
 
-_finish_tests
+finish_tests
