@@ -97,6 +97,44 @@ ${var%%pattern}        # Remove longest match from end
 ${#var}                # String length
 ```
 
+### Function Variable Scope
+
+**CRITICAL:** POSIX sh variables are global by default, even when assigned inside functions.
+
+```sh
+# WRONG: helper clobbers the caller's src/dest values
+copy_tree() {
+  src=${1-}
+  dest=${2-}
+  cp -R "$src" "$dest"
+}
+
+install_tree() {
+  src=${1-}
+  dest=${2-}
+  stage="$dest.stage"
+  copy_tree "$src" "$stage"
+  copy_tree "$stage" "$dest"  # may now see helper-clobbered globals
+}
+
+# RIGHT: use function-specific variable prefixes
+copy_tree() {
+  copy_tree_src=${1-}
+  copy_tree_dest=${2-}
+  cp -R "$copy_tree_src" "$copy_tree_dest"
+}
+
+install_tree() {
+  install_tree_src=${1-}
+  install_tree_dest=${2-}
+  install_tree_stage="$install_tree_dest.stage"
+  copy_tree "$install_tree_src" "$install_tree_stage"
+  copy_tree "$install_tree_stage" "$install_tree_dest"
+}
+```
+
+**Why:** A nested helper can overwrite same-named variables in its caller. Use function-specific prefixes for helpers that are composed together, especially staged installers and copy/move wrappers.
+
 ### Aliases and Sourced Scripts
 
 **CRITICAL PATTERN:** Aliases that invoke sourced-only scripts must use space-separated form to route through first-word glosses.
