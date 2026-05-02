@@ -251,10 +251,22 @@ simplex_chat_download_range() {
   else
     simplex_chat_range_have=0
   fi
+  simplex_chat_range_next="$simplex_chat_range_tmp.next"
+  if [ -f "$simplex_chat_range_next" ]; then
+    simplex_chat_range_next_size=$(simplex_chat_file_size "$simplex_chat_range_next")
+    if [ "$simplex_chat_range_next_size" -gt 0 ]; then
+      cat "$simplex_chat_range_next" >>"$simplex_chat_range_tmp" || return 1
+    fi
+    rm -f "$simplex_chat_range_next"
+    simplex_chat_range_have=$(simplex_chat_file_size "$simplex_chat_range_tmp")
+    if [ "$simplex_chat_range_have" -gt "$simplex_chat_range_expected" ]; then
+      rm -f "$simplex_chat_range_tmp"
+      return 1
+    fi
+  fi
   simplex_chat_range_no_progress=0
   while [ "$simplex_chat_range_have" -lt "$simplex_chat_range_expected" ]; do
     simplex_chat_range_fetch_start=$((simplex_chat_range_start + simplex_chat_range_have))
-    simplex_chat_range_next="$simplex_chat_range_tmp.next"
     rm -f "$simplex_chat_range_next"
     simplex_chat_range_curl_ok=1
     curl -fsSL \
@@ -322,7 +334,7 @@ simplex_chat_fetch_url_to_file_parallel() {
   fi
   simplex_chat_parallel_segment=$(((simplex_chat_parallel_remaining + simplex_chat_parallel_jobs - 1) / simplex_chat_parallel_jobs))
   simplex_chat_parallel_prefix="$simplex_chat_parallel_output"
-  simplex_chat_parallel_chunk_base="$simplex_chat_parallel_output.part.$simplex_chat_parallel_current"
+  simplex_chat_parallel_chunk_base="$simplex_chat_parallel_output.part.$simplex_chat_parallel_current.$simplex_chat_parallel_jobs"
   simplex_chat_parallel_failed=0
   simplex_chat_parallel_pids=
   simplex_chat_parallel_job=1
