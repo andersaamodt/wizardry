@@ -46,6 +46,7 @@ write_curl_stub() {
   stub_path=$1
   cat >"$stub_path" <<'SHI'
 #!/bin/sh
+printf '%s\n' "$*" >>"${CURL_LOG:-/dev/null}"
 output=
 url=
 while [ "$#" -gt 0 ]; do
@@ -109,10 +110,11 @@ installs_official_asset_with_digest_check() {
     WIZARDRY_SIMPLEX_ROOT="$tmp/state/wizardry/simplex" \
     WIZARDRY_SIMPLEX_ASSET_NAME="simplex-chat-test" \
     WIZARDRY_SIMPLEX_RELEASE_API_URL="https://example.invalid/release" \
-    RELEASE_JSON="$release_json" \
-    FAKE_SIMPLEX_BIN="$fake_bin" \
-    PATH="$tmp:$PATH" \
-    "$target"
+  RELEASE_JSON="$release_json" \
+  FAKE_SIMPLEX_BIN="$fake_bin" \
+  CURL_LOG="$tmp/curl.log" \
+  PATH="$tmp:$PATH" \
+  "$target"
 
   assert_success || return 1
   [ -x "$tmp/state/wizardry/simplex/current/simplex-chat" ] || {
@@ -125,6 +127,9 @@ installs_official_asset_with_digest_check() {
   }
   assert_file_contains "$tmp/state/wizardry/simplex/install.conf" "version=vtest" || return 1
   assert_file_contains "$tmp/state/wizardry/simplex/install.conf" "sha256=$digest" || return 1
+  assert_file_contains "$tmp/curl.log" "--retry 3" || return 1
+  assert_file_contains "$tmp/curl.log" "--speed-limit 1024" || return 1
+  assert_file_contains "$tmp/curl.log" "--speed-time 60" || return 1
 }
 
 run_test_case "install-simplex-chat downloads verifies and links official CLI" installs_official_asset_with_digest_check

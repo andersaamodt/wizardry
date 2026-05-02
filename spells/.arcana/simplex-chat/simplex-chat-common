@@ -130,7 +130,17 @@ simplex_chat_fetch_url_to_file() {
       ;;
   esac
   if command -v curl >/dev/null 2>&1; then
-    curl -fsSL "$simplex_chat_fetch_url" -o "$simplex_chat_fetch_output"
+    simplex_chat_curl_retry=${WIZARDRY_SIMPLEX_CURL_RETRY:-3}
+    simplex_chat_curl_speed_limit=${WIZARDRY_SIMPLEX_CURL_SPEED_LIMIT:-1024}
+    simplex_chat_curl_speed_time=${WIZARDRY_SIMPLEX_CURL_SPEED_TIME:-60}
+    curl -fsSL \
+      --retry "$simplex_chat_curl_retry" \
+      --retry-delay 2 \
+      --retry-connrefused \
+      --speed-limit "$simplex_chat_curl_speed_limit" \
+      --speed-time "$simplex_chat_curl_speed_time" \
+      "$simplex_chat_fetch_url" \
+      -o "$simplex_chat_fetch_output"
     return
   fi
   if command -v wget >/dev/null 2>&1; then
