@@ -45,7 +45,7 @@ list_entries() {
         return
     fi
 
-    # Preferred order: core, mud, web-wizardry, wizardry-apps, ai-dev, yt-dlp, voice-recognition, nostr, crossposting, btcpay, then others alphabetically
+    # Preferred order: core, mud, web-wizardry, wizardry-apps, ai-dev, yt-dlp, voice-recognition, simplex-chat, nostr, crossposting, btcpay, then others alphabetically
     # First output 'core' if it exists
     if [ -e "$install_dir/core" ]; then
         printf '%s\n' "core"
@@ -81,6 +81,11 @@ list_entries() {
         printf '%s\n' "voice-recognition"
     fi
 
+    # Then 'simplex-chat' if it exists
+    if [ -e "$install_dir/simplex-chat" ]; then
+        printf '%s\n' "simplex-chat"
+    fi
+
     # Then 'nostr' if it exists
     if [ -e "$install_dir/nostr" ]; then
         printf '%s\n' "nostr"
@@ -108,6 +113,7 @@ list_entries() {
         [ "$entry_name" = "ai-dev" ] && continue
         [ "$entry_name" = "yt-dlp" ] && continue
         [ "$entry_name" = "voice-recognition" ] && continue
+        [ "$entry_name" = "simplex-chat" ] && continue
         [ "$entry_name" = "nostr" ] && continue
         [ "$entry_name" = "crossposting" ] && continue
         [ "$entry_name" = "btcpay" ] && continue
@@ -188,6 +194,7 @@ while :; do
             ai-dev) label="AI dev" ;;
             yt-dlp) label="yt-dlp" ;;
             voice-recognition) label="voice recognition" ;;
+            simplex-chat) label="SimpleX" ;;
             nostr) label="Nostr" ;;
             crossposting) label="crossposting" ;;
             btcpay) label="BTCPay Server" ;;

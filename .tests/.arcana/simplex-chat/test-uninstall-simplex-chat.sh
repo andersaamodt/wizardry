@@ -1,85 +1,85 @@
 #!/bin/sh
 set -eu
 
-# Locate test helpers
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
   test_root=$(dirname "$test_root")
 done
-# shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
+target="$ROOT_DIR/spells/.arcana/simplex-chat/uninstall-simplex-chat"
+
 spell_is_executable() {
-  [ -x "$ROOT_DIR/spells/.arcana/simplex-chat/uninstall-simplex-chat" ]
+  [ -x "$target" ]
 }
 
 run_test_case "install/simplex-chat/uninstall-simplex-chat is executable" spell_is_executable
 
 shows_usage() {
-  run_cmd "$ROOT_DIR/spells/.arcana/simplex-chat/uninstall-simplex-chat" --help
+  run_cmd "$target" --help
   assert_success || return 1
-  assert_error_contains "Usage: uninstall-simplex-chat" || return 1
+  assert_output_contains "Usage: uninstall-simplex-chat" || return 1
 }
 
 run_test_case "uninstall-simplex-chat shows usage" shows_usage
 
-performs_uninstall_and_optionally_purges_data() {
-  tmp=$(make_tempdir)
-  log="$tmp/manage.log"
-  cat >"$tmp/manage-system-command" <<'SHI'
+write_fake_simplex_binary() {
+  fake_bin=$1
+  cat >"$fake_bin" <<'SHI'
 #!/bin/sh
-printf '%s ' "$@" >>"$LOG"
-printf '\n' >>"$LOG"
+[ "${1-}" = "-h" ] && exit 0
+exit 0
 SHI
-  chmod +x "$tmp/manage-system-command"
-
-  mkdir -p "$tmp/home/data" "$tmp/home/config"
-
-  HOME="$tmp/home" LOG="$log" run_cmd env PATH="$tmp:$PATH" MANAGE_SYSTEM_COMMAND="$tmp/manage-system-command" \
-    SIMPLEX_CHAT_PACKAGE_DEFAULT="simplex-cli" SIMPLEX_CHAT_DATA_DIR="$tmp/home/data" SIMPLEX_CHAT_CONFIG_DIR="$tmp/home/config" \
-    sh -c "printf 'y\\n' | '$ROOT_DIR/spells/.arcana/simplex-chat/uninstall-simplex-chat'"
-
-  assert_success || return 1
-  assert_file_contains "$log" "--uninstall simplex-chat simplex-cli" || return 1
-  [ ! -d "$tmp/home/data" ] || { TEST_FAILURE_REASON="data directory should be removed"; return 1; }
-  [ ! -d "$tmp/home/config" ] || { TEST_FAILURE_REASON="config directory should be removed"; return 1; }
+  chmod +x "$fake_bin"
 }
 
-run_test_case "uninstall-simplex-chat removes package and purges data when requested" performs_uninstall_and_optionally_purges_data
-
-runs_rebuild_on_nixos_when_requested() {
+removes_managed_runtime_and_link() {
   tmp=$(make_tempdir)
-  log="$tmp/manage.log"
-  rebuild_log="$tmp/rebuild.log"
+  mkdir -p "$tmp/state/simplex/current" "$tmp/bin"
+  write_fake_simplex_binary "$tmp/state/simplex/current/simplex-chat"
+  printf '%s\n' wizardry-managed-simplex-cli >"$tmp/state/simplex/.wizardry-simplex-root"
+  ln -s "$tmp/state/simplex/current/simplex-chat" "$tmp/bin/simplex-chat"
 
-  cat >"$tmp/manage-system-command" <<'SHI'
-#!/bin/sh
-printf '%s ' "$@" >>"$LOG"
-printf '\n' >>"$LOG"
-SHI
-  chmod +x "$tmp/manage-system-command"
-
-  cat >"$tmp/nixos-rebuild" <<'SHI'
-#!/bin/sh
-printf '%s\n' "$@" >>"$REBUILD_LOG"
-SHI
-  chmod +x "$tmp/nixos-rebuild"
-
-  cat >"$tmp/sudo" <<'SHI'
-#!/bin/sh
-exec "$@"
-SHI
-  chmod +x "$tmp/sudo"
-
-  HOME="$tmp/home" LOG="$log" REBUILD_LOG="$rebuild_log" run_cmd env PATH="$tmp:$PATH" MANAGE_SYSTEM_COMMAND="$tmp/manage-system-command" \
-    SIMPLEX_CHAT_ASSUME_NIXOS=1 SIMPLEX_CHAT_PACKAGE_DEFAULT="simplex-cli" \
-    sh -c "printf 'y\\n' | '$ROOT_DIR/spells/.arcana/simplex-chat/uninstall-simplex-chat'"
+  run_cmd env \
+    PATH="$tmp:$PATH" \
+    HOME="$tmp/home" \
+    XDG_BIN_HOME="$tmp/bin" \
+    WIZARDRY_SIMPLEX_ROOT="$tmp/state/simplex" \
+    "$target"
 
   assert_success || return 1
-  assert_file_contains "$log" "--uninstall simplex-chat simplex-cli" || return 1
-  assert_file_contains "$rebuild_log" "switch" || return 1
+  [ ! -e "$tmp/state/simplex" ] || {
+    TEST_FAILURE_REASON="managed SimpleX root should be removed"
+    return 1
+  }
+  [ ! -e "$tmp/bin/simplex-chat" ] || {
+    TEST_FAILURE_REASON="managed simplex-chat link should be removed"
+    return 1
+  }
 }
 
-run_test_case "uninstall-simplex-chat triggers nixos rebuild when requested" runs_rebuild_on_nixos_when_requested
+run_test_case "uninstall-simplex-chat removes managed runtime and link" removes_managed_runtime_and_link
+
+leaves_unmarked_root_unchanged() {
+  tmp=$(make_tempdir)
+  mkdir -p "$tmp/state/simplex/current" "$tmp/bin"
+  write_fake_simplex_binary "$tmp/state/simplex/current/simplex-chat"
+
+  run_cmd env \
+    PATH="$tmp:$PATH" \
+    HOME="$tmp/home" \
+    XDG_BIN_HOME="$tmp/bin" \
+    WIZARDRY_SIMPLEX_ROOT="$tmp/state/simplex" \
+    "$target"
+
+  assert_success || return 1
+  [ -d "$tmp/state/simplex" ] || {
+    TEST_FAILURE_REASON="unmarked SimpleX root should be preserved"
+    return 1
+  }
+  assert_error_contains "not marked as a Wizardry SimpleX install" || return 1
+}
+
+run_test_case "uninstall-simplex-chat preserves unmarked roots" leaves_unmarked_root_unchanged
 
 finish_tests

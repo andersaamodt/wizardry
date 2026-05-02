@@ -1,13 +1,14 @@
 #!/bin/sh
 
-# Uninstall simplex-chat via the system package manager with optional data cleanup.
+# Remove the Wizardry-managed SimpleX Chat CLI runtime.
 
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
 Usage: uninstall-simplex-chat
 
-Removes simplex-chat using the detected package manager and optionally cleans up local data and triggers nixos-rebuild.
+Removes the SimpleX CLI files installed by Wizardry. System package manager
+installs and unrelated simplex-chat commands are left unchanged.
 USAGE
   exit 0
   ;;
@@ -17,22 +18,34 @@ require-wizardry || exit 1
 
 set -eu
 . env-clear
+. colors
 
-script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
-manage_cmd=${MANAGE_SYSTEM_COMMAND:-manage-system-command}
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+. "$script_dir/simplex-chat-common"
 
-if ! command -v "$manage_cmd" >/dev/null 2>&1; then
-  core_dir=$(CDPATH= cd -- "$script_dir" 2>/dev/null && cd .. && cd core && pwd -P)
-  if [ -n "$core_dir" ] && [ -x "$core_dir/manage-system-command" ]; then
-    manage_cmd="$core_dir/manage-system-command"
-  else
-    printf '%s\n' "uninstall-simplex-chat: unable to find manage-system-command" >&2
-    exit 1
-  fi
+simplex_chat_root=$(simplex_chat_root_dir)
+simplex_chat_marker=$(simplex_chat_marker_file)
+simplex_chat_link=$(simplex_chat_link_path)
+removed=0
+
+if simplex_chat_target_link_is_managed; then
+  rm -f "$simplex_chat_link"
+  removed=1
 fi
 
-# Uninstall SimpleX Chat
-printf '%s\n' "Uninstalling SimpleX Chat..."
-"$manage_cmd" uninstall simplex-chat
+if [ -f "$simplex_chat_marker" ]; then
+  rm -rf "$simplex_chat_root"
+  removed=1
+elif [ -e "$simplex_chat_root" ]; then
+  printf '%s\n' "uninstall-simplex-chat: $simplex_chat_root is not marked as a Wizardry SimpleX install; leaving it unchanged." >&2
+fi
 
-printf '%s\n' "SimpleX Chat uninstallation complete."
+if [ "$removed" -eq 0 ]; then
+  info "SimpleX CLI is not installed by Wizardry"
+else
+  success "Removed Wizardry-managed SimpleX CLI"
+fi
+
+if simplex_chat_binary_resolved >/dev/null 2>&1; then
+  printf '%s\n' "Another simplex-chat command is still available at $(simplex_chat_binary_resolved)"
+fi

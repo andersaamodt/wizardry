@@ -1,0 +1,228 @@
+#!/bin/sh
+# Shared helpers for the SimpleX CLI arcanum.
+
+simplex_chat_root_dir() {
+  if [ -n "${WIZARDRY_SIMPLEX_ROOT-}" ]; then
+    printf '%s\n' "$WIZARDRY_SIMPLEX_ROOT"
+    return 0
+  fi
+  printf '%s\n' "${XDG_STATE_HOME:-$HOME/.local/state}/wizardry/simplex"
+}
+
+simplex_chat_marker_file() {
+  printf '%s\n' "$(simplex_chat_root_dir)/.wizardry-simplex-root"
+}
+
+simplex_chat_install_file() {
+  printf '%s\n' "$(simplex_chat_root_dir)/install.conf"
+}
+
+simplex_chat_releases_dir() {
+  printf '%s\n' "$(simplex_chat_root_dir)/releases"
+}
+
+simplex_chat_current_dir() {
+  printf '%s\n' "$(simplex_chat_root_dir)/current"
+}
+
+simplex_chat_current_binary() {
+  printf '%s\n' "$(simplex_chat_current_dir)/simplex-chat"
+}
+
+simplex_chat_bin_dir() {
+  printf '%s\n' "${XDG_BIN_HOME:-$HOME/.local/bin}"
+}
+
+simplex_chat_link_path() {
+  printf '%s\n' "$(simplex_chat_bin_dir)/simplex-chat"
+}
+
+simplex_chat_release_api_url() {
+  printf '%s\n' "${WIZARDRY_SIMPLEX_RELEASE_API_URL:-https://api.github.com/repos/simplex-chat/simplex-chat/releases/latest}"
+}
+
+simplex_chat_platform_os() {
+  printf '%s\n' "${WIZARDRY_SIMPLEX_PLATFORM_OS:-$(uname -s 2>/dev/null || printf unknown)}"
+}
+
+simplex_chat_platform_arch() {
+  printf '%s\n' "${WIZARDRY_SIMPLEX_PLATFORM_ARCH:-$(uname -m 2>/dev/null || printf unknown)}"
+}
+
+simplex_chat_asset_name() {
+  if [ -n "${WIZARDRY_SIMPLEX_ASSET_NAME-}" ]; then
+    printf '%s\n' "$WIZARDRY_SIMPLEX_ASSET_NAME"
+    return 0
+  fi
+  simplex_chat_asset_os=$(simplex_chat_platform_os)
+  simplex_chat_asset_arch=$(simplex_chat_platform_arch)
+  case "$simplex_chat_asset_os:$simplex_chat_asset_arch" in
+    Darwin:arm64|Darwin:aarch64)
+      printf '%s\n' simplex-chat-macos-aarch64
+      ;;
+    Darwin:x86_64|Darwin:amd64)
+      printf '%s\n' simplex-chat-macos-x86-64
+      ;;
+    Linux:x86_64|Linux:amd64)
+      printf '%s\n' simplex-chat-ubuntu-22_04-x86_64
+      ;;
+    Linux:arm64|Linux:aarch64)
+      printf '%s\n' simplex-chat-ubuntu-22_04-aarch64
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+simplex_chat_config_get() {
+  simplex_chat_config_file=$1
+  simplex_chat_config_key=$2
+  [ -f "$simplex_chat_config_file" ] || return 1
+  awk -F= -v wanted="$simplex_chat_config_key" '
+    $1 == wanted {
+      print substr($0, index($0, "=") + 1)
+      found = 1
+    }
+    END { exit found ? 0 : 1 }
+  ' "$simplex_chat_config_file"
+}
+
+simplex_chat_config_set() {
+  simplex_chat_config_file=$1
+  simplex_chat_config_key=$2
+  simplex_chat_config_value=${3-}
+  case "$simplex_chat_config_key" in
+    ''|*[!abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.-]*)
+      printf '%s\n' "simplex-chat: invalid config key: $simplex_chat_config_key" >&2
+      return 2
+      ;;
+  esac
+  simplex_chat_lf='
+'
+  simplex_chat_cr=$(printf '\r')
+  case "$simplex_chat_config_value" in
+    *"$simplex_chat_lf"*|*"$simplex_chat_cr"*)
+      printf '%s\n' "simplex-chat: config value for $simplex_chat_config_key must be one line" >&2
+      return 2
+      ;;
+  esac
+  mkdir -p "$(dirname "$simplex_chat_config_file")"
+  simplex_chat_config_tmp=$(mktemp "${TMPDIR:-/tmp}/simplex-chat-conf.XXXXXX")
+  if [ -f "$simplex_chat_config_file" ]; then
+    awk -F= -v wanted="$simplex_chat_config_key" '$1 != wanted' "$simplex_chat_config_file" >"$simplex_chat_config_tmp"
+  fi
+  printf '%s=%s\n' "$simplex_chat_config_key" "$simplex_chat_config_value" >>"$simplex_chat_config_tmp"
+  mv "$simplex_chat_config_tmp" "$simplex_chat_config_file"
+}
+
+simplex_chat_now_iso() {
+  date -u +"%Y-%m-%dT%H:%M:%SZ"
+}
+
+simplex_chat_fetch_url_to_file() {
+  simplex_chat_fetch_url=$1
+  simplex_chat_fetch_output=$2
+  case "$simplex_chat_fetch_url" in
+    file://*)
+      cp "${simplex_chat_fetch_url#file://}" "$simplex_chat_fetch_output"
+      return
+      ;;
+  esac
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL "$simplex_chat_fetch_url" -o "$simplex_chat_fetch_output"
+    return
+  fi
+  if command -v wget >/dev/null 2>&1; then
+    wget -qO "$simplex_chat_fetch_output" "$simplex_chat_fetch_url"
+    return
+  fi
+  printf '%s\n' 'simplex-chat: curl or wget is required to download SimpleX CLI' >&2
+  return 1
+}
+
+simplex_chat_sha256_file() {
+  simplex_chat_sha_file=$1
+  if command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$simplex_chat_sha_file" | awk '{print $1}'
+    return
+  fi
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$simplex_chat_sha_file" | awk '{print $1}'
+    return
+  fi
+  printf '%s\n' 'simplex-chat: shasum or sha256sum is required' >&2
+  return 1
+}
+
+simplex_chat_release_tag() {
+  simplex_chat_release_json=$1
+  sed -n 's/.*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p' "$simplex_chat_release_json" | head -n 1
+}
+
+simplex_chat_release_asset_field() {
+  simplex_chat_release_json=$1
+  simplex_chat_want_asset=$2
+  simplex_chat_field=$3
+  awk -v want="$simplex_chat_want_asset" -v field="$simplex_chat_field" '
+    $0 ~ "\"name\"[[:space:]]*:[[:space:]]*\"" want "\"" { in_asset = 1; next }
+    in_asset && $0 ~ "\"name\"[[:space:]]*:" { exit }
+    in_asset && index($0, "\"" field "\"") {
+      line = $0
+      sub(/^.*"[^"]+"[[:space:]]*:[[:space:]]*/, "", line)
+      gsub(/^"/, "", line)
+      gsub(/",?$/, "", line)
+      gsub(/,$/, "", line)
+      print line
+      exit
+    }
+  ' "$simplex_chat_release_json"
+}
+
+simplex_chat_validate_binary() {
+  simplex_chat_validate_bin=$1
+  [ -x "$simplex_chat_validate_bin" ] || return 1
+  "$simplex_chat_validate_bin" -h >/dev/null 2>&1
+}
+
+simplex_chat_binary_resolved() {
+  simplex_chat_configured=$(simplex_chat_config_get "$(simplex_chat_install_file)" binary_path 2>/dev/null || printf '')
+  if [ -n "$simplex_chat_configured" ] && simplex_chat_validate_binary "$simplex_chat_configured"; then
+    printf '%s\n' "$simplex_chat_configured"
+    return 0
+  fi
+  simplex_chat_current=$(simplex_chat_current_binary)
+  if simplex_chat_validate_binary "$simplex_chat_current"; then
+    printf '%s\n' "$simplex_chat_current"
+    return 0
+  fi
+  simplex_chat_link=$(simplex_chat_link_path)
+  if simplex_chat_validate_binary "$simplex_chat_link"; then
+    printf '%s\n' "$simplex_chat_link"
+    return 0
+  fi
+  simplex_chat_path=$(command -v simplex-chat 2>/dev/null || printf '')
+  if [ -n "$simplex_chat_path" ] && simplex_chat_validate_binary "$simplex_chat_path"; then
+    printf '%s\n' "$simplex_chat_path"
+    return 0
+  fi
+  for simplex_chat_candidate in /usr/local/bin/simplex-chat /opt/homebrew/bin/simplex-chat /usr/bin/simplex-chat; do
+    if simplex_chat_validate_binary "$simplex_chat_candidate"; then
+      printf '%s\n' "$simplex_chat_candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
+simplex_chat_target_link_is_managed() {
+  simplex_chat_target=$(simplex_chat_link_path)
+  [ -L "$simplex_chat_target" ] || return 1
+  simplex_chat_link_value=$(readlink "$simplex_chat_target" 2>/dev/null || printf '')
+  case "$simplex_chat_link_value" in
+    "$(simplex_chat_root_dir)"/*)
+      return 0
+      ;;
+  esac
+  return 1
+}

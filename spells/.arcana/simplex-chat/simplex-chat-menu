@@ -1,13 +1,13 @@
 #!/bin/sh
 
-# Present the simplex-chat management menu.
+# Present the SimpleX CLI management menu.
 
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
 Usage: simplex-chat-menu
 
-Displays the simplex-chat management menu.
+Displays the SimpleX CLI management menu.
 USAGE
   exit 0
   ;;
@@ -18,39 +18,40 @@ require-wizardry || exit 1
 set -eu
 . env-clear
 . colors
+: "${BOLD:=}"
+: "${CYAN:=}"
 
-# Catch Ctrl-C and TERM signal to exit cleanly
-# INT (Ctrl-C) should exit 130, TERM should exit 0
+if ! require menu "The simplex-chat-menu needs the 'menu' command to present options."; then
+  exit 1
+fi
+
 trap 'exit 130' INT
 trap 'exit 0' TERM
 
-first_run=1
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+exit_label=$(exit-label)
+exit_option="${exit_label}%kill -TERM \$PPID"
 
 while true; do
-  if [ "$first_run" -eq 0 ]; then
-    printf '\n'
+  unset menu_status
+  status=$("$script_dir/simplex-chat-status")
+  title="${BOLD}${CYAN}SimpleX: $status"
+
+  if simplex_binary=$("$script_dir/simplex-chat-status" --path 2>/dev/null); then
+    menu "$title" \
+      "Run SimpleX CLI%$simplex_binary" \
+      "Show SimpleX CLI path%$script_dir/simplex-chat-status --path" \
+      "[X] Install SimpleX CLI%FORCE_INSTALL=1 $script_dir/install-simplex-chat" \
+      "Uninstall SimpleX CLI%$script_dir/uninstall-simplex-chat" \
+      "$exit_option" || menu_status=$?
   else
-    first_run=0
+    menu "$title" \
+      "[ ] Install SimpleX CLI%$script_dir/install-simplex-chat" \
+      "$exit_option" || menu_status=$?
   fi
 
-  # Build menu based on simplex-chat installation status
-  title="${BOLD}${CYAN}SimpleX Chat: $(simplex-chat-status)"
-  exit_label=$(exit-label)
-  exit_option="${exit_label}%kill -TERM \$PPID"
-  
-  if command -v simplex-chat >/dev/null 2>&1; then
-    run_option="Run SimpleX Chat%simplex-chat"
-    uninstall_option="Uninstall SimpleX Chat%uninstall-simplex-chat"
-    menu "$title" "$run_option" "$uninstall_option" "$exit_option" || menu_status=$?
-  else
-    install_option="Install SimpleX Chat%install-simplex-chat"
-    menu "$title" "$install_option" "$exit_option" || menu_status=$?
-  fi
   menu_status=${menu_status:-0}
-  
-  # ESC causes menu to exit with 130 - handle gracefully by exiting
   if [ "$menu_status" -eq 130 ]; then
-    printf 'ESC\n' >&2
     exit 0
   fi
 done

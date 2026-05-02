@@ -1,13 +1,14 @@
 #!/bin/sh
 
-# Report installation and setup status for simplex-chat.
+# Report installation status for the Wizardry-managed SimpleX Chat CLI.
 
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE' >&2
-Usage: simplex-chat-status
+Usage: simplex-chat-status [--path]
 
-Reports whether simplex-chat is installed and ready to use, highlighting missing configuration or errors.
+Reports whether the SimpleX Chat CLI is installed and runnable.
+Use --path to print the resolved CLI path only.
 USAGE
   exit 0
   ;;
@@ -18,42 +19,43 @@ require-wizardry || exit 1
 set -eu
 . env-clear
 
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+. "$script_dir/simplex-chat-common"
+
 if command -v colors >/dev/null 2>&1; then
-  # shellcheck source=/dev/null
   . colors
 else
   RESET=""
   THEME_SUCCESS=""
-  THEME_WARNING=""
   THEME_ERROR=""
   GREY=""
 fi
-# Older scripts expect GRAY, so mirror GREY when missing.
-GRAY=${GREY-}
+: "${RESET:=}"
+: "${THEME_SUCCESS:=}"
+: "${THEME_ERROR:=}"
+: "${GREY:=}"
 
-# Main execution - check simplex-chat installation status
-if ! command -v simplex-chat >/dev/null 2>&1; then
-  status="not installed"
-  color="$GRAY"
-else
-  # Check if simplex-chat can run
-  if simplex-chat --version >/dev/null 2>&1; then
-    # Check for data directories
-    data_dir="${SIMPLEX_CHAT_DATA_DIR:-$HOME/.local/share/simplex}"
-    config_dir="${SIMPLEX_CHAT_CONFIG_DIR:-$HOME/.config/simplex}"
-    
-    if [ -d "$data_dir" ] && [ -d "$config_dir" ]; then
-      status="installed"
-      color="$THEME_SUCCESS"
-    else
-      status="installed, needs setup"
-      color="$THEME_WARNING"
-    fi
-  else
-    status="installed, error"
-    color="$THEME_ERROR"
+cmd=${1-}
+if simplex_chat_binary=$(simplex_chat_binary_resolved 2>/dev/null); then
+  if [ "$cmd" = "--path" ]; then
+    printf '%s\n' "$simplex_chat_binary"
+    exit 0
   fi
+  simplex_chat_version=$(simplex_chat_config_get "$(simplex_chat_install_file)" version 2>/dev/null || printf '')
+  if [ -n "$simplex_chat_version" ]; then
+    printf '%sinstalled %s%s\n' "$THEME_SUCCESS" "$simplex_chat_version" "$RESET"
+  else
+    printf '%sinstalled%s\n' "$THEME_SUCCESS" "$RESET"
+  fi
+  exit 0
 fi
 
-# Print colored status
-printf "%s%s%s\n" "$color" "$status" "$RESET"
+if [ "$cmd" = "--path" ]; then
+  exit 1
+fi
+
+if [ -f "$(simplex_chat_install_file)" ]; then
+  printf '%sinstalled, error%s\n' "$THEME_ERROR" "$RESET"
+else
+  printf '%snot installed%s\n' "$GREY" "$RESET"
+fi

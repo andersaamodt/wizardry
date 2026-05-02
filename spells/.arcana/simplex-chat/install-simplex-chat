@@ -1,13 +1,15 @@
 #!/bin/sh
 
-# Install simplex-chat using the available package manager, with optional NixOS rebuild support.
+# Install the official SimpleX Chat CLI as a user-local Wizardry runtime.
 
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
 Usage: install-simplex-chat
 
-Runs a short wizard to install simplex-chat using the system package manager and prepares default data directories.
+Downloads the latest official SimpleX Chat CLI release for this platform,
+verifies the published SHA-256 digest, stores it under Wizardry state, and
+exposes simplex-chat from the user-local bin directory.
 USAGE
   exit 0
   ;;
@@ -17,22 +19,106 @@ require-wizardry || exit 1
 
 set -eu
 . env-clear
+. colors
 
-script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
-manage_cmd=${MANAGE_SYSTEM_COMMAND:-manage-system-command}
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+. "$script_dir/simplex-chat-common"
 
-if ! command -v "$manage_cmd" >/dev/null 2>&1; then
-  core_dir=$(CDPATH= cd -- "$script_dir" 2>/dev/null && cd .. && cd core && pwd -P)
-  if [ -n "$core_dir" ] && [ -x "$core_dir/manage-system-command" ]; then
-    manage_cmd="$core_dir/manage-system-command"
-  else
-    printf '%s\n' "install-simplex-chat: unable to find manage-system-command" >&2
-    exit 1
-  fi
+if [ "${FORCE_INSTALL:-0}" != "1" ] && simplex_chat_binary_resolved >/dev/null 2>&1; then
+  simplex_chat_existing=$(simplex_chat_binary_resolved)
+  success "SimpleX CLI is already installed at $simplex_chat_existing"
+  exit 0
 fi
 
-# Install SimpleX Chat
-printf '%s\n' "Installing SimpleX Chat..."
-"$manage_cmd" install simplex-chat
+simplex_chat_asset=$(simplex_chat_asset_name 2>/dev/null || printf '')
+if [ -z "$simplex_chat_asset" ]; then
+  printf '%s\n' "install-simplex-chat: unsupported platform: $(simplex_chat_platform_os)/$(simplex_chat_platform_arch)" >&2
+  exit 1
+fi
 
-printf '%s\n' "SimpleX Chat installation complete."
+simplex_chat_tmp=$(mktemp -d "${TMPDIR:-/tmp}/simplex-chat-install.XXXXXX")
+simplex_chat_release_json="$simplex_chat_tmp/release.json"
+
+cleanup_simplex_chat_install() {
+  rm -rf "$simplex_chat_tmp"
+}
+trap cleanup_simplex_chat_install EXIT HUP INT TERM
+
+simplex_chat_fetch_url_to_file "$(simplex_chat_release_api_url)" "$simplex_chat_release_json"
+simplex_chat_tag=$(simplex_chat_release_tag "$simplex_chat_release_json")
+if [ -z "$simplex_chat_tag" ]; then
+  printf '%s\n' 'install-simplex-chat: could not determine latest SimpleX release tag' >&2
+  exit 1
+fi
+
+simplex_chat_url=$(simplex_chat_release_asset_field "$simplex_chat_release_json" "$simplex_chat_asset" browser_download_url)
+simplex_chat_digest=$(simplex_chat_release_asset_field "$simplex_chat_release_json" "$simplex_chat_asset" digest)
+simplex_chat_digest=${simplex_chat_digest#sha256:}
+
+if [ -z "$simplex_chat_url" ]; then
+  printf '%s\n' "install-simplex-chat: release asset missing for $simplex_chat_asset" >&2
+  exit 1
+fi
+
+if [ -z "$simplex_chat_digest" ]; then
+  printf '%s\n' "install-simplex-chat: release digest missing for $simplex_chat_asset" >&2
+  exit 1
+fi
+
+simplex_chat_version_dir="$(simplex_chat_releases_dir)/$simplex_chat_tag"
+simplex_chat_version_file="$simplex_chat_version_dir/$simplex_chat_asset"
+mkdir -p "$simplex_chat_version_dir" "$(simplex_chat_current_dir)" "$(simplex_chat_bin_dir)"
+printf '%s\n' 'wizardry-managed-simplex-cli' >"$(simplex_chat_marker_file)"
+
+if [ ! -f "$simplex_chat_version_file" ] || [ "$(simplex_chat_sha256_file "$simplex_chat_version_file" 2>/dev/null || printf invalid)" != "$simplex_chat_digest" ]; then
+  simplex_chat_download="$simplex_chat_tmp/$simplex_chat_asset"
+  simplex_chat_fetch_url_to_file "$simplex_chat_url" "$simplex_chat_download"
+  simplex_chat_actual=$(simplex_chat_sha256_file "$simplex_chat_download")
+  if [ "$simplex_chat_actual" != "$simplex_chat_digest" ]; then
+    printf '%s\n' "install-simplex-chat: sha256 mismatch for $simplex_chat_asset" >&2
+    exit 1
+  fi
+  chmod 755 "$simplex_chat_download"
+  mv "$simplex_chat_download" "$simplex_chat_version_file"
+fi
+
+chmod 755 "$simplex_chat_version_file"
+simplex_chat_current=$(simplex_chat_current_binary)
+rm -f "$simplex_chat_current"
+if ! ln -s "../releases/$simplex_chat_tag/$simplex_chat_asset" "$simplex_chat_current" 2>/dev/null; then
+  cp "$simplex_chat_version_file" "$simplex_chat_current"
+  chmod 755 "$simplex_chat_current"
+fi
+
+simplex_chat_link=$(simplex_chat_link_path)
+if [ ! -e "$simplex_chat_link" ] || simplex_chat_target_link_is_managed; then
+  rm -f "$simplex_chat_link"
+  ln -s "$simplex_chat_current" "$simplex_chat_link"
+fi
+
+simplex_chat_install_conf=$(simplex_chat_install_file)
+simplex_chat_config_set "$simplex_chat_install_conf" version "$simplex_chat_tag"
+simplex_chat_config_set "$simplex_chat_install_conf" asset_name "$simplex_chat_asset"
+simplex_chat_config_set "$simplex_chat_install_conf" asset_url "$simplex_chat_url"
+simplex_chat_config_set "$simplex_chat_install_conf" sha256 "$simplex_chat_digest"
+simplex_chat_config_set "$simplex_chat_install_conf" platform_os "$(simplex_chat_platform_os)"
+simplex_chat_config_set "$simplex_chat_install_conf" platform_arch "$(simplex_chat_platform_arch)"
+simplex_chat_config_set "$simplex_chat_install_conf" binary_path "$simplex_chat_current"
+simplex_chat_config_set "$simplex_chat_install_conf" installed_at "$(simplex_chat_now_iso)"
+
+if ! simplex_chat_validate_binary "$simplex_chat_current"; then
+  simplex_chat_config_set "$simplex_chat_install_conf" validation_state error
+  simplex_chat_config_set "$simplex_chat_install_conf" last_error 'SimpleX CLI downloaded and verified, but runtime validation failed.'
+  printf '%s\n' 'install-simplex-chat: SimpleX CLI downloaded and verified, but runtime validation failed.' >&2
+  exit 1
+fi
+
+simplex_chat_config_set "$simplex_chat_install_conf" validation_state ready
+simplex_chat_config_set "$simplex_chat_install_conf" last_error ''
+
+if [ -e "$simplex_chat_link" ]; then
+  success "Installed SimpleX CLI $simplex_chat_tag at $simplex_chat_link"
+else
+  success "Installed SimpleX CLI $simplex_chat_tag at $simplex_chat_current"
+  printf '%s\n' "A different simplex-chat exists at $(simplex_chat_link_path); Wizardry left it unchanged."
+fi
