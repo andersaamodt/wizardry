@@ -147,8 +147,9 @@ installs_official_asset_with_digest_check() {
   assert_file_contains "$tmp/state/wizardry/simplex/install.conf" "version=vtest" || return 1
   assert_file_contains "$tmp/state/wizardry/simplex/install.conf" "sha256=$digest" || return 1
   assert_file_contains "$tmp/curl.log" "--retry 3" || return 1
-  assert_file_contains "$tmp/curl.log" "--speed-limit 1024" || return 1
-  assert_file_contains "$tmp/curl.log" "--speed-time 60" || return 1
+  assert_file_contains "$tmp/curl.log" "--retry-all-errors" || return 1
+  assert_file_contains "$tmp/curl.log" "--speed-limit 256" || return 1
+  assert_file_contains "$tmp/curl.log" "--speed-time 180" || return 1
   assert_file_contains "$tmp/curl.log" "-C -" || return 1
 }
 

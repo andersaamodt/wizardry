@@ -132,8 +132,8 @@ simplex_chat_fetch_url_to_file() {
   esac
   if command -v curl >/dev/null 2>&1; then
     simplex_chat_curl_retry=${WIZARDRY_SIMPLEX_CURL_RETRY:-3}
-    simplex_chat_curl_speed_limit=${WIZARDRY_SIMPLEX_CURL_SPEED_LIMIT:-1024}
-    simplex_chat_curl_speed_time=${WIZARDRY_SIMPLEX_CURL_SPEED_TIME:-60}
+    simplex_chat_curl_speed_limit=${WIZARDRY_SIMPLEX_CURL_SPEED_LIMIT:-256}
+    simplex_chat_curl_speed_time=${WIZARDRY_SIMPLEX_CURL_SPEED_TIME:-180}
     if simplex_chat_should_parallel_download "$simplex_chat_fetch_url" "$simplex_chat_fetch_expected_size"; then
       if simplex_chat_fetch_url_to_file_parallel \
         "$simplex_chat_fetch_url" \
@@ -153,6 +153,7 @@ simplex_chat_fetch_url_to_file() {
         --retry "$simplex_chat_curl_retry" \
         --retry-delay 2 \
         --retry-connrefused \
+        --retry-all-errors \
         --speed-limit "$simplex_chat_curl_speed_limit" \
         --speed-time "$simplex_chat_curl_speed_time" \
         -C - \
@@ -163,6 +164,7 @@ simplex_chat_fetch_url_to_file() {
         --retry "$simplex_chat_curl_retry" \
         --retry-delay 2 \
         --retry-connrefused \
+        --retry-all-errors \
         --speed-limit "$simplex_chat_curl_speed_limit" \
         --speed-time "$simplex_chat_curl_speed_time" \
         "$simplex_chat_fetch_url" \
@@ -238,6 +240,7 @@ simplex_chat_download_range() {
     --retry "$simplex_chat_range_retry" \
     --retry-delay 2 \
     --retry-connrefused \
+    --retry-all-errors \
     --speed-limit "$simplex_chat_range_speed_limit" \
     --speed-time "$simplex_chat_range_speed_time" \
     -r "$simplex_chat_range_spec" \
