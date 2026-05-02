@@ -150,6 +150,7 @@ simplex_chat_fetch_url_to_file() {
     fi
     if [ "${WIZARDRY_SIMPLEX_CURL_RESUME:-1}" = "1" ] && [ -f "$simplex_chat_fetch_output" ]; then
       curl -fsSL \
+        --http1.1 \
         --retry "$simplex_chat_curl_retry" \
         --retry-delay 2 \
         --retry-connrefused \
@@ -161,6 +162,7 @@ simplex_chat_fetch_url_to_file() {
         -o "$simplex_chat_fetch_output"
     else
       curl -fsSL \
+        --http1.1 \
         --retry "$simplex_chat_curl_retry" \
         --retry-delay 2 \
         --retry-connrefused \
@@ -256,6 +258,7 @@ simplex_chat_download_range() {
     rm -f "$simplex_chat_range_next"
     simplex_chat_range_curl_ok=1
     curl -fsSL \
+      --http1.1 \
       --retry "$simplex_chat_range_retry" \
       --retry-delay 2 \
       --retry-connrefused \
