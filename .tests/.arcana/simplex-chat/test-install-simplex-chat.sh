@@ -102,6 +102,8 @@ installs_official_asset_with_digest_check() {
   digest=$(shasum -a 256 "$fake_bin" | awk '{print $1}')
   write_release_json "$release_json" "$digest"
   write_curl_stub "$tmp/curl"
+  mkdir -p "$tmp/state/wizardry/simplex/releases/vtest"
+  printf '%s\n' partial >"$tmp/state/wizardry/simplex/releases/vtest/simplex-chat-test.download"
 
   run_cmd env \
     HOME="$tmp/home" \
@@ -130,6 +132,7 @@ installs_official_asset_with_digest_check() {
   assert_file_contains "$tmp/curl.log" "--retry 3" || return 1
   assert_file_contains "$tmp/curl.log" "--speed-limit 1024" || return 1
   assert_file_contains "$tmp/curl.log" "--speed-time 60" || return 1
+  assert_file_contains "$tmp/curl.log" "-C -" || return 1
 }
 
 run_test_case "install-simplex-chat downloads verifies and links official CLI" installs_official_asset_with_digest_check

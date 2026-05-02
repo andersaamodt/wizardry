@@ -71,7 +71,7 @@ mkdir -p "$simplex_chat_version_dir" "$(simplex_chat_current_dir)" "$(simplex_ch
 printf '%s\n' 'wizardry-managed-simplex-cli' >"$(simplex_chat_marker_file)"
 
 if [ ! -f "$simplex_chat_version_file" ] || [ "$(simplex_chat_sha256_file "$simplex_chat_version_file" 2>/dev/null || printf invalid)" != "$simplex_chat_digest" ]; then
-  simplex_chat_download="$simplex_chat_tmp/$simplex_chat_asset"
+  simplex_chat_download="$simplex_chat_version_file.download"
   simplex_chat_fetch_url_to_file "$simplex_chat_url" "$simplex_chat_download"
   simplex_chat_actual=$(simplex_chat_sha256_file "$simplex_chat_download")
   if [ "$simplex_chat_actual" != "$simplex_chat_digest" ]; then
