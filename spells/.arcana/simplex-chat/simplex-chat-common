@@ -235,19 +235,58 @@ simplex_chat_download_range() {
   simplex_chat_range_speed_limit=$6
   simplex_chat_range_speed_time=$7
   simplex_chat_range_tmp="$simplex_chat_range_output.download"
-  rm -f "$simplex_chat_range_tmp"
-  curl -fsSL \
-    --retry "$simplex_chat_range_retry" \
-    --retry-delay 2 \
-    --retry-connrefused \
-    --retry-all-errors \
-    --speed-limit "$simplex_chat_range_speed_limit" \
-    --speed-time "$simplex_chat_range_speed_time" \
-    -r "$simplex_chat_range_spec" \
-    "$simplex_chat_range_url" \
-    -o "$simplex_chat_range_tmp" || return 1
-  simplex_chat_range_actual=$(simplex_chat_file_size "$simplex_chat_range_tmp")
-  if [ "$simplex_chat_range_actual" != "$simplex_chat_range_expected" ]; then
+  simplex_chat_range_start=${simplex_chat_range_spec%-*}
+  simplex_chat_range_end=${simplex_chat_range_spec#*-}
+  if [ -f "$simplex_chat_range_output" ] && [ "$(simplex_chat_file_size "$simplex_chat_range_output")" = "$simplex_chat_range_expected" ]; then
+    return 0
+  fi
+  if [ -f "$simplex_chat_range_tmp" ]; then
+    simplex_chat_range_have=$(simplex_chat_file_size "$simplex_chat_range_tmp")
+    if [ "$simplex_chat_range_have" -gt "$simplex_chat_range_expected" ]; then
+      rm -f "$simplex_chat_range_tmp"
+      simplex_chat_range_have=0
+    fi
+  else
+    simplex_chat_range_have=0
+  fi
+  simplex_chat_range_no_progress=0
+  while [ "$simplex_chat_range_have" -lt "$simplex_chat_range_expected" ]; do
+    simplex_chat_range_fetch_start=$((simplex_chat_range_start + simplex_chat_range_have))
+    simplex_chat_range_next="$simplex_chat_range_tmp.next"
+    rm -f "$simplex_chat_range_next"
+    simplex_chat_range_curl_ok=1
+    curl -fsSL \
+      --retry "$simplex_chat_range_retry" \
+      --retry-delay 2 \
+      --retry-connrefused \
+      --retry-all-errors \
+      --speed-limit "$simplex_chat_range_speed_limit" \
+      --speed-time "$simplex_chat_range_speed_time" \
+      -r "$simplex_chat_range_fetch_start-$simplex_chat_range_end" \
+      "$simplex_chat_range_url" \
+      -o "$simplex_chat_range_next" || simplex_chat_range_curl_ok=0
+    simplex_chat_range_next_size=0
+    if [ -f "$simplex_chat_range_next" ]; then
+      simplex_chat_range_next_size=$(simplex_chat_file_size "$simplex_chat_range_next")
+    fi
+    if [ "$simplex_chat_range_next_size" -gt 0 ]; then
+      cat "$simplex_chat_range_next" >>"$simplex_chat_range_tmp" || return 1
+      rm -f "$simplex_chat_range_next"
+      simplex_chat_range_have=$(simplex_chat_file_size "$simplex_chat_range_tmp")
+      simplex_chat_range_no_progress=0
+    else
+      rm -f "$simplex_chat_range_next"
+      simplex_chat_range_no_progress=$((simplex_chat_range_no_progress + 1))
+    fi
+    if [ "$simplex_chat_range_have" -gt "$simplex_chat_range_expected" ]; then
+      rm -f "$simplex_chat_range_tmp"
+      return 1
+    fi
+    if [ "$simplex_chat_range_curl_ok" = "0" ] && [ "$simplex_chat_range_no_progress" -ge 3 ]; then
+      return 1
+    fi
+  done
+  if [ "$(simplex_chat_file_size "$simplex_chat_range_tmp")" != "$simplex_chat_range_expected" ]; then
     rm -f "$simplex_chat_range_tmp"
     return 1
   fi
