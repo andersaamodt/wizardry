@@ -117,6 +117,13 @@ elif command -v wl-copy >/dev/null 2>&1; then
 fi
 ```
 
+## Native Desktop Build Tooling
+
+- Treat native desktop compilation prerequisites as separate installables so platform-specific failures stay isolated and fixable.
+- For Linux Wizardry desktop builds, the host path needs `cc`, `pkg-config`, GTK3 development headers, and WebKitGTK 4.1 development headers. Native workspace builds need GTK4 development headers.
+- For macOS Wizardry desktop builds, Swift Package Manager and the Xcode Command Line Tools cover Swift, Clang, framework headers, `codesign`, `sips`, and `iconutil` on normal developer machines.
+- When installing `appimagetool` as a downloaded `.AppImage`, install a small wrapper named `appimagetool` that sets `APPIMAGE_EXTRACT_AND_RUN=1` and then executes the downloaded AppImage. This avoids a hard dependency on FUSE support on target Linux machines.
+
 ## Package Management
 
 ```sh
