@@ -195,9 +195,9 @@ simplex_chat_file_size() {
 }
 
 simplex_chat_parallel_jobs() {
-  simplex_chat_parallel_jobs_value=${WIZARDRY_SIMPLEX_PARALLEL_DOWNLOADS:-8}
+  simplex_chat_parallel_jobs_value=${WIZARDRY_SIMPLEX_PARALLEL_DOWNLOADS:-16}
   if ! simplex_chat_is_positive_integer "$simplex_chat_parallel_jobs_value"; then
-    simplex_chat_parallel_jobs_value=8
+    simplex_chat_parallel_jobs_value=16
   fi
   if [ "$simplex_chat_parallel_jobs_value" -gt 16 ]; then
     simplex_chat_parallel_jobs_value=16
