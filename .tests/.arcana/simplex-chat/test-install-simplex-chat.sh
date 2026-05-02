@@ -49,11 +49,16 @@ write_curl_stub() {
 printf '%s\n' "$*" >>"${CURL_LOG:-/dev/null}"
 output=
 url=
+range=
 while [ "$#" -gt 0 ]; do
   case "$1" in
     -o)
       shift
       output=${1-}
+      ;;
+    -r)
+      shift
+      range=${1-}
       ;;
     http*|file:*)
       url=$1
@@ -67,7 +72,14 @@ case "$url" in
     cp "$RELEASE_JSON" "$output"
     ;;
   *simplex-bin*)
-    cp "$FAKE_SIMPLEX_BIN" "$output"
+    if [ -n "$range" ]; then
+      range_start=${range%-*}
+      range_end=${range#*-}
+      range_count=$((range_end - range_start + 1))
+      dd if="$FAKE_SIMPLEX_BIN" bs=1 skip="$range_start" count="$range_count" of="$output" 2>/dev/null
+    else
+      cp "$FAKE_SIMPLEX_BIN" "$output"
+    fi
     ;;
   *)
     exit 3
@@ -80,6 +92,10 @@ SHI
 write_release_json() {
   json_path=$1
   digest=$2
+  size_line=
+  if [ -n "${3-}" ]; then
+    size_line="      \"size\": $3,"
+  fi
   cat >"$json_path" <<EOFJSON
 {
   "tag_name": "vtest",
@@ -87,6 +103,7 @@ write_release_json() {
     {
       "name": "simplex-chat-test",
       "browser_download_url": "https://example.invalid/simplex-bin",
+${size_line}
       "digest": "sha256:$digest"
     }
   ]
@@ -136,6 +153,41 @@ installs_official_asset_with_digest_check() {
 }
 
 run_test_case "install-simplex-chat downloads verifies and links official CLI" installs_official_asset_with_digest_check
+
+installs_large_official_asset_with_parallel_ranges() {
+  tmp=$(make_tempdir)
+  fake_bin="$tmp/simplex-chat-test"
+  release_json="$tmp/release.json"
+  write_fake_simplex_binary "$fake_bin"
+  digest=$(shasum -a 256 "$fake_bin" | awk '{print $1}')
+  size=$(wc -c <"$fake_bin" | awk '{print $1}')
+  write_release_json "$release_json" "$digest" "$size"
+  write_curl_stub "$tmp/curl"
+
+  run_cmd env \
+    HOME="$tmp/home" \
+    XDG_STATE_HOME="$tmp/state" \
+    XDG_BIN_HOME="$tmp/bin" \
+    WIZARDRY_SIMPLEX_ROOT="$tmp/state/wizardry/simplex" \
+    WIZARDRY_SIMPLEX_ASSET_NAME="simplex-chat-test" \
+    WIZARDRY_SIMPLEX_RELEASE_API_URL="https://example.invalid/release" \
+    WIZARDRY_SIMPLEX_PARALLEL_THRESHOLD=1 \
+    WIZARDRY_SIMPLEX_PARALLEL_DOWNLOADS=2 \
+    RELEASE_JSON="$release_json" \
+    FAKE_SIMPLEX_BIN="$fake_bin" \
+    CURL_LOG="$tmp/curl.log" \
+    PATH="$tmp:$PATH" \
+    "$target"
+
+  assert_success || return 1
+  assert_file_contains "$tmp/curl.log" "-r " || return 1
+  [ "$(shasum -a 256 "$tmp/state/wizardry/simplex/releases/vtest/simplex-chat-test" | awk '{print $1}')" = "$digest" ] || {
+    TEST_FAILURE_REASON="parallel ranged download assembled the wrong binary"
+    return 1
+  }
+}
+
+run_test_case "install-simplex-chat assembles large assets from ranged downloads" installs_large_official_asset_with_parallel_ranges
 
 rejects_digest_mismatch() {
   tmp=$(make_tempdir)

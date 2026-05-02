@@ -54,6 +54,7 @@ fi
 simplex_chat_url=$(simplex_chat_release_asset_field "$simplex_chat_release_json" "$simplex_chat_asset" browser_download_url)
 simplex_chat_digest=$(simplex_chat_release_asset_field "$simplex_chat_release_json" "$simplex_chat_asset" digest)
 simplex_chat_digest=${simplex_chat_digest#sha256:}
+simplex_chat_size=$(simplex_chat_release_asset_field "$simplex_chat_release_json" "$simplex_chat_asset" size || printf '')
 
 if [ -z "$simplex_chat_url" ]; then
   printf '%s\n' "install-simplex-chat: release asset missing for $simplex_chat_asset" >&2
@@ -72,7 +73,7 @@ printf '%s\n' 'wizardry-managed-simplex-cli' >"$(simplex_chat_marker_file)"
 
 if [ ! -f "$simplex_chat_version_file" ] || [ "$(simplex_chat_sha256_file "$simplex_chat_version_file" 2>/dev/null || printf invalid)" != "$simplex_chat_digest" ]; then
   simplex_chat_download="$simplex_chat_version_file.download"
-  simplex_chat_fetch_url_to_file "$simplex_chat_url" "$simplex_chat_download"
+  simplex_chat_fetch_url_to_file "$simplex_chat_url" "$simplex_chat_download" "$simplex_chat_size"
   simplex_chat_actual=$(simplex_chat_sha256_file "$simplex_chat_download")
   if [ "$simplex_chat_actual" != "$simplex_chat_digest" ]; then
     printf '%s\n' "install-simplex-chat: sha256 mismatch for $simplex_chat_asset" >&2
