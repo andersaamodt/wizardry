@@ -201,8 +201,8 @@ simplex_chat_parallel_jobs() {
   if ! simplex_chat_is_positive_integer "$simplex_chat_parallel_jobs_value"; then
     simplex_chat_parallel_jobs_value=16
   fi
-  if [ "$simplex_chat_parallel_jobs_value" -gt 16 ]; then
-    simplex_chat_parallel_jobs_value=16
+  if [ "$simplex_chat_parallel_jobs_value" -gt 64 ]; then
+    simplex_chat_parallel_jobs_value=64
   fi
   printf '%s\n' "$simplex_chat_parallel_jobs_value"
 }

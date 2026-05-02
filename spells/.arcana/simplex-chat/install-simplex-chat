@@ -17,9 +17,53 @@ esac
 
 require-wizardry || exit 1
 
+simplex_chat_keep_parallel_downloads_set=${WIZARDRY_SIMPLEX_PARALLEL_DOWNLOADS+x}
+simplex_chat_keep_parallel_downloads=${WIZARDRY_SIMPLEX_PARALLEL_DOWNLOADS-}
+simplex_chat_keep_parallel_threshold_set=${WIZARDRY_SIMPLEX_PARALLEL_THRESHOLD+x}
+simplex_chat_keep_parallel_threshold=${WIZARDRY_SIMPLEX_PARALLEL_THRESHOLD-}
+simplex_chat_keep_parallel_required_set=${WIZARDRY_SIMPLEX_PARALLEL_REQUIRED+x}
+simplex_chat_keep_parallel_required=${WIZARDRY_SIMPLEX_PARALLEL_REQUIRED-}
+simplex_chat_keep_curl_retry_set=${WIZARDRY_SIMPLEX_CURL_RETRY+x}
+simplex_chat_keep_curl_retry=${WIZARDRY_SIMPLEX_CURL_RETRY-}
+simplex_chat_keep_curl_speed_limit_set=${WIZARDRY_SIMPLEX_CURL_SPEED_LIMIT+x}
+simplex_chat_keep_curl_speed_limit=${WIZARDRY_SIMPLEX_CURL_SPEED_LIMIT-}
+simplex_chat_keep_curl_speed_time_set=${WIZARDRY_SIMPLEX_CURL_SPEED_TIME+x}
+simplex_chat_keep_curl_speed_time=${WIZARDRY_SIMPLEX_CURL_SPEED_TIME-}
+simplex_chat_keep_curl_resume_set=${WIZARDRY_SIMPLEX_CURL_RESUME+x}
+simplex_chat_keep_curl_resume=${WIZARDRY_SIMPLEX_CURL_RESUME-}
+
 set -eu
 . env-clear
 . colors
+
+if [ "$simplex_chat_keep_parallel_downloads_set" = "x" ]; then
+  WIZARDRY_SIMPLEX_PARALLEL_DOWNLOADS=$simplex_chat_keep_parallel_downloads
+  export WIZARDRY_SIMPLEX_PARALLEL_DOWNLOADS
+fi
+if [ "$simplex_chat_keep_parallel_threshold_set" = "x" ]; then
+  WIZARDRY_SIMPLEX_PARALLEL_THRESHOLD=$simplex_chat_keep_parallel_threshold
+  export WIZARDRY_SIMPLEX_PARALLEL_THRESHOLD
+fi
+if [ "$simplex_chat_keep_parallel_required_set" = "x" ]; then
+  WIZARDRY_SIMPLEX_PARALLEL_REQUIRED=$simplex_chat_keep_parallel_required
+  export WIZARDRY_SIMPLEX_PARALLEL_REQUIRED
+fi
+if [ "$simplex_chat_keep_curl_retry_set" = "x" ]; then
+  WIZARDRY_SIMPLEX_CURL_RETRY=$simplex_chat_keep_curl_retry
+  export WIZARDRY_SIMPLEX_CURL_RETRY
+fi
+if [ "$simplex_chat_keep_curl_speed_limit_set" = "x" ]; then
+  WIZARDRY_SIMPLEX_CURL_SPEED_LIMIT=$simplex_chat_keep_curl_speed_limit
+  export WIZARDRY_SIMPLEX_CURL_SPEED_LIMIT
+fi
+if [ "$simplex_chat_keep_curl_speed_time_set" = "x" ]; then
+  WIZARDRY_SIMPLEX_CURL_SPEED_TIME=$simplex_chat_keep_curl_speed_time
+  export WIZARDRY_SIMPLEX_CURL_SPEED_TIME
+fi
+if [ "$simplex_chat_keep_curl_resume_set" = "x" ]; then
+  WIZARDRY_SIMPLEX_CURL_RESUME=$simplex_chat_keep_curl_resume
+  export WIZARDRY_SIMPLEX_CURL_RESUME
+fi
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 . "$script_dir/simplex-chat-common"

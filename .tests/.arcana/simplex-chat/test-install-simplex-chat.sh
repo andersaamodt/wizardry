@@ -182,6 +182,10 @@ installs_large_official_asset_with_parallel_ranges() {
 
   assert_success || return 1
   assert_file_contains "$tmp/curl.log" "-r " || return 1
+  [ "$(grep -c -- '-r ' "$tmp/curl.log")" = "2" ] || {
+    TEST_FAILURE_REASON="parallel download did not honor WIZARDRY_SIMPLEX_PARALLEL_DOWNLOADS=2"
+    return 1
+  }
   [ "$(shasum -a 256 "$tmp/state/wizardry/simplex/releases/vtest/simplex-chat-test" | awk '{print $1}')" = "$digest" ] || {
     TEST_FAILURE_REASON="parallel ranged download assembled the wrong binary"
     return 1
