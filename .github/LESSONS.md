@@ -312,3 +312,4 @@
 - Managed release symlinks and stage names are imported path metadata; validate them before copying from or staging into release trees.
 - Structural tests should skip sourced common libraries explicitly instead of treating non-executable helper libraries as castable spells.
 - Mechanical variable renames must search for every remaining reference; structural naming checks can pass while stale runtime references remain.
+- Build post-processors that replace generated public files through restrictive temp files must normalize final modes after the last rewrite, not only after the initial render.

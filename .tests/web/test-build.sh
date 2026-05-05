@@ -409,6 +409,16 @@ EOF
     return 1
   fi
 
+  html_mode=$(ls -l "$html_file" | awk '{print $1}')
+  case "$html_mode" in
+    ????r*) ;;
+    *)
+      TEST_FAILURE_REASON="cache-busted HTML should remain group-readable, got mode $html_mode"
+      rm -rf "$test_web_root" "$stub_dir"
+      return 1
+      ;;
+  esac
+
   rm -rf "$test_web_root" "$stub_dir"
 }
 

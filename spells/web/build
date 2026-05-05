@@ -855,6 +855,7 @@ BLOG_FOOTER
     while IFS= read -r html_page; do
     append_local_static_cache_bust "$html_page" "$build_cache_token"
   done
+  find "$site_dir/build/pages" -type f -name '*.html' ! -name '._*' -exec chmod 644 {} +
 
   date -u +%Y-%m-%dT%H:%M:%SZ > "$site_dir/build/.wizardry-build-stamp"
   chmod 644 "$site_dir/build/.wizardry-build-stamp" 2>/dev/null || true
