@@ -362,6 +362,11 @@ calc_signature() {
   find "$target_dir" -type f \
     ! -path '*/.git/*' \
     ! -path '*/.stversions/*' \
+    ! -path '*/bitcoin/snapshots/*' \
+    ! -path '*/lightning/*' \
+    ! -path '*/secure-chat/store/*.db*' \
+    ! -path '*/zaps/remote-cli/*' \
+    ! -path '*/nostr/relay/*' \
     ! -name '.stfolder' \
     ! -name '.stignore' \
     ! -name '.DS_Store' \
@@ -662,6 +667,11 @@ run_change_pass() {
       find "$target_dir" -type f \
         ! -path "*/.git/*" \
         ! -path "*/.stversions/*" \
+        ! -path "*/bitcoin/snapshots/*" \
+        ! -path "*/lightning/*" \
+        ! -path "*/secure-chat/store/*.db*" \
+        ! -path "*/zaps/remote-cli/*" \
+        ! -path "*/nostr/relay/*" \
         ! -name ".stfolder" \
         ! -name ".stignore" \
         ! -name ".DS_Store" \
