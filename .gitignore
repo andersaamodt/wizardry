@@ -24,6 +24,7 @@ $RECYCLE.BIN/
 .history/
 
 # Local environment and language caches
+.codex/
 .env
 .env.*
 !.env.example
