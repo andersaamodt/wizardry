@@ -45,7 +45,7 @@ list_entries() {
         return
     fi
 
-    # Preferred order: core, mud, web-wizardry, wizardry-apps, ai-dev, yt-dlp, voice-recognition, simplex-chat, nostr, crossposting, btcpay, then others alphabetically
+    # Preferred order: core, mud, web-wizardry, OpenStreetMap, wizardry-apps, ai-dev, yt-dlp, voice-recognition, simplex-chat, nostr, crossposting, btcpay, then others alphabetically
     # First output 'core' if it exists
     if [ -e "$install_dir/core" ]; then
         printf '%s\n' "core"
@@ -59,6 +59,11 @@ list_entries() {
     # Then 'web-wizardry' if it exists
     if [ -e "$install_dir/web-wizardry" ]; then
         printf '%s\n' "web-wizardry"
+    fi
+
+    # Then 'openstreetmaps' if it exists
+    if [ -e "$install_dir/openstreetmaps" ]; then
+        printf '%s\n' "openstreetmaps"
     fi
 
     # Then 'wizardry-apps' if it exists
@@ -109,6 +114,7 @@ list_entries() {
         [ "$entry_name" = "core" ] && continue
         [ "$entry_name" = "mud" ] && continue
         [ "$entry_name" = "web-wizardry" ] && continue
+        [ "$entry_name" = "openstreetmaps" ] && continue
         [ "$entry_name" = "wizardry-apps" ] && continue
         [ "$entry_name" = "ai-dev" ] && continue
         [ "$entry_name" = "yt-dlp" ] && continue
@@ -190,6 +196,7 @@ while :; do
             core) label="core wizardry" ;;
             mud) label="wizardry MUD" ;;
             web-wizardry) label="web wizardry" ;;
+            openstreetmaps) label="OpenStreetMap" ;;
             wizardry-apps) label="wizardry apps" ;;
             ai-dev) label="AI dev" ;;
             yt-dlp) label="yt-dlp" ;;

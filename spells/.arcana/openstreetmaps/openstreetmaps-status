@@ -1,0 +1,33 @@
+#!/bin/sh
+
+# Report OpenStreetMap client asset installation status.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: openstreetmaps-status
+
+Prints OpenStreetMap client asset installation status.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+
+if command -v colors >/dev/null 2>&1; then
+  . colors
+else
+  RESET=""
+  THEME_SUCCESS=""
+  GREY=""
+fi
+
+if "$script_dir/is-openstreetmaps-installed" >/dev/null 2>&1; then
+  printf '%sinstalled%s\n' "$THEME_SUCCESS" "$RESET"
+else
+  printf '%snot installed%s\n' "$GREY" "$RESET"
+fi

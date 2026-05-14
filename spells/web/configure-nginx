@@ -10,9 +10,10 @@ Usage: configure-nginx SITENAME [OPTIONS]
 Generates nginx configuration for a website.
 
 Options:
-  --port PORT       Port number (default: 8080)
-  --domain DOMAIN   Domain name (default: localhost)
-  --https           Enable HTTPS with Let's Encrypt
+  --port PORT              Port number (default: 8080)
+  --domain DOMAIN          Domain name (default: localhost)
+  --domain-aliases LIST    Space-separated additional hostnames
+  --https                  Enable HTTPS with Let's Encrypt
 
 Examples:
   web-configure-nginx mysite
@@ -40,6 +41,7 @@ shift
 # Parse options
 port=8080
 domain=localhost
+domain_aliases=
 use_https=false
 
 configure_nginx_valid_port() {
@@ -103,6 +105,13 @@ while [ $# -gt 0 ]; do
       fi
       shift 2
       ;;
+    --domain-aliases)
+      domain_aliases=${2-}
+      if [ -z "$domain_aliases" ]; then
+        die 2 "configure-nginx: --domain-aliases requires value"
+      fi
+      shift 2
+      ;;
     --https)
       use_https=true
       shift
@@ -153,6 +162,16 @@ if [ "$domain" = "localhost" ] && [ -f "$site_dir/site.conf" ]; then
   fi
 fi
 
+if [ -z "$domain_aliases" ] && [ -f "$site_dir/site.conf" ]; then
+  existing_domain_aliases=$(config-get "$site_dir/site.conf" domain-aliases 2>/dev/null || printf '')
+  if [ -z "$existing_domain_aliases" ]; then
+    existing_domain_aliases=$(config-get "$site_dir/site.conf" domain_aliases 2>/dev/null || printf '')
+  fi
+  if [ -n "$existing_domain_aliases" ]; then
+    domain_aliases=$existing_domain_aliases
+  fi
+fi
+
 if [ "$use_https" = "false" ] && [ -f "$site_dir/site.conf" ]; then
   # No --https option was given, use existing https setting from config
   existing_https=$(config-get "$site_dir/site.conf" https 2>/dev/null || echo "")
@@ -168,6 +187,25 @@ fi
 if ! configure_nginx_valid_domain "$domain"; then
   die 2 "configure-nginx: invalid domain"
 fi
+
+for domain_alias in $domain_aliases; do
+  if ! configure_nginx_valid_domain "$domain_alias"; then
+    die 2 "configure-nginx: invalid domain-aliases"
+  fi
+done
+
+server_names=$domain
+seen_server_names=" $domain "
+for domain_alias in $domain_aliases; do
+  case "$seen_server_names" in
+    *" $domain_alias "*)
+      continue
+      ;;
+  esac
+  server_names="$server_names $domain_alias"
+  seen_server_names="$seen_server_names$domain_alias "
+done
+server_names="$server_names *.onion"
 
 # Create nginx config directory
 nginx_conf_dir="$site_dir/nginx"
@@ -276,7 +314,7 @@ http {
     server {
         listen $port;
         # Accept configured domain and any .onion address (for Tor hidden services)
-        server_name $domain *.onion;
+        server_name $server_names;
         
         root $site_dir/build;
 
@@ -427,6 +465,13 @@ if [ "$current_domain" != "$domain" ]; then
   config-set "$site_dir/site.conf" domain "$domain"
 fi
 
+current_domain_aliases=$(config-get "$site_dir/site.conf" domain-aliases 2>/dev/null || printf '')
+if [ -n "$domain_aliases" ] || [ -n "$current_domain_aliases" ]; then
+  if [ "$current_domain_aliases" != "$domain_aliases" ]; then
+    config-set "$site_dir/site.conf" domain-aliases "$domain_aliases"
+  fi
+fi
+
 current_https=$(config-get "$site_dir/site.conf" https 2>/dev/null || printf '')
 if [ "$current_https" != "$use_https" ]; then
   config-set "$site_dir/site.conf" https "$use_https"
@@ -486,6 +531,9 @@ fi
 success "nginx configuration written to $nginx_conf"
 info "Port: $port"
 info "Domain: $domain"
+if [ -n "$domain_aliases" ]; then
+  info "Domain aliases: $domain_aliases"
+fi
 
 if [ "$use_https" = "true" ]; then
   info "HTTPS: enabled (requires Let's Encrypt setup)"
