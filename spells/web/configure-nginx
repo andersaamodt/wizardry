@@ -260,7 +260,7 @@ types {
     text/xml                                         xml;
     image/gif                                        gif;
     image/jpeg                                       jpeg jpg;
-    application/javascript                           js;
+    application/javascript                           js mjs;
     application/json                                 json;
     text/plain                                       txt;
     image/png                                        png;
