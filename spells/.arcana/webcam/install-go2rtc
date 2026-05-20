@@ -1,0 +1,78 @@
+#!/bin/sh
+
+# Install go2rtc from official GitHub release assets.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-go2rtc
+
+Installs go2rtc into ~/.local/bin from official release assets.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+
+if "$script_dir/is-go2rtc-installed"; then
+  printf '%s\n' "go2rtc is already installed"
+  exit 0
+fi
+
+install_go2rtc_os=$(uname -s 2>/dev/null || printf unknown)
+install_go2rtc_arch=$(uname -m 2>/dev/null || printf unknown)
+
+case "$install_go2rtc_os:$install_go2rtc_arch" in
+  Linux:x86_64|Linux:amd64) install_go2rtc_asset=go2rtc_linux_amd64 ;;
+  Linux:aarch64|Linux:arm64) install_go2rtc_asset=go2rtc_linux_arm64 ;;
+  Linux:armv7l) install_go2rtc_asset=go2rtc_linux_arm ;;
+  Linux:armv6l) install_go2rtc_asset=go2rtc_linux_armv6 ;;
+  Linux:i386|Linux:i686) install_go2rtc_asset=go2rtc_linux_i386 ;;
+  Darwin:x86_64|Darwin:amd64) install_go2rtc_asset=go2rtc_mac_amd64.zip ;;
+  Darwin:arm64|Darwin:aarch64) install_go2rtc_asset=go2rtc_mac_arm64.zip ;;
+  *)
+    printf '%s\n' "install-go2rtc: unsupported platform $install_go2rtc_os/$install_go2rtc_arch" >&2
+    exit 1
+    ;;
+esac
+
+install_go2rtc_url="https://github.com/AlexxIT/go2rtc/releases/latest/download/$install_go2rtc_asset"
+install_go2rtc_tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/go2rtc-install.XXXXXX")
+trap 'rm -rf "$install_go2rtc_tmpdir"' EXIT HUP INT TERM
+install_go2rtc_download="$install_go2rtc_tmpdir/$install_go2rtc_asset"
+install_go2rtc_dest_dir="$HOME/.local/bin"
+install_go2rtc_dest="$install_go2rtc_dest_dir/go2rtc"
+
+if command -v curl >/dev/null 2>&1; then
+  curl -fL "$install_go2rtc_url" -o "$install_go2rtc_download"
+elif command -v wget >/dev/null 2>&1; then
+  wget -O "$install_go2rtc_download" "$install_go2rtc_url"
+else
+  printf '%s\n' "install-go2rtc: curl or wget was not found" >&2
+  exit 1
+fi
+
+mkdir -p "$install_go2rtc_dest_dir"
+case "$install_go2rtc_asset" in
+  *.zip)
+    if ! command -v unzip >/dev/null 2>&1; then
+      printf '%s\n' "install-go2rtc: unzip was not found for the macOS release asset" >&2
+      exit 1
+    fi
+    unzip -p "$install_go2rtc_download" go2rtc > "$install_go2rtc_dest"
+    ;;
+  *)
+    cp "$install_go2rtc_download" "$install_go2rtc_dest"
+    ;;
+esac
+chmod 755 "$install_go2rtc_dest"
+
+if ! "$script_dir/is-go2rtc-installed"; then
+  printf '%s\n' "install-go2rtc: go2rtc was not installed successfully" >&2
+  exit 1
+fi
+
+printf '%s\n' "Installed go2rtc at $install_go2rtc_dest"

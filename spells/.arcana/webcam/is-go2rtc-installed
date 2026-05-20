@@ -1,0 +1,28 @@
+#!/bin/sh
+
+# Returns success when go2rtc is installed.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: is-go2rtc-installed
+
+Checks whether go2rtc is installed.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+if command -v go2rtc >/dev/null 2>&1; then
+  exit 0
+fi
+
+for path in "$HOME/.local/bin/go2rtc" /usr/local/bin/go2rtc /opt/homebrew/bin/go2rtc /usr/bin/go2rtc; do
+  if [ -x "$path" ]; then
+    exit 0
+  fi
+done
+
+exit 1

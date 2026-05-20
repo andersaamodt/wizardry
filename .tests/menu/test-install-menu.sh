@@ -226,12 +226,13 @@ test_install_menu_prefers_expected_core_order() {
     "$install_root/openstreetmaps" \
     "$install_root/wizardry-apps" \
     "$install_root/ai-dev" \
+    "$install_root/webcam" \
     "$install_root/voice-recognition" \
     "$install_root/simplex-chat" \
     "$install_root/nostr" \
     "$install_root/crossposting"
 
-  for name in core mud web-wizardry openstreetmaps wizardry-apps ai-dev voice-recognition simplex-chat nostr crossposting; do
+  for name in core mud web-wizardry openstreetmaps wizardry-apps ai-dev webcam voice-recognition simplex-chat nostr crossposting; do
     cat >"$tmp/$name-status" <<'SH'
 #!/bin/sh
 echo ready
@@ -259,18 +260,19 @@ SH
   osm_pos=$(printf '%s' "$menu_args" | grep -b -o "OpenStreetMap - ready%" | head -1 | cut -d: -f1 || true)
   apps_pos=$(printf '%s' "$menu_args" | grep -b -o "wizardry apps - ready%" | head -1 | cut -d: -f1 || true)
   ai_pos=$(printf '%s' "$menu_args" | grep -b -o "AI dev - ready%" | head -1 | cut -d: -f1 || true)
+  webcam_pos=$(printf '%s' "$menu_args" | grep -b -o "webcam - ready%" | head -1 | cut -d: -f1 || true)
   voice_pos=$(printf '%s' "$menu_args" | grep -b -o "voice recognition - ready%" | head -1 | cut -d: -f1 || true)
   simplex_pos=$(printf '%s' "$menu_args" | grep -b -o "SimpleX - ready%" | head -1 | cut -d: -f1 || true)
   nostr_pos=$(printf '%s' "$menu_args" | grep -b -o "Nostr - ready%" | head -1 | cut -d: -f1 || true)
   crossposting_pos=$(printf '%s' "$menu_args" | grep -b -o "crossposting - ready%" | head -1 | cut -d: -f1 || true)
 
-  [ "$core_pos" -gt 0 ] && [ "$mud_pos" -gt 0 ] && [ "$web_pos" -gt 0 ] && [ "$osm_pos" -gt 0 ] && [ "$apps_pos" -gt 0 ] && [ "$ai_pos" -gt 0 ] && [ "$voice_pos" -gt 0 ] && [ "$simplex_pos" -gt 0 ] && [ "$nostr_pos" -gt 0 ] && [ "$crossposting_pos" -gt 0 ] || {
+  [ "$core_pos" -gt 0 ] && [ "$mud_pos" -gt 0 ] && [ "$web_pos" -gt 0 ] && [ "$osm_pos" -gt 0 ] && [ "$apps_pos" -gt 0 ] && [ "$ai_pos" -gt 0 ] && [ "$webcam_pos" -gt 0 ] && [ "$voice_pos" -gt 0 ] && [ "$simplex_pos" -gt 0 ] && [ "$nostr_pos" -gt 0 ] && [ "$crossposting_pos" -gt 0 ] || {
     TEST_FAILURE_REASON="missing one or more expected ordered entries"
     return 1
   }
 
-  [ "$core_pos" -lt "$mud_pos" ] && [ "$mud_pos" -lt "$web_pos" ] && [ "$web_pos" -lt "$osm_pos" ] && [ "$osm_pos" -lt "$apps_pos" ] && [ "$apps_pos" -lt "$ai_pos" ] && [ "$ai_pos" -lt "$voice_pos" ] && [ "$voice_pos" -lt "$simplex_pos" ] && [ "$simplex_pos" -lt "$nostr_pos" ] && [ "$nostr_pos" -lt "$crossposting_pos" ] || {
-    TEST_FAILURE_REASON="unexpected install-menu order for core/mud/web-wizardry/openstreetmaps/wizardry-apps/ai-dev/voice-recognition/simplex/nostr/crossposting"
+  [ "$core_pos" -lt "$mud_pos" ] && [ "$mud_pos" -lt "$web_pos" ] && [ "$web_pos" -lt "$osm_pos" ] && [ "$osm_pos" -lt "$apps_pos" ] && [ "$apps_pos" -lt "$ai_pos" ] && [ "$ai_pos" -lt "$webcam_pos" ] && [ "$webcam_pos" -lt "$voice_pos" ] && [ "$voice_pos" -lt "$simplex_pos" ] && [ "$simplex_pos" -lt "$nostr_pos" ] && [ "$nostr_pos" -lt "$crossposting_pos" ] || {
+    TEST_FAILURE_REASON="unexpected install-menu order for core/mud/web-wizardry/openstreetmaps/wizardry-apps/ai-dev/webcam/voice-recognition/simplex/nostr/crossposting"
     return 1
   }
 }

@@ -1,0 +1,22 @@
+#!/bin/sh
+
+# Install FFmpeg using the system package manager.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-ffmpeg
+
+Installs FFmpeg for local webcam capture.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+FORCE_INSTALL=${INSTALL_FFMPEG_FORCE_INSTALL:-0}
+export FORCE_INSTALL
+
+"$script_dir/../core/manage-system-command" ffmpeg ffmpeg
