@@ -18,8 +18,9 @@ require-wizardry || exit 1
 set -eu
 . env-clear
 . colors
-: "${BOLD:=}"
-: "${CYAN:=}"
+
+menu_bold=${BOLD-}
+menu_cyan=${CYAN-}
 
 if ! require menu "The simplex-chat-menu needs the 'menu' command to present options."; then
   exit 1
@@ -35,7 +36,7 @@ exit_option="${exit_label}%kill -TERM \$PPID"
 while true; do
   unset menu_status
   status=$("$script_dir/simplex-chat-status")
-  title="${BOLD}${CYAN}SimpleX: $status"
+  title="${menu_bold}${menu_cyan}SimpleX: $status"
 
   if simplex_binary=$("$script_dir/simplex-chat-status" --path 2>/dev/null); then
     menu "$title" \
@@ -52,6 +53,7 @@ while true; do
 
   menu_status=${menu_status:-0}
   if [ "$menu_status" -eq 130 ]; then
+    printf 'ESC\n' >&2
     exit 0
   fi
 done

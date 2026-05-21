@@ -1,6 +1,17 @@
 #!/bin/sh
 # Shared helpers for the SimpleX CLI arcanum.
 
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: simplex-chat-common
+
+Provides shared helper functions for the SimpleX CLI arcanum.
+USAGE
+  exit 0
+  ;;
+esac
+
 simplex_chat_root_dir() {
   if [ -n "${WIZARDRY_SIMPLEX_ROOT-}" ]; then
     printf '%s\n' "$WIZARDRY_SIMPLEX_ROOT"
