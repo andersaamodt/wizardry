@@ -14,9 +14,12 @@ esac
 set -eu
 . env-clear
 
+supercollider_sclang=${SCLANG:-sclang}
+supercollider_app_path=${SUPERCOLLIDER_APP_PATH-}
+
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
 
-if command -v sclang >/dev/null 2>&1; then
+if command -v "$supercollider_sclang" >/dev/null 2>&1; then
   printf 'status=ok\n'
   printf 'summary=%s\n' 'SuperCollider is available on PATH.'
   exit 0
@@ -24,7 +27,13 @@ fi
 
 case "$(uname -s 2>/dev/null || printf '')" in
   Darwin)
-    if [ -d /Applications/SuperCollider.app ] || [ -d "$HOME/Applications/SuperCollider.app" ]; then
+    if [ -n "$supercollider_app_path" ]; then
+      if [ -d "$supercollider_app_path" ]; then
+        printf 'status=ok\n'
+        printf 'summary=%s\n' 'SuperCollider.app is installed.'
+        exit 0
+      fi
+    elif [ -d /Applications/SuperCollider.app ] || [ -d "$HOME/Applications/SuperCollider.app" ]; then
       printf 'status=ok\n'
       printf 'summary=%s\n' 'SuperCollider.app is installed.'
       exit 0
