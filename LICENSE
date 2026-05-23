@@ -1,4 +1,4 @@
- ,___,   OPEN WIZARDRY LICENSE 3.0
+ ,___,   OPEN WIZARDRY LICENSE 3.1
  (O,O)
  /)  )   Permission: You may use, copy,
 ="=="=   modify, and share this project for
@@ -38,6 +38,12 @@ Covered Work: "Covered work" means this project
 and any modified or derivative version of it.
 Independent works that merely accompany it are
 not covered.
+
+No Further Restrictions: Covered work you make
+publicly available must remain available under
+this license, without additional legal or
+technical restrictions that limit the rights
+granted here.
 
 Notice: This license must accompany any public
 distribution of this project or its files.
