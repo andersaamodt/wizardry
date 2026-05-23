@@ -39,7 +39,7 @@ and any modified or derivative version of it.
 Independent works that merely accompany it are
 not covered.
 
-No Further Restrictions: Covered work you make
+No Enclosure: Covered work you make
 publicly available must remain available under
 this license, without additional legal or
 technical restrictions that limit the rights
