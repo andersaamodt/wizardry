@@ -10,13 +10,13 @@ The language of magic—a human heirloom—is rich in evocative words for hidden
 
 ## Status for target platforms:
 
-**Current status:** 🟡 `install` + `menu` untested across listed platforms. Wizardry is brand new, so not all spells have been tested and debugged yet.
+**Current status:** Only some spells have been tested on the listed platforms. Wizardry is brand new, so not all spells have been tested and debugged yet.
 
 | OS                        | Shortname | Status                              | `install` | `menu` | `banish` | `test-magic` | `demo-magic` |
 | ------------------------- | --------- | ----------------------------------- | --------- | ------ | -------- | ------------ | ------------ |
-| **Debian (and Ubuntu)**   | `debian`  | 🟡 **`install` + `menu` untested**    | 🟡        | 🟡     | 🟡       | 🟡           | 🟡           |
-| **NixOS**                 | `nixos`   | 🟡 **`install` + `menu` untested**    | 🟡        | 🟡     | 🟡       | 🟡           | 🟡           |
-| **MacOS**                 | `macos`   | 🟢 **core is working**    | 🟢        | 🟢     | 🟢 Lvl.23      | 🟡           | 🟡           |
+| **Debian (and Ubuntu)**   | `debian`  | 🟡 **partially tested**    | 🟡        | 🟡     | 🟡       | 🟡           | 🟡           |
+| **NixOS**                 | `nixos`   | 🟡 **partially tested**    | 🟡        | 🟡     | 🟡       | 🟡           | 🟡           |
+| **MacOS**                 | `macos`   | 🟢 **all works**       | 🟢        | 🟢     | 🟢       | 🟢           | 🟢           |
 | **Arch**                  | `arch`    | 🟠 **untested**    | 🟠        | 🟠     | 🟠       | 🟠           | 🟠           |
 | **Android (Linux-based)** | —         | 🟠 **currently unsupported**    | 🟠        | 🟠     | 🟠       | 🟠           | 🟠           |
 | **Windows**               | —         | ✘ **no support planned (except WSL)**    | ✘         | ✘      | ✘        | ✘            | ✘            |
