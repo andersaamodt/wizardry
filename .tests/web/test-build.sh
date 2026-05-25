@@ -64,6 +64,12 @@ if [ -z "$out_file" ]; then
   exit 0
 fi
 
+if [ -n "${PANDOC_COUNT_FILE-}" ]; then
+  count=$(cat "$PANDOC_COUNT_FILE" 2>/dev/null || printf '0')
+  count=$((count + 1))
+  printf '%s\n' "$count" > "$PANDOC_COUNT_FILE"
+fi
+
 title=${in_file##*/}
 title=${title%.md}
 cat > "$out_file" <<HTML
@@ -430,6 +436,77 @@ EOF
   rm -rf "$test_web_root" "$stub_dir"
 }
 
+test_build_incremental_uses_content_signatures() {
+  skip-if-compiled || return $?
+
+  test_web_root=$(temp-dir web-build-root)
+  stub_dir=$(make_build_stub_dir)
+  site_name="sigbuild"
+  site_dir="$test_web_root/$site_name"
+  pandoc_count_file="$test_web_root/pandoc-count"
+
+  mkdir -p "$site_dir/site/pages" "$site_dir/site/includes" "$site_dir/site/static"
+  cat > "$site_dir/site.conf" <<'EOF'
+site-name=sigbuild
+template=demo
+domain=localhost
+https=false
+EOF
+  cat > "$site_dir/site/pages/one.md" <<'EOF'
+# One
+EOF
+  cat > "$site_dir/site/pages/two.md" <<'EOF'
+# Two
+EOF
+  cat > "$site_dir/site/includes/nav.md" <<'EOF'
+<nav>first nav</nav>
+EOF
+  cat > "$site_dir/site/static/style.css" <<'EOF'
+body { color: black; }
+EOF
+
+  : > "$pandoc_count_file"
+  PANDOC_COUNT_FILE="$pandoc_count_file" PATH="$stub_dir:$PATH" WEB_WIZARDRY_ROOT="$test_web_root" WIZARDRY_DIR="$ROOT_DIR" \
+    run_spell spells/web/build "$site_name" --full
+  assert_success
+
+  printf '0\n' > "$pandoc_count_file"
+  cat > "$site_dir/site/static/style.css" <<'EOF'
+body { color: green; }
+EOF
+  PANDOC_COUNT_FILE="$pandoc_count_file" PATH="$stub_dir:$PATH" WEB_WIZARDRY_ROOT="$test_web_root" WIZARDRY_DIR="$ROOT_DIR" \
+    run_spell spells/web/build "$site_name"
+  assert_success
+  static_only_count=$(cat "$pandoc_count_file" 2>/dev/null || printf '0')
+  if [ "$static_only_count" -ne 0 ]; then
+    TEST_FAILURE_REASON="static-only incremental build should not re-run pandoc, got $static_only_count runs"
+    rm -rf "$test_web_root" "$stub_dir"
+    return 1
+  fi
+
+  printf '0\n' > "$pandoc_count_file"
+  cat > "$site_dir/site/includes/nav.md" <<'EOF'
+<nav>second nav</nav>
+EOF
+  PANDOC_COUNT_FILE="$pandoc_count_file" PATH="$stub_dir:$PATH" WEB_WIZARDRY_ROOT="$test_web_root" WIZARDRY_DIR="$ROOT_DIR" \
+    run_spell spells/web/build "$site_name"
+  assert_success
+  nav_count=$(cat "$pandoc_count_file" 2>/dev/null || printf '0')
+  if [ "$nav_count" -ne 2 ]; then
+    TEST_FAILURE_REASON="nav include change should re-run pandoc for both pages, got $nav_count runs"
+    rm -rf "$test_web_root" "$stub_dir"
+    return 1
+  fi
+  if ! grep -F 'second nav' "$site_dir/build/pages/one.html" >/dev/null 2>&1 ||
+     ! grep -F 'second nav' "$site_dir/build/pages/two.html" >/dev/null 2>&1; then
+    TEST_FAILURE_REASON="nav include change should update every built page"
+    rm -rf "$test_web_root" "$stub_dir"
+    return 1
+  fi
+
+  rm -rf "$test_web_root" "$stub_dir"
+}
+
 test_build_rejects_path_shaped_site_name() {
   skip-if-compiled || return $?
 
@@ -536,6 +613,7 @@ run_test_case "build generates output for every template" test_build_generates_h
 run_test_case "build cache falls back to site data cache" test_build_cache_falls_back_to_site_data_only
 run_test_case "build runs site pre-build hook" test_build_runs_site_pre_build_hook
 run_test_case "build appends cache bust tokens to local static assets" test_build_adds_cache_bust_for_local_static_assets
+run_test_case "build incremental uses content signatures" test_build_incremental_uses_content_signatures
 run_test_case "build rejects path-shaped site names" test_build_rejects_path_shaped_site_name
 run_test_case "build rejects imported domain renderer injection" \
   test_build_rejects_imported_domain_renderer_injection
