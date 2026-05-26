@@ -201,12 +201,12 @@ else
 fi
 
 autorebuild_run_privileged() {
-  if [ "$(id -u 2>/dev/null || printf '1')" -eq 0 ]; then
-    "$@"
-    return $?
-  fi
   if command -v run_sudo_cmd >/dev/null 2>&1; then
     run_sudo_cmd "$@"
+    return $?
+  fi
+  if [ "$(id -u 2>/dev/null || printf '1')" -eq 0 ]; then
+    "$@"
     return $?
   fi
   if command -v sudo >/dev/null 2>&1; then
