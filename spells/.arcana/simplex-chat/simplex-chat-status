@@ -36,7 +36,10 @@ if simplex_chat_binary=$(simplex_chat_binary_resolved 2>/dev/null); then
     printf '%s\n' "$simplex_chat_binary"
     exit 0
   fi
-  simplex_chat_version=$(simplex_chat_config_get "$(simplex_chat_install_file)" version 2>/dev/null || printf '')
+  simplex_chat_version=$(
+    simplex_chat_config_get "$(simplex_chat_install_file)" version 2>/dev/null ||
+      printf ''
+  )
   if [ -n "$simplex_chat_version" ]; then
     printf '%sinstalled %s%s\n' "$status_theme_success" "$simplex_chat_version" "$status_reset"
   else

@@ -46,7 +46,10 @@ case "$site_user" in
     die 2 "manage-allowed-dirs: invalid site-user in site.conf"
     ;;
 esac
-if [ -n "$site_user" ] && [ "$(id -un)" != "$site_user" ] && [ -z "${WIZARDRY_SITE_USER_REEXEC-}" ]; then
+current_user=$(id -un)
+if [ -n "$site_user" ] &&
+  [ "$current_user" != "$site_user" ] &&
+  [ -z "${WIZARDRY_SITE_USER_REEXEC-}" ]; then
   if has sudo; then
     exec sudo -u "$site_user" -- env WIZARDRY_SITE_USER_REEXEC=1 "$0" "$site_name" "$@"
   fi
@@ -90,7 +93,10 @@ validate_allowlist_dir() {
   }
   sites_real=$(manage_allowed_dirs_canonical_dir "$sites_dir") || sites_real=$sites_dir
   site_real=$(manage_allowed_dirs_canonical_dir "$site_dir") || site_real=$site_dir
-  sitedata_root_real=$(manage_allowed_dirs_canonical_dir "$sites_dir/.sitedata" 2>/dev/null || printf '')
+  sitedata_root_real=$(
+    manage_allowed_dirs_canonical_dir "$sites_dir/.sitedata" 2>/dev/null ||
+      printf ''
+  )
   home_real=
   if [ -n "${HOME-}" ]; then
     home_real=$(manage_allowed_dirs_canonical_dir "$HOME" 2>/dev/null || printf '')
@@ -194,7 +200,8 @@ while true; do
   entries=$(list_allowlist_entries || true)
   if [ -z "$entries" ]; then
     printf 'There are no items on the allowlist for site %s.\n' "$site_name"
-    printf 'Add one now? (Sites already have access to their sites and .sitedata folder by default.) [y/N] '
+    printf 'Add one now? '
+    printf '(Sites already have access to their sites and .sitedata folder by default.) [y/N] '
     read -r response || exit 1
     case "$response" in
       [yY]|[yY][eE][sS])

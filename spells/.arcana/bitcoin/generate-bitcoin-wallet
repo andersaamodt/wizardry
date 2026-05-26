@@ -69,7 +69,10 @@ wallet_rpc() {
 
 wallet_loaded() {
   wallet_name=$1
-  bitcoin-cli listwallets 2>/dev/null | tr -d '[:space:]"[],' | tr '\n' ' ' | grep -Fq "$wallet_name"
+  bitcoin-cli listwallets 2>/dev/null |
+    tr -d '[:space:]"[],' |
+    tr '\n' ' ' |
+    grep -Fq "$wallet_name"
 }
 
 daemon_ready() {

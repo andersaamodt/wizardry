@@ -62,7 +62,10 @@ uninstall_pandoc_macos() {
         fi
       done
 
-      pkgutil --only-dirs --files "$pkg_id" 2>/dev/null | sed '/^$/d' | sort -r | while IFS= read -r rel; do
+      pkgutil --only-dirs --files "$pkg_id" 2>/dev/null |
+        sed '/^$/d' |
+        sort -r |
+        while IFS= read -r rel; do
         case "$location" in
           /) target="/$rel" ;;
           *) target="$location/$rel" ;;

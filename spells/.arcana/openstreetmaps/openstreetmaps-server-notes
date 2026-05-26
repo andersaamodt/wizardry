@@ -13,6 +13,8 @@ USAGE
   ;;
 esac
 
+set -eu
+
 cat <<'NOTES'
 OpenStreetMap client assets:
   Installed here: Leaflet CSS, JavaScript, marker images, and license.

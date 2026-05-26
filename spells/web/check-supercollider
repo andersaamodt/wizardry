@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# Check whether SuperCollider is available.
+
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
@@ -33,7 +35,8 @@ case "$(uname -s 2>/dev/null || printf '')" in
         printf 'summary=%s\n' 'SuperCollider.app is installed.'
         exit 0
       fi
-    elif [ -d /Applications/SuperCollider.app ] || [ -d "$HOME/Applications/SuperCollider.app" ]; then
+    elif [ -d /Applications/SuperCollider.app ] ||
+      [ -d "$HOME/Applications/SuperCollider.app" ]; then
       printf 'status=ok\n'
       printf 'summary=%s\n' 'SuperCollider.app is installed.'
       exit 0

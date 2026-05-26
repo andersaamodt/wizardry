@@ -163,9 +163,15 @@ if [ "$domain" = "localhost" ] && [ -f "$site_dir/site.conf" ]; then
 fi
 
 if [ -z "$domain_aliases" ] && [ -f "$site_dir/site.conf" ]; then
-  existing_domain_aliases=$(config-get "$site_dir/site.conf" domain-aliases 2>/dev/null || printf '')
+  existing_domain_aliases=$(
+    config-get "$site_dir/site.conf" domain-aliases 2>/dev/null ||
+      printf ''
+  )
   if [ -z "$existing_domain_aliases" ]; then
-    existing_domain_aliases=$(config-get "$site_dir/site.conf" domain_aliases 2>/dev/null || printf '')
+    existing_domain_aliases=$(
+      config-get "$site_dir/site.conf" domain_aliases 2>/dev/null ||
+        printf ''
+    )
   fi
   if [ -n "$existing_domain_aliases" ]; then
     domain_aliases=$existing_domain_aliases
@@ -344,7 +350,12 @@ http {
         # - map extensionless paths (e.g. /oeuvre) to /pages/<slug>.html
         # - finally fall back to the app shell for SPA-like routes
         location / {
-            try_files \$uri \$uri/ /pages\$uri /pages\$uri.html /pages\$uri/index.html /pages/index.html /pages/blog.html;
+            try_files \$uri \$uri/
+                      /pages\$uri
+                      /pages\$uri.html
+                      /pages\$uri/index.html
+                      /pages/index.html
+                      /pages/blog.html;
         }
         
         # Serve pages

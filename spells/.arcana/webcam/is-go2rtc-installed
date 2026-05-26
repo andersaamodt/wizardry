@@ -19,7 +19,11 @@ if command -v go2rtc >/dev/null 2>&1; then
   exit 0
 fi
 
-for path in "$HOME/.local/bin/go2rtc" /usr/local/bin/go2rtc /opt/homebrew/bin/go2rtc /usr/bin/go2rtc; do
+for path in \
+  "$HOME/.local/bin/go2rtc" \
+  /usr/local/bin/go2rtc \
+  /opt/homebrew/bin/go2rtc \
+  /usr/bin/go2rtc; do
   if [ -x "$path" ]; then
     exit 0
   fi
