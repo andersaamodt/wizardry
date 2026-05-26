@@ -1,4 +1,5 @@
 #!/bin/sh
+# COMPILED_UNSUPPORTED: relies on interactive portal shell state
 # Behavioral cases:
 # - open-portal-interactive shows usage
 # - open-portal-interactive opens a direct portal from prompts

@@ -1,4 +1,5 @@
 #!/bin/sh
+# COMPILED_UNSUPPORTED: relies on uncompiled attribute helper substitution
 # Behavioral cases (derived from --help):
 # - enchantment-to-yaml prints usage
 # - validates argument count and file existence

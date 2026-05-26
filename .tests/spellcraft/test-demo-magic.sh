@@ -1,4 +1,5 @@
 #!/bin/sh
+# COMPILED_UNSUPPORTED: exercises full source-tree demo orchestration
 
 set -eu
 

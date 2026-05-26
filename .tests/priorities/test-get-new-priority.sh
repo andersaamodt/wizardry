@@ -1,4 +1,5 @@
 #!/bin/sh
+# COMPILED_UNSUPPORTED: relies on sourced priority helper substitution
 # Test coverage for get-new-priority spell:
 # - Shows usage with --help
 # - Requires file argument

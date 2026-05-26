@@ -1,4 +1,5 @@
 #!/bin/sh
+# COMPILED_UNSUPPORTED: relies on full web wizardry source-tree helpers
 # Tests for the 'web-wizardry' spell
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
