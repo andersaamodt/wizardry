@@ -42,7 +42,7 @@ set -eu
 . env-clear
 unset site_autorebuild_dir site_autorebuild_imp_dir
 
-PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
+PATH=${PATH:+$PATH:}/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 action=status
 case "${1-}" in
