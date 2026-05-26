@@ -1,0 +1,74 @@
+#!/bin/sh
+
+# Install Leaflet assets used by OpenStreetMap-backed web apps.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-openstreetmaps
+
+Downloads version-pinned Leaflet browser assets into the shared Wizardry web
+asset directory for OpenStreetMap-backed sites. This installs client map assets,
+not a tile server, geocoder, or router.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+leaflet_version="${OPENSTREETMAPS_LEAFLET_VERSION:-1.9.4}"
+install_root="${WIZARDRY_WEB_JS_DIR:-$HOME/.local/share/wizardry/web/js}"
+leaflet_dir="$install_root/leaflet"
+base_url="${OPENSTREETMAPS_LEAFLET_BASE_URL:-https://unpkg.com/leaflet@$leaflet_version/dist}"
+license_url="${OPENSTREETMAPS_LEAFLET_LICENSE_URL:-https://raw.githubusercontent.com/Leaflet/Leaflet/v$leaflet_version/LICENSE}"
+tmp_dir=$(mktemp -d "${TMPDIR:-/tmp}/openstreetmaps-assets.XXXXXX")
+
+cleanup() {
+  rm -rf "$tmp_dir"
+}
+trap cleanup EXIT INT TERM
+
+fetch_asset() {
+  source_url=$1
+  target_file=$2
+  if has curl; then
+    curl -fsSL "$source_url" -o "$target_file"
+    return
+  fi
+  if has wget; then
+    wget -q "$source_url" -O "$target_file"
+    return
+  fi
+  die "install-openstreetmaps: curl or wget required"
+}
+
+case "$leaflet_version" in
+  ''|*[!0-9.]*)
+    die 2 "install-openstreetmaps: invalid Leaflet version"
+    ;;
+esac
+
+step "Installing OpenStreetMap web assets..."
+mkdir -p "$tmp_dir/images"
+
+fetch_asset "$base_url/leaflet.css" "$tmp_dir/leaflet.css" || die "install-openstreetmaps: failed to download leaflet.css"
+fetch_asset "$base_url/leaflet.js" "$tmp_dir/leaflet.js" || die "install-openstreetmaps: failed to download leaflet.js"
+fetch_asset "$base_url/images/marker-icon.png" "$tmp_dir/images/marker-icon.png" || die "install-openstreetmaps: failed to download marker-icon.png"
+fetch_asset "$base_url/images/marker-icon-2x.png" "$tmp_dir/images/marker-icon-2x.png" || die "install-openstreetmaps: failed to download marker-icon-2x.png"
+fetch_asset "$base_url/images/marker-shadow.png" "$tmp_dir/images/marker-shadow.png" || die "install-openstreetmaps: failed to download marker-shadow.png"
+fetch_asset "$license_url" "$tmp_dir/LICENSE" || die "install-openstreetmaps: failed to download Leaflet license"
+
+mkdir -p "$leaflet_dir/images"
+cp "$tmp_dir/leaflet.css" "$leaflet_dir/leaflet.css"
+cp "$tmp_dir/leaflet.js" "$leaflet_dir/leaflet.js"
+cp "$tmp_dir/images/marker-icon.png" "$leaflet_dir/images/marker-icon.png"
+cp "$tmp_dir/images/marker-icon-2x.png" "$leaflet_dir/images/marker-icon-2x.png"
+cp "$tmp_dir/images/marker-shadow.png" "$leaflet_dir/images/marker-shadow.png"
+cp "$tmp_dir/LICENSE" "$leaflet_dir/LICENSE"
+
+success "OpenStreetMap web assets installed to $leaflet_dir"
+info "Leaflet: v$leaflet_version"

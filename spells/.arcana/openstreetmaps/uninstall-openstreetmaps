@@ -1,0 +1,43 @@
+#!/bin/sh
+
+# Remove OpenStreetMap client assets.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uninstall-openstreetmaps
+
+Removes shared Leaflet assets installed by install-openstreetmaps.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+install_root="${WIZARDRY_WEB_JS_DIR:-$HOME/.local/share/wizardry/web/js}"
+leaflet_dir="$install_root/leaflet"
+
+case "$leaflet_dir" in
+  ''|/|"$HOME"|"$HOME/"|*'/../'*|*'/..')
+    die 2 "uninstall-openstreetmaps: refusing unsafe install path"
+    ;;
+  */leaflet)
+    ;;
+  *)
+    die 2 "uninstall-openstreetmaps: refusing unexpected install path"
+    ;;
+esac
+
+if [ ! -d "$leaflet_dir" ]; then
+  info "OpenStreetMap web assets are not installed."
+  exit 0
+fi
+
+step "Removing OpenStreetMap web assets..."
+rm -rf "$leaflet_dir"
+rmdir "$install_root" 2>/dev/null || true
+success "OpenStreetMap web assets uninstalled"

@@ -44,7 +44,7 @@ case "$level" in
     ;;
   6)
     name='Task Priorities'
-    spells='deprioritize:priorities get-card:priorities get-new-priority:priorities get-priority:priorities priorities:menu prioritize:priorities upvote:priorities'
+    spells='add-subpriority:priorities browse-subpriorities:priorities deprioritize:priorities get-card:priorities get-new-priority:priorities get-priority:priorities priorities:menu prioritize:priorities upvote:priorities'
     imps='fs/with-lock priorities/collect-prioritized-rows'
     ;;
   7)
@@ -69,12 +69,12 @@ case "$level" in
     ;;
   11)
     name='Basic Cantrips'
-    spells='ask ask-number ask-text ask-yn browse list-files max-length memorize move'
+    spells='ask ask-number ask-text ask-yn browse browse-url clear list-files max-length memorize move'
     imps='input/choose-input input/prompt-with-fallback input/require-command input/validate-command input/validate-name input/validate-number input/validate-path input/validate-player-name lex/and lex/and-then lex/disambiguate lex/from lex/into lex/or lex/to'
     ;;
   12)
     name='System Configuration'
-    spells='config:system learn-spellbook:system logs:system package-managers:system'
+    spells='config:system learn-spellbook:system logs:system package-managers:system show-dns-config:system show-network-interfaces:system show-network-routes:system'
     imps='fs/config-del fs/config-get fs/config-has fs/config-set pkg/pkg-has pkg/pkg-install pkg/pkg-manager pkg/pkg-remove pkg/pkg-update pkg/pkg-upgrade'
     ;;
   13)
@@ -89,12 +89,12 @@ case "$level" in
     ;;
   15)
     name='Divination'
-    spells='detect-magic:divination detect-rc-file:divination identify-room:divination'
+    spells='detect-magic:divination detect-rc-file:divination eye:divination eyed:divination identify-room:divination'
     imps='lang/possessive sys/os sys/term text/divine-indent-char text/divine-indent-width'
     ;;
   16)
     name='Advanced MUD Features'
-    spells='boot-player:mud choose-player:mud decorate:mud greater-heal:mud heal:mud lesser-heal:mud listen:mud magic-missile:mud resurrect:mud say:mud shocking-grasp:mud stats:mud'
+    spells='boot-player:mud choose-player:mud copy-player-key:mud create-player-key:mud decorate:mud demo-multiplayer:mud greater-heal:mud heal:mud lesser-heal:mud listen:mud magic-missile:mud resurrect:mud say:mud say-interactive:mud shocking-grasp:mud stats:mud think:mud'
     imps='fmt/format-timestamp hook/touch-hook mud/colorize-player-name mud/create-avatar mud/damage-file mud/deal-damage mud/get-life mud/incarnate mud/move-avatar mud/mud-defaults mud/trigger-on-touch out/log-timestamp'
     ;;
   17)
@@ -104,12 +104,12 @@ case "$level" in
     ;;
   18)
     name='SSH & Remote Access'
-    spells='close-portal:translocation enchant-portkey:translocation follow-portkey:translocation open-portal:translocation open-teletype:translocation validate-ssh-key'
+    spells='close-portal:translocation enchant-portkey:translocation follow-portkey:translocation open-portal:translocation open-portal-interactive:translocation open-teletype:translocation validate-ssh-key'
     imps=''
     ;;
   19)
     name='Security Wards'
-    spells='ssh-barrier:wards'
+    spells='defcon:wards ssh-barrier:wards ward-system:wards'
     imps='fs/sed-inplace'
     ;;
   20)
@@ -134,7 +134,7 @@ case "$level" in
     ;;
   24)
     name='MUD Administration Menus'
-    spells='add-player:menu/mud-admin mud:menu mud-admin-menu:menu mud-menu:menu mud-settings:menu new-player:menu/mud-admin set-player:menu/mud-admin toggle-avatar:.arcana/mud toggle-touch-hook:.arcana/mud'
+    spells='add-player:menu/mud-admin list-players:menu/mud-admin mud:menu mud-admin-menu:menu mud-menu:menu mud-settings:menu new-player:menu/mud-admin player-status:menu/mud-admin promote-admin:menu/mud-admin set-player:menu/mud-admin toggle-avatar:.arcana/mud toggle-touch-hook:.arcana/mud'
     imps=''
     ;;
   25)
@@ -154,7 +154,7 @@ case "$level" in
     ;;
   28)
     name='Web Services & CGI'
-    spells='build:web change-site-port:web configure-nginx:web create-from-template:web create-site:web create-site-prompt:web delete-site:web diagnose-sse:web https:web rename-site:web serve-site:web site-autorebuild:web site-menu:web site-status:web stop-site:web template-menu:web update-from-template:web web-wizardry:web'
+    spells='btcpay-status:web build:web change-site-port:web check-btcpay:web check-filesystem-tools:web check-https-status:web check-jq:web check-nostril:web check-pandoc:web check-supercollider:web check-syncthing:web configure-nginx:web create-from-template:web create-site:web create-site-prompt:web delete-site:web diagnose-sse:web disable-https:web disable-site-daemon:web enable-site-daemon:web fix-site-security:web https:web install-btcpay:web install-filesystem-tools:web install-jq:web install-nostril:web install-pandoc:web install-supercollider:web install-syncthing:web is-site-daemon-enabled:web manage-allowed-dirs:web rename-site:web renew-https:web repair-site-daemon:web restart-site:web run-site-daemon:web serve-site:web setup-https:web site-autorebuild:web site-menu:web site-status:web stop-site:web template-menu:web toggle-site-tor-hosting:web uninstall-btcpay:web uninstall-filesystem-tools:web uninstall-jq:web uninstall-nostril:web uninstall-pandoc:web uninstall-supercollider:web uninstall-syncthing:web update-from-template:web web-wizardry:web'
     imps='cgi/blog-get-config cgi/blog-index cgi/blog-list-drafts cgi/blog-save-post cgi/blog-search cgi/blog-set-theme cgi/blog-tags cgi/blog-theme.css cgi/blog-update-config cgi/calc cgi/cgi-env cgi/chat-cleanup-inactive-avatars cgi/chat-count-avatars cgi/chat-create-avatar cgi/chat-create-room cgi/chat-delete-avatar cgi/chat-delete-room cgi/chat-get-messages cgi/chat-list-avatars cgi/chat-list-rooms cgi/chat-log-if-unique cgi/chat-move-avatar cgi/chat-rename-avatar cgi/chat-room-list-stream cgi/chat-send-message cgi/chat-stream cgi/chat-unread-counts cgi/color-picker cgi/counter cgi/counter-reset cgi/debug-test cgi/drag-drop-upload cgi/echo-text cgi/example-cgi cgi/file-info cgi/get-query-param cgi/get-site-data-dir cgi/http-cors cgi/http-end-headers cgi/http-error cgi/http-header cgi/http-ok-html cgi/http-ok-json cgi/http-status cgi/list-system-files cgi/parse-query cgi/poll-vote cgi/random-quote cgi/reverse-text cgi/save-note cgi/sse-error cgi/sse-event cgi/sse-event-id cgi/sse-padding cgi/sse-retry cgi/sse-start cgi/ssh-auth-bind-webauthn cgi/ssh-auth-check-session cgi/ssh-auth-list-delegates cgi/ssh-auth-login cgi/ssh-auth-register cgi/ssh-auth-register-mud cgi/ssh-auth-revoke-delegate cgi/system-info cgi/temperature-convert cgi/upload-image cgi/url-decode cgi/validate-room-name cgi/validate-session-token cgi/validate-username cgi/word-count'
     ;;
   *)

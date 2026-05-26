@@ -53,10 +53,14 @@ elif uninstall_supercollider_has_cmd dnf; then
   uninstall_supercollider_run_privileged dnf remove -y supercollider >/dev/null 2>&1 || true
   removed=1
 elif uninstall_supercollider_has_cmd pacman; then
-  uninstall_supercollider_run_privileged pacman -Rns --noconfirm supercollider >/dev/null 2>&1 || true
+  uninstall_supercollider_run_privileged \
+    pacman -Rns --noconfirm supercollider >/dev/null 2>&1 ||
+    true
   removed=1
 elif uninstall_supercollider_has_cmd zypper; then
-  uninstall_supercollider_run_privileged zypper --non-interactive remove supercollider >/dev/null 2>&1 || true
+  uninstall_supercollider_run_privileged \
+    zypper --non-interactive remove supercollider >/dev/null 2>&1 ||
+    true
   removed=1
 elif uninstall_supercollider_has_cmd apk; then
   uninstall_supercollider_run_privileged apk del supercollider >/dev/null 2>&1 || true

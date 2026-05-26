@@ -1,0 +1,42 @@
+#!/bin/sh
+
+# First-class Wizardry entrypoint for the Eye local stream daemon.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: eyed start|stop|restart|status|config
+
+Delegates to the Eye app daemon wrapper when the Eye project is available.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+eyed_find_project() {
+  if [ "${EYE_PROJECT_ROOT-}" ]; then
+    printf '%s\n' "$EYE_PROJECT_ROOT"
+    return 0
+  fi
+  for eyed_find_project_candidate in "$HOME/git/eye" "$HOME/Code/eye" "$HOME/src/eye"; do
+    if [ -x "$eyed_find_project_candidate/spells/eyed" ]; then
+      printf '%s\n' "$eyed_find_project_candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
+eyed_project=$(eyed_find_project) || {
+  printf '%s\n' "eyed: Eye project checkout was not found" >&2
+  exit 1
+}
+
+if [ ! -x "$eyed_project/spells/eyed" ]; then
+  printf '%s\n' "eyed: Eye daemon CLI is not executable at $eyed_project/spells/eyed" >&2
+  exit 1
+fi
+
+exec "$eyed_project/spells/eyed" "$@"

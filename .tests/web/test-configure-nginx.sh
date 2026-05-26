@@ -127,6 +127,36 @@ test_configure_nginx_supports_onion_addresses() {
   rm -rf "$test_web_root" "$stub_dir"
 }
 
+test_configure_nginx_supports_domain_aliases_from_site_conf() {
+  skip-if-compiled || return $?
+
+  test_web_root=$(temp-dir web-wizardry-test)
+  export WEB_WIZARDRY_ROOT="$test_web_root"
+
+  stub_dir=$(temp-dir web-wizardry-stub)
+  stub-sudo "$stub_dir"
+  export PATH="$stub_dir:$PATH"
+
+  mkdir -p "$test_web_root/mytestsite"
+  cat >"$test_web_root/mytestsite/site.conf" <<'EOF'
+site-name=mytestsite
+port=8080
+domain=example.com
+domain-aliases=maps.example.com www.example.com
+https=false
+EOF
+
+  run_spell spells/web/configure-nginx mytestsite
+  assert_success || return 1
+
+  grep -q "server_name example.com maps.example.com www.example.com \\*.onion;" "$test_web_root/mytestsite/nginx/nginx.conf" || {
+    TEST_FAILURE_REASON="nginx.conf does not include configured domain aliases"
+    return 1
+  }
+
+  rm -rf "$test_web_root" "$stub_dir"
+}
+
 test_configure_nginx_preserves_existing_port() {
   skip-if-compiled || return $?
   
@@ -251,6 +281,36 @@ EOF
   rm -rf "$test_web_root" "$stub_dir"
 }
 
+test_configure_nginx_rejects_imported_domain_alias_injection() {
+  skip-if-compiled || return $?
+
+  test_web_root=$(temp-dir web-wizardry-test)
+  export WEB_WIZARDRY_ROOT="$test_web_root"
+
+  stub_dir=$(temp-dir web-wizardry-stub)
+  stub-sudo "$stub_dir"
+  export PATH="$stub_dir:$PATH"
+
+  mkdir -p "$test_web_root/mytestsite"
+  cat >"$test_web_root/mytestsite/site.conf" <<'EOF'
+site-name=mytestsite
+port=8080
+domain=example.com
+domain-aliases=maps.example.com; include /tmp/evil.conf
+https=false
+EOF
+
+  run_spell spells/web/configure-nginx mytestsite
+  assert_failure || return 1
+  assert_error_contains "invalid domain-aliases" || return 1
+  if [ -f "$test_web_root/mytestsite/nginx/nginx.conf" ]; then
+    TEST_FAILURE_REASON="configure-nginx wrote nginx.conf for invalid imported domain-aliases"
+    return 1
+  fi
+
+  rm -rf "$test_web_root" "$stub_dir"
+}
+
 test_configure_nginx_rejects_imported_cgi_dir_injection() {
   skip-if-compiled || return $?
 
@@ -314,6 +374,8 @@ EOF
 run_test_case "configure-nginx --help" test_configure_nginx_help
 run_test_case "configure-nginx creates local mime.types" test_configure_nginx_creates_local_mimetypes
 run_test_case "configure-nginx supports .onion addresses" test_configure_nginx_supports_onion_addresses
+run_test_case "configure-nginx supports domain aliases from site.conf" \
+  test_configure_nginx_supports_domain_aliases_from_site_conf
 run_test_case "configure-nginx preserves existing port" test_configure_nginx_preserves_existing_port
 run_test_case "configure-nginx rejects path-shaped site names" \
   test_configure_nginx_rejects_path_shaped_site_name
@@ -321,6 +383,8 @@ run_test_case "configure-nginx rejects imported port injection" \
   test_configure_nginx_rejects_imported_port_injection
 run_test_case "configure-nginx rejects imported domain injection" \
   test_configure_nginx_rejects_imported_domain_injection
+run_test_case "configure-nginx rejects imported domain-alias injection" \
+  test_configure_nginx_rejects_imported_domain_alias_injection
 run_test_case "configure-nginx rejects imported cgi-dir injection" \
   test_configure_nginx_rejects_imported_cgi_dir_injection
 run_test_case "configure-nginx rejects invalid imported site-user" \

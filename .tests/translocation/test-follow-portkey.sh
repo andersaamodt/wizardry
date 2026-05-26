@@ -1,4 +1,5 @@
 #!/bin/sh
+# COMPILED_UNSUPPORTED: relies on shell-sourced directory changes
 # Test coverage for follow-portkey spell:
 # - Shows usage with --help
 # - Requires file argument

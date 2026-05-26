@@ -34,7 +34,10 @@ detect_total_ram_mb() {
     esac
   fi
   if [ -r /proc/meminfo ]; then
-    mem_kb=$(awk '/^MemTotal:[[:space:]]+/ { print $2; exit }' /proc/meminfo 2>/dev/null || printf '')
+    mem_kb=$(
+      awk '/^MemTotal:[[:space:]]+/ { print $2; exit }' /proc/meminfo 2>/dev/null ||
+        printf ''
+    )
     case "$mem_kb" in
       ''|*[!0-9]*) ;;
       *) printf '%s\n' $((mem_kb / 1024)); return 0 ;;

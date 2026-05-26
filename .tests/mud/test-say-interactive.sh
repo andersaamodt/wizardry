@@ -1,4 +1,5 @@
 #!/bin/sh
+# COMPILED_UNSUPPORTED: relies on interactive MUD state helpers
 # Behavioral cases:
 # - say-interactive shows usage
 # - say-interactive delegates non-empty input to say

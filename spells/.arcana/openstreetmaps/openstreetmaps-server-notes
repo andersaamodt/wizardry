@@ -1,0 +1,29 @@
+#!/bin/sh
+
+# Explain what the OpenStreetMap arcanum installs.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: openstreetmaps-server-notes
+
+Prints notes about OpenStreetMap client assets versus full tile/geocoding servers.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+cat <<'NOTES'
+OpenStreetMap client assets:
+  Installed here: Leaflet CSS, JavaScript, marker images, and license.
+
+Not installed by this arcanum:
+  Tile rendering server, Nominatim geocoder, OSRM/Valhalla router, or planet data.
+
+For production maps:
+  Use the public OSM services only within their published policies, or deploy a
+  regional/self-hosted tile, search, and routing stack on hardware sized for the
+  extract and traffic.
+NOTES

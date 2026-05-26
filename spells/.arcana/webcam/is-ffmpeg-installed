@@ -1,0 +1,18 @@
+#!/bin/sh
+
+# Returns success when FFmpeg is installed.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: is-ffmpeg-installed
+
+Checks whether FFmpeg is installed.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+command -v ffmpeg >/dev/null 2>&1

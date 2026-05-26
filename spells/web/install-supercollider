@@ -133,8 +133,9 @@ install_supercollider_macos_release() {
   release_json_one_line=$(printf '%s' "$release_json" | tr '\n' ' ')
   download_url=$(
     printf '%s\n' "$release_json_one_line" |
-      sed -n 's/.*"browser_download_url":[[:space:]]*"\([^"]*SuperCollider-[^"]*-macOS-universal\.dmg\)".*/\1/p' |
-      head -n 1
+      tr ',' '\n' |
+      awk -F'"' \
+        '/browser_download_url/ && /SuperCollider-/ && /-macOS-universal[.]dmg/ { print $4; exit }'
   )
   [ -n "$download_url" ] || return 1
   download_url_is_safe "$download_url" || return 1
@@ -225,7 +226,9 @@ install_supercollider_macos_release() {
 install_supercollider_unix_pkg() {
   if supercollider_has_cmd apt-get; then
     supercollider_run_privileged apt-get update -y >/dev/null
-    supercollider_run_privileged env DEBIAN_FRONTEND=noninteractive apt-get install -y supercollider >/dev/null
+    supercollider_run_privileged \
+      env DEBIAN_FRONTEND=noninteractive \
+      apt-get install -y supercollider >/dev/null
     return 0
   fi
   if supercollider_has_cmd dnf; then

@@ -286,7 +286,7 @@ PATH=${WIZARDRY_SYSTEM_PATH:-$PATH}
 printf '%s' "$STATUS" > "${WIZARDRY_TMPDIR}/_test_status"
 mv "$stdout" "${WIZARDRY_TMPDIR}/_test_output" 2>/dev/null || printf '' > "${WIZARDRY_TMPDIR}/_test_output"
 mv "$stderr" "${WIZARDRY_TMPDIR}/_test_error" 2>/dev/null || printf '' > "${WIZARDRY_TMPDIR}/_test_error"
-rm -rf "$sandbox"
+rm -rf "$sandbox" 2>/dev/null || true
 
 # Restore caller's PATH before returning
 PATH=$saved_path

@@ -45,7 +45,7 @@ list_entries() {
         return
     fi
 
-    # Preferred order: core, mud, web-wizardry, wizardry-apps, ai-dev, yt-dlp, voice-recognition, simplex-chat, nostr, crossposting, btcpay, then others alphabetically
+    # Preferred order: core, mud, web-wizardry, OpenStreetMap, wizardry-apps, ai-dev, yt-dlp, webcam, voice-recognition, simplex-chat, nostr, crossposting, btcpay, then others alphabetically
     # First output 'core' if it exists
     if [ -e "$install_dir/core" ]; then
         printf '%s\n' "core"
@@ -61,6 +61,11 @@ list_entries() {
         printf '%s\n' "web-wizardry"
     fi
 
+    # Then 'openstreetmaps' if it exists
+    if [ -e "$install_dir/openstreetmaps" ]; then
+        printf '%s\n' "openstreetmaps"
+    fi
+
     # Then 'wizardry-apps' if it exists
     if [ -e "$install_dir/wizardry-apps" ]; then
         printf '%s\n' "wizardry-apps"
@@ -74,6 +79,11 @@ list_entries() {
     # Then 'yt-dlp' if it exists
     if [ -e "$install_dir/yt-dlp" ]; then
         printf '%s\n' "yt-dlp"
+    fi
+
+    # Then 'webcam' if it exists
+    if [ -e "$install_dir/webcam" ]; then
+        printf '%s\n' "webcam"
     fi
 
     # Then 'voice-recognition' if it exists
@@ -109,9 +119,11 @@ list_entries() {
         [ "$entry_name" = "core" ] && continue
         [ "$entry_name" = "mud" ] && continue
         [ "$entry_name" = "web-wizardry" ] && continue
+        [ "$entry_name" = "openstreetmaps" ] && continue
         [ "$entry_name" = "wizardry-apps" ] && continue
         [ "$entry_name" = "ai-dev" ] && continue
         [ "$entry_name" = "yt-dlp" ] && continue
+        [ "$entry_name" = "webcam" ] && continue
         [ "$entry_name" = "voice-recognition" ] && continue
         [ "$entry_name" = "simplex-chat" ] && continue
         [ "$entry_name" = "nostr" ] && continue
@@ -190,9 +202,11 @@ while :; do
             core) label="core wizardry" ;;
             mud) label="wizardry MUD" ;;
             web-wizardry) label="web wizardry" ;;
+            openstreetmaps) label="OpenStreetMap" ;;
             wizardry-apps) label="wizardry apps" ;;
             ai-dev) label="AI dev" ;;
             yt-dlp) label="yt-dlp" ;;
+            webcam) label="webcam" ;;
             voice-recognition) label="voice recognition" ;;
             simplex-chat) label="SimpleX" ;;
             nostr) label="Nostr" ;;

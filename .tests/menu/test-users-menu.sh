@@ -47,6 +47,11 @@ test_users_menu_checks_requirements() {
   tmp=$(make_tempdir)
   stub-menu "$tmp"
   stub-require-command "$tmp"
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$tmp/exit-label"
   run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" REQUIRE_LOG="$tmp/req" "$ROOT_DIR/spells/menu/users-menu"
   assert_success && assert_path_exists "$tmp/req"
 }
@@ -83,6 +88,7 @@ SH
 test_users_menu_includes_group_management() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
+  current_user=${USER:-$(id -un 2>/dev/null || printf 'user')}
   stub-menu "$tmp"
   stub-require-command "$tmp"
   cat >"$tmp/exit-label" <<'SH'
@@ -107,11 +113,11 @@ SH
         TEST_FAILURE_REASON="macOS delete group action missing: $args"
         return 1
       }
-      printf '%s' "$args" | grep -F "Join group%groupname=\$(ask-text 'Enter group name to join:') && sudo dseditgroup -o edit -a \"$USER\" -t user \"\$groupname\"" >/dev/null 2>&1 || {
+      printf '%s' "$args" | grep -F "Join group%groupname=\$(ask-text 'Enter group name to join:') && sudo dseditgroup -o edit -a \"$current_user\" -t user \"\$groupname\"" >/dev/null 2>&1 || {
         TEST_FAILURE_REASON="macOS join group action missing: $args"
         return 1
       }
-      printf '%s' "$args" | grep -F "Leave group%groupname=\$(ask-text 'Enter group name to leave:') && sudo dseditgroup -o edit -d \"$USER\" -t user \"\$groupname\"" >/dev/null 2>&1 || {
+      printf '%s' "$args" | grep -F "Leave group%groupname=\$(ask-text 'Enter group name to leave:') && sudo dseditgroup -o edit -d \"$current_user\" -t user \"\$groupname\"" >/dev/null 2>&1 || {
         TEST_FAILURE_REASON="macOS leave group action missing: $args"
         return 1
       }
@@ -129,11 +135,11 @@ SH
         TEST_FAILURE_REASON="delete group action missing: $args"
         return 1
       }
-      printf '%s' "$args" | grep -F "Join group%groupname=\$(ask-text 'Enter group name to join:') && sudo usermod -a -G \"\$groupname\" \"$USER\"" >/dev/null 2>&1 || {
+      printf '%s' "$args" | grep -F "Join group%groupname=\$(ask-text 'Enter group name to join:') && sudo usermod -a -G \"\$groupname\" \"$current_user\"" >/dev/null 2>&1 || {
         TEST_FAILURE_REASON="join group action missing: $args"
         return 1
       }
-      printf '%s' "$args" | grep -F "Leave group%groupname=\$(ask-text 'Enter group name to leave:') && sudo gpasswd -d \"$USER\" \"\$groupname\"" >/dev/null 2>&1 || {
+      printf '%s' "$args" | grep -F "Leave group%groupname=\$(ask-text 'Enter group name to leave:') && sudo gpasswd -d \"$current_user\" \"\$groupname\"" >/dev/null 2>&1 || {
         TEST_FAILURE_REASON="leave group action missing: $args"
         return 1
       }

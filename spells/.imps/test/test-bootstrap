@@ -24,7 +24,9 @@ if [ "${WIZARDRY_TEST_COMPILED-0}" = "1" ]; then
   # When testing compiled spells, disable sandboxing and some features
   # that require full wizardry infrastructure
   WIZARDRY_DISABLE_SANDBOX=1
+  WIZARDRY_TEST_SKIP_INVOKE=1
   export WIZARDRY_DISABLE_SANDBOX
+  export WIZARDRY_TEST_SKIP_INVOKE
 fi
 
 # Find the repository root

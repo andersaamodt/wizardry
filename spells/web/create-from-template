@@ -22,9 +22,12 @@ template_source_candidates() {
   wizardry_root=${WIZARDRY_DIR:-$HOME/.wizardry}
   wizardry_parent=$(dirname "$wizardry_root")
   printf '%s\n' \
+    "$wizardry_root/templates/web" \
     "$wizardry_root/web" \
     "$wizardry_root/spells/web" \
+    "$wizardry_parent/git/wizardry-apps/templates/web" \
     "$wizardry_parent/git/wizardry-apps/web" \
+    "$HOME/git/wizardry-apps/templates/web" \
     "$HOME/git/wizardry-apps/web"
 }
 
@@ -234,7 +237,9 @@ if [ "${WIZARDRY_TEST_HELPERS_ONLY:-0}" = "1" ]; then
   info "Skipping fix-site-security in test mode"
 else
   step "Securing site directories for $site_name"
-  fix-site-security "$site_name"
+  if ! fix-site-security "$site_name"; then
+    warn "create-from-template: site created; security tightening did not complete"
+  fi
 fi
 
 success "Site '$site_name' created from template '$template'"

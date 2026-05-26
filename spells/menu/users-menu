@@ -36,6 +36,7 @@ trap 'exit 0' TERM
 
 users_menu_display_menu() {
   kernel=$(uname -s 2>/dev/null || printf 'unknown')
+  current_user=${USER:-$(id -un 2>/dev/null || printf 'user')}
 
   change_my_password="Change my password%passwd"
   view_my_groups="View my group memberships%id -Gn"
@@ -48,8 +49,8 @@ users_menu_display_menu() {
       list_groups="List local groups%dscl . -list /Groups"
       create_group="Create new group%groupname=\$(ask-text 'Enter new group name:') && sudo dseditgroup -o create \"\$groupname\""
       delete_group="Delete group%groupname=\$(ask-text 'Enter group to delete:') && sudo dseditgroup -o delete \"\$groupname\""
-      join_group="Join group%groupname=\$(ask-text 'Enter group name to join:') && sudo dseditgroup -o edit -a \"$USER\" -t user \"\$groupname\""
-      leave_group="Leave group%groupname=\$(ask-text 'Enter group name to leave:') && sudo dseditgroup -o edit -d \"$USER\" -t user \"\$groupname\""
+      join_group="Join group%groupname=\$(ask-text 'Enter group name to join:') && sudo dseditgroup -o edit -a \"$current_user\" -t user \"\$groupname\""
+      leave_group="Leave group%groupname=\$(ask-text 'Enter group name to leave:') && sudo dseditgroup -o edit -d \"$current_user\" -t user \"\$groupname\""
       list_users_in_group="List users in group%groupname=\$(ask-text 'Enter group name to inspect:') && dscl . -read \"/Groups/\$groupname\" GroupMembership"
       add_user_to_group="Add another user to a group%username=\$(ask-text 'Enter username:') && groupname=\$(ask-text 'Enter group name:') && sudo dseditgroup -o edit -a \"\$username\" -t user \"\$groupname\""
       remove_user_from_group="Remove another user from a group%username=\$(ask-text 'Enter username:') && groupname=\$(ask-text 'Enter group name:') && sudo dseditgroup -o edit -d \"\$username\" -t user \"\$groupname\""
@@ -61,8 +62,8 @@ users_menu_display_menu() {
       list_groups="List all groups%cut -d: -f1 /etc/group"
       create_group="Create new group%groupname=\$(ask-text 'Enter new group name:') && sudo groupadd \"\$groupname\""
       delete_group="Delete group%groupname=\$(ask-text 'Enter group to delete:') && sudo groupdel \"\$groupname\""
-      join_group="Join group%groupname=\$(ask-text 'Enter group name to join:') && sudo usermod -a -G \"\$groupname\" \"$USER\""
-      leave_group="Leave group%groupname=\$(ask-text 'Enter group name to leave:') && sudo gpasswd -d \"$USER\" \"\$groupname\""
+      join_group="Join group%groupname=\$(ask-text 'Enter group name to join:') && sudo usermod -a -G \"\$groupname\" \"$current_user\""
+      leave_group="Leave group%groupname=\$(ask-text 'Enter group name to leave:') && sudo gpasswd -d \"$current_user\" \"\$groupname\""
       list_users_in_group="List users in group%groupname=\$(ask-text 'Enter group name to inspect:') && getent group \"\$groupname\""
       add_user_to_group="Add another user to a group%username=\$(ask-text 'Enter username:') && groupname=\$(ask-text 'Enter group name:') && sudo usermod -a -G \"\$groupname\" \"\$username\""
       remove_user_from_group="Remove another user from a group%username=\$(ask-text 'Enter username:') && groupname=\$(ask-text 'Enter group name:') && sudo gpasswd -d \"\$username\" \"\$groupname\""

@@ -25,7 +25,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y attr devscripts
+          sudo apt-get install -y devscripts
       
       - name: Create doppelganger
         run: |
