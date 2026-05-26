@@ -31,8 +31,8 @@ shift
 SH
   chmod +x "$tmpdir/flock"
 
-  run_cmd env LOCK_LOG="$log_file" PATH="$tmpdir:/bin" \
-    "$ROOT_DIR/spells/.imps/fs/with-lock" "$lock_file" sh -c 'printf "ok\n"'
+  run_cmd env LOCK_LOG="$log_file" PATH="$tmpdir" \
+    "$ROOT_DIR/spells/.imps/fs/with-lock" "$lock_file" /bin/sh -c 'printf "ok\n"'
   assert_success || return 1
   assert_output_contains "ok" || return 1
   assert_file_contains "$log_file" "$lock_file" || return 1

@@ -33,6 +33,13 @@ EOF
 
 test_failure_without_supported_package_manager() {
   tmp_bin=$(temp-dir install-nostril-bin)
+  for tool in apt-get autoreconf brew cc curl dnf git make; do
+    cat > "$tmp_bin/$tool" <<'EOF'
+#!/bin/sh
+exit 1
+EOF
+    chmod +x "$tmp_bin/$tool"
+  done
   PATH="$tmp_bin:$WIZARDRY_IMPS_PATH:/usr/bin:/bin:/usr/sbin:/sbin" \
     run_spell spells/web/install-nostril
   assert_failure
@@ -68,9 +75,9 @@ while [ "$#" -gt 0 ]; do
 done
 case "$url" in
   https://api.github.com/repos/fiatjaf/nak/releases/latest)
-    printf '%s\n' '{"assets":[{"browser_download_url":"https://github.com/fiatjaf/nak/releases/download/v0.19.0/nak-v0.19.0-darwin-arm64"}]}'
+    printf '%s\n' '{"assets":[{"browser_download_url":"https://github.com/fiatjaf/nak/releases/download/v0.19.0/nak-v0.19.0-darwin-arm64"},{"browser_download_url":"https://github.com/fiatjaf/nak/releases/download/v0.19.0/nak-v0.19.0-linux-amd64"}]}'
     ;;
-  https://github.com/fiatjaf/nak/releases/download/v0.19.0/nak-v0.19.0-darwin-arm64)
+  https://github.com/fiatjaf/nak/releases/download/v0.19.0/nak-v0.19.0-darwin-arm64|https://github.com/fiatjaf/nak/releases/download/v0.19.0/nak-v0.19.0-linux-amd64)
     cat > "$out_file" <<'EOS'
 #!/bin/sh
 exit 0
