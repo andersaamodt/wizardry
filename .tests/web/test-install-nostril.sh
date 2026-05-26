@@ -94,13 +94,9 @@ EOF
     CURL="$tmp_bin/curl" \
     XDG_BIN_HOME="$tmp_bin" \
     PATH="$tmp_bin:$WIZARDRY_IMPS_PATH:/usr/bin:/bin:/usr/sbin:/sbin" \
-    "$ROOT_DIR/spells/web/install-nostril"
+    sh -c '"$ROOT_DIR/spells/web/install-nostril" && test -x "$XDG_BIN_HOME/nak"'
   assert_success
   assert_output_contains "Installed Nostr server tooling"
-  [ -x "$tmp_bin/nak" ] || {
-    TEST_FAILURE_REASON="nak binary was not installed from release"
-    return 1
-  }
 
   rm -rf "$tmp_bin"
 }
