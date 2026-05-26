@@ -751,13 +751,13 @@ test_user_synonym_target_cannot_escape_spell_tree() {
   spellbook="$tmpdir/spellbook"
   mkdir -p "$spellbook"
 
-  printf '%s\n' 'go=../../outside/evil' 'safe=custom/path-target preset' > "$spellbook/.synonyms"
+  printf '%s\n' 'escapetest=../../outside/evil' 'safe=custom/path-target preset' > "$spellbook/.synonyms"
 
   WIZARDRY_DIR="$ROOT_DIR" SPELLBOOK_DIR="$spellbook" \
     run_spell spells/.wizardry/generate-glosses --output "$tmpdir/glosses" --quiet
   assert_success || return 1
 
-  if grep -q '^go()' "$tmpdir/glosses" || grep -q '^alias go=' "$tmpdir/glosses"; then
+  if grep -q '^escapetest()' "$tmpdir/glosses" || grep -q '^alias escapetest=' "$tmpdir/glosses"; then
     TEST_FAILURE_REASON="generate-glosses emitted path-traversing synonym target"
     return 1
   fi
