@@ -1,0 +1,152 @@
+#!/bin/sh
+
+# Shared helpers for Wizardry voice-audio arcana.
+
+case "${1-}" in
+--help|--usage|-h)
+  case "$0" in
+    */voice-audio-common)
+      cat <<'USAGE'
+Usage: voice-audio-common
+
+Shared helper library for voice audio capture arcana.
+USAGE
+      exit 0
+      ;;
+  esac
+  ;;
+esac
+
+set +eu
+
+voice_audio_uname_s() {
+  if [ -n "${WIZARDRY_VOICE_AUDIO_UNAME_S-}" ]; then
+    printf '%s\n' "$WIZARDRY_VOICE_AUDIO_UNAME_S"
+    return 0
+  fi
+  uname -s 2>/dev/null || printf 'unknown\n'
+}
+
+voice_audio_is_macos() {
+  [ "$(voice_audio_uname_s)" = "Darwin" ]
+}
+
+voice_audio_is_linux() {
+  [ "$(voice_audio_uname_s)" = "Linux" ]
+}
+
+voice_audio_json_escape() {
+  python3 - "$1" <<'PY'
+import json
+import sys
+print(json.dumps(sys.argv[1] if len(sys.argv) > 1 else ""))
+PY
+}
+
+voice_audio_has_blackhole() {
+  case "${WIZARDRY_VOICE_AUDIO_HAS_BLACKHOLE-}" in
+    1|true|TRUE|yes|YES|on|ON) return 0 ;;
+    0|false|FALSE|no|NO|off|OFF) return 1 ;;
+  esac
+
+  if ! voice_audio_is_macos; then
+    return 1
+  fi
+
+  [ -d /Library/Audio/Plug-Ins/HAL/BlackHole2ch.driver ] || \
+    [ -d /Library/Audio/Plug-Ins/HAL/BlackHole16ch.driver ] || \
+    [ -d /Library/Audio/Plug-Ins/HAL/BlackHole64ch.driver ] || \
+    system_profiler SPAudioDataType 2>/dev/null | grep -qi 'BlackHole'
+}
+
+voice_audio_has_pipewire() {
+  case "${WIZARDRY_VOICE_AUDIO_HAS_PIPEWIRE-}" in
+    1|true|TRUE|yes|YES|on|ON) return 0 ;;
+    0|false|FALSE|no|NO|off|OFF) return 1 ;;
+  esac
+
+  if ! voice_audio_is_linux; then
+    return 1
+  fi
+
+  command -v pw-loopback >/dev/null 2>&1 || \
+    command -v pw-cli >/dev/null 2>&1 || \
+    command -v wpctl >/dev/null 2>&1
+}
+
+voice_audio_pipewire_running() {
+  case "${WIZARDRY_VOICE_AUDIO_PIPEWIRE_RUNNING-}" in
+    1|true|TRUE|yes|YES|on|ON) return 0 ;;
+    0|false|FALSE|no|NO|off|OFF) return 1 ;;
+  esac
+
+  if command -v pw-cli >/dev/null 2>&1 && pw-cli info 0 >/dev/null 2>&1; then
+    return 0
+  fi
+  if command -v pactl >/dev/null 2>&1 && pactl info 2>/dev/null | grep -qi 'PipeWire'; then
+    return 0
+  fi
+  return 1
+}
+
+voice_audio_render_reference_available() {
+  if voice_audio_is_macos; then
+    voice_audio_has_blackhole
+    return $?
+  fi
+
+  if voice_audio_is_linux; then
+    voice_audio_has_pipewire && voice_audio_pipewire_running
+    return $?
+  fi
+
+  return 1
+}
+
+voice_audio_status_json() {
+  platform=$(voice_audio_uname_s)
+  adapter=none
+  installable=none
+  supported=false
+  render_reference=false
+  state=unavailable
+  message="No supported render-reference capture adapter is available."
+
+  if voice_audio_is_macos; then
+    supported=true
+    adapter=blackhole
+    installable=blackhole
+    if voice_audio_has_blackhole; then
+      render_reference=true
+      state=active
+      message="BlackHole render-reference capture is available."
+    else
+      state=degraded
+      message="Install BlackHole from Arcana to enable playback isolation."
+    fi
+  elif voice_audio_is_linux; then
+    supported=true
+    adapter=pipewire
+    installable=pipewire
+    if voice_audio_has_pipewire && voice_audio_pipewire_running; then
+      render_reference=true
+      state=active
+      message="PipeWire render-reference capture is available."
+    elif voice_audio_has_pipewire; then
+      state=degraded
+      message="PipeWire is installed but no running PipeWire graph was detected."
+    else
+      state=degraded
+      message="Install PipeWire from Arcana to enable playback isolation."
+    fi
+  fi
+
+  printf '{"success":true,"supported":%s,"platform":%s,"adapter":%s,"installable":%s,"render_reference":%s,"state":%s,"message":%s}\n' \
+    "$supported" \
+    "$(voice_audio_json_escape "$platform")" \
+    "$(voice_audio_json_escape "$adapter")" \
+    "$(voice_audio_json_escape "$installable")" \
+    "$render_reference" \
+    "$(voice_audio_json_escape "$state")" \
+    "$(voice_audio_json_escape "$message")"
+}

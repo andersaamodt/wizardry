@@ -1,0 +1,45 @@
+#!/bin/sh
+
+# Report or provide Wizardry voice audio capture streams.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: wizardry-audio-capture --status
+       wizardry-audio-capture --mode mic
+       wizardry-audio-capture --mode render
+
+Reports availability of local microphone and render-reference capture.
+Streaming modes are reserved for the shared Wizardry audio isolation core.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+# shellcheck source=/dev/null
+. "$script_dir/voice-audio-common"
+
+case "${1-}" in
+  --status|"")
+    voice_audio_status_json
+    ;;
+  --mode)
+    mode=${2-}
+    case "$mode" in
+      mic|render)
+        printf '%s\n' "wizardry-audio-capture: streaming mode '$mode' is not implemented yet" >&2
+        exit 1
+        ;;
+      *)
+        printf '%s\n' "wizardry-audio-capture: expected --mode mic or --mode render" >&2
+        exit 2
+        ;;
+    esac
+    ;;
+  *)
+    printf '%s\n' "wizardry-audio-capture: unknown option '$1'" >&2
+    exit 2
+    ;;
+esac

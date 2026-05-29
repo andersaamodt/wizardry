@@ -45,7 +45,7 @@ list_entries() {
         return
     fi
 
-    # Preferred order: core, mud, web-wizardry, OpenStreetMap, wizardry-apps, ai-dev, yt-dlp, webcam, voice-recognition, simplex-chat, nostr, crossposting, btcpay, then others alphabetically
+    # Preferred order: core, mud, web-wizardry, OpenStreetMap, wizardry-apps, ai-dev, yt-dlp, webcam, voice-recognition, voice-audio, simplex-chat, nostr, crossposting, btcpay, then others alphabetically
     # First output 'core' if it exists
     if [ -e "$install_dir/core" ]; then
         printf '%s\n' "core"
@@ -91,6 +91,11 @@ list_entries() {
         printf '%s\n' "voice-recognition"
     fi
 
+    # Then 'voice-audio' if it exists
+    if [ -e "$install_dir/voice-audio" ]; then
+        printf '%s\n' "voice-audio"
+    fi
+
     # Then 'simplex-chat' if it exists
     if [ -e "$install_dir/simplex-chat" ]; then
         printf '%s\n' "simplex-chat"
@@ -125,6 +130,7 @@ list_entries() {
         [ "$entry_name" = "yt-dlp" ] && continue
         [ "$entry_name" = "webcam" ] && continue
         [ "$entry_name" = "voice-recognition" ] && continue
+        [ "$entry_name" = "voice-audio" ] && continue
         [ "$entry_name" = "simplex-chat" ] && continue
         [ "$entry_name" = "nostr" ] && continue
         [ "$entry_name" = "crossposting" ] && continue
@@ -208,6 +214,7 @@ while :; do
             yt-dlp) label="yt-dlp" ;;
             webcam) label="webcam" ;;
             voice-recognition) label="voice recognition" ;;
+            voice-audio) label="voice audio" ;;
             simplex-chat) label="SimpleX" ;;
             nostr) label="Nostr" ;;
             crossposting) label="crossposting" ;;

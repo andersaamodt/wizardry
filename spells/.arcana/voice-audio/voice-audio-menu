@@ -1,0 +1,66 @@
+#!/bin/sh
+
+# Present the voice audio isolation dependency menu.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: voice-audio-menu
+
+Displays install and uninstall options for local voice audio isolation.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+. colors
+
+if ! require menu "The voice-audio-menu needs the 'menu' command to present options."; then
+  exit 1
+fi
+
+trap 'exit 130' INT
+trap 'exit 0' TERM
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+# shellcheck source=/dev/null
+. "$script_dir/voice-audio-common"
+
+while :; do
+  set --
+
+  if voice_audio_is_macos; then
+    if voice_audio_has_blackhole; then
+      set -- "$@" "[X] BlackHole render reference%$script_dir/uninstall-blackhole"
+    else
+      set -- "$@" "[ ] BlackHole render reference%WIZARDRY_LOG_LEVEL=1 $script_dir/install-blackhole"
+    fi
+  fi
+
+  if voice_audio_is_linux; then
+    if voice_audio_has_pipewire; then
+      set -- "$@" "[X] PipeWire render reference%printf 'PipeWire is installed.\\n'"
+    else
+      set -- "$@" "[ ] PipeWire render reference%WIZARDRY_LOG_LEVEL=1 $script_dir/install-pipewire"
+    fi
+  fi
+
+  if [ "$#" -eq 0 ]; then
+    set -- "$@" "No supported voice audio adapter for this platform%printf 'No supported voice audio adapter for this platform.\\n'"
+  fi
+
+  set -- "$@" "Status%$script_dir/wizardry-audio-capture --status"
+  exit_label=$(exit-label)
+  set -- "$@" "${exit_label}%kill -TERM \$PPID"
+
+  menu "Voice Audio:" "$@" || menu_status=$?
+  menu_status=${menu_status:-0}
+  if [ "$menu_status" -eq 130 ]; then
+    printf 'ESC\n' >&2
+    exit 0
+  fi
+done

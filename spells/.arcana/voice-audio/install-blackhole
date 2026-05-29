@@ -1,0 +1,87 @@
+#!/bin/sh
+
+# Install BlackHole for macOS render-reference voice audio capture.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-blackhole
+
+Downloads and installs the latest BlackHole 2ch macOS package from GitHub.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+# shellcheck source=/dev/null
+. "$script_dir/voice-audio-common"
+
+if ! voice_audio_is_macos; then
+  printf '%s\n' "voice-audio: BlackHole install is only supported on macOS" >&2
+  exit 1
+fi
+
+if voice_audio_has_blackhole; then
+  success "voice-audio: BlackHole is already installed"
+  exit 0
+fi
+
+if [ "${WIZARDRY_VOICE_AUDIO_DRY_RUN-}" = 1 ]; then
+  success "voice-audio: dry run would install BlackHole"
+  exit 0
+fi
+
+if ! command -v curl >/dev/null 2>&1; then
+  printf '%s\n' "voice-audio: curl is required to fetch BlackHole releases" >&2
+  exit 1
+fi
+
+cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/wizardry/voice-audio"
+mkdir -p "$cache_dir"
+api_json="$cache_dir/blackhole-latest.json"
+pkg_path="$cache_dir/BlackHole2ch.pkg"
+
+curl -fsSL https://api.github.com/repos/ExistentialAudio/BlackHole/releases/latest -o "$api_json" || {
+  printf '%s\n' "voice-audio: could not fetch BlackHole release metadata" >&2
+  exit 1
+}
+
+download_url=$(
+  python3 - "$api_json" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], "r", encoding="utf-8") as fh:
+    payload = json.load(fh)
+
+for asset in payload.get("assets", []):
+    name = asset.get("name", "")
+    url = asset.get("browser_download_url", "")
+    if "BlackHole2ch" in name and name.endswith(".pkg") and url.startswith("https://github.com/"):
+        print(url)
+        raise SystemExit(0)
+raise SystemExit(1)
+PY
+) || {
+  printf '%s\n' "voice-audio: no BlackHole 2ch package asset found in latest release" >&2
+  exit 1
+}
+
+curl -fL "$download_url" -o "$pkg_path" || {
+  printf '%s\n' "voice-audio: could not download BlackHole package" >&2
+  exit 1
+}
+
+if command -v sudo >/dev/null 2>&1; then
+  sudo installer -pkg "$pkg_path" -target /
+else
+  installer -pkg "$pkg_path" -target /
+fi
+
+success "voice-audio: BlackHole installed"
