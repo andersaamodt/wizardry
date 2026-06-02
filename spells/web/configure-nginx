@@ -139,6 +139,8 @@ case "$site_user" in
     ;;
 esac
 
+site_template=$(config-get "$site_dir/site.conf" template 2>/dev/null || printf '')
+
 # Note: configure-nginx runs as actual user to modify both nginx.conf and site.conf
 # nginx.conf is owned by site user, but we can write to it as actual user
 # site.conf is owned by actual user (per ownership model)
@@ -172,6 +174,11 @@ if [ -z "$domain_aliases" ] && [ -f "$site_dir/site.conf" ]; then
   fi
 fi
 
+desk_domain=
+if [ -f "$site_dir/site.conf" ]; then
+  desk_domain=$(config-get "$site_dir/site.conf" desk_domain 2>/dev/null || printf '')
+fi
+
 if [ "$use_https" = "false" ] && [ -f "$site_dir/site.conf" ]; then
   # No --https option was given, use existing https setting from config
   existing_https=$(config-get "$site_dir/site.conf" https 2>/dev/null || echo "")
@@ -193,6 +200,9 @@ for domain_alias in $domain_aliases; do
     die 2 "configure-nginx: invalid domain-aliases"
   fi
 done
+if [ -n "$desk_domain" ] && ! configure_nginx_valid_domain "$desk_domain"; then
+  die 2 "configure-nginx: invalid desk_domain"
+fi
 
 server_names=$domain
 seen_server_names=" $domain "
@@ -205,7 +215,35 @@ for domain_alias in $domain_aliases; do
   server_names="$server_names $domain_alias"
   seen_server_names="$seen_server_names$domain_alias "
 done
+if [ -n "$desk_domain" ]; then
+  case "$seen_server_names" in
+    *" $desk_domain "*)
+      ;;
+    *)
+      server_names="$server_names $desk_domain"
+      seen_server_names="$seen_server_names$desk_domain "
+      ;;
+  esac
+fi
 server_names="$server_names *.onion"
+
+desk_route_host=
+if [ "$site_template" = "desk" ]; then
+  desk_route_host=$domain
+elif [ -n "$desk_domain" ]; then
+  desk_route_host=$desk_domain
+fi
+
+desk_host_root_rewrite=
+desk_host_path_rewrite=
+if [ -n "$desk_route_host" ]; then
+  desk_host_root_rewrite="            if (\$host = $desk_route_host) {
+                rewrite ^ /pages/desk.html last;
+            }"
+  desk_host_path_rewrite="            if (\$host = $desk_route_host) {
+                rewrite ^ /pages/desk.html last;
+            }"
+fi
 
 # Create nginx config directory
 nginx_conf_dir="$site_dir/nginx"
@@ -330,7 +368,19 @@ http {
         # Using an exact-match block avoids "/" being treated as a
         # directory and returning 403 when autoindex is disabled.
         location = / {
+$desk_host_root_rewrite
             try_files /pages/index.html /pages/blog.html =404;
+        }
+
+        # Artificer Web lives at /artificer while the temporary public host is
+        # desk.andersaamodt.com. Keep it from being swallowed by the Desk host
+        # catch-all rewrite.
+        location = /artificer {
+            try_files /pages/artificer.html =404;
+        }
+
+        location ^~ /artificer/ {
+            try_files /pages/artificer.html =404;
         }
 
         # Serve pretty post URLs directly via CGI so post pages render
@@ -339,11 +389,19 @@ http {
             rewrite ^/posts/([A-Za-z0-9-]+)/?$ /cgi/blog-open-post?path=posts/\$1.md last;
         }
 
+        # Desk is a private spatial app with room URLs beneath /desk.
+        # Serve the Desk shell for every Desk place and let the app load
+        # the requested room from the path.
+        location ~ ^/desk(?:/.*)?$ {
+            try_files /pages/desk.html =404;
+        }
+
         # Deep-link routing:
         # - serve real files when they exist
         # - map extensionless paths (e.g. /oeuvre) to /pages/<slug>.html
         # - finally fall back to the app shell for SPA-like routes
         location / {
+$desk_host_path_rewrite
             try_files \$uri \$uri/ /pages\$uri /pages\$uri.html /pages\$uri/index.html /pages/index.html /pages/blog.html;
         }
         
