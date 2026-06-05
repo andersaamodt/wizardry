@@ -13,12 +13,17 @@ USAGE
   ;;
 esac
 
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+if ! command -v require-wizardry >/dev/null 2>&1; then
+  wizardry_dir=$(CDPATH= cd -- "$script_dir/../../.." && pwd -P)
+  # shellcheck source=/dev/null
+  . "$wizardry_dir/spells/.imps/sys/invoke-wizardry"
+fi
 require-wizardry || exit 1
 
 set -eu
 . env-clear
 
-script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 # shellcheck source=/dev/null
 . "$script_dir/voice-audio-common"
 
@@ -28,12 +33,12 @@ if ! voice_audio_is_macos; then
 fi
 
 if ! voice_audio_has_blackhole; then
-  success "voice-audio: BlackHole is not installed"
+  printf '%s\n' "voice-audio: BlackHole is not installed"
   exit 0
 fi
 
 if [ "${WIZARDRY_VOICE_AUDIO_DRY_RUN-}" = 1 ]; then
-  success "voice-audio: dry run would uninstall BlackHole"
+  printf '%s\n' "voice-audio: dry run would uninstall BlackHole"
   exit 0
 fi
 
@@ -56,4 +61,4 @@ else
   killall coreaudiod >/dev/null 2>&1 || true
 fi
 
-success "voice-audio: BlackHole removed"
+printf '%s\n' "voice-audio: BlackHole removed"

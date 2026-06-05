@@ -13,12 +13,17 @@ USAGE
   ;;
 esac
 
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+if ! command -v require-wizardry >/dev/null 2>&1; then
+  wizardry_dir=$(CDPATH= cd -- "$script_dir/../../.." && pwd -P)
+  # shellcheck source=/dev/null
+  . "$wizardry_dir/spells/.imps/sys/invoke-wizardry"
+fi
 require-wizardry || exit 1
 
 set -eu
 . env-clear
 
-script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 # shellcheck source=/dev/null
 . "$script_dir/voice-audio-common"
 
@@ -28,12 +33,12 @@ if ! voice_audio_is_macos; then
 fi
 
 if voice_audio_has_blackhole; then
-  success "voice-audio: BlackHole is already installed"
+  printf '%s\n' "voice-audio: BlackHole is already installed"
   exit 0
 fi
 
 if [ "${WIZARDRY_VOICE_AUDIO_DRY_RUN-}" = 1 ]; then
-  success "voice-audio: dry run would install BlackHole"
+  printf '%s\n' "voice-audio: dry run would install BlackHole"
   exit 0
 fi
 
@@ -78,10 +83,21 @@ curl -fL "$download_url" -o "$pkg_path" || {
   exit 1
 }
 
-if command -v sudo >/dev/null 2>&1; then
+if [ "$(id -u)" = 0 ]; then
+  installer -pkg "$pkg_path" -target /
+elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+  sudo installer -pkg "$pkg_path" -target /
+elif command -v osascript >/dev/null 2>&1; then
+  osascript - "$pkg_path" <<'APPLESCRIPT'
+on run argv
+  set pkgPath to item 1 of argv
+  do shell script "/usr/sbin/installer -pkg " & quoted form of pkgPath & " -target /" with administrator privileges
+end run
+APPLESCRIPT
+elif command -v sudo >/dev/null 2>&1; then
   sudo installer -pkg "$pkg_path" -target /
 else
   installer -pkg "$pkg_path" -target /
 fi
 
-success "voice-audio: BlackHole installed"
+printf '%s\n' "voice-audio: BlackHole installed"

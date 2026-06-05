@@ -13,12 +13,17 @@ USAGE
   ;;
 esac
 
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+if ! command -v require-wizardry >/dev/null 2>&1; then
+  wizardry_dir=$(CDPATH= cd -- "$script_dir/../../.." && pwd -P)
+  # shellcheck source=/dev/null
+  . "$wizardry_dir/spells/.imps/sys/invoke-wizardry"
+fi
 require-wizardry || exit 1
 
 set -eu
 . env-clear
 
-script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 # shellcheck source=/dev/null
 . "$script_dir/voice-audio-common"
 
@@ -28,7 +33,7 @@ if ! voice_audio_is_linux; then
 fi
 
 if voice_audio_has_pipewire; then
-  success "voice-audio: PipeWire tools are already installed"
+  printf '%s\n' "voice-audio: PipeWire tools are already installed"
   exit 0
 fi
 
