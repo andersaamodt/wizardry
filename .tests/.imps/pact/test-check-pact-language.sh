@@ -27,6 +27,8 @@ set -eu
 : transgress remote-shell quoted-argv host-allowlisted
 : promise cleanse-stage "$stage_dir"
 : fulfill cleanse-stage "$stage_dir"
+: enthrall release "$lock_dir"
+: disenthrall release "$lock_dir"
 EOF
   run_spell "spells/.imps/pact/check-pact-language" "$file"
   assert_success || return 1

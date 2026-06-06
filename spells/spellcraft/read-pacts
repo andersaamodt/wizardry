@@ -49,7 +49,8 @@ while IFS= read -r file; do
     BEGIN {
       pact_words = " pact ward essence divine foresee hexagram promise"
       pact_words = pact_words " fulfill release seal cleanse taboo"
-      pact_words = pact_words " transgress sigil threshold witness vow "
+      pact_words = pact_words " transgress sigil threshold witness vow"
+      pact_words = pact_words " enthrall disenthrall "
     }
     /^[[:space:]]*:[[:space:]]+[A-Za-z][A-Za-z0-9_-]*/ {
       rest = $0

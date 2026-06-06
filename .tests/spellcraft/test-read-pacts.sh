@@ -26,6 +26,8 @@ set -eu
 : pact publish-safely
 : threshold imported-site-name
 : seal publish "$site"
+: enthrall release "$lock_dir"
+: disenthrall release "$lock_dir"
 EOF
   run_spell "spells/spellcraft/read-pacts" "$file"
   assert_success || return 1
@@ -33,6 +35,8 @@ EOF
   assert_output_contains "publish-safely" || return 1
   assert_output_contains "threshold" || return 1
   assert_output_contains "seal" || return 1
+  assert_output_contains "enthrall" || return 1
+  assert_output_contains "disenthrall" || return 1
 }
 
 run_test_case "read-pacts shows help" read_pacts_shows_help

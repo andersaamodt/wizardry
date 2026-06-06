@@ -25,7 +25,8 @@ function primitive_known(value) {
     value == "promise" || value == "fulfill" || value == "release" ||
     value == "seal" || value == "cleanse" || value == "taboo" ||
     value == "transgress" || value == "sigil" || value == "threshold" ||
-    value == "witness" || value == "vow"
+    value == "witness" || value == "vow" || value == "enthrall" ||
+    value == "disenthrall"
 }
 
 function note(message) {

@@ -51,6 +51,7 @@ When you find a new bug class, update `.github/adversarial-testing.md` and add a
 - Use `command -v` not `which`
 - Add focused adversarial regression coverage for risky inputs, imported metadata, and failure states
 - Use pact markers from `.github/PACT_LANGUAGE.md` around high-risk boundaries when they clarify the contract
+- Use wards, sigils, hexagrams, promises, taboos, and enthrall/disenthrall vocabulary according to `.github/PACT_LANGUAGE.md`; do not add pact ceremony to harmless linear code or hot loops
 
 ### Never
 - Bash-isms: arrays, `local`, `source`, `[[ ]]`, `$RANDOM`

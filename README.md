@@ -164,9 +164,13 @@ Parsing is deterministic and always resolves to the most specific command, and i
 | **daemonic complex** | A subfolder within a demon family that groups related imps that must work together. |
 | **demon family** | A subfolder within `spells/.imps/` that groups related imps by function. Each folder represents a family of imps that share a common purpose (e.g., `str/` for string operations, `fs/` for filesystem operations). |
 | **divination** | Spells that detect or discover information. |
+| **essence** | The safe kind a value is expected to have after validation, such as `site-name`, `domain`, or `release-url`. |
 | **enchant** / **enchantment** | Spells that add or manipulate extended attributes (metadata) on files. |
+| **enthrall** / **disenthrall** | To take and release exclusive command over a resource such as a lock, release path, service, or port. Reserved pact vocabulary; helper imps may follow. |
 | **evoke** | To *mention* a spell name, presencing its aura without execution. |
+| **foresee** | A preflight check before mutation, rendering, deploy, or release. |
 | `forget` | Remove a spell from your memorized (`cast`) list. |
+| **hexagram** | A bounded, disposable working space, such as a clean environment for a risky probe or test. |
 | **imp** | The smallest building block of magic—a microscript that does exactly one thing. Imps dwell in `spells/.imps/`. |
 | **incantation** | The name of a spell, used to invoke it. |
 | `invoke` | Source a script into the current shell. |
@@ -176,9 +180,12 @@ Parsing is deterministic and always resolves to the most specific command, and i
 | **portkey** | A bookmark to a remote location. Use `enchant-portkey` to create one and `follow-portkey` to teleport there. (Future: If you have the `touch` hook installed, touching a portkey will also activate it.) |
 | **scribe** | Create a new custom spell. |
 | **scroll** | A linear script with zero or one internal functions (plus `show_usage`). All spells should ideally be scrolls—readable from top to bottom without "folds" that break narrative flow. |
+| **sigil** | A safe machine-readable representation for rows or scalar values, such as `key=value`, TSV, JSON strings, menu rows, or GUI records. |
 | **spell** | A specially-curated shell script that lives in `spells/` or your `.spellbook/` folder, has a unique name, and follows wizardry conventions. |
 | `spellbook` | Your personal grimoire for organizing and casting spells. Access it with `spellbook` or from the main `menu`. Also refers to custom spell folders. |
 | **spellcraft** | The writing of shell scripts. |
+| **taboo** / **transgress** | A dangerous operation and the justified, locally protected crossing of that operation. |
+| **threshold** | The point where untrusted input or imported metadata enters a trusted action path. |
 | **tome** | A text file containing the contents of several other text files concatenated together, so a whole folder of spells can be sent or carried easily. |
 | **ward** | A protective spell for security or access control. |
 
@@ -272,14 +279,24 @@ Pacts are wizardry reliability contracts written with the POSIX null command `:`
 : pact publish-safely
 : threshold imported-site-name
 : essence site-name "$site_name"
-divine site-name "$site_name"
+: divine site-name "$site_name"
 : taboo remote-shell
 : transgress remote-shell quoted-argv host-allowlisted
 ```
 
 The marker is not the protection. Real protection still comes from validators, cleanup, locks, hermetic test fixtures, and atomic writes. The marker makes that contract readable and lintable. See `.github/PACT_LANGUAGE.md` for the pact vocabulary.
 
-Useful pact tools include `read-pacts` for inspection, `wards` for available ward checks, `ward` for concrete boundary checks, `sigil` for safe machine-readable output, and `hexagram` for disposable clean-environment runs.
+Useful pact tools:
+
+| Command | Use |
+| ------- | --- |
+| `read-pacts [FILE...]` | Inspect pact markers without executing spells. |
+| `wards` | List reusable ward checks. |
+| `ward NAME VALUE...` | Run a concrete boundary check such as `safe-label`, `path-contained`, or `status-row-safe`. |
+| `sigil FORMAT VALUE...` | Emit safe machine-readable output for supported row/scalar formats. |
+| `hexagram COMMAND...` | Run a command with disposable `HOME`, `TMPDIR`, and a clean tool path. |
+
+Use these at trust boundaries, not as decoration or inside hot loops. Pact markers are cheap shell builtins; ward/sigil/hexagram helpers are real commands and should be used where their clarity and protection matter.
 
 ## Development
 
