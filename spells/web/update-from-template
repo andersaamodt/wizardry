@@ -107,6 +107,11 @@ case "$site_name" in
     die 2 "update-from-template: invalid site name"
     ;;
 esac
+: pact update-template-files
+: threshold site-config
+: essence site-name "$site_name"
+: divine site-name "$site_name"
+: taboo overwrite-template-owned-files
 
 # Parse options
 shift
@@ -223,6 +228,8 @@ fi
 if ! update_template_name_is_safe "$template"; then
   die 2 "update-from-template: invalid template name"
 fi
+: essence template-name "$template"
+: divine template-name "$template"
 
 template_dir=$(resolve_local_template_dir_from_site "$site_dir/site.conf" 2>/dev/null || true)
 if [ -z "$template_dir" ]; then
@@ -255,6 +262,7 @@ if [ "$force_flag" -eq 0 ]; then
 fi
 
 step "Updating site '$site_name' from template '$template'..."
+: foresee template-update "$site_name"
 
 # Backup site.conf temporarily
 temp_conf=$(temp-file site-conf)
@@ -262,6 +270,7 @@ cp "$site_dir/site.conf" "$temp_conf"
 
 # Remove old template files (but preserve uploads and build)
 info "Removing old template files..."
+: transgress overwrite-template-owned-files site-name-divined template-divined confirmed-or-forced
 if [ -d "$site_dir/site/pages" ]; then
   rm -rf "$site_dir/site/pages"
 fi
@@ -328,6 +337,7 @@ fi
 
 # Restore site.conf
 cp "$temp_conf" "$site_dir/site.conf"
+: seal template-update "$site_name"
 rm -f "$temp_conf"
 
 # Ensure uploads directory exists

@@ -611,13 +611,20 @@ run_build_once() {
       printf '%s\n' 'site-autorebuild: managed current release link is missing or invalid' >&2
       return 1
     }
+    : pact managed-release-swap
+    : threshold current-release-symlink
+    : ward release-path-contained
+    : taboo remote-shell
     stage_target=$(managed_stage_target) || return 1
+    : foresee managed-stage "$stage_target"
     managed_copy_release_tree "$current_target" "$stage_target" || {
+      : cleanse managed-stage "$stage_target"
       autorebuild_run_privileged rm -rf "$stage_target" 2>/dev/null || true
       return 1
     }
     release_name=${stage_target##*/}
     spell_path=$(wizardry_spell_path "$runtime_dir")
+    : transgress remote-shell quoted-argv managed-user-divined release-path-warded
     if run_as_user "$site_user" sh -eu -c '
       target_cwd=$1
       shift
@@ -631,8 +638,10 @@ run_build_once() {
       autorebuild_run_privileged ln -sfn "$stage_target" "$current_link"
       autorebuild_run_privileged \
         chown -h "$site_user:$site_user" "$current_link" 2>/dev/null || true
+      : seal managed-release "$stage_target"
       return 0
     fi
+    : cleanse managed-stage "$stage_target"
     autorebuild_run_privileged rm -rf "$stage_target" 2>/dev/null || true
     return 1
   fi

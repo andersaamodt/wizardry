@@ -4,7 +4,7 @@ This file provides OpenAI Codex with project-specific guidance. Codex discovers 
 
 ## Project Overview
 
-Wizardry is a collection of POSIX shell scripts themed as magical spells for the terminal. See `README.md` for full details.
+wizardry is a collection of POSIX shell scripts themed as magical spells for the terminal. See `README.md` for full details.
 
 ## Tech Stack
 
@@ -50,6 +50,7 @@ When you find a new bug class, update `.github/adversarial-testing.md` and add a
 - Use `printf` not `echo`
 - Use `command -v` not `which`
 - Add focused adversarial regression coverage for risky inputs, imported metadata, and failure states
+- Use pact markers from `.github/PACT_LANGUAGE.md` around high-risk boundaries when they clarify the contract
 
 ### Never
 - Bash-isms: arrays, `local`, `source`, `[[ ]]`, `$RANDOM`
@@ -135,4 +136,5 @@ tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/prefix.XXXXXX")
 - See `README.md` for project principles
 - See `.github/` for topic-specific guidance
 - See `.github/adversarial-testing.md` for adversarial audit technique and bug classes
+- See `.github/PACT_LANGUAGE.md` for semanthesis pact markers and tooling rules
 - See `.github/PUSH_READY_CHECKLIST.md` for canonical repo-hygiene and publish-surface rules

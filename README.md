@@ -261,8 +261,23 @@ These standards describe the technical requirements that all spells, menus, and 
 | Standard exit codes             | Common helpers define exit codes and error shaping.                                                       |
 | Directory-resolution idiom      | One canonical pattern for locating sibling resources.                                                     |
 | Validation helpers              | A reusable suite provides common input checks.                                                            |
+| Pacts                           | High-risk code can use `:` markers to make wards, promises, taboos, thresholds, and seals visible to readers and `lint-magic`. |
 | Naming scheme                   | A consistent naming scheme governs helper functions. Spells use `snake_case` for helper functions when needed (discouraged - prefer flat code). |
 
+## Pacts
+
+Pacts are wizardry reliability contracts written with the POSIX null command `:`. They let a spell name its intent without causing action:
+
+```sh
+: pact publish-safely
+: threshold imported-site-name
+: essence site-name "$site_name"
+divine site-name "$site_name"
+: taboo remote-shell
+: transgress remote-shell quoted-argv host-allowlisted
+```
+
+The marker is not the protection. Real protection still comes from validators, cleanup, locks, hermetic test fixtures, and atomic writes. The marker makes that contract readable and lintable. See `.github/PACT_LANGUAGE.md` for the pact vocabulary.
 
 ## Development
 

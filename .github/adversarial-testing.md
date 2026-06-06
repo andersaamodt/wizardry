@@ -14,6 +14,7 @@ This is a living standard. Every AI developer working on Wizardry is responsible
 - When a bug class belongs more naturally in another AI-facing standard, update that standard and cross-reference it here.
 - Do not wait for a user to request adversarial testing; include it in normal engineering judgment whenever user input, imported metadata, filesystem state, shell evaluation, remote data, generated code, or destructive side effects are involved.
 - Keep adversarial hardening proportional: validate values that cross trust boundaries or affect side effects, but avoid speculative frameworks that do not correspond to a realistic failure mode.
+- Use pact markers from `PACT_LANGUAGE.md` on high-risk surfaces when they make the trust boundary, taboo, cleanup promise, or final seal more inspectable.
 
 ## Core Method
 

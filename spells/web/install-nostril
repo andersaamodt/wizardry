@@ -29,6 +29,10 @@ if [ -n "$install_nostril_xdg_bin_home" ]; then
   esac
 fi
 
+: pact install-nostr-tooling
+: threshold release-metadata
+: taboo remote-download
+
 say() {
   printf '%s\n' "$1"
 }
@@ -189,15 +193,23 @@ install_nak_release_binary() {
   download_url=$(printf '%s\n' "$release_json_one_line" | sed -n "s/.*\"browser_download_url\":[[:space:]]*\"\\([^\"]*nak-[^\"]*-${platform}\\)\".*/\\1/p" | head -n 1)
   [ -n "$download_url" ] || return 1
   nak_download_url_is_safe "$download_url" || return 1
+  : essence release-url "$download_url"
+  : divine release-url "$download_url"
 
   tmp_bin=$(mktemp "${TMPDIR:-/tmp}/nak-release.XXXXXX")
+  : promise cleanse-nak-release "$tmp_bin"
+  : transgress remote-download release-url-divined github-release-allowlisted
   fetch_url "$download_url" -o "$tmp_bin" || {
+    : cleanse cleanse-nak-release "$tmp_bin"
     rm -f "$tmp_bin"
+    : fulfill cleanse-nak-release "$tmp_bin"
     return 1
   }
   chmod 755 "$tmp_bin"
   install_built_binary "$tmp_bin" nak
+  : cleanse cleanse-nak-release "$tmp_bin"
   rm -f "$tmp_bin"
+  : fulfill cleanse-nak-release "$tmp_bin"
   has_cmd nak
 }
 

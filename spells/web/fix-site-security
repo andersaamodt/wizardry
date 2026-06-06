@@ -31,6 +31,11 @@ case "$site_name" in
     die 2 "fix-site-security: invalid site name"
     ;;
 esac
+: pact repair-site-permissions
+: threshold site-config
+: essence site-name "$site_name"
+: divine site-name "$site_name"
+: taboo recursive-ownership
 
 web_root=${WEB_WIZARDRY_ROOT:-$HOME/sites}
 sites_dir="$web_root"
@@ -57,6 +62,15 @@ fix_security_run_priv() {
   die "fix-site-security: root or sudo is required"
 }
 
+account_name_is_safe() {
+  case "${1-}" in
+    ''|.|..|-*|*[!a-zA-Z0-9._-]*)
+      return 1
+      ;;
+  esac
+  return 0
+}
+
 site_user_default="ww_$(printf '%s' "$site_name" | tr 'A-Z' 'a-z' | tr '.-' '__')"
 site_user=$(config-get "$site_config" site-user 2>/dev/null || printf '')
 if [ -z "$site_user" ]; then
@@ -69,11 +83,11 @@ if [ -z "$site_user" ]; then
     warn "fix-site-security: cannot update site.conf without root or sudo"
   fi
 fi
-case "$site_user" in
-  ''|.|..|-*|*[!a-zA-Z0-9._-]*)
-    die 2 "fix-site-security: invalid site-user in site.conf"
-    ;;
-esac
+if ! account_name_is_safe "$site_user"; then
+  die 2 "fix-site-security: invalid site-user in site.conf"
+fi
+: essence account-name "$site_user"
+: divine account-name "$site_user"
 site_group="$site_user"
 
 group_exists() {
@@ -320,6 +334,9 @@ fi
 # Determine the actual user (non-site user) who should own source files
 # If running via sudo, use SUDO_USER; otherwise use current user
 actual_user="${SUDO_USER:-$(id -un)}"
+if ! account_name_is_safe "$actual_user"; then
+  die 2 "fix-site-security: invalid actual user"
+fi
 # Don't use site user as actual user
 if [ "$actual_user" = "$site_user" ]; then
   # If we can't determine actual user, check who owns site.conf
@@ -338,6 +355,11 @@ if [ "$actual_user" = "$site_user" ]; then
     fi
   fi
 fi
+if ! account_name_is_safe "$actual_user"; then
+  die 2 "fix-site-security: invalid actual user"
+fi
+: essence account-name "$actual_user"
+: divine account-name "$actual_user"
 
 fix_security_run_priv mkdir -p "$sites_dir/.sitedata" "$site_data_dir"
 fix_security_run_priv mkdir -p "$site_dir/build" "$site_dir/nginx"
@@ -346,6 +368,7 @@ fix_security_run_priv mkdir -p "$site_dir/build" "$site_dir/nginx"
 # - build/: actual user builds, site user (nginx) reads → actual user owns
 # - nginx/: actual user and site user both write runtime files → actual user owns + group-writable
 # - .sitedata/: actual user (runs nginx/fcgiwrap/CGI) writes → actual user owns
+: transgress recursive-ownership site-name-divined account-names-divined allowlist-validated
 fix_security_run_priv chown -R "$actual_user":"$site_group" "$site_dir/build"
 fix_security_run_priv chown -R "$actual_user":"$site_group" "$site_dir/nginx"
 fix_security_run_priv chown -R "$actual_user":"$site_group" "$site_data_dir"

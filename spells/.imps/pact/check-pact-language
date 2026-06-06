@@ -1,0 +1,111 @@
+#!/bin/sh
+# check-pact-language FILE - lint semanthesis pact markers in a shell file
+
+set -eu
+
+file=${1-}
+[ -n "$file" ] || {
+  printf '%s\n' 'check-pact-language: file path required' >&2
+  exit 2
+}
+[ -f "$file" ] || {
+  printf 'check-pact-language: file not found: %s\n' "$file" >&2
+  exit 1
+}
+
+awk -v file="$file" '
+function safe_label(value) {
+  return value != "" && value != "." && value != ".." &&
+    value !~ /^-/ && value ~ /^[A-Za-z0-9._-]+$/
+}
+
+function primitive_known(value) {
+  return value == "pact" || value == "ward" || value == "essence" ||
+    value == "divine" || value == "foresee" || value == "hexagram" ||
+    value == "promise" || value == "fulfill" || value == "release" ||
+    value == "seal" || value == "cleanse" || value == "taboo" ||
+    value == "transgress" || value == "sigil" || value == "threshold" ||
+    value == "witness" || value == "vow"
+}
+
+function note(message) {
+  if (line_number == "") {
+    line_number = NR
+  }
+  printf "%s:%s: %s\n", file, line_number, message
+  failures++
+}
+
+function require_name(primitive, name) {
+  if (name == "") {
+    note(primitive " needs a name")
+    return 0
+  }
+  if (!safe_label(name)) {
+    note(primitive " has unsafe name: " name)
+    return 0
+  }
+  return 1
+}
+
+{
+  line = $0
+  if (line !~ /^[[:space:]]*:[[:space:]]+[A-Za-z][A-Za-z0-9_-]*/) {
+    next
+  }
+
+  rest = line
+  sub(/^[[:space:]]*:[[:space:]]+/, "", rest)
+  count = split(rest, part, /[[:space:]]+/)
+  primitive = part[1]
+  name = count >= 2 ? part[2] : ""
+  line_number = NR
+
+  if (primitive == "pact") {
+    pact_seen = 1
+  }
+
+  if (!primitive_known(primitive)) {
+    if (pact_seen) {
+      note("unknown pact primitive: " primitive)
+    }
+    next
+  }
+
+  if (!require_name(primitive, name)) {
+    next
+  }
+
+  if (primitive == "promise") {
+    promises[name] = 1
+    promise_lines[name] = NR
+  } else if (primitive == "fulfill" || primitive == "release") {
+    fulfilled[name] = 1
+  } else if (primitive == "taboo") {
+    taboos[name] = 1
+  } else if (primitive == "transgress") {
+    if (!(name in taboos)) {
+      note("transgress appears before matching taboo: " name)
+    }
+    if (count < 3) {
+      note("transgress needs a reason: " name)
+    }
+  } else if (primitive == "essence" && count < 3) {
+    note("essence needs a value: " name)
+  } else if (primitive == "divine" && count < 3) {
+    note("divine needs a value: " name)
+  }
+
+  line_number = ""
+}
+
+END {
+  for (name in promises) {
+    if (!(name in fulfilled)) {
+      line_number = promise_lines[name]
+      note("promise is not fulfilled or released: " name)
+    }
+  }
+  exit failures ? 1 : 0
+}
+' "$file"

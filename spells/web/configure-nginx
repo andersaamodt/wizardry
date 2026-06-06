@@ -36,6 +36,11 @@ case "$site_name" in
     die 2 "configure-nginx: invalid site name"
     ;;
 esac
+: pact render-nginx-config
+: threshold site-config
+: essence site-name "$site_name"
+: divine site-name "$site_name"
+: taboo privileged-config-write
 shift
 
 # Parse options
@@ -165,9 +170,13 @@ if [ "$domain" = "localhost" ] && [ -f "$site_dir/site.conf" ]; then
 fi
 
 if [ -z "$domain_aliases" ] && [ -f "$site_dir/site.conf" ]; then
-  existing_domain_aliases=$(config-get "$site_dir/site.conf" domain-aliases 2>/dev/null || printf '')
+  existing_domain_aliases=$(
+    config-get "$site_dir/site.conf" domain-aliases 2>/dev/null || printf ''
+  )
   if [ -z "$existing_domain_aliases" ]; then
-    existing_domain_aliases=$(config-get "$site_dir/site.conf" domain_aliases 2>/dev/null || printf '')
+    existing_domain_aliases=$(
+      config-get "$site_dir/site.conf" domain_aliases 2>/dev/null || printf ''
+    )
   fi
   if [ -n "$existing_domain_aliases" ]; then
     domain_aliases=$existing_domain_aliases
@@ -190,10 +199,14 @@ fi
 if ! configure_nginx_valid_port "$port"; then
   die 2 "configure-nginx: invalid port"
 fi
+: essence port "$port"
+: divine port "$port"
 
 if ! configure_nginx_valid_domain "$domain"; then
   die 2 "configure-nginx: invalid domain"
 fi
+: essence domain "$domain"
+: divine domain "$domain"
 
 for domain_alias in $domain_aliases; do
   if ! configure_nginx_valid_domain "$domain_alias"; then
@@ -318,6 +331,7 @@ fi
 nginx_conf="$nginx_conf_dir/nginx.conf"
 
 step "Generating nginx configuration for $site_name"
+: foresee nginx-render "$site_name"
 
 cat > "$nginx_conf" <<EOF
 # nginx configuration for $site_name
@@ -513,6 +527,7 @@ $desk_host_path_rewrite
     }
 }
 EOF
+: seal nginx-config "$nginx_conf"
 
 # Update site config only when values changed so preview restarts do not
 # make Headquarters think a fresh build is immediately stale again.
@@ -555,6 +570,7 @@ if is-tor-installed; then
       step "Updating Tor hidden service port to $port..."
       
       temp_torrc=$(mktemp)
+      : promise cleanse-torrc "$temp_torrc"
       in_site_block=0
       
       while IFS= read -r line; do
@@ -577,10 +593,13 @@ if is-tor-installed; then
         printf '%s\n' "$line" >> "$temp_torrc"
       done < "$tor_config_path"
       
+      : transgress privileged-config-write site-block-matched port-divined
       sudo cp "$temp_torrc" "$tor_config_path"
       # Preserve existing torrc permissions
       sudo chmod 644 "$tor_config_path"
+      : cleanse cleanse-torrc "$temp_torrc"
       rm -f "$temp_torrc"
+      : fulfill cleanse-torrc "$temp_torrc"
       
       # Restart Tor to apply changes
       info "Restarting Tor to apply port change..."
