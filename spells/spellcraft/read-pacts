@@ -1,0 +1,68 @@
+#!/bin/sh
+
+# Read semanthesis pact markers from spell files.
+# With no files, scans executable POSIX shell files under spells/.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: read-pacts [FILE...]
+
+List pact markers in shell files as:
+  FILE:LINE  WORD  NAME  DETAILS
+
+With no files, scans executable POSIX shell files under spells/.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+repo_dir=$(CDPATH= cd -- "$(dirname "$0")/../.." && pwd -P)
+targets_file=$(mktemp "${TMPDIR:-/tmp}/read-pacts.XXXXXX")
+trap 'rm -f "$targets_file"' EXIT HUP INT TERM
+
+if [ "$#" -gt 0 ]; then
+  for file in "$@"; do
+    printf '%s\n' "$file"
+  done
+else
+  find "$repo_dir/spells" -type f \( -perm -u+x -o -perm -g+x -o -perm -o+x \) |
+    sort | while IFS= read -r file; do
+      first_line=$(sed -n '1p' "$file" 2>/dev/null || printf '')
+      case "$first_line" in
+        '#!/bin/sh'|'#! /bin/sh') printf '%s\n' "$file" ;;
+      esac
+    done
+fi >"$targets_file"
+
+while IFS= read -r file; do
+  [ -n "$file" ] || continue
+  case "$file" in
+    /*) path=$file ;;
+    *) path=$repo_dir/$file ;;
+  esac
+  [ -f "$path" ] || continue
+  display=${path#"$repo_dir/"}
+  awk -v file="$display" '
+    BEGIN {
+      pact_words = " pact ward essence divine foresee hexagram promise"
+      pact_words = pact_words " fulfill release seal cleanse taboo"
+      pact_words = pact_words " transgress sigil threshold witness vow "
+    }
+    /^[[:space:]]*:[[:space:]]+[A-Za-z][A-Za-z0-9_-]*/ {
+      rest = $0
+      sub(/^[[:space:]]*:[[:space:]]+/, "", rest)
+      count = split(rest, part, /[[:space:]]+/)
+      word = part[1]
+      name = count >= 2 ? part[2] : ""
+      details = rest
+      sub(/^[^[:space:]]+[[:space:]]*/, "", details)
+      sub(/^[^[:space:]]+[[:space:]]*/, "", details)
+      if (index(pact_words, " " word " ") > 0) {
+        printf "%s:%d\t%s\t%s\t%s\n", file, NR, word, name, details
+      }
+    }
+  ' "$path"
+done <"$targets_file"

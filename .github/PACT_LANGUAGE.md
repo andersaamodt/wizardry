@@ -36,11 +36,31 @@ This keeps meaning separate from mechanism: pact markers make intent visible to 
 ## Tooling Rules
 
 - `lint-magic` runs `check-pact-language` on each target.
+- `read-pacts` lists pact markers in one file or across the spell tree.
+- `wards` lists known ward checks; `ward NAME ...` runs a concrete ward.
+- `sigil FORMAT ...` emits safe machine-readable output for supported formats.
+- `hexagram COMMAND...` runs a command in a clean disposable environment.
 - Pact names must be safe labels: no empty names, `.`, `..`, leading `-`, slashes, spaces, or shell punctuation.
 - Once a file declares `: pact NAME`, later semanthesis lines must use known pact words.
 - Every `: promise NAME ...` must later be matched by `: fulfill NAME ...` or `: release NAME ...`.
 - Every `: transgress NAME ...` must follow a matching `: taboo NAME` and include at least one reason.
 - `: essence KIND ...` and `: divine KIND ...` need both a kind and the value being treated as that kind.
+
+## Operational Helpers
+
+| Command | Use |
+| --- | --- |
+| `read-pacts [FILE...]` | Inspect pact structure without executing a spell. |
+| `wards` | Show reusable wards. |
+| `ward safe-label VALUE` | Check safe identifier shape. |
+| `ward no-linebreak VALUE` | Reject line-forging values. |
+| `ward path-contained PATH ROOT` | Check that a path resolves under a root. |
+| `ward release-url-allowlisted URL PREFIX` | Check release download origin. |
+| `ward status-row-safe VALUE` | Check output destined for status rows. |
+| `sigil key-value KEY VALUE` | Emit a safe `key=value` row. |
+| `sigil tsv VALUE` | Emit a safe TSV field. |
+| `sigil json-string VALUE` | Emit a quoted JSON string for simple scalar values. |
+| `hexagram COMMAND...` | Run a command with disposable `HOME` and `TMPDIR`. |
 
 ## Usage Guidance
 

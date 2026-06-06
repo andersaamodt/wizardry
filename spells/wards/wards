@@ -1,0 +1,38 @@
+#!/bin/sh
+
+# List reusable pact wards and optionally check one.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: wards [WARD [VALUE [BOUND]]]
+
+List known pact wards. With a ward name and arguments, run the ward check.
+
+Known wards:
+  safe-label VALUE
+  no-linebreak VALUE
+  path-contained PATH ROOT
+  release-url-allowlisted URL PREFIX
+  status-row-safe VALUE
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+case "${1-}" in
+'')
+  cat <<'WARD_LIST'
+safe-label               VALUE has safe label shape for names and identifiers
+no-linebreak             VALUE cannot forge line-based metadata
+path-contained           PATH resolves inside ROOT before mutation
+release-url-allowlisted  URL starts with the expected release prefix
+status-row-safe          VALUE cannot forge key=value or GUI status rows
+WARD_LIST
+  ;;
+*)
+  ward "$@"
+  ;;
+esac

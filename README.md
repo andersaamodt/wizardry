@@ -279,6 +279,8 @@ divine site-name "$site_name"
 
 The marker is not the protection. Real protection still comes from validators, cleanup, locks, hermetic test fixtures, and atomic writes. The marker makes that contract readable and lintable. See `.github/PACT_LANGUAGE.md` for the pact vocabulary.
 
+Useful pact tools include `read-pacts` for inspection, `wards` for available ward checks, `ward` for concrete boundary checks, `sigil` for safe machine-readable output, and `hexagram` for disposable clean-environment runs.
+
 ## Development
 
 ### Testing
