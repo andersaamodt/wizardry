@@ -63,15 +63,42 @@ if [ "$want_width" -eq 0 ] && [ "$want_height" -eq 0 ]; then
     want_height=1
 fi
 
-# tput is our interface to terminfo; fail loudly when it is absent.
-if ! "$require_cmd" tput "The fathom-terminal spell needs 'tput' to query terminfo."; then
-    exit 1
+tty_device=${FATHOM_TERMINAL_DEVICE:-/dev/tty}
+tty_size=''
+size_detected=0
+
+# Prefer asking the controlling terminal directly; this works even when stdout
+# is a command-substitution pipe and terminfo metadata is incomplete.
+if command -v stty >/dev/null 2>&1 && [ -r "$tty_device" ]; then
+    tty_size=$(stty size <"$tty_device" 2>/dev/null || printf '')
+    case "$tty_size" in
+        *[!0-9\ ]*|'')
+            tty_size=''
+            ;;
+        *)
+            set -- $tty_size
+            if [ "$#" -ge 2 ]; then
+                lines=$1
+                cols=$2
+                lines_status=0
+                cols_status=0
+                size_detected=1
+            fi
+            ;;
+    esac
 fi
 
-cols=$(tput cols 2>/dev/null)
-cols_status=$?
-lines=$(tput lines 2>/dev/null)
-lines_status=$?
+if [ "$size_detected" -eq 0 ]; then
+    # Fall back to terminfo when direct tty sizing is unavailable.
+    if ! "$require_cmd" tput "The fathom-terminal spell needs 'tput' to query terminfo."; then
+        exit 1
+    fi
+
+    cols=$(tput cols 2>/dev/null || printf '')
+    cols_status=$?
+    lines=$(tput lines 2>/dev/null || printf '')
+    lines_status=$?
+fi
 
 if [ "$want_width" -eq 1 ]; then
     if [ $cols_status -ne 0 ] || [ -z "$cols" ]; then

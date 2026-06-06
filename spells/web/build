@@ -728,6 +728,18 @@ build_site() {
   shared_theme_dir="$shared_theme_root/.themes"
   site_template=$(config-get "$site_dir/site.conf" template 2>/dev/null || printf '')
 
+  for candidate_bin_dir in "${XDG_BIN_HOME-}" "${HOME-}/.local/bin"; do
+    [ -n "$candidate_bin_dir" ] || continue
+    [ -d "$candidate_bin_dir" ] || continue
+    case ":$PATH:" in
+      *":$candidate_bin_dir:"*) ;;
+      *)
+        PATH="$candidate_bin_dir:$PATH"
+        export PATH
+        ;;
+    esac
+  done
+
   if [ "$site_template" = "blog" ]; then
     if ! has nostril; then
       if has install-nostril; then
@@ -803,7 +815,6 @@ build_site() {
   built_count=0
   if [ -d "$site_dir/site/pages" ]; then
     includes_dir="$site_dir/site/includes"
-    nav_file="$includes_dir/nav.md"
     footer_file="$includes_dir/footer.md"
     head_file="$includes_dir/head.html"
     deps_pages_dir="$site_dir/build/.deps/pages"
@@ -814,6 +825,11 @@ build_site() {
     if [ "$md_file_count" -eq 0 ]; then
       warn "No Markdown files found in $site_dir/site/pages/"
       warn "Create .md files there to build HTML pages."
+    fi
+
+    nav_file="$includes_dir/nav.md"
+    if [ "$site_template" != "blog" ] && [ -f "$includes_dir/nav-$site_template.md" ]; then
+      nav_file="$includes_dir/nav-$site_template.md"
     fi
 
     find "$site_dir/site/pages" -type f -name '*.md' ! -name '._*' | sort | \
@@ -847,8 +863,8 @@ build_site() {
 
       htmx_header=$(temp-file htmx-header)
       cat > "$htmx_header" <<'HTMX_HEADER'
-<script src="/static/js/htmx.min.js"></script>
-<script src="/static/js/idiomorph-ext.min.js"></script>
+<script defer src="/static/js/htmx.min.js"></script>
+<script defer src="/static/js/idiomorph-ext.min.js"></script>
 HTMX_HEADER
 
       nav_exists=0

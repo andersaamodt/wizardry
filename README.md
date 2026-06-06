@@ -318,3 +318,26 @@ The portable build is automatically generated, and includes all spells that work
 ## Desktop Apps
 
 Wizardry includes optional desktop apps (`.apps/`) - graphical wrappers with commands hardcoded in the GUI for security. See `.apps/README.md` for details.
+
+## See Also
+
+Wizardry intentionally stays low-to-the-ground: POSIX shell-first, file-first, and lightweight.
+Some related projects solve adjacent problems with heavier stacks and broader product scope.
+
+### Terminal Learning and Command-Line Games
+
+- [Project N.O.M.A.D.](https://github.com/Crosstalk-Solutions/project-nomad) - Offline-first knowledge server with integrated content management, container orchestration, and local AI tooling.
+- [Bashcrawl](https://gitlab.com/slackermedia/bashcrawl) - Terminal adventure game for learning practical shell navigation and commands.
+- [TermAdventure](https://github.com/NaiveNeuron/TermAdventure) - Text-adventure-style UNIX command line teaching suite.
+- [OverTheWire: Bandit](https://overthewire.org/wargames/bandit/) - Beginner-friendly SSH/UNIX command-line wargame.
+- [Vim Adventures](https://vim-adventures.com/) - Gamified tutorial for modal terminal editing concepts via Vim motions.
+
+### MUD Clients and Lineage
+
+- [Tintin++](https://tintin.mudhalla.net/) - Long-running terminal MUD client from classic MUD culture.
+- [MUSHclient](https://www.gammon.com.au/mushclient/mushclient.htm) - Established scriptable MUD client used in many text-world communities.
+- [CMUD (zMUD successor)](https://www.zuggsoft.com/) - Historically influential MUD client platform.
+- [AberMUD](https://github.com/talkersource/abermud) - Early open-source MUD codebase lineage.
+- [DikuMUD](https://dikumud.com/) - Foundational MUD codebase that shaped many later derivatives.
+
+These projects are useful references, but are outside Wizardry's core implementation scope.

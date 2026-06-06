@@ -23,6 +23,9 @@
 
 ## Lessons
 
+- Background jobs and daemons need a full lifecycle contract: bounded lease/heartbeat, stale-lock expiry, explicit shutdown, and recursive child reaping; a best-effort UI stop hook is not sufficient.
+- When a long-running job has both a wrapper PID and a worker PID, persist and cancel both; killing only the inner transfer PID leaks wrappers during startup races.
+- Leak-closure work should end with a fresh grep-based pass over timers, caches, temp files, locks, detached subprocesses, and shutdown hooks; fixing one leak class often exposes the next one.
 - For SSE/real-time CGI: unbuffer the ENTIRE chain - chat-stream uses `stdbuf -o0`, AND fcgiwrap must be started with `stdbuf -o0 fcgiwrap ...` to prevent fcgiwrap from buffering CGI output.
 - Pipe-into-while creates subshell where output gets buffered until pipe closes; use temp file with input redirection instead: `tail file > temp; while read line; do ...; done < temp`.
 - Shell stdout is buffered by default; for SSE/real-time streaming on Linux use `exec stdbuf -o0 "$0" "$@"`, on macOS without stdbuf use 128KB+ padding per event to force buffer overflow.
@@ -307,7 +310,10 @@
 - Under `set -e`, a helper function returning `1` as a meaningful state must be called through `if helper; then ... else status=$?; fi`; a plain call exits before status handling runs.
 - Tests that set environment overrides for shell-function helpers should prefer `run_cmd env VAR=value ...`; prefix assignments before shell functions can fail to reach the subprocess being tested.
 - A test that ends a help-path check with unconditional `true` is not a test; assert the real command, status, and usage output.
+- Terminal-size helpers should prefer `/dev/tty` sizing before `tput`; terminfo-dependent terminals like Ghostty can lose size detection once stdout becomes a command-substitution pipe after environment scrubbing.
+- ANSI color helpers should treat empty `tput colors` output as inconclusive instead of disabling color; environment scrubbing can break terminfo lookup even when the terminal still renders ANSI escapes correctly.
 - Native app replacement must be staged and reversible: move the existing app to a backup, move the staged replacement into place, and restore the backup if the final move fails.
+- macOS run flows must force Launch Services to open the freshly prepared bundle path when another installed bundle may share the same bundle identifier.
 - Template names read from site config need the same path-segment validation as template names supplied at creation time.
 - Managed release symlinks and stage names are imported path metadata; validate them before copying from or staging into release trees.
 - Structural tests should skip sourced common libraries explicitly instead of treating non-executable helper libraries as castable spells.

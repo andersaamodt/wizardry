@@ -236,7 +236,10 @@ fi
 
 desk_host_root_rewrite=
 desk_host_path_rewrite=
-if [ -n "$desk_route_host" ]; then
+if [ "$site_template" = "desk" ]; then
+  desk_host_root_rewrite="            rewrite ^ /pages/desk.html last;"
+  desk_host_path_rewrite="            rewrite ^ /pages/desk.html last;"
+elif [ -n "$desk_route_host" ]; then
   desk_host_root_rewrite="            if (\$host = $desk_route_host) {
                 rewrite ^ /pages/desk.html last;
             }"

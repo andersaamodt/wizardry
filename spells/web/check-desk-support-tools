@@ -1,14 +1,14 @@
 #!/bin/sh
 
-# Check whether Nostr server tooling is available.
+# Check server tooling needed by private Desk and Nostr-backed site flows.
 
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: check-nostril
+Usage: check-desk-support-tools
 
-Checks whether the nostril and nak CLIs are available for Nostr auth,
-verification, and bridge flows.
+Checks whether the server has the Nostr and JSON tools Desk uses for owner
+authentication, event verification, publishing diagnostics, and zap metadata.
 USAGE
   exit 0
   ;;
@@ -23,14 +23,12 @@ for candidate_bin_dir in "${XDG_BIN_HOME-}" "${HOME-}/.local/bin"; do
   [ -d "$candidate_bin_dir" ] || continue
   case ":$PATH:" in
     *":$candidate_bin_dir:"*) ;;
-    *)
-      PATH="$candidate_bin_dir:$PATH"
-      ;;
+    *) PATH="$candidate_bin_dir:$PATH" ;;
   esac
 done
 
 missing=''
-for bin in nostril nak; do
+for bin in jq nak nostril; do
   if ! command -v "$bin" >/dev/null 2>&1; then
     missing="${missing}${missing:+, }$bin"
   fi
@@ -38,10 +36,10 @@ done
 
 if [ -z "$missing" ]; then
   printf 'status=ok\n'
-  printf 'summary=%s\n' 'nostril and nak are available on PATH.'
+  printf 'summary=%s\n' 'jq, nak, and nostril are available on PATH.'
   exit 0
 fi
 
 printf 'status=bad\n'
-printf 'summary=Missing Nostr server tooling: %s\n' "$missing"
+printf 'summary=Missing Desk support tools: %s\n' "$missing"
 exit 0

@@ -61,6 +61,40 @@ update_template_name_is_safe() {
   return 0
 }
 
+resolve_local_template_dir_from_site() {
+  site_conf_path=${1-}
+  [ -n "$site_conf_path" ] || return 1
+  [ -f "$site_conf_path" ] || return 1
+  local_template_path=$(config-get "$site_conf_path" local-template 2>/dev/null || printf '')
+  [ -n "$local_template_path" ] || return 1
+  case "$local_template_path" in
+    ~/*) local_template_path="$HOME/${local_template_path#~/}" ;;
+  esac
+  local_template_path=$(cd "$local_template_path" 2>/dev/null && pwd -P) || return 1
+  if [ -d "$local_template_path/template" ] && [ ! -d "$local_template_path/site" ] && [ ! -d "$local_template_path/pages" ] && [ ! -d "$local_template_path/static" ] && [ ! -d "$local_template_path/includes" ] && [ ! -d "$local_template_path/cgi" ]; then
+    printf '%s\n' "$local_template_path/template"
+    return 0
+  fi
+  printf '%s\n' "$local_template_path"
+  return 0
+}
+
+template_component_dir() {
+  template_root=${1-}
+  component=${2-}
+  [ -n "$template_root" ] || return 1
+  [ -n "$component" ] || return 1
+  if [ -d "$template_root/$component" ]; then
+    printf '%s\n' "$template_root/$component"
+    return 0
+  fi
+  if [ -d "$template_root/site/$component" ]; then
+    printf '%s\n' "$template_root/site/$component"
+    return 0
+  fi
+  return 1
+}
+
 site_name=${1-}
 force_flag=0
 
@@ -190,7 +224,10 @@ if ! update_template_name_is_safe "$template"; then
   die 2 "update-from-template: invalid template name"
 fi
 
-template_dir=$(create-from-template --resolve-template-dir "$template" 2>/dev/null || true)
+template_dir=$(resolve_local_template_dir_from_site "$site_dir/site.conf" 2>/dev/null || true)
+if [ -z "$template_dir" ]; then
+  template_dir=$(create-from-template --resolve-template-dir "$template" 2>/dev/null || true)
+fi
 shared_theme_dir=$(update_resolve_shared_theme_dir 2>/dev/null || true)
 
 if [ ! -d "$template_dir" ]; then
@@ -246,12 +283,16 @@ fi
 info "Copying template files..."
 mkdir -p "$site_dir/site"
 
-if [ -d "$template_dir/pages" ]; then
-  cp -r "$template_dir/pages" "$site_dir/site/"
+template_pages_dir=$(template_component_dir "$template_dir" pages 2>/dev/null || true)
+template_static_dir=$(template_component_dir "$template_dir" static 2>/dev/null || true)
+template_includes_dir=$(template_component_dir "$template_dir" includes 2>/dev/null || true)
+
+if [ -n "$template_pages_dir" ] && [ -d "$template_pages_dir" ]; then
+  cp -r "$template_pages_dir" "$site_dir/site/pages"
 fi
 
-if [ -d "$template_dir/static" ]; then
-  cp -r "$template_dir/static" "$site_dir/site/"
+if [ -n "$template_static_dir" ] && [ -d "$template_static_dir" ]; then
+  cp -r "$template_static_dir" "$site_dir/site/static"
 fi
 
 # Sync shared theme catalog into every site.
@@ -260,8 +301,8 @@ if [ -d "$shared_theme_dir" ]; then
   cp -f "$shared_theme_dir"/*.css "$site_dir/site/static/themes/" 2>/dev/null || true
 fi
 
-if [ -d "$template_dir/includes" ]; then
-  cp -r "$template_dir/includes" "$site_dir/site/"
+if [ -n "$template_includes_dir" ] && [ -d "$template_includes_dir" ]; then
+  cp -r "$template_includes_dir" "$site_dir/site/includes"
 fi
 
 if [ -d "$template_dir/cgi" ]; then

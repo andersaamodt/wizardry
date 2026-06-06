@@ -198,6 +198,30 @@ if [ -t 1 ] && [ "$TERM" != "dumb" ]; then
 fi
 ```
 
+## Terminal Size Detection
+
+```sh
+# Prefer the controlling tty directly when size is needed inside command substitution
+tty_size=$(stty size </dev/tty 2>/dev/null || printf '')
+set -- $tty_size
+lines=$1
+cols=$2
+```
+
+**Why:** Some terminals depend on environment-provided terminfo paths, and helpers like `tput` can fail once stdout is a pipe inside command substitution. Querying `/dev/tty` avoids that coupling.
+
+## ANSI Color Detection
+
+```sh
+# Treat empty tput output as inconclusive, not as "no color"
+colors=$(tput colors 2>/dev/null || printf '')
+case ${colors:-} in
+  0|-*) disable_palette ;;
+esac
+```
+
+**Why:** A capable terminal can still render ANSI escapes even when terminfo lookup is unavailable in the current shell environment. Only an explicit zero or negative `tput colors` result should disable the palette automatically.
+
 ## String Manipulation
 
 ```sh

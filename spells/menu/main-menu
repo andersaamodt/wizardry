@@ -114,6 +114,10 @@ while true; do
     printf 'ESC\n' >&2
     return 0
   fi
-  
-  # Any other exit code (0 for successful command execution) continues the loop
+
+  if [ "$menu_status" -ne 0 ]; then
+    return "$menu_status"
+  fi
+
+  # Successful command execution continues the loop.
 done
