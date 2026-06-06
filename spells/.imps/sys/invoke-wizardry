@@ -47,8 +47,6 @@ fi
 # Prevent recursive sourcing in the current shell.
 # Keep this shell-local so child shells still initialize fully.
 if [ "${iw_invoked-}" = "1" ]; then
-  WIZARDRY_INVOKED=1
-  export WIZARDRY_INVOKED
   [ "${WIZARDRY_DEBUG-}" = "1" ] && \
     printf '[invoke-wizardry] %s\n' "Already invoked, skipping" >&2
   return 0
@@ -308,9 +306,6 @@ fi
 
 # Wizardry initialization complete
 [ "${WIZARDRY_DEBUG-}" = "1" ] && printf '[invoke-wizardry] %s\n' "Wizardry initialization complete" >&2
-
-WIZARDRY_INVOKED=1
-export WIZARDRY_INVOKED
 
 # Explicitly set permissive mode for interactive shell use
 # This was the original behavior before PR #1053

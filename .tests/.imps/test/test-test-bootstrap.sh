@@ -30,13 +30,13 @@ test_bootstrap_loads_invoke_without_warning() {
   cat > "$tmpdir/source-bootstrap.sh" << EOF
 #!/bin/sh
 . "$ROOT_DIR/spells/.imps/test/test-bootstrap"
-printf 'WIZARDRY_INVOKED=%s\n' "\${WIZARDRY_INVOKED-}"
+printf 'bootstrap sourced\n'
 EOF
   chmod +x "$tmpdir/source-bootstrap.sh"
 
   run_cmd sh "$tmpdir/source-bootstrap.sh"
   assert_success || return 1
-  assert_output_contains "WIZARDRY_INVOKED=1" || return 1
+  assert_output_contains "bootstrap sourced" || return 1
   case "$ERROR" in
     *"invoke-wizardry failed to load in test-bootstrap"*)
       TEST_FAILURE_REASON="test-bootstrap emitted stale invoke-wizardry warning"
