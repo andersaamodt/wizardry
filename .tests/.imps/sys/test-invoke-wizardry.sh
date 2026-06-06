@@ -28,6 +28,24 @@ EOF
   assert_output_contains "sourced successfully" || return 1
 }
 
+test_sets_invoked_flag() {
+  tmpdir=$(make_tempdir)
+  cat > "$tmpdir/test-invoked-flag.sh" << EOF
+#!/bin/sh
+WIZARDRY_DIR="$ROOT_DIR"
+export WIZARDRY_DIR
+WIZARDRY_TEST_HELPERS_ONLY=1
+export WIZARDRY_TEST_HELPERS_ONLY
+. "$ROOT_DIR/spells/.imps/sys/invoke-wizardry"
+printf 'WIZARDRY_INVOKED=%s\n' "\${WIZARDRY_INVOKED-}"
+EOF
+  chmod +x "$tmpdir/test-invoked-flag.sh"
+
+  run_cmd sh "$tmpdir/test-invoked-flag.sh"
+  assert_success || return 1
+  assert_output_contains "WIZARDRY_INVOKED=1" || return 1
+}
+
 # Test: invoke-wizardry sets WIZARDRY_DIR when not already set
 test_sets_wizardry_dir() {
   tmpdir=$(make_tempdir)
@@ -467,6 +485,7 @@ EOF
 }
 
 run_test_case "invoke-wizardry is sourceable" test_sourceable
+run_test_case "invoke-wizardry sets invoked flag" test_sets_invoked_flag
 run_test_case "invoke-wizardry sets WIZARDRY_DIR" test_sets_wizardry_dir
 # Test #3 removed: outdated (spell dirs NOT in PATH)
 run_test_case "core imps are available as commands" test_core_imps_available

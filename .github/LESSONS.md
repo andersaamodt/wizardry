@@ -319,3 +319,4 @@
 - Structural tests should skip sourced common libraries explicitly instead of treating non-executable helper libraries as castable spells.
 - Mechanical variable renames must search for every remaining reference; structural naming checks can pass while stale runtime references remain.
 - Build post-processors that replace generated public files through restrictive temp files must normalize final modes after the last rewrite, not only after the initial render.
+- Test harness success sentinels must be set by the helper they describe; otherwise bootstrap can emit stale warnings even when the sourced helper returned success.
