@@ -43,6 +43,14 @@ print(json.dumps(sys.argv[1] if len(sys.argv) > 1 else ""))
 PY
 }
 
+voice_audio_ffmpeg_command() {
+  if [ -n "${WIZARDRY_VOICE_AUDIO_FFMPEG-}" ]; then
+    printf '%s\n' "$WIZARDRY_VOICE_AUDIO_FFMPEG"
+    return 0
+  fi
+  command -v ffmpeg
+}
+
 voice_audio_has_blackhole() {
   case "${WIZARDRY_VOICE_AUDIO_HAS_BLACKHOLE-}" in
     1|true|TRUE|yes|YES|on|ON) return 0 ;;
@@ -57,6 +65,151 @@ voice_audio_has_blackhole() {
     [ -d /Library/Audio/Plug-Ins/HAL/BlackHole16ch.driver ] || \
     [ -d /Library/Audio/Plug-Ins/HAL/BlackHole64ch.driver ] || \
     system_profiler SPAudioDataType 2>/dev/null | grep -qi 'BlackHole'
+}
+
+voice_audio_macos_audio_devices() {
+  voice_audio_devices_ffmpeg=$(voice_audio_ffmpeg_command 2>/dev/null || printf '')
+  [ -n "$voice_audio_devices_ffmpeg" ] || return 1
+  "$voice_audio_devices_ffmpeg" -hide_banner -f avfoundation -list_devices true -i "" 2>&1
+}
+
+voice_audio_macos_capture_has_blackhole() {
+  case "${WIZARDRY_VOICE_AUDIO_HAS_BLACKHOLE-}" in
+    1|true|TRUE|yes|YES|on|ON) return 0 ;;
+    0|false|FALSE|no|NO|off|OFF) return 1 ;;
+  esac
+
+  voice_audio_is_macos || return 1
+  voice_audio_has_blackhole || return 1
+  voice_audio_macos_audio_devices | grep -qi 'BlackHole'
+}
+
+voice_audio_macos_render_route_active() {
+  case "${WIZARDRY_VOICE_AUDIO_ROUTE_ACTIVE-}" in
+    1|true|TRUE|yes|YES|on|ON) return 0 ;;
+    0|false|FALSE|no|NO|off|OFF) return 1 ;;
+  esac
+
+  voice_audio_is_macos || return 1
+  system_profiler SPAudioDataType 2>/dev/null | awk '
+    /^[[:space:]]{8}[^[:space:]].*:$/ {
+      device=$0
+      default_output=0
+      next
+    }
+    /Default Output Device: Yes/ { default_output=1 }
+    default_output && device ~ /(Wizardry Playback Isolation|BlackHole 2ch):/ { found=1 }
+    END { exit found ? 0 : 1 }
+  '
+}
+
+voice_audio_ensure_macos_blackhole_route() {
+  voice_audio_is_macos || {
+    printf '%s\n' "wizardry-audio-capture: render route setup is only supported on macOS" >&2
+    return 1
+  }
+  voice_audio_macos_capture_has_blackhole || {
+    printf '%s\n' "wizardry-audio-capture: BlackHole capture device is not visible" >&2
+    return 1
+  }
+
+  voice_audio_route_swift=$(mktemp "${TMPDIR:-/tmp}/wizardry-audio-route.XXXXXX.swift")
+  cat > "$voice_audio_route_swift" <<'SWIFT'
+import Foundation
+import CoreAudio
+
+let aggregateName = "Wizardry Playback Isolation"
+let aggregateUID = "dev.wizardry.playback-isolation"
+let blackholeName = "BlackHole 2ch"
+
+func getStringProperty(_ objectID: AudioObjectID, _ selector: AudioObjectPropertySelector) -> String? {
+  var address = AudioObjectPropertyAddress(mSelector: selector, mScope: kAudioObjectPropertyScopeGlobal, mElement: kAudioObjectPropertyElementMain)
+  var size: UInt32 = 0
+  guard AudioObjectGetPropertyDataSize(objectID, &address, 0, nil, &size) == noErr else { return nil }
+  var value: CFString = "" as CFString
+  var valueSize = size
+  guard AudioObjectGetPropertyData(objectID, &address, 0, nil, &valueSize, &value) == noErr else { return nil }
+  return value as String
+}
+
+func getDevices() -> [AudioObjectID] {
+  var address = AudioObjectPropertyAddress(mSelector: kAudioHardwarePropertyDevices, mScope: kAudioObjectPropertyScopeGlobal, mElement: kAudioObjectPropertyElementMain)
+  var size: UInt32 = 0
+  guard AudioObjectGetPropertyDataSize(AudioObjectID(kAudioObjectSystemObject), &address, 0, nil, &size) == noErr else { return [] }
+  let count = Int(size) / MemoryLayout<AudioObjectID>.size
+  var devices = Array(repeating: AudioObjectID(0), count: count)
+  var valueSize = size
+  guard AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &address, 0, nil, &valueSize, &devices) == noErr else { return [] }
+  return devices
+}
+
+func defaultOutputDevice() -> AudioObjectID? {
+  var address = AudioObjectPropertyAddress(mSelector: kAudioHardwarePropertyDefaultOutputDevice, mScope: kAudioObjectPropertyScopeGlobal, mElement: kAudioObjectPropertyElementMain)
+  var device = AudioObjectID(0)
+  var size = UInt32(MemoryLayout<AudioObjectID>.size)
+  guard AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &address, 0, nil, &size, &device) == noErr else { return nil }
+  return device == 0 ? nil : device
+}
+
+func setDefault(_ device: AudioObjectID, _ selector: AudioObjectPropertySelector) -> OSStatus {
+  var address = AudioObjectPropertyAddress(mSelector: selector, mScope: kAudioObjectPropertyScopeGlobal, mElement: kAudioObjectPropertyElementMain)
+  var mutableDevice = device
+  return AudioObjectSetPropertyData(AudioObjectID(kAudioObjectSystemObject), &address, 0, nil, UInt32(MemoryLayout<AudioObjectID>.size), &mutableDevice)
+}
+
+let devices = getDevices()
+guard let currentDefault = defaultOutputDevice(),
+      let defaultName = getStringProperty(currentDefault, kAudioObjectPropertyName),
+      let defaultUID = getStringProperty(currentDefault, kAudioDevicePropertyDeviceUID) else {
+  fputs("wizardry-audio-capture: default output unavailable\n", stderr)
+  exit(1)
+}
+
+guard let blackholeDevice = devices.first(where: { getStringProperty($0, kAudioObjectPropertyName) == blackholeName }),
+      let blackholeUID = getStringProperty(blackholeDevice, kAudioDevicePropertyDeviceUID) else {
+  fputs("wizardry-audio-capture: BlackHole output unavailable\n", stderr)
+  exit(1)
+}
+
+if defaultUID == aggregateUID || defaultName == blackholeName {
+  print("wizardry-audio-capture: playback isolation route already selected")
+  exit(0)
+}
+
+if let existing = devices.first(where: { getStringProperty($0, kAudioDevicePropertyDeviceUID) == aggregateUID }) {
+  _ = setDefault(existing, kAudioHardwarePropertyDefaultOutputDevice)
+  _ = setDefault(existing, kAudioHardwarePropertyDefaultSystemOutputDevice)
+  print("wizardry-audio-capture: selected existing \(aggregateName)")
+  exit(0)
+}
+
+let subDevices: [[String: Any]] = [
+  [kAudioSubDeviceUIDKey as String: defaultUID],
+  [kAudioSubDeviceUIDKey as String: blackholeUID, kAudioSubDeviceDriftCompensationKey as String: true]
+]
+let description: [String: Any] = [
+  kAudioAggregateDeviceNameKey as String: aggregateName,
+  kAudioAggregateDeviceUIDKey as String: aggregateUID,
+  kAudioAggregateDeviceSubDeviceListKey as String: subDevices,
+  kAudioAggregateDeviceMasterSubDeviceKey as String: defaultUID,
+  kAudioAggregateDeviceIsPrivateKey as String: false,
+  kAudioAggregateDeviceIsStackedKey as String: true
+]
+var aggregateID = AudioObjectID(0)
+let createStatus = AudioHardwareCreateAggregateDevice(description as CFDictionary, &aggregateID)
+if createStatus != noErr {
+  fputs("wizardry-audio-capture: create aggregate failed: \(createStatus)\n", stderr)
+  exit(1)
+}
+_ = setDefault(aggregateID, kAudioHardwarePropertyDefaultOutputDevice)
+_ = setDefault(aggregateID, kAudioHardwarePropertyDefaultSystemOutputDevice)
+print("wizardry-audio-capture: created \(aggregateName) from \(defaultName) + \(blackholeName)")
+SWIFT
+
+  swift "$voice_audio_route_swift"
+  voice_audio_route_rc=$?
+  rm -f "$voice_audio_route_swift"
+  return "$voice_audio_route_rc"
 }
 
 voice_audio_has_pipewire() {
@@ -91,7 +244,7 @@ voice_audio_pipewire_running() {
 
 voice_audio_render_reference_available() {
   if voice_audio_is_macos; then
-    voice_audio_has_blackhole
+    voice_audio_macos_capture_has_blackhole
     return $?
   fi
 
@@ -101,6 +254,82 @@ voice_audio_render_reference_available() {
   fi
 
   return 1
+}
+
+voice_audio_capture_stream() {
+  voice_audio_capture_mode=${1-}
+  voice_audio_capture_duration=${2:-2}
+  voice_audio_capture_rate=${3:-16000}
+  voice_audio_capture_channels=${4:-1}
+  voice_audio_capture_output=${5:--}
+  voice_audio_capture_timeout=$((voice_audio_capture_duration + 5))
+  voice_audio_capture_ffmpeg=$(voice_audio_ffmpeg_command) || {
+    printf '%s\n' "wizardry-audio-capture: ffmpeg is unavailable" >&2
+    return 1
+  }
+
+  case "$voice_audio_capture_mode" in
+    mic|render) ;;
+    *)
+      printf '%s\n' "wizardry-audio-capture: expected mode mic or render" >&2
+      return 2
+      ;;
+  esac
+
+  if [ "$voice_audio_capture_mode" = render ] && ! voice_audio_render_reference_available; then
+    printf '%s\n' "wizardry-audio-capture: render-reference capture is unavailable" >&2
+    return 1
+  fi
+
+  case "$(voice_audio_uname_s)" in
+    Darwin)
+      if [ "$voice_audio_capture_mode" = mic ]; then
+        voice_audio_capture_input=${WIZARDRY_VOICE_AUDIO_MIC_INPUT:-:0}
+      else
+        voice_audio_capture_input=${WIZARDRY_VOICE_AUDIO_RENDER_INPUT:-:BlackHole 2ch}
+      fi
+      voice_audio_capture_format=avfoundation
+      ;;
+    Linux)
+      voice_audio_capture_format=pulse
+      if [ "$voice_audio_capture_mode" = mic ]; then
+        voice_audio_capture_input=${WIZARDRY_VOICE_AUDIO_MIC_INPUT:-default}
+      else
+        voice_audio_capture_input=${WIZARDRY_VOICE_AUDIO_RENDER_INPUT:-@DEFAULT_MONITOR@}
+      fi
+      ;;
+    *)
+      printf '%s\n' "wizardry-audio-capture: platform is not supported" >&2
+      return 1
+      ;;
+  esac
+
+  if command -v timeout >/dev/null 2>&1; then
+    timeout "$voice_audio_capture_timeout" "$voice_audio_capture_ffmpeg" -nostdin -hide_banner -loglevel error \
+      -f "$voice_audio_capture_format" -i "$voice_audio_capture_input" \
+      -t "$voice_audio_capture_duration" -ac "$voice_audio_capture_channels" -ar "$voice_audio_capture_rate" \
+      -f wav -y "$voice_audio_capture_output"
+    return $?
+  fi
+
+  "$voice_audio_capture_ffmpeg" -nostdin -hide_banner -loglevel error \
+    -f "$voice_audio_capture_format" -i "$voice_audio_capture_input" \
+    -t "$voice_audio_capture_duration" -ac "$voice_audio_capture_channels" -ar "$voice_audio_capture_rate" \
+    -f wav -y "$voice_audio_capture_output" &
+  voice_audio_capture_pid=$!
+  voice_audio_capture_started=$(date +%s 2>/dev/null || printf '0')
+  while kill -0 "$voice_audio_capture_pid" 2>/dev/null; do
+    voice_audio_capture_now=$(date +%s 2>/dev/null || printf '0')
+    if [ $((voice_audio_capture_now - voice_audio_capture_started)) -gt "$voice_audio_capture_timeout" ]; then
+      kill -TERM "$voice_audio_capture_pid" 2>/dev/null || true
+      sleep 0.2
+      kill -KILL "$voice_audio_capture_pid" 2>/dev/null || true
+      wait "$voice_audio_capture_pid" 2>/dev/null || true
+      return 124
+    fi
+    sleep 0.1
+  done
+  wait "$voice_audio_capture_pid"
 }
 
 voice_audio_status_json() {
@@ -116,10 +345,16 @@ voice_audio_status_json() {
     supported=true
     adapter=blackhole
     installable=blackhole
-    if voice_audio_has_blackhole; then
+    if voice_audio_macos_capture_has_blackhole && voice_audio_macos_render_route_active; then
       render_reference=true
       state=active
       message="BlackHole render-reference capture is available."
+    elif voice_audio_macos_capture_has_blackhole; then
+      state=degraded
+      message="BlackHole is visible, but playback is not routed through Wizardry Playback Isolation."
+    elif voice_audio_has_blackhole; then
+      state=degraded
+      message="BlackHole is installed but no BlackHole capture device is visible yet."
     else
       state=degraded
       message="Install BlackHole from Arcana to enable playback isolation."

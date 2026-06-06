@@ -6,11 +6,11 @@ case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
 Usage: wizardry-audio-capture --status
-       wizardry-audio-capture --mode mic
-       wizardry-audio-capture --mode render
+       wizardry-audio-capture --ensure-render-route
+       wizardry-audio-capture --mode mic [--duration SECONDS] [--rate HZ] [--channels N] [--output PATH|-]
+       wizardry-audio-capture --mode render [--duration SECONDS] [--rate HZ] [--channels N] [--output PATH|-]
 
 Reports availability of local microphone and render-reference capture.
-Streaming modes are reserved for the shared Wizardry audio isolation core.
 USAGE
   exit 0
   ;;
@@ -25,12 +25,46 @@ case "${1-}" in
   --status|"")
     voice_audio_status_json
     ;;
+  --ensure-render-route)
+    voice_audio_ensure_macos_blackhole_route
+    ;;
   --mode)
     mode=${2-}
     case "$mode" in
       mic|render)
-        printf '%s\n' "wizardry-audio-capture: streaming mode '$mode' is not implemented yet" >&2
-        exit 1
+        shift 2
+        duration=2
+        rate=16000
+        channels=1
+        output=-
+        while [ "$#" -gt 0 ]; do
+          case "${1-}" in
+            --duration)
+              duration=${2-}
+              shift 2
+              ;;
+            --rate)
+              rate=${2-}
+              shift 2
+              ;;
+            --channels)
+              channels=${2-}
+              shift 2
+              ;;
+            --output)
+              output=${2-}
+              shift 2
+              ;;
+            *)
+              printf '%s\n' "wizardry-audio-capture: unknown stream option '$1'" >&2
+              exit 2
+              ;;
+          esac
+        done
+        case "$duration" in ''|*[!0-9]*) printf '%s\n' "wizardry-audio-capture: duration must be a positive integer" >&2; exit 2 ;; esac
+        case "$rate" in ''|*[!0-9]*) printf '%s\n' "wizardry-audio-capture: rate must be a positive integer" >&2; exit 2 ;; esac
+        case "$channels" in ''|*[!0-9]*) printf '%s\n' "wizardry-audio-capture: channels must be a positive integer" >&2; exit 2 ;; esac
+        voice_audio_capture_stream "$mode" "$duration" "$rate" "$channels" "$output"
         ;;
       *)
         printf '%s\n' "wizardry-audio-capture: expected --mode mic or --mode render" >&2
