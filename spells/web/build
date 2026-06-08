@@ -144,6 +144,17 @@ strip_dynamic_title_block() {
   mv "$tmp" "$file"
 }
 
+files_equal() {
+  left_file=$1
+  right_file=$2
+  [ -f "$left_file" ] || return 1
+  [ -f "$right_file" ] || return 1
+  left_sum=$(cksum "$left_file" 2>/dev/null | awk '{ print $1 " " $2 }')
+  right_sum=$(cksum "$right_file" 2>/dev/null | awk '{ print $1 " " $2 }')
+  [ -n "$left_sum" ] || return 1
+  [ "$left_sum" = "$right_sum" ]
+}
+
 append_local_static_cache_bust() {
   html_file=$1
   cache_token=${2-}
@@ -155,7 +166,7 @@ append_local_static_cache_bust() {
     -e "s#(href|src)=\"(/static/[^\"]+\\.(css|js))(\\?v=[^\"]*)?\"#\1=\"\2?v=$cache_token\"#g" \
     -e "s#(href|src)='(/static/[^']+\\.(css|js))(\\?v=[^']*)?'#\1='\2?v=$cache_token'#g" \
     "$html_file" > "$tmp_html"
-  if cmp -s "$html_file" "$tmp_html"; then
+  if files_equal "$html_file" "$tmp_html"; then
     rm -f "$tmp_html"
     return 0
   fi
@@ -237,7 +248,7 @@ page_signature_matches() {
   signature_candidate=$1
   signature_stored=$2
   [ -f "$signature_stored" ] || return 1
-  cmp -s "$signature_candidate" "$signature_stored"
+  files_equal "$signature_candidate" "$signature_stored"
 }
 
 build_spell_signature_path() {
