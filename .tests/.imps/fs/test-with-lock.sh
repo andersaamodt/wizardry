@@ -32,7 +32,7 @@ SH
   chmod +x "$tmpdir/flock"
 
   run_cmd env LOCK_LOG="$log_file" PATH="$tmpdir:/bin" \
-    "$ROOT_DIR/spells/.imps/fs/with-lock" "$lock_file" sh -c 'printf "ok\n"'
+    "$ROOT_DIR/spells/.imps/fs/with-lock" "$lock_file" /bin/sh -c 'printf "ok\n"'
   assert_success || return 1
   assert_output_contains "ok" || return 1
   assert_file_contains "$log_file" "$lock_file" || return 1
@@ -52,8 +52,17 @@ shift
 SH
   chmod +x "$tmpdir/lockf"
 
-  run_cmd env LOCK_LOG="$log_file" PATH="$tmpdir:/bin" \
-    "$ROOT_DIR/spells/.imps/fs/with-lock" "$lock_file" sh -c 'printf "ok\n"'
+  cat >"$tmpdir/run-lockf-fallback" <<SH
+#!/bin/sh
+LOCK_LOG=$log_file
+export LOCK_LOG
+PATH=$tmpdir
+export PATH
+exec "$ROOT_DIR/spells/.imps/fs/with-lock" "$lock_file" /bin/sh -c 'printf "ok\\n"'
+SH
+  chmod +x "$tmpdir/run-lockf-fallback"
+
+  run_cmd "$tmpdir/run-lockf-fallback"
   assert_success || return 1
   assert_output_contains "ok" || return 1
   assert_file_contains "$log_file" "$lock_file" || return 1

@@ -1,4 +1,5 @@
 #!/bin/sh
+# COMPILED_UNSUPPORTED: relies on interactive MUD state helpers
 # Behavioral cases:
 # - copy-player-key shows usage
 # - copy-player-key requires PLAYER

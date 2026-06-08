@@ -1,6 +1,19 @@
 #!/bin/sh
 # Shared helpers for the SimpleX CLI arcanum.
 
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: simplex-chat-common
+
+Provides shared helper functions for the SimpleX CLI arcanum.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
 simplex_chat_root_dir() {
   if [ -n "${WIZARDRY_SIMPLEX_ROOT-}" ]; then
     printf '%s\n' "$WIZARDRY_SIMPLEX_ROOT"
@@ -38,7 +51,11 @@ simplex_chat_link_path() {
 }
 
 simplex_chat_release_api_url() {
-  printf '%s\n' "${WIZARDRY_SIMPLEX_RELEASE_API_URL:-https://api.github.com/repos/simplex-chat/simplex-chat/releases/latest}"
+  simplex_chat_default_release_api_url=https://api.github.com/repos
+  simplex_chat_default_release_api_url=$simplex_chat_default_release_api_url/simplex-chat
+  simplex_chat_default_release_api_url=$simplex_chat_default_release_api_url/simplex-chat
+  simplex_chat_default_release_api_url=$simplex_chat_default_release_api_url/releases/latest
+  printf '%s\n' "${WIZARDRY_SIMPLEX_RELEASE_API_URL:-$simplex_chat_default_release_api_url}"
 }
 
 simplex_chat_platform_os() {
@@ -110,9 +127,14 @@ simplex_chat_config_set() {
   mkdir -p "$(dirname "$simplex_chat_config_file")"
   simplex_chat_config_tmp=$(mktemp "${TMPDIR:-/tmp}/simplex-chat-conf.XXXXXX")
   if [ -f "$simplex_chat_config_file" ]; then
-    awk -F= -v wanted="$simplex_chat_config_key" '$1 != wanted' "$simplex_chat_config_file" >"$simplex_chat_config_tmp"
+    awk -F= \
+      -v wanted="$simplex_chat_config_key" \
+      '$1 != wanted' \
+      "$simplex_chat_config_file" >"$simplex_chat_config_tmp"
   fi
-  printf '%s=%s\n' "$simplex_chat_config_key" "$simplex_chat_config_value" >>"$simplex_chat_config_tmp"
+  printf '%s=%s\n' \
+    "$simplex_chat_config_key" \
+    "$simplex_chat_config_value" >>"$simplex_chat_config_tmp"
   mv "$simplex_chat_config_tmp" "$simplex_chat_config_file"
 }
 
@@ -134,7 +156,9 @@ simplex_chat_fetch_url_to_file() {
     simplex_chat_curl_retry=${WIZARDRY_SIMPLEX_CURL_RETRY:-3}
     simplex_chat_curl_speed_limit=${WIZARDRY_SIMPLEX_CURL_SPEED_LIMIT:-256}
     simplex_chat_curl_speed_time=${WIZARDRY_SIMPLEX_CURL_SPEED_TIME:-180}
-    if simplex_chat_should_parallel_download "$simplex_chat_fetch_url" "$simplex_chat_fetch_expected_size"; then
+    if simplex_chat_should_parallel_download \
+      "$simplex_chat_fetch_url" \
+      "$simplex_chat_fetch_expected_size"; then
       if simplex_chat_fetch_url_to_file_parallel \
         "$simplex_chat_fetch_url" \
         "$simplex_chat_fetch_output" \
@@ -239,7 +263,11 @@ simplex_chat_download_range() {
   simplex_chat_range_tmp="$simplex_chat_range_output.download"
   simplex_chat_range_start=${simplex_chat_range_spec%-*}
   simplex_chat_range_end=${simplex_chat_range_spec#*-}
-  if [ -f "$simplex_chat_range_output" ] && [ "$(simplex_chat_file_size "$simplex_chat_range_output")" = "$simplex_chat_range_expected" ]; then
+  simplex_chat_range_output_size=0
+  if [ -f "$simplex_chat_range_output" ]; then
+    simplex_chat_range_output_size=$(simplex_chat_file_size "$simplex_chat_range_output")
+  fi
+  if [ "$simplex_chat_range_output_size" = "$simplex_chat_range_expected" ]; then
     return 0
   fi
   if [ -f "$simplex_chat_range_tmp" ]; then
@@ -297,11 +325,13 @@ simplex_chat_download_range() {
       rm -f "$simplex_chat_range_tmp"
       return 1
     fi
-    if [ "$simplex_chat_range_curl_ok" = "0" ] && [ "$simplex_chat_range_no_progress" -ge 3 ]; then
+    if [ "$simplex_chat_range_curl_ok" = "0" ] &&
+      [ "$simplex_chat_range_no_progress" -ge 3 ]; then
       return 1
     fi
   done
-  if [ "$(simplex_chat_file_size "$simplex_chat_range_tmp")" != "$simplex_chat_range_expected" ]; then
+  simplex_chat_range_tmp_size=$(simplex_chat_file_size "$simplex_chat_range_tmp")
+  if [ "$simplex_chat_range_tmp_size" != "$simplex_chat_range_expected" ]; then
     rm -f "$simplex_chat_range_tmp"
     return 1
   fi
@@ -332,22 +362,34 @@ simplex_chat_fetch_url_to_file_parallel() {
   if [ "$simplex_chat_parallel_remaining" -lt "$simplex_chat_parallel_jobs" ]; then
     simplex_chat_parallel_jobs=$simplex_chat_parallel_remaining
   fi
-  simplex_chat_parallel_segment=$(((simplex_chat_parallel_remaining + simplex_chat_parallel_jobs - 1) / simplex_chat_parallel_jobs))
+  simplex_chat_parallel_numerator=$((simplex_chat_parallel_remaining + simplex_chat_parallel_jobs))
+  simplex_chat_parallel_numerator=$((simplex_chat_parallel_numerator - 1))
+  simplex_chat_parallel_segment=$((simplex_chat_parallel_numerator / simplex_chat_parallel_jobs))
   simplex_chat_parallel_prefix="$simplex_chat_parallel_output"
-  simplex_chat_parallel_chunk_base="$simplex_chat_parallel_output.part.$simplex_chat_parallel_current.$simplex_chat_parallel_jobs"
+  simplex_chat_parallel_chunk_base=$(
+    printf '%s.part.%s.%s\n' \
+      "$simplex_chat_parallel_output" \
+      "$simplex_chat_parallel_current" \
+      "$simplex_chat_parallel_jobs"
+  )
   simplex_chat_parallel_failed=0
   simplex_chat_parallel_pids=
   simplex_chat_parallel_job=1
   simplex_chat_parallel_start=$simplex_chat_parallel_current
 
   while [ "$simplex_chat_parallel_job" -le "$simplex_chat_parallel_jobs" ]; do
-    simplex_chat_parallel_end=$((simplex_chat_parallel_start + simplex_chat_parallel_segment - 1))
+    simplex_chat_parallel_end=$((simplex_chat_parallel_start + simplex_chat_parallel_segment))
+    simplex_chat_parallel_end=$((simplex_chat_parallel_end - 1))
     if [ "$simplex_chat_parallel_end" -ge "$simplex_chat_parallel_size" ]; then
       simplex_chat_parallel_end=$((simplex_chat_parallel_size - 1))
     fi
     simplex_chat_parallel_expected=$((simplex_chat_parallel_end - simplex_chat_parallel_start + 1))
     simplex_chat_parallel_chunk="$simplex_chat_parallel_chunk_base.$simplex_chat_parallel_job"
-    if [ -f "$simplex_chat_parallel_chunk" ] && [ "$(simplex_chat_file_size "$simplex_chat_parallel_chunk")" = "$simplex_chat_parallel_expected" ]; then
+    simplex_chat_parallel_chunk_size=0
+    if [ -f "$simplex_chat_parallel_chunk" ]; then
+      simplex_chat_parallel_chunk_size=$(simplex_chat_file_size "$simplex_chat_parallel_chunk")
+    fi
+    if [ "$simplex_chat_parallel_chunk_size" = "$simplex_chat_parallel_expected" ]; then
       :
     else
       rm -f "$simplex_chat_parallel_chunk"
@@ -385,7 +427,10 @@ simplex_chat_fetch_url_to_file_parallel() {
     cat "$simplex_chat_parallel_chunk" >>"$simplex_chat_parallel_assembled" || return 1
     simplex_chat_parallel_job=$((simplex_chat_parallel_job + 1))
   done
-  if [ "$(simplex_chat_file_size "$simplex_chat_parallel_assembled")" != "$simplex_chat_parallel_size" ]; then
+  simplex_chat_parallel_assembled_size=$(
+    simplex_chat_file_size "$simplex_chat_parallel_assembled"
+  )
+  if [ "$simplex_chat_parallel_assembled_size" != "$simplex_chat_parallel_size" ]; then
     rm -f "$simplex_chat_parallel_assembled"
     return 1
   fi
@@ -438,8 +483,12 @@ simplex_chat_validate_binary() {
 }
 
 simplex_chat_binary_resolved() {
-  simplex_chat_configured=$(simplex_chat_config_get "$(simplex_chat_install_file)" binary_path 2>/dev/null || printf '')
-  if [ -n "$simplex_chat_configured" ] && simplex_chat_validate_binary "$simplex_chat_configured"; then
+  simplex_chat_configured=$(
+    simplex_chat_config_get "$(simplex_chat_install_file)" binary_path 2>/dev/null ||
+      printf ''
+  )
+  if [ -n "$simplex_chat_configured" ] &&
+    simplex_chat_validate_binary "$simplex_chat_configured"; then
     printf '%s\n' "$simplex_chat_configured"
     return 0
   fi
@@ -454,11 +503,15 @@ simplex_chat_binary_resolved() {
     return 0
   fi
   simplex_chat_path=$(command -v simplex-chat 2>/dev/null || printf '')
-  if [ -n "$simplex_chat_path" ] && simplex_chat_validate_binary "$simplex_chat_path"; then
+  if [ -n "$simplex_chat_path" ] &&
+    simplex_chat_validate_binary "$simplex_chat_path"; then
     printf '%s\n' "$simplex_chat_path"
     return 0
   fi
-  for simplex_chat_candidate in /usr/local/bin/simplex-chat /opt/homebrew/bin/simplex-chat /usr/bin/simplex-chat; do
+  for simplex_chat_candidate in \
+    /usr/local/bin/simplex-chat \
+    /opt/homebrew/bin/simplex-chat \
+    /usr/bin/simplex-chat; do
     if simplex_chat_validate_binary "$simplex_chat_candidate"; then
       printf '%s\n' "$simplex_chat_candidate"
       return 0

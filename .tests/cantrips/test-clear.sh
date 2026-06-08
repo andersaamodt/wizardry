@@ -1,4 +1,5 @@
 #!/bin/sh
+# COMPILED_UNSUPPORTED: inspects captured terminal-control output
 # Tests for the clear spell
 # - clear prints usage
 # - clear scrolls content off-screen by printing newlines

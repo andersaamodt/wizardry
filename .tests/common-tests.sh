@@ -1027,9 +1027,11 @@ divination/detect-rc-file
 .arcana/lightning/generate-lightning-hsm-secret
 .arcana/bitcoin/generate-bitcoin-wallet
 .arcana/bitcoin/install-bitcoin
+.arcana/openstreetmaps/install-openstreetmaps
 .arcana/web-wizardry/install-web-pandoc
 .arcana/web-wizardry/uninstall-web-pandoc
 .arcana/crossposting/crossposting-common
+.arcana/simplex-chat/simplex-chat-common
 .arcana/docker/stop-docker-daemon
 .arcana/docker/is-docker-daemon-running
 .arcana/docker/docker-menu
@@ -1338,6 +1340,7 @@ test_spells_have_limited_flags() {
     system/pocket-dimension
     .wizardry/validate-spells
     web/site-autorebuild
+    web/configure-nginx
     .imps/test/boot/stub-xattr
   "
   
@@ -1743,7 +1746,7 @@ test_spells_source_env_clear_after_set_eu() {
       wards/banish|spellcraft/compile-spell|spellcraft/doppelganger) return ;;
       # Installer/daemon spells intentionally capture supported env overrides
       # or locate env-clear before sourcing it.
-      web/install-nostril|web/install-syncthing|web/install-supercollider|web/uninstall-supercollider|web/install-pandoc|web/run-site-daemon) return ;;
+      web/install-nostril|web/install-syncthing|web/install-supercollider|web/uninstall-supercollider|web/install-pandoc|web/run-site-daemon|divination/eye|divination/eyed) return ;;
       # Scripts that need PATH setup before env-clear to find it
       system/test-magic|.wizardry/test-magic|system/test-spell|.wizardry/test-spell|system/verify-posix|.wizardry/verify-posix|spellcraft/lint-magic|enchant/enchant|.wizardry/generate-glosses) return ;;
       # System maintenance spells (standalone, no env-clear needed)
@@ -2034,6 +2037,49 @@ EOF
   return 0
 }
 
+test_web_site_helpers_reject_path_shaped_names() {
+  if [ "${WIZARDRY_TEST_COMPILED-0}" = "1" ]; then
+    return 0
+  fi
+
+  tmpdir=$(make_tempdir)
+  web_root="$tmpdir/sites"
+  escape_dir="$tmpdir/escape"
+  mkdir -p "$web_root" "$escape_dir/nginx"
+  cat > "$escape_dir/site.conf" <<EOF
+site-name=escape
+site-user=$(id -un)
+https=true
+domain=example.com
+port=8080
+EOF
+
+  for spell in \
+    check-https-status \
+    disable-site-daemon \
+    enable-site-daemon \
+    https \
+    is-site-daemon-enabled \
+    renew-https \
+    restart-site \
+    run-site-daemon \
+    serve-site \
+    setup-https \
+    site-menu \
+    site-status
+  do
+    WEB_WIZARDRY_ROOT="$web_root" WIZARDRY_SITES_DIR="$web_root" \
+      run_spell "spells/web/$spell" ../escape
+    assert_failure || return 1
+    if ! assert_error_contains "invalid site name"; then
+      TEST_FAILURE_REASON="$spell did not reject a path-shaped site name"
+      return 1
+    fi
+  done
+
+  rm -rf "$tmpdir"
+}
+
 # --- Test: common-tests shows help ---
 # Verify that common-tests.sh responds to --help flag
 test_common_tests_shows_help() {
@@ -2102,6 +2148,8 @@ run_test_case "scripts have set -eu early" test_scripts_have_set_eu_early
 run_test_case "spells source env-clear after set -eu" test_spells_source_env_clear_after_set_eu
 run_test_case "warn about parent directory references" test_warn_parent_dir_references
 run_test_case "test output streams line-by-line" test_output_streams_line_by_line
+run_test_case "web site helpers reject path-shaped names" \
+  test_web_site_helpers_reject_path_shaped_names
 
 # --- Check: Stub imps have correct self-execute patterns ---
 # Stub imps must match both */stub-name and */name for symlink usage

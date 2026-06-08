@@ -1,0 +1,59 @@
+#!/bin/sh
+
+# Present webcam tooling install toggles.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: webcam-menu
+
+Displays install/uninstall toggles for FFmpeg and go2rtc, plus Eye launchers.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+. colors
+
+if ! require menu "The webcam-menu needs the 'menu' command to present options."; then
+  exit 1
+fi
+
+trap 'exit 130' INT
+trap 'exit 0' TERM
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+
+while :; do
+  unset menu_status
+  set --
+
+  if command -v eye >/dev/null 2>&1; then
+    set -- "$@" "Open Eye grid%eye web"
+  fi
+
+  if "$script_dir/is-ffmpeg-installed"; then
+    set -- "$@" "[X] FFmpeg%$script_dir/uninstall-ffmpeg"
+  else
+    set -- "$@" "[ ] FFmpeg%$script_dir/install-ffmpeg"
+  fi
+
+  if "$script_dir/is-go2rtc-installed"; then
+    set -- "$@" "[X] go2rtc%$script_dir/uninstall-go2rtc"
+  else
+    set -- "$@" "[ ] go2rtc%$script_dir/install-go2rtc"
+  fi
+
+  exit_label=$(exit-label)
+  set -- "$@" "${exit_label}%kill -TERM \$PPID"
+
+  menu "Webcam: $($script_dir/webcam-status)" "$@" || menu_status=$?
+  menu_status=${menu_status:-0}
+  if [ "$menu_status" -eq 130 ]; then
+    exit 0
+  fi
+done

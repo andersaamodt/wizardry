@@ -9,7 +9,15 @@ done
 
 resolve_build_template_root() {
   root_parent=$(dirname "$ROOT_DIR")
-  for candidate in "$ROOT_DIR/web" "$ROOT_DIR/spells/web" "$root_parent/git/wizardry-apps/web" "$HOME/git/wizardry-apps/web"; do
+  for candidate in \
+    "$ROOT_DIR/templates/web" \
+    "$ROOT_DIR/web" \
+    "$ROOT_DIR/spells/web" \
+    "$root_parent/git/wizardry-apps/templates/web" \
+    "$root_parent/git/wizardry-apps/web" \
+    "$HOME/git/wizardry-apps/templates/web" \
+    "$HOME/git/wizardry-apps/web"
+  do
     [ -d "$candidate" ] || continue
     for template_path in "$candidate"/*; do
       [ -d "$template_path/pages" ] || continue

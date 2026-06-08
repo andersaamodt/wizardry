@@ -2,6 +2,8 @@
 
 # Shared helper library for crossposting arcana spells.
 
+set -eu
+
 crossposting_has_cmd() {
   command -v "$1" >/dev/null 2>&1
 }

@@ -24,16 +24,11 @@ script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 
 if command -v colors >/dev/null 2>&1; then
   . colors
-else
-  RESET=""
-  THEME_SUCCESS=""
-  THEME_ERROR=""
-  GREY=""
 fi
-: "${RESET:=}"
-: "${THEME_SUCCESS:=}"
-: "${THEME_ERROR:=}"
-: "${GREY:=}"
+status_reset=${RESET-}
+status_theme_success=${THEME_SUCCESS-}
+status_theme_error=${THEME_ERROR-}
+status_grey=${GREY-}
 
 cmd=${1-}
 if simplex_chat_binary=$(simplex_chat_binary_resolved 2>/dev/null); then
@@ -41,11 +36,14 @@ if simplex_chat_binary=$(simplex_chat_binary_resolved 2>/dev/null); then
     printf '%s\n' "$simplex_chat_binary"
     exit 0
   fi
-  simplex_chat_version=$(simplex_chat_config_get "$(simplex_chat_install_file)" version 2>/dev/null || printf '')
+  simplex_chat_version=$(
+    simplex_chat_config_get "$(simplex_chat_install_file)" version 2>/dev/null ||
+      printf ''
+  )
   if [ -n "$simplex_chat_version" ]; then
-    printf '%sinstalled %s%s\n' "$THEME_SUCCESS" "$simplex_chat_version" "$RESET"
+    printf '%sinstalled %s%s\n' "$status_theme_success" "$simplex_chat_version" "$status_reset"
   else
-    printf '%sinstalled%s\n' "$THEME_SUCCESS" "$RESET"
+    printf '%sinstalled%s\n' "$status_theme_success" "$status_reset"
   fi
   exit 0
 fi
@@ -55,7 +53,7 @@ if [ "$cmd" = "--path" ]; then
 fi
 
 if [ -f "$(simplex_chat_install_file)" ]; then
-  printf '%sinstalled, error%s\n' "$THEME_ERROR" "$RESET"
+  printf '%sinstalled, error%s\n' "$status_theme_error" "$status_reset"
 else
-  printf '%snot installed%s\n' "$GREY" "$RESET"
+  printf '%snot installed%s\n' "$status_grey" "$status_reset"
 fi

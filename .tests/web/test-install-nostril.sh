@@ -33,6 +33,13 @@ EOF
 
 test_failure_without_supported_package_manager() {
   tmp_bin=$(temp-dir install-nostril-bin)
+  for tool in apt-get autoreconf brew cc curl dnf git make; do
+    cat > "$tmp_bin/$tool" <<'EOF'
+#!/bin/sh
+exit 1
+EOF
+    chmod +x "$tmp_bin/$tool"
+  done
   PATH="$tmp_bin:$WIZARDRY_IMPS_PATH:/usr/bin:/bin:/usr/sbin:/sbin" \
     run_spell spells/web/install-nostril
   assert_failure
@@ -68,9 +75,9 @@ while [ "$#" -gt 0 ]; do
 done
 case "$url" in
   https://api.github.com/repos/fiatjaf/nak/releases/latest)
-    printf '%s\n' '{"assets":[{"browser_download_url":"https://github.com/fiatjaf/nak/releases/download/v0.19.0/nak-v0.19.0-darwin-arm64"}]}'
+    printf '%s\n' '{"assets":[{"browser_download_url":"https://github.com/fiatjaf/nak/releases/download/v0.19.0/nak-v0.19.0-darwin-arm64"},{"browser_download_url":"https://github.com/fiatjaf/nak/releases/download/v0.19.0/nak-v0.19.0-linux-amd64"},{"browser_download_url":"https://github.com/fiatjaf/nak/releases/download/v0.19.0/nak-v0.19.0-linux-arm64"}]}'
     ;;
-  https://github.com/fiatjaf/nak/releases/download/v0.19.0/nak-v0.19.0-darwin-arm64)
+  https://github.com/fiatjaf/nak/releases/download/v0.19.0/nak-v0.19.0-darwin-arm64|https://github.com/fiatjaf/nak/releases/download/v0.19.0/nak-v0.19.0-linux-amd64|https://github.com/fiatjaf/nak/releases/download/v0.19.0/nak-v0.19.0-linux-arm64)
     cat > "$out_file" <<'EOS'
 #!/bin/sh
 exit 0
@@ -83,15 +90,13 @@ esac
 EOF
   chmod +x "$tmp_bin/nostril" "$tmp_bin/curl"
 
-  CURL="$tmp_bin/curl" XDG_BIN_HOME="$tmp_bin" \
+  run_cmd env \
+    CURL="$tmp_bin/curl" \
+    XDG_BIN_HOME="$tmp_bin" \
     PATH="$tmp_bin:$WIZARDRY_IMPS_PATH:/usr/bin:/bin:/usr/sbin:/sbin" \
-    run_spell spells/web/install-nostril
+    sh -c '"$ROOT_DIR/spells/web/install-nostril" && test -x "$XDG_BIN_HOME/nak"'
   assert_success
   assert_output_contains "Installed Nostr server tooling"
-  [ -x "$tmp_bin/nak" ] || {
-    TEST_FAILURE_REASON="nak binary was not installed from release"
-    return 1
-  }
 
   rm -rf "$tmp_bin"
 }
@@ -136,11 +141,21 @@ case "$url" in
 esac
 EOF
   chmod +x "$tmp_bin/nostril" "$tmp_bin/curl"
+  for tool in apt-get autoreconf brew cc dnf git go make; do
+    cat > "$tmp_bin/$tool" <<'EOF'
+#!/bin/sh
+exit 1
+EOF
+    chmod +x "$tmp_bin/$tool"
+  done
 
   bad_marker="$tmp_bin/bad-download"
-  CURL="$tmp_bin/curl" XDG_BIN_HOME="$tmp_bin" \
+  run_cmd env \
+    CURL="$tmp_bin/curl" \
+    XDG_BIN_HOME="$tmp_bin" \
     PATH="$tmp_bin:$WIZARDRY_IMPS_PATH:/usr/bin:/bin:/usr/sbin:/sbin" \
-    NAK_BAD_DOWNLOAD_MARKER="$bad_marker" run_spell spells/web/install-nostril
+    NAK_BAD_DOWNLOAD_MARKER="$bad_marker" \
+    "$ROOT_DIR/spells/web/install-nostril"
   assert_failure
   [ ! -e "$bad_marker" ] || {
     TEST_FAILURE_REASON="install-nostril downloaded an untrusted release URL"

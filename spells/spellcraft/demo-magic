@@ -232,7 +232,7 @@ demo_level() {
     8)
       printf 'Testing infrastructure proves wizardry can watch itself safely.\n'
 
-      if pocket-dimension --check >/dev/null 2>&1; then
+      if demo_run_spell pocket-dimension --check >/dev/null 2>&1; then
         printf 'pocket-dimension -> available\n'
         demonstrated="$demonstrated pocket-dimension"
       else
@@ -247,9 +247,9 @@ demo_level() {
         demonstrated="$demonstrated wizard-eyes"
       fi
 
-      if spellbook-store add hearth "jump-to-marker hearth" >/dev/null 2>&1; then
+      if demo_run_spell spellbook-store add hearth "jump-to-marker hearth" >/dev/null 2>&1; then
         printf 'spellbook-store:\n'
-        spellbook-store list 2>/dev/null | sed -n '1,2p'
+        demo_run_spell spellbook-store list 2>/dev/null | sed -n '1,2p'
         demonstrated="$demonstrated spellbook-store"
       fi
       ;;
@@ -268,7 +268,7 @@ demo_level() {
         demonstrated="$demonstrated look"
       fi
 
-      if SHELL=/bin/zsh check-cd-hook >/dev/null 2>&1; then
+      if SHELL=/bin/zsh demo_run_spell check-cd-hook >/dev/null 2>&1; then
         printf 'check-cd-hook -> installed\n'
         demonstrated="$demonstrated check-cd-hook"
       else
@@ -292,7 +292,7 @@ demo_level() {
         demonstrated="$demonstrated read-magic"
       fi
 
-      if file-to-folder "$ops_dir/brief.md" >/dev/null 2>&1; then
+      if demo_run_spell file-to-folder "$ops_dir/brief.md" >/dev/null 2>&1; then
         printf 'file-to-folder:\n'
         find "$ops_dir/brief.md" -maxdepth 2 -print | sort
         demonstrated="$demonstrated file-to-folder"
@@ -347,13 +347,14 @@ demo_level() {
       printf 'Configuration spells should be direct, atomic, and reversible.\n'
 
       config_file="$demo_workspace/demo.conf"
-      config set "$config_file" theme amber >/dev/null
-      printf 'config get -> %s\n' "$(config get "$config_file" theme)"
-      if config has "$config_file" theme >/dev/null 2>&1; then
+      if demo_run_spell config set "$config_file" theme amber >/dev/null 2>&1; then
+        printf 'config get -> %s\n' "$(demo_run_spell config get "$config_file" theme)"
+      fi
+      if demo_run_spell config has "$config_file" theme >/dev/null 2>&1; then
         printf 'config has -> present\n'
       fi
-      config del "$config_file" theme >/dev/null
-      if config has "$config_file" theme >/dev/null 2>&1; then
+      demo_run_spell config del "$config_file" theme >/dev/null 2>&1 || true
+      if demo_run_spell config has "$config_file" theme >/dev/null 2>&1; then
         printf 'config del -> still present\n'
       else
         printf 'config del -> removed\n'
@@ -504,13 +505,17 @@ demo_level() {
       task_file="$demo_workspace/checklist.txt"
       printf 'ritual\n' > "$task_file"
 
-      if check "$task_file" >/dev/null 2>&1; then
-        printf 'get-checked -> %s\n' "$(get-checked "$task_file" 2>/dev/null || printf '?')"
+      check_spell="$WIZARDRY_DIR/spells/tasks/check"
+      uncheck_spell="$WIZARDRY_DIR/spells/tasks/uncheck"
+      get_checked_spell="$WIZARDRY_DIR/spells/tasks/get-checked"
+
+      if sh "$check_spell" "$task_file" >/dev/null 2>&1; then
+        printf 'get-checked -> %s\n' "$(sh "$get_checked_spell" "$task_file" 2>/dev/null || printf '?')"
         demonstrated="$demonstrated check get-checked"
       fi
 
-      if uncheck "$task_file" >/dev/null 2>&1; then
-        printf 'get-checked -> %s\n' "$(get-checked "$task_file" 2>/dev/null || printf '?')"
+      if sh "$uncheck_spell" "$task_file" >/dev/null 2>&1; then
+        printf 'get-checked -> %s\n' "$(sh "$get_checked_spell" "$task_file" 2>/dev/null || printf '?')"
         demonstrated="$demonstrated uncheck"
       fi
       ;;

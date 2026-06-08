@@ -1,0 +1,19 @@
+#!/bin/sh
+
+# Remove the user-local go2rtc binary installed by install-go2rtc.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uninstall-go2rtc
+
+Removes ~/.local/bin/go2rtc when present.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+rm -f "$HOME/.local/bin/go2rtc"
+printf '%s\n' "Removed user-local go2rtc"

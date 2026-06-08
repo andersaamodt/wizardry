@@ -42,7 +42,7 @@ set -eu
 . env-clear
 unset site_autorebuild_dir site_autorebuild_imp_dir
 
-PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
+PATH=${PATH:+$PATH:}/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 action=status
 case "${1-}" in
@@ -201,12 +201,12 @@ else
 fi
 
 autorebuild_run_privileged() {
-  if [ "$(id -u 2>/dev/null || printf '1')" -eq 0 ]; then
-    "$@"
-    return $?
-  fi
   if command -v run_sudo_cmd >/dev/null 2>&1; then
     run_sudo_cmd "$@"
+    return $?
+  fi
+  if [ "$(id -u 2>/dev/null || printf '1')" -eq 0 ]; then
+    "$@"
     return $?
   fi
   if command -v sudo >/dev/null 2>&1; then

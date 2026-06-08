@@ -119,8 +119,9 @@ case "$0" in */has) _has "$@" ;; esac
 
 **Affected**:
 - `spells/.arcana/crossposting/crossposting-common`
+- `spells/.arcana/simplex-chat/simplex-chat-common`
 
-**Reason**: This file is a sourced helper library for crossposting arcana, not a castable spell. It is intentionally non-executable and exempt from spell help and function-count checks.
+**Reason**: These files are shared helper libraries for arcana subsystems rather than end-user workflow spells. They are exempt from the flat function-count check; `crossposting-common` remains intentionally non-executable, while `simplex-chat-common` keeps a minimal `--help` entrypoint for self-documentation.
 
 ### Installer and Daemon Env-Clear Placement
 
@@ -131,8 +132,10 @@ case "$0" in */has) _has "$@" ;; esac
 - `spells/web/uninstall-supercollider`
 - `spells/web/install-pandoc`
 - `spells/web/run-site-daemon`
+- `spells/divination/eye`
+- `spells/divination/eyed`
 
-**Reason**: These commands either capture supported environment overrides before environment clearing or locate `env-clear` through an absolute runtime path for daemon contexts where wizardry PATH setup is unavailable.
+**Reason**: These commands either capture supported environment overrides before environment clearing or locate `env-clear` through an absolute runtime path for daemon contexts where wizardry PATH setup is unavailable. `eye` and `eyed` must preserve `EYE_PROJECT_ROOT` long enough to delegate to an alternate Eye checkout.
 
 ### Menu Imps: Flag Arguments Allowed
 
@@ -455,7 +458,7 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 
 **Rule**: Spells should have no more than 3 flags (0-1 freely, 2-3 with warnings, 4+ requires exemption).
 
-**Status**: 2 exemptions documented
+**Status**: 3 exemptions documented
 
 **Exempted Spells**:
 - **`system/test-magic`** (4 flags: `--only`, `--list`, `--verbose`, `--profile`) - Test runner with multiple operational modes
@@ -478,6 +481,16 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
     - `--allow-write PATH`: Whitelist write access (repeatable, security control)
   - **Justification**: Sandboxing requires fine-grained security controls. Each flag serves a distinct security or debugging purpose. Removing any would compromise either security granularity or debuggability.
   - **Added**: 2026-01-05 - When reviewing flag discipline compliance
+
+- **`web/configure-nginx`** (4 flags: `--port`, `--domain`, `--domain-aliases`, `--https`) - Site reverse-proxy configuration generator
+  - **Reason**: Web infrastructure spell that needs independent host, alias, listener, and TLS controls when generating nginx configuration
+  - **Flags**:
+    - `--port PORT`: Select the backend listener port to proxy to
+    - `--domain DOMAIN`: Set the primary host name for the generated server block
+    - `--domain-aliases LIST`: Add extra hostnames to the same site configuration
+    - `--https`: Enable TLS-specific nginx output for Let's Encrypt backed hosting
+  - **Justification**: These options control distinct nginx concerns and are commonly combined in deployment setup. Folding them together would either obscure intent or require brittle positional parsing.
+  - **Added**: 2026-05-20 - Cleanup pass after test-file coverage expansion
 
 **Progress**: 57/57 spells refactored (100%) - 3 spells removed as obsolete
 

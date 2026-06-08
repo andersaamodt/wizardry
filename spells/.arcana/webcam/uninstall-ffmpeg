@@ -1,0 +1,19 @@
+#!/bin/sh
+
+# Uninstall FFmpeg using the system package manager when possible.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uninstall-ffmpeg
+
+Uninstalls FFmpeg through the active package manager when possible.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+"$script_dir/../core/manage-system-command" --uninstall ffmpeg ffmpeg

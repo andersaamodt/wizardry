@@ -1,4 +1,5 @@
 #!/bin/sh
+# COMPILED_UNSUPPORTED: exercises full source-tree demo orchestration
 
 set -eu
 
@@ -107,7 +108,7 @@ test_default_runs_all_levels() {
   assert_output_contains "main-menu --help -> Usage: . main-menu" || return 1
   assert_output_contains "Level 24: MUD Administration Menus" || return 1
   assert_output_contains "mud-menu --help -> Usage: . mud-menu" || return 1
-  assert_output_contains "Skipped: toggle-avatar, toggle-touch-hook" || return 1
+  assert_output_contains "Skipped: list-players, player-status, promote-admin, toggle-avatar, toggle-touch-hook" || return 1
   assert_output_contains "Level 25: Domain-Specific Menus" || return 1
   assert_output_contains "profile-tests --help -> Usage: profile-tests" || return 1
   assert_output_contains "Level 26: System Service Management" || return 1
