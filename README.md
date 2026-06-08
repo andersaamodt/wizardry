@@ -188,6 +188,7 @@ Parsing is deterministic and always resolves to the most specific command, and i
 | **spellcraft** | The writing of shell scripts. |
 | **taboo** / **transgress** | A dangerous operation and the justified, locally protected crossing of that operation. |
 | **threshold** | The point where untrusted input or imported metadata enters a trusted action path. |
+| **[theurgy](https://github.com/andersaamodt/theurgy)** | Enterprise-level wizardry: the wizardry ethos applied to professional native desktop apps and enterprise-level websites when pure shell fan-out is no longer enough. |
 | **tome** | A text file containing the contents of several other text files concatenated together, so a whole folder of spells can be sent or carried easily. |
 | **ward** | A protective spell for security or access control. |
 
