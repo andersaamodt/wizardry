@@ -225,7 +225,8 @@ write_page_dependency_signature() {
     append_dependency_signature nav "$signature_nav_file"
     append_dependency_signature footer "$signature_footer_file"
     append_dependency_signature head "$signature_head_file"
-    append_dependency_signature build-spell "$0"
+    signature_build_spell=$(build_spell_signature_path 2>/dev/null || printf '%s\n' "$0")
+    append_dependency_signature build-spell "$signature_build_spell"
     if [ "$signature_template" = "blog" ] && [ ! -f "$signature_footer_file" ]; then
       printf 'footer-default blog-v1\n'
     fi
@@ -237,6 +238,17 @@ page_signature_matches() {
   signature_stored=$2
   [ -f "$signature_stored" ] || return 1
   cmp -s "$signature_candidate" "$signature_stored"
+}
+
+build_spell_signature_path() {
+  case "$0" in
+    /*) printf '%s\n' "$0" ;;
+    *)
+      script_dir=$(CDPATH= cd -- "$(dirname "$0")" 2>/dev/null && pwd -P)
+      [ -n "$script_dir" ] || return 1
+      printf '%s/%s\n' "$script_dir" "$(basename "$0")"
+      ;;
+  esac
 }
 
 normalize_tags() {
