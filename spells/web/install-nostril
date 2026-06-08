@@ -201,7 +201,7 @@ install_nak_release_binary() {
   release_json_one_line=$(printf '%s' "$release_json" | tr '\n' ' ')
   download_url=$(printf '%s\n' "$release_json_one_line" | sed -n "s/.*\"browser_download_url\":[[:space:]]*\"\\([^\"]*nak-[^\"]*-${platform}\\)\".*/\\1/p" | head -n 1)
   [ -n "$download_url" ] || return 1
-  nak_download_url_is_safe "$download_url" "$platform" || return 1
+  nak_download_url_is_safe "$download_url" "$platform" || return 2
   : essence release-url "$download_url"
   : divine release-url "$download_url"
 
@@ -228,7 +228,10 @@ install_nak_binary() {
   fi
   if install_nak_release_binary; then
     return 0
+  else
+    install_nak_release_status=$?
   fi
+  [ "$install_nak_release_status" -eq 2 ] && return 1
   if ! has_cmd go; then
     return 1
   fi
