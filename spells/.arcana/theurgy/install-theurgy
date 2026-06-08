@@ -21,4 +21,3 @@ write_theurgy_wrappers
 say "Installed $theurgy_name"
 say "Home: $theurgy_home"
 say "Wrappers: $(user_bin_dir)"
-

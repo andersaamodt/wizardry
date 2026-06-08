@@ -40,4 +40,3 @@ while true; do
     "$exit_label%kill -TERM \$PPID" || menu_status=$?
   [ "$menu_status" -eq 130 ] && exit 0
 done
-

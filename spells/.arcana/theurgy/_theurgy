@@ -91,4 +91,3 @@ remove_theurgy() {
     rm -rf "$theurgy_home"
   fi
 }
-

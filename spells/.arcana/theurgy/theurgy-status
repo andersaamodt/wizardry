@@ -20,4 +20,3 @@ if is_theurgy_installed; then
 else
   printf 'not installed\n'
 fi
-

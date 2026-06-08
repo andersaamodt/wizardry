@@ -16,4 +16,3 @@ script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 . "$script_dir/_theurgy"
 
 is_theurgy_installed
-

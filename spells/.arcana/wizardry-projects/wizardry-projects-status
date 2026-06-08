@@ -40,4 +40,3 @@ elif [ "$installed" -eq "$total" ]; then
 else
   printf 'partial install\n'
 fi
-
