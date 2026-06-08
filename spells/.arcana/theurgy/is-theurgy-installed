@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# Return success when Theurgy is installed and wrapped.
+
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'

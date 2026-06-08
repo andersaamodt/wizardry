@@ -13,6 +13,14 @@ USAGE
   ;;
 esac
 
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+if ! command -v require-wizardry >/dev/null 2>&1; then
+  wizardry_dir=$(CDPATH= cd -- "$script_dir/../../.." && pwd -P)
+  PATH="$wizardry_dir/spells/.imps/sys:$wizardry_dir/spells/.imps/out:$PATH"
+  PATH="$wizardry_dir/spells/.imps/cond:$wizardry_dir/spells/.imps/menu:$PATH"
+  PATH="$wizardry_dir/spells/cantrips:$PATH"
+  export PATH WIZARDRY_DIR="$wizardry_dir"
+fi
 require-wizardry || exit 1
 
 set -eu
@@ -25,7 +33,6 @@ fi
 trap 'exit 130' INT
 trap 'exit 0' TERM
 
-script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 arcana_dir=$(CDPATH= cd -- "$script_dir/.." && pwd)
 
 while :; do

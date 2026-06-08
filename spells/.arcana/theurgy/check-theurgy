@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# Report whether Theurgy is installed.
+
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'

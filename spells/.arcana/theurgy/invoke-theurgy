@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# Ensure Theurgy is present before dependent workflows run.
+
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'

@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# Install Theurgy and expose its command wrappers.
+
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'

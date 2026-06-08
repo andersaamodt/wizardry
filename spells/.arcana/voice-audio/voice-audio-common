@@ -305,9 +305,11 @@ voice_audio_capture_stream() {
   esac
 
   if command -v timeout >/dev/null 2>&1; then
-    timeout "$voice_audio_capture_timeout" "$voice_audio_capture_ffmpeg" -nostdin -hide_banner -loglevel error \
+    timeout "$voice_audio_capture_timeout" "$voice_audio_capture_ffmpeg" \
+      -nostdin -hide_banner -loglevel error \
       -f "$voice_audio_capture_format" -i "$voice_audio_capture_input" \
-      -t "$voice_audio_capture_duration" -ac "$voice_audio_capture_channels" -ar "$voice_audio_capture_rate" \
+      -t "$voice_audio_capture_duration" \
+      -ac "$voice_audio_capture_channels" -ar "$voice_audio_capture_rate" \
       -f wav -y "$voice_audio_capture_output"
     return $?
   fi
@@ -320,7 +322,10 @@ voice_audio_capture_stream() {
   voice_audio_capture_started=$(date +%s 2>/dev/null || printf '0')
   while kill -0 "$voice_audio_capture_pid" 2>/dev/null; do
     voice_audio_capture_now=$(date +%s 2>/dev/null || printf '0')
-    if [ $((voice_audio_capture_now - voice_audio_capture_started)) -gt "$voice_audio_capture_timeout" ]; then
+    voice_audio_capture_elapsed=$(
+      printf '%s\n' $((voice_audio_capture_now - voice_audio_capture_started))
+    )
+    if [ "$voice_audio_capture_elapsed" -gt "$voice_audio_capture_timeout" ]; then
       kill -TERM "$voice_audio_capture_pid" 2>/dev/null || true
       sleep 0.2
       kill -KILL "$voice_audio_capture_pid" 2>/dev/null || true

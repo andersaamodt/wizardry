@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# Remove Theurgy and its command wrappers.
+
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'

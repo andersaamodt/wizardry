@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# Present Theurgy install, status, and removal actions.
+
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'

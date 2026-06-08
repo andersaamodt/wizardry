@@ -52,7 +52,8 @@ mkdir -p "$cache_dir"
 api_json="$cache_dir/blackhole-latest.json"
 pkg_path="$cache_dir/BlackHole2ch.pkg"
 
-curl -fsSL https://api.github.com/repos/ExistentialAudio/BlackHole/releases/latest -o "$api_json" || {
+blackhole_release_api=https://api.github.com/repos/ExistentialAudio/BlackHole/releases/latest
+curl -fsSL "$blackhole_release_api" -o "$api_json" || {
   printf '%s\n' "voice-audio: could not fetch BlackHole release metadata" >&2
   exit 1
 }
