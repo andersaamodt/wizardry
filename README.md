@@ -188,7 +188,7 @@ Parsing is deterministic and always resolves to the most specific command, and i
 | **spellcraft** | The writing of shell scripts. |
 | **taboo** / **transgress** | A dangerous operation and the justified, locally protected crossing of that operation. |
 | **threshold** | The point where untrusted input or imported metadata enters a trusted action path. |
-| **[theurgy](https://github.com/andersaamodt/theurgy)** | The art of drawing higher powers into worldly operation: a graver working than ordinary spellcraft, used when subtle forces must be embodied in durable, exacting form. |
+| **[theurgy](https://github.com/andersaamodt/theurgy)** | Institutional or divinely authorized magic: a graver working than ordinary spellcraft. |
 | **tome** | A text file containing the contents of several other text files concatenated together, so a whole folder of spells can be sent or carried easily. |
 | **ward** | A protective spell for security or access control. |
 
