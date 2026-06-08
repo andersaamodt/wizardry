@@ -55,14 +55,23 @@ fetch_url() {
 
 nak_download_url_is_safe() {
   url=${1-}
+  safe_platform=${2-}
+  [ -n "$safe_platform" ] || return 1
   case "$url" in
     *[[:space:]]*)
       return 1
       ;;
   esac
+  url_path=${url#https://}
+  [ "$url_path" != "$url" ] || return 1
+  case "$url_path" in
+    github.com/fiatjaf/nak/releases/download/*/nak-*-"$safe_platform")
+      return 0
+      ;;
+  esac
   case "$url" in
     https://github.com/fiatjaf/nak/releases/download/*)
-      return 0
+      return 1
       ;;
   esac
   return 1
@@ -192,7 +201,7 @@ install_nak_release_binary() {
   release_json_one_line=$(printf '%s' "$release_json" | tr '\n' ' ')
   download_url=$(printf '%s\n' "$release_json_one_line" | sed -n "s/.*\"browser_download_url\":[[:space:]]*\"\\([^\"]*nak-[^\"]*-${platform}\\)\".*/\\1/p" | head -n 1)
   [ -n "$download_url" ] || return 1
-  nak_download_url_is_safe "$download_url" || return 1
+  nak_download_url_is_safe "$download_url" "$platform" || return 1
   : essence release-url "$download_url"
   : divine release-url "$download_url"
 
