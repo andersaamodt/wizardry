@@ -74,7 +74,13 @@ while :; do
     if wizardry_apps_repo_installed && wizardry_apps_forge_available; then
       set -- "$@" "Launch Forge (compile + run)%$script_dir/launch-forge" "---"
     fi
-    set -- "$@" "$web_templates_toggle" "$apps_toggle" "$toggle_all" "$exit_item"
+    set -- "$@" \
+      "Theurgy%$script_dir/../theurgy/theurgy-menu" \
+      "---" \
+      "$web_templates_toggle" \
+      "$apps_toggle" \
+      "$toggle_all" \
+      "$exit_item"
     title="Install wizardry-apps:"
   fi
 

@@ -29,9 +29,13 @@ else
 fi
 
 installed=0
-total=2
+total=3
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+if "$script_dir/../theurgy/is-theurgy-installed" >/dev/null 2>&1; then
+  installed=$((installed + 1))
+fi
 
 for component in web-templates apps; do
   if "$script_dir/is-wizardry-apps-component-installed" "$component" >/dev/null 2>&1; then

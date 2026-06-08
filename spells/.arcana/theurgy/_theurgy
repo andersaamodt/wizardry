@@ -1,0 +1,94 @@
+#!/bin/sh
+
+set -eu
+
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
+export PATH
+
+theurgy_name='Theurgy'
+theurgy_repo_url=${THEURGY_REPO_URL:-https://github.com/andersaamodt/theurgy.git}
+theurgy_home=${THEURGY_HOME:-${HOME:?}/theurgy}
+theurgy_local_source=${THEURGY_SOURCE_DIR:-$HOME/git/theurgy}
+
+say() {
+  printf '%s\n' "$1"
+}
+
+has_cmd() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+user_bin_dir() {
+  if [ -n "${XDG_BIN_HOME:-}" ]; then
+    printf '%s\n' "$XDG_BIN_HOME"
+  else
+    printf '%s\n' "$HOME/.local/bin"
+  fi
+}
+
+theurgy_spell_path() {
+  printf '%s\n' "$theurgy_home/spells/assay-theurgy"
+}
+
+is_theurgy_installed() {
+  [ -x "$(theurgy_spell_path)" ] && [ -x "$(user_bin_dir)/assay-theurgy" ]
+}
+
+install_theurgy_source() {
+  if [ -d "$theurgy_local_source/.git" ]; then
+    if [ -e "$theurgy_home" ] && [ ! -L "$theurgy_home" ] && [ "$theurgy_home" != "$theurgy_local_source" ]; then
+      say "install-theurgy: $theurgy_home already exists and is not a Theurgy install link." >&2
+      exit 1
+    fi
+    if [ ! -e "$theurgy_home" ]; then
+      ln -s "$theurgy_local_source" "$theurgy_home"
+    fi
+    return 0
+  fi
+
+  if ! has_cmd git; then
+    say "install-theurgy: git is required." >&2
+    exit 1
+  fi
+
+  if [ -d "$theurgy_home/.git" ]; then
+    if [ -z "$(git -C "$theurgy_home" status --porcelain)" ]; then
+      git -C "$theurgy_home" pull --ff-only >/dev/null 2>&1 || true
+    else
+      say "Theurgy has local changes; leaving checkout as-is."
+    fi
+  elif [ -e "$theurgy_home" ]; then
+    say "install-theurgy: $theurgy_home exists and is not a git checkout." >&2
+    exit 1
+  else
+    git clone "$theurgy_repo_url" "$theurgy_home" >/dev/null
+  fi
+}
+
+write_theurgy_wrappers() {
+  if [ ! -x "$theurgy_home/install" ]; then
+    say "install-theurgy: missing installer at $theurgy_home/install." >&2
+    exit 1
+  fi
+  THEURGY_HOME=$theurgy_home "$theurgy_home/install" >/dev/null
+}
+
+remove_theurgy() {
+  if [ -x "$theurgy_home/uninstall" ]; then
+    THEURGY_HOME=$theurgy_home "$theurgy_home/uninstall" >/dev/null
+    return 0
+  fi
+
+  bin_dir=$(user_bin_dir)
+  rm -f "$bin_dir/assay-theurgy" \
+    "$bin_dir/conjure-native-desktop" \
+    "$bin_dir/conjure-enterprise-website" \
+    "$bin_dir/inspect-theurgy-project"
+
+  if [ -L "$theurgy_home" ]; then
+    rm -f "$theurgy_home"
+  elif [ -d "$theurgy_home/.git" ]; then
+    rm -rf "$theurgy_home"
+  fi
+}
+
