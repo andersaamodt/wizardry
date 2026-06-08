@@ -45,7 +45,7 @@ list_entries() {
         return
     fi
 
-    # Preferred order: core, mud, web-wizardry, OpenStreetMap, wizardry-apps, ai-dev, yt-dlp, webcam, voice-recognition, simplex-chat, nostr, crossposting, btcpay, then others alphabetically
+    # Preferred order: core, mud, web-wizardry, OpenStreetMap, wizardry-projects, ai-dev, yt-dlp, webcam, voice-recognition, voice-audio, simplex-chat, nostr, crossposting, btcpay, then others alphabetically
     # First output 'core' if it exists
     if [ -e "$install_dir/core" ]; then
         printf '%s\n' "core"
@@ -66,9 +66,9 @@ list_entries() {
         printf '%s\n' "openstreetmaps"
     fi
 
-    # Then 'wizardry-apps' if it exists
-    if [ -e "$install_dir/wizardry-apps" ]; then
-        printf '%s\n' "wizardry-apps"
+    # Then 'wizardry-projects' if it exists
+    if [ -e "$install_dir/wizardry-projects" ]; then
+        printf '%s\n' "wizardry-projects"
     fi
 
     # Then 'ai-dev' if it exists
@@ -89,6 +89,11 @@ list_entries() {
     # Then 'voice-recognition' if it exists
     if [ -e "$install_dir/voice-recognition" ]; then
         printf '%s\n' "voice-recognition"
+    fi
+
+    # Then 'voice-audio' if it exists
+    if [ -e "$install_dir/voice-audio" ]; then
+        printf '%s\n' "voice-audio"
     fi
 
     # Then 'simplex-chat' if it exists
@@ -120,11 +125,14 @@ list_entries() {
         [ "$entry_name" = "mud" ] && continue
         [ "$entry_name" = "web-wizardry" ] && continue
         [ "$entry_name" = "openstreetmaps" ] && continue
+        [ "$entry_name" = "wizardry-projects" ] && continue
         [ "$entry_name" = "wizardry-apps" ] && continue
+        [ "$entry_name" = "theurgy" ] && continue
         [ "$entry_name" = "ai-dev" ] && continue
         [ "$entry_name" = "yt-dlp" ] && continue
         [ "$entry_name" = "webcam" ] && continue
         [ "$entry_name" = "voice-recognition" ] && continue
+        [ "$entry_name" = "voice-audio" ] && continue
         [ "$entry_name" = "simplex-chat" ] && continue
         [ "$entry_name" = "nostr" ] && continue
         [ "$entry_name" = "crossposting" ] && continue
@@ -203,11 +211,12 @@ while :; do
             mud) label="wizardry MUD" ;;
             web-wizardry) label="web wizardry" ;;
             openstreetmaps) label="OpenStreetMap" ;;
-            wizardry-apps) label="wizardry apps" ;;
+            wizardry-projects) label="wizardry projects" ;;
             ai-dev) label="AI dev" ;;
             yt-dlp) label="yt-dlp" ;;
             webcam) label="webcam" ;;
             voice-recognition) label="voice recognition" ;;
+            voice-audio) label="voice audio" ;;
             simplex-chat) label="SimpleX" ;;
             nostr) label="Nostr" ;;
             crossposting) label="crossposting" ;;

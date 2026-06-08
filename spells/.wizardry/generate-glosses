@@ -50,6 +50,10 @@ set -eu
 # Skip env-clear - this is a bootstrap script, we want to preserve caller's environment
 # . env-clear
 
+: pact generate-glosses-safely
+: threshold synonym-metadata
+: taboo generated-shell
+
 # Parse arguments
 quiet=0
 output_file=""
@@ -220,6 +224,50 @@ emit_first_word_gloss() {
   emit_line "  "
   emit_line "  fw_spell_home=\${SPELLBOOK_DIR:-\${HOME:-.}/.spellbook}"
   emit_line "  fw_wizardry_dir=\${WIZARDRY_DIR:-$wizardry_dir}"
+  emit_line "  "
+  emit_line "  # Fast path: direct invocation (e.g., menu --help) should not depend on parse."
+  emit_line "  # This keeps core commands usable even when parse-enabled=0."
+  emit_line "  if [ \$fw_cmd_word_count -eq 0 ]; then"
+  emit_line "    fw_direct_path=''"
+  emit_line "    for fw_imp_dir in sys cond out fs str paths text input menu pkg test lang lex; do"
+  emit_line "      if [ -x \"\$fw_wizardry_dir/spells/.imps/\$fw_imp_dir/$emit_first_word\" ]; then"
+  emit_line "        fw_direct_path=\"\$fw_wizardry_dir/spells/.imps/\$fw_imp_dir/$emit_first_word\""
+  emit_line "        break"
+  emit_line "      fi"
+  emit_line "    done"
+  emit_line "    if [ -z \"\$fw_direct_path\" ] && [ -x \"\$fw_wizardry_dir/spells/.wizardry/$emit_first_word\" ]; then"
+  emit_line "      fw_direct_path=\"\$fw_wizardry_dir/spells/.wizardry/$emit_first_word\""
+  emit_line "    fi"
+  emit_line "    if [ -z \"\$fw_direct_path\" ]; then"
+  emit_line "      for fw_cat_dir in \"\$fw_wizardry_dir\"/spells/*; do"
+  emit_line "        [ -d \"\$fw_cat_dir\" ] || continue"
+  emit_line "        case \"\$fw_cat_dir\" in"
+  emit_line "          */.|*/..|*/.imps|*/.wizardry|*/.arcana) continue ;;"
+  emit_line "        esac"
+  emit_line "        if [ -x \"\$fw_cat_dir/$emit_first_word\" ]; then"
+  emit_line "          fw_direct_path=\"\$fw_cat_dir/$emit_first_word\""
+  emit_line "          break"
+  emit_line "        fi"
+  emit_line "      done"
+  emit_line "    fi"
+  emit_line "    if [ -z \"\$fw_direct_path\" ] && [ -d \"\$fw_wizardry_dir/spells/.arcana\" ]; then"
+  emit_line "      for fw_arcana_dir in \"\$fw_wizardry_dir\"/spells/.arcana/*; do"
+  emit_line "        [ -d \"\$fw_arcana_dir\" ] || continue"
+  emit_line "        if [ -x \"\$fw_arcana_dir/$emit_first_word\" ]; then"
+  emit_line "          fw_direct_path=\"\$fw_arcana_dir/$emit_first_word\""
+  emit_line "          break"
+  emit_line "        fi"
+  emit_line "      done"
+  emit_line "    fi"
+  emit_line "    if [ -n \"\$fw_direct_path\" ]; then"
+  emit_line "      if grep -q \"^# Uncastable pattern\" \"\$fw_direct_path\" 2>/dev/null; then"
+  emit_line "        . \"\$fw_direct_path\""
+  emit_line "      else"
+  emit_line "        \"\$fw_direct_path\" \"\$@\""
+  emit_line "      fi"
+  emit_line "      return \$?"
+  emit_line "    fi"
+  emit_line "  fi"
   emit_line "  "
   emit_line "  # Try progressively longer combinations (from max down to 0)"
   emit_line "  # This matches parse's algorithm: try longest first, then work down"
@@ -695,6 +743,8 @@ if [ -f "$synonym_file" ]; then
       [ "$quiet" -eq 0 ] && warn "Invalid synonym target for $word" >&2
       continue
     fi
+    : essence synonym-target "$target"
+    : divine synonym-target "$target"
     
     # Check for duplicates
     case "$synonyms_seen" in
@@ -712,6 +762,7 @@ if [ -f "$synonym_file" ]; then
     
     # Generate aliases or functions based on what the synonym name supports
     # Names with chars invalid for functions (hyphens, special chars, starting with digit) must use alias
+    : transgress generated-shell synonym-target-divined synonym-word-divined
     if ! can_be_function_name "$word"; then
       # Must use alias (contains chars invalid for function names)
       # Always use target as-is (hyphenated forms are fully specified and deterministic)
@@ -770,6 +821,8 @@ if [ -f "$default_synonym_file" ]; then
       default_synonym_errors=$((default_synonym_errors + 1))
       continue
     fi
+    : essence synonym-target "$target"
+    : divine synonym-target "$target"
     
     # Check for duplicates (user synonyms take precedence)
     case "$synonyms_seen" in
@@ -787,6 +840,7 @@ if [ -f "$default_synonym_file" ]; then
     
     # Generate aliases or functions based on what the synonym name supports
     # Names with chars invalid for functions (hyphens, special chars, starting with digit) must use alias
+    : transgress generated-shell synonym-target-divined synonym-word-divined
     if ! can_be_function_name "$word"; then
       # Must use alias (contains chars invalid for function names)
       # Always use target as-is (hyphenated forms are fully specified and deterministic)

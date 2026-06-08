@@ -88,6 +88,7 @@ Imps are organized in folders ("demon families") by function:
 - `menu/` — Menu system helpers
 - `mud/` — MUD game mechanics
 - `out/` — Output formatting and error handling
+- `pact/` — Pact-language linting and reliability-contract helpers
 - `paths/` — Path manipulation
 - `pkg/` — Package manager abstraction
 - `str/` — String operations

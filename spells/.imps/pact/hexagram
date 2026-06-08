@@ -1,0 +1,26 @@
+#!/bin/sh
+# hexagram COMMAND... - run a command inside a clean disposable environment
+
+set -eu
+
+[ "$#" -gt 0 ] || {
+  printf '%s\n' 'hexagram: command required' >&2
+  exit 2
+}
+
+hexagram_root=$(mktemp -d "${TMPDIR:-/tmp}/wizardry-hexagram.XXXXXX")
+hexagram_home=$hexagram_root/home
+hexagram_tmp=$hexagram_root/tmp
+mkdir -p "$hexagram_home" "$hexagram_tmp"
+
+set +e
+env -i \
+  HOME="$hexagram_home" \
+  TMPDIR="$hexagram_tmp" \
+  PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin \
+  "$@"
+hexagram_status=$?
+set -e
+
+rm -rf "$hexagram_root"
+exit "$hexagram_status"

@@ -825,6 +825,15 @@ AWKSCRIPT
       issue_count=$((issue_count + 1))
     fi
   fi
+
+  # Inline check_pact_language
+  if command -v check-pact-language >/dev/null 2>&1; then
+    pact_output=$(check-pact-language "$path" 2>&1) || {
+      pact_first=$(printf '%s\n' "$pact_output" | sed -n '1p')
+      issues=${issues:+$issues; }"invalid pact language: $pact_first"
+      issue_count=$((issue_count + 1))
+    }
+  fi
   
   if [ "$issue_count" -eq 0 ]; then
     if [ "$verbose" -eq 1 ]; then

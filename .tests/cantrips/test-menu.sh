@@ -11,6 +11,9 @@ done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
+PTY_SEND_DELAY=${PTY_SEND_DELAY:-5}
+export PTY_SEND_DELAY
+
 menu_requires_all_helpers() {
   helper_path="$ROOT_DIR/spells/.imps/sys:/bin:/usr/bin"
   run_cmd env PATH="$helper_path" "$ROOT_DIR/spells/cantrips/menu" "Menu" "Item%echo hi"
@@ -76,7 +79,7 @@ menu_respects_start_selection() {
   # The PATH includes stubs first so terminal queries get responses
   PTY_INPUT='' run_cmd env \
     PATH="$stub_dir:$PATH" \
-    PTY_SEND_DELAY=3 \
+    PTY_SEND_DELAY=5 \
     PTY_KEYS='enter' \
     run-with-pty \
     menu --start-selection 2 "Test:" \
@@ -510,6 +513,7 @@ menu_prefers_primary_action_for_compound_commands() {
   PTY_INPUT='' run_cmd env \
     PATH="$stub_dir:$PATH" \
     TERM=xterm \
+    PTY_SEND_DELAY=5 \
     PTY_KEYS='escape' \
     run-with-pty \
     menu "Display Test:" \
@@ -557,6 +561,7 @@ menu_shows_inner_action_for_menu_refresh_wrappers() {
   PTY_INPUT='' run_cmd env \
     PATH="$stub_dir:$PATH" \
     TERM=xterm \
+    PTY_SEND_DELAY=5 \
     PTY_KEYS='escape' \
     run-with-pty \
     menu "Display Test:" \
@@ -745,6 +750,7 @@ menu_hides_command_substitution_noise() {
   PTY_INPUT='' run_cmd env \
     PATH="$stub_dir:$PATH" \
     TERM=xterm \
+    PTY_SEND_DELAY=5 \
     PTY_KEYS='escape' \
     run-with-pty \
     menu "Display Test:" \

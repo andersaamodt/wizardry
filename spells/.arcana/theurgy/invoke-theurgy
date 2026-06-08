@@ -1,0 +1,40 @@
+#!/bin/sh
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: invoke-theurgy [--yes]
+
+Invokes the Theurgy dependency boundary. With --yes, installs without prompting.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+. "$script_dir/_theurgy"
+
+auto_yes=0
+case "${1-}" in
+  --yes) auto_yes=1 ;;
+  "") ;;
+  *) printf '%s\n' "invoke-theurgy: unknown option '$1'" >&2; exit 2 ;;
+esac
+
+if is_theurgy_installed; then
+  exit 0
+fi
+
+if [ "$auto_yes" -eq 1 ]; then
+  "$script_dir/install-theurgy"
+  exit 0
+fi
+
+printf '%s\n' "Theurgy is required for this workflow."
+printf '%s' "Install Theurgy now? [Y/n]: "
+IFS= read -r choice || exit 1
+case "$choice" in
+  ""|y|Y|yes|YES) "$script_dir/install-theurgy" ;;
+  *) printf '%s\n' "Skipped Theurgy installation." >&2; exit 1 ;;
+esac

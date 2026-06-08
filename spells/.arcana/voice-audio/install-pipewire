@@ -1,0 +1,47 @@
+#!/bin/sh
+
+# Install PipeWire tools for Linux render-reference voice audio capture.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-pipewire
+
+Installs PipeWire tools used for local render-reference audio capture on Linux.
+USAGE
+  exit 0
+  ;;
+esac
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+if ! command -v require-wizardry >/dev/null 2>&1; then
+  wizardry_dir=$(CDPATH= cd -- "$script_dir/../../.." && pwd -P)
+  PATH="$wizardry_dir/spells/.imps/sys:$wizardry_dir/spells/.imps/out:$wizardry_dir/spells/.imps/cond:$wizardry_dir/spells/.imps/pkg:$wizardry_dir/spells/cantrips:$PATH"
+  export PATH WIZARDRY_DIR="$wizardry_dir"
+fi
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+# shellcheck source=/dev/null
+. "$script_dir/voice-audio-common"
+
+if ! voice_audio_is_linux; then
+  printf '%s\n' "voice-audio: PipeWire install is only supported on Linux" >&2
+  exit 1
+fi
+
+if voice_audio_has_pipewire; then
+  printf '%s\n' "voice-audio: PipeWire tools are already installed"
+  exit 0
+fi
+
+ASSUME_YES=1
+FORCE_INSTALL=${INSTALL_PIPEWIRE_FORCE_INSTALL:-0}
+APT_PACKAGE=${APT_PACKAGE:-pipewire-bin}
+PACMAN_PACKAGE=${PACMAN_PACKAGE:-pipewire}
+NIX_PACKAGE=${NIX_PACKAGE:-pipewire}
+export ASSUME_YES FORCE_INSTALL APT_PACKAGE PACMAN_PACKAGE NIX_PACKAGE
+
+"$script_dir/../core/manage-system-command" pw-loopback pipewire

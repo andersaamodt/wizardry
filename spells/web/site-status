@@ -80,12 +80,9 @@ if [ -f "$site_dir/nginx/nginx.pid" ]; then
 fi
 
 if [ "$serve_status" = "not serving" ]; then
-  if [ "$(uname -s 2>/dev/null)" = "Darwin" ] && has launchctl; then
-    label="org.wizardry.web.${site_name}"
-    if launchctl print "system/$label" 2>/dev/null | grep -q "state = running"; then
-      serve_status="serving"
-    fi
-  elif has systemctl; then
+  if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+    :
+  elif command -v systemctl >/dev/null 2>&1; then
     unit="wizardry-site-${site_name}.service"
     if systemctl is-active --quiet "$unit" 2>/dev/null; then
       serve_status="serving"

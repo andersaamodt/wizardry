@@ -93,12 +93,8 @@ export WIZARDRY_DIR
 # This keeps test-bootstrap fast and avoids duplicate output
 # TEST_ENV_* variables are exported by test-magic and available to all tests
 
-# Check if invoke-wizardry is already loaded (from workflow or test-magic)
-# If so, skip re-loading it for major performance improvement
-if [ "${WIZARDRY_INVOKED-}" = "1" ]; then
-  # invoke-wizardry already loaded - reuse it (no-op, very fast)
-  : # All functions already available
-elif [ "${WIZARDRY_TEST_SKIP_INVOKE-0}" != "1" ] && [ -f "$ROOT_DIR/spells/.imps/sys/invoke-wizardry" ]; then
+# Load invoke-wizardry once per test shell unless explicitly skipped.
+if [ "${WIZARDRY_TEST_SKIP_INVOKE-0}" != "1" ] && [ -f "$ROOT_DIR/spells/.imps/sys/invoke-wizardry" ]; then
   # invoke-wizardry not loaded yet - load it once per test file
   # This makes all spell functions and underscore-named imp functions available
   # Tests can then call functions directly (e.g., validate_spells, generate_glosses)
@@ -109,13 +105,15 @@ elif [ "${WIZARDRY_TEST_SKIP_INVOKE-0}" != "1" ] && [ -f "$ROOT_DIR/spells/.imps
   
   # Source invoke-wizardry (it sets +eu internally for permissive mode)
   # We source it directly without piping (to preserve environment variables)
-  # Errors are suppressed since we check WIZARDRY_INVOKED afterward
-  . "$ROOT_DIR/spells/.imps/sys/invoke-wizardry" >/dev/null 2>&1 || true
-  
-  # Check if it loaded successfully by checking the flag it sets
-  if [ "${WIZARDRY_INVOKED-}" != "1" ]; then
+  set +e
+  . "$ROOT_DIR/spells/.imps/sys/invoke-wizardry" >/dev/null 2>&1
+  invoke_wizardry_status=$?
+  set -eu
+
+  if [ "$invoke_wizardry_status" -ne 0 ]; then
     printf 'WARNING: invoke-wizardry failed to load in test-bootstrap\n' >&2
   fi
+  unset invoke_wizardry_status
 fi
 
 # Use direct script execution (flat-file paradigm)

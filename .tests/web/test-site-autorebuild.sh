@@ -121,6 +121,42 @@ EOS
     return 1
   fi
 
+  : > "$build_log"
+  mkdir -p "$site_root/site/bitcoin/data/blocks"
+  printf '%s\n' 'runtime block data' > "$site_root/site/bitcoin/data/blocks/blk00001.dat"
+  run_cmd env \
+    PATH="$stub_dir:/usr/bin:/bin:/usr/sbin:/sbin" \
+    WEB_WIZARDRY_ROOT="$web_root" \
+    WIZARDRY_DIR="$fake_wizardry" \
+    CRON_STUB_FILE="$cron_file" \
+    SITE_AUTOREBUILD_BUILD_LOG="$build_log" \
+    sh "$ROOT_DIR/spells/web/site-autorebuild" run testsite
+  assert_success
+
+  if [ -s "$build_log" ]; then
+    TEST_FAILURE_REASON="runtime Bitcoin block data should not trigger a site rebuild"
+    rm -rf "$web_root" "$fake_wizardry" "$stub_dir"
+    return 1
+  fi
+
+  mkdir -p "$site_root/site/secure-chat/runtime/native-driver/node_modules/simplex-chat/libs"
+  printf '%s\n' 'native runtime data' \
+    > "$site_root/site/secure-chat/runtime/native-driver/node_modules/simplex-chat/libs/libsimplex.so"
+  run_cmd env \
+    PATH="$stub_dir:/usr/bin:/bin:/usr/sbin:/sbin" \
+    WEB_WIZARDRY_ROOT="$web_root" \
+    WIZARDRY_DIR="$fake_wizardry" \
+    CRON_STUB_FILE="$cron_file" \
+    SITE_AUTOREBUILD_BUILD_LOG="$build_log" \
+    sh "$ROOT_DIR/spells/web/site-autorebuild" run testsite
+  assert_success
+
+  if [ -s "$build_log" ]; then
+    TEST_FAILURE_REASON="secure chat runtime data should not trigger a site rebuild"
+    rm -rf "$web_root" "$fake_wizardry" "$stub_dir"
+    return 1
+  fi
+
   run_cmd env \
     PATH="$stub_dir:/usr/bin:/bin:/usr/sbin:/sbin" \
     WEB_WIZARDRY_ROOT="$web_root" \

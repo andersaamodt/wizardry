@@ -229,9 +229,12 @@ case ${TERM-} in
                 if [ "$has_tput" -eq 1 ]; then
                         colors=$(tput colors 2>/dev/null || printf '')
                         case ${colors:-} in
-                                ''|0|-*)
-                                        # Disable palette for empty, zero, or negative values
-                                        # (tput returns -1 when colors are not supported)
+                                0|-*)
+                                        # Disable palette only for an explicit "no colors" answer
+                                        # (tput returns -1 when colors are not supported).
+                                        # An empty result is treated as inconclusive because some
+                                        # terminals can still render ANSI escapes even when terminfo
+                                        # lookup is unavailable in the current shell environment.
                                         try_disable_palette
                                         ;;
                         esac

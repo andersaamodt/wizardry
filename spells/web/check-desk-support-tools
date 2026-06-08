@@ -1,0 +1,45 @@
+#!/bin/sh
+
+# Check server tooling needed by private Desk and Nostr-backed site flows.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: check-desk-support-tools
+
+Checks whether the server has the Nostr and JSON tools Desk uses for owner
+authentication, event verification, publishing diagnostics, and zap metadata.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
+for candidate_bin_dir in "${XDG_BIN_HOME-}" "${HOME-}/.local/bin"; do
+  [ -n "$candidate_bin_dir" ] || continue
+  [ -d "$candidate_bin_dir" ] || continue
+  case ":$PATH:" in
+    *":$candidate_bin_dir:"*) ;;
+    *) PATH="$candidate_bin_dir:$PATH" ;;
+  esac
+done
+
+missing=''
+for bin in jq nak nostril; do
+  if ! command -v "$bin" >/dev/null 2>&1; then
+    missing="${missing}${missing:+, }$bin"
+  fi
+done
+
+if [ -z "$missing" ]; then
+  printf 'status=ok\n'
+  printf 'summary=%s\n' 'jq, nak, and nostril are available on PATH.'
+  exit 0
+fi
+
+printf 'status=bad\n'
+printf 'summary=Missing Desk support tools: %s\n' "$missing"
+exit 0

@@ -98,7 +98,8 @@ extract_markdown_body() {
 strip_dynamic_title_block() {
   file=$1
   [ -f "$file" ] || return 0
-  if ! grep -Eq 'id="(blog-page-root|nip23-page-root|public-ranking-root|oeuvre-root|contact-page-root)"' "$file"; then
+  dynamic_roots='blog-page-root|nip23-page-root|public-ranking-root|oeuvre-root|contact-page-root'
+  if ! grep -Eq "id=\"($dynamic_roots)\"" "$file"; then
     return 0
   fi
 
@@ -177,6 +178,7 @@ compute_static_asset_cache_token() {
 prune_stale_build_pages() {
   build_pages_dir=$1
   site_pages_dir=$2
+  build_deps_dir=$(dirname "$build_pages_dir")/.deps/pages
 
   [ -d "$build_pages_dir" ] || return 0
 
@@ -187,18 +189,82 @@ prune_stale_build_pages() {
     if [ ! -f "$md_file" ]; then
       info "  Removing stale build page: $rel_html"
       rm -f "$html_file"
+      rm -f "$build_deps_dir/$rel_html.sig"
     fi
   done
 
   find "$build_pages_dir" -depth -type d -empty -delete 2>/dev/null || true
+  if [ -d "$build_deps_dir" ]; then
+    find "$build_deps_dir" -depth -type d -empty -delete 2>/dev/null || true
+  fi
+}
+
+append_dependency_signature() {
+  signature_label=$1
+  signature_path=$2
+  if [ -f "$signature_path" ]; then
+    cksum "$signature_path" | awk -v label="$signature_label" '
+      { printf "%s file %s %s\n", label, $1, $2 }
+    '
+  else
+    printf '%s missing\n' "$signature_label"
+  fi
+}
+
+write_page_dependency_signature() {
+  signature_out=$1
+  signature_md_file=$2
+  signature_nav_file=$3
+  signature_footer_file=$4
+  signature_head_file=$5
+  signature_template=$6
+  {
+    printf 'wizardry-web-build-page-signature-v2\n'
+    printf 'template %s\n' "$signature_template"
+    append_dependency_signature markdown "$signature_md_file"
+    append_dependency_signature nav "$signature_nav_file"
+    append_dependency_signature footer "$signature_footer_file"
+    append_dependency_signature head "$signature_head_file"
+    append_dependency_signature build-spell "$0"
+    if [ "$signature_template" = "blog" ] && [ ! -f "$signature_footer_file" ]; then
+      printf 'footer-default blog-v1\n'
+    fi
+  } > "$signature_out"
+}
+
+page_signature_matches() {
+  signature_candidate=$1
+  signature_stored=$2
+  [ -f "$signature_stored" ] || return 1
+  cmp -s "$signature_candidate" "$signature_stored"
 }
 
 normalize_tags() {
-  printf '%s' "${1-}" | tr '\n' ',' | tr ',' '\n' | sed 's/^ *//;s/ *$//' | awk 'NF { if (!seen[$0]++) { if (out != "") out = out ", "; out = out $0 } } END { printf "%s", out }'
+  printf '%s' "${1-}" |
+    tr '\n' ',' |
+    tr ',' '\n' |
+    sed 's/^ *//;s/ *$//' |
+    awk '
+      NF {
+        if (!seen[$0]++) {
+          if (out != "") {
+            out = out ", "
+          }
+          out = out $0
+        }
+      }
+      END { printf "%s", out }
+    '
 }
 
 xml_escape() {
-  printf '%s' "${1-}" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' -e 's/"/\&quot;/g' -e "s/'/\&apos;/g"
+  printf '%s' "${1-}" |
+    sed \
+      -e 's/&/\&amp;/g' \
+      -e 's/</\&lt;/g' \
+      -e 's/>/\&gt;/g' \
+      -e 's/"/\&quot;/g' \
+      -e "s/'/\&apos;/g"
 }
 
 cdata_safe() {
@@ -322,14 +388,17 @@ generate_blog_feeds_and_sitemap() {
 
   {
     printf '<?xml version="1.0" encoding="UTF-8"?>\n'
-    printf '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">\n'
+    printf '<rss version="2.0"'
+    printf ' xmlns:atom="http://www.w3.org/2005/Atom"'
+    printf ' xmlns:content="http://purl.org/rss/1.0/modules/content/">\n'
     printf '  <channel>\n'
     printf '    <title>%s</title>\n' "$(xml_escape "$site_title")"
     printf '    <link>%s</link>\n' "$(xml_escape "$base_url/")"
     printf '    <description>%s</description>\n' "$(xml_escape "$site_title")"
     printf '    <language>en-us</language>\n'
     printf '    <lastBuildDate>%s</lastBuildDate>\n' "$(iso_to_rfc822 "$latest_iso")"
-    printf '    <atom:link href="%s/rss.xml" rel="self" type="application/rss+xml" />\n' "$(xml_escape "$base_url")"
+    printf '    <atom:link href="%s/rss.xml"' "$(xml_escape "$base_url")"
+    printf ' rel="self" type="application/rss+xml" />\n'
 
     count=0
     while IFS= read -r post_file; do
@@ -365,7 +434,8 @@ generate_blog_feeds_and_sitemap() {
       fi
       printf '      <description><![CDATA[%s]]></description>\n' "$(cdata_safe "$body_html")"
       if [ "$feed_full_text" = "true" ]; then
-        printf '      <content:encoded><![CDATA[%s]]></content:encoded>\n' "$(cdata_safe "$body_html")"
+        printf '      <content:encoded><![CDATA[%s]]></content:encoded>\n' \
+          "$(cdata_safe "$body_html")"
       fi
       printf '    </item>\n'
     done < "$posts_tmp"
@@ -602,7 +672,11 @@ prerender_blog_dynamic_sections() {
        "$site_dir/site/pages/posts"; then
     post_list_tmp=$(temp-file blog-index-fragment)
     if render_cgi_fragment "$cgi_dir/blog-index" "page=1" "$post_list_tmp"; then
-      replace_html_container_by_id "$site_dir/build/pages/index.html" "post-list" "$post_list_tmp" || true
+      replace_html_container_by_id \
+        "$site_dir/build/pages/index.html" \
+        "post-list" \
+        "$post_list_tmp" ||
+        true
     fi
     rm -f "$post_list_tmp"
   fi
@@ -618,7 +692,11 @@ prerender_blog_dynamic_sections() {
        "$site_dir/site/pages/posts"; then
     tag_cloud_tmp=$(temp-file blog-tags-fragment)
     if render_cgi_fragment "$cgi_dir/blog-tags" "" "$tag_cloud_tmp"; then
-      replace_html_container_by_id "$site_dir/build/pages/tags.html" "tag-cloud" "$tag_cloud_tmp" || true
+      replace_html_container_by_id \
+        "$site_dir/build/pages/tags.html" \
+        "tag-cloud" \
+        "$tag_cloud_tmp" ||
+        true
     fi
     rm -f "$tag_cloud_tmp"
   fi
@@ -634,7 +712,11 @@ prerender_blog_dynamic_sections() {
        "$site_dir/site/pages/posts"; then
     archive_list_tmp=$(temp-file blog-archive-fragment)
     if render_cgi_fragment "$cgi_dir/blog-archive" "" "$archive_list_tmp"; then
-      replace_html_container_by_id "$site_dir/build/pages/archive.html" "archive-list" "$archive_list_tmp" || true
+      replace_html_container_by_id \
+        "$site_dir/build/pages/archive.html" \
+        "archive-list" \
+        "$archive_list_tmp" ||
+        true
     fi
     rm -f "$archive_list_tmp"
   fi
@@ -645,6 +727,18 @@ build_site() {
   shared_theme_root="$WIZARDRY_DIR/web"
   shared_theme_dir="$shared_theme_root/.themes"
   site_template=$(config-get "$site_dir/site.conf" template 2>/dev/null || printf '')
+
+  for candidate_bin_dir in "${XDG_BIN_HOME-}" "${HOME-}/.local/bin"; do
+    [ -n "$candidate_bin_dir" ] || continue
+    [ -d "$candidate_bin_dir" ] || continue
+    case ":$PATH:" in
+      *":$candidate_bin_dir:"*) ;;
+      *)
+        PATH="$candidate_bin_dir:$PATH"
+        export PATH
+        ;;
+    esac
+  done
 
   if [ "$site_template" = "blog" ]; then
     if ! has nostril; then
@@ -696,8 +790,10 @@ build_site() {
   fi
 
   info "Copying web libraries to build/static/js/..."
-  cp "$js_lib_dir/htmx.min.js" "$site_dir/build/static/js/" || die "build: failed to copy htmx.min.js"
-  cp "$js_lib_dir/idiomorph-ext.min.js" "$site_dir/build/static/js/" || die "build: failed to copy idiomorph-ext.min.js"
+  cp "$js_lib_dir/htmx.min.js" "$site_dir/build/static/js/" ||
+    die "build: failed to copy htmx.min.js"
+  cp "$js_lib_dir/idiomorph-ext.min.js" "$site_dir/build/static/js/" ||
+    die "build: failed to copy idiomorph-ext.min.js"
 
   if [ -d "$shared_theme_dir" ]; then
     mkdir -p "$site_dir/site/static/themes"
@@ -718,6 +814,11 @@ build_site() {
   info "Converting Markdown to HTML..."
   built_count=0
   if [ -d "$site_dir/site/pages" ]; then
+    includes_dir="$site_dir/site/includes"
+    footer_file="$includes_dir/footer.md"
+    head_file="$includes_dir/head.html"
+    deps_pages_dir="$site_dir/build/.deps/pages"
+    mkdir -p "$deps_pages_dir"
     md_file_count=$(
       find "$site_dir/site/pages" -type f -name '*.md' ! -name '._*' 2>/dev/null | wc -l
     )
@@ -726,16 +827,35 @@ build_site() {
       warn "Create .md files there to build HTML pages."
     fi
 
+    nav_file="$includes_dir/nav.md"
+    if [ "$site_template" != "blog" ] && [ -f "$includes_dir/nav-$site_template.md" ]; then
+      nav_file="$includes_dir/nav-$site_template.md"
+    fi
+
     find "$site_dir/site/pages" -type f -name '*.md' ! -name '._*' | sort | \
       while IFS= read -r md_file; do
       rel_path=${md_file#"$site_dir/site/pages/"}
       rel_html=${rel_path%.md}.html
       html_file="$site_dir/build/pages/$rel_html"
       html_dir=$(dirname "$html_file")
+      signature_file="$deps_pages_dir/$rel_html.sig"
+      signature_dir=$(dirname "$signature_file")
+      signature_tmp=$(temp-file page-signature)
       mkdir -p "$html_dir"
+      mkdir -p "$signature_dir"
+      write_page_dependency_signature \
+        "$signature_tmp" \
+        "$md_file" \
+        "$nav_file" \
+        "$footer_file" \
+        "$head_file" \
+        "$site_template"
 
-      if [ "$full_rebuild" -eq 0 ] && [ -f "$html_file" ] && newer "$html_file" "$md_file"; then
+      if [ "$full_rebuild" -eq 0 ] &&
+         [ -f "$html_file" ] &&
+         page_signature_matches "$signature_tmp" "$signature_file"; then
         debug "Skipping $rel_path (up to date)"
+        rm -f "$signature_tmp"
         continue
       fi
 
@@ -743,13 +863,10 @@ build_site() {
 
       htmx_header=$(temp-file htmx-header)
       cat > "$htmx_header" <<'HTMX_HEADER'
-<script src="/static/js/htmx.min.js"></script>
-<script src="/static/js/idiomorph-ext.min.js"></script>
+<script defer src="/static/js/htmx.min.js"></script>
+<script defer src="/static/js/idiomorph-ext.min.js"></script>
 HTMX_HEADER
 
-      includes_dir="$site_dir/site/includes"
-      nav_file="$includes_dir/nav.md"
-      footer_file="$includes_dir/footer.md"
       nav_exists=0
       footer_exists=0
       footer_tmp=""
@@ -831,6 +948,7 @@ BLOG_FOOTER
       if [ -n "$footer_tmp" ] && [ -f "$footer_tmp" ]; then
         rm -f "$footer_tmp"
       fi
+      mv "$signature_tmp" "$signature_file"
       chmod 644 "$html_file"
       built_count=$((built_count + 1))
       printf '%s\n' "$built_count" > "$site_dir/build/.build-count.tmp"
