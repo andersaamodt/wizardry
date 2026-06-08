@@ -75,8 +75,6 @@ while :; do
       set -- "$@" "Launch Forge (compile + run)%$script_dir/launch-forge" "---"
     fi
     set -- "$@" \
-      "Theurgy%$script_dir/../theurgy/theurgy-menu" \
-      "---" \
       "$web_templates_toggle" \
       "$apps_toggle" \
       "$toggle_all" \
