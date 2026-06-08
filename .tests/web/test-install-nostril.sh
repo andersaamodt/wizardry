@@ -129,7 +129,13 @@ while [ "$#" -gt 0 ]; do
 done
 case "$url" in
   https://api.github.com/repos/fiatjaf/nak/releases/latest)
-    printf '%s\n' '{"assets":[{"browser_download_url":"file:///tmp/nak-v0.19.0-darwin-arm64"}]}'
+    cat <<'JSON'
+{"assets":[
+{"browser_download_url":"file:///tmp/nak-v0.19.0-darwin-arm64"},
+{"browser_download_url":"file:///tmp/nak-v0.19.0-linux-amd64"},
+{"browser_download_url":"file:///tmp/nak-v0.19.0-linux-arm64"}
+]}
+JSON
     ;;
   file://*)
     printf '%s\n' "downloaded untrusted URL" > "${NAK_BAD_DOWNLOAD_MARKER:?}"
