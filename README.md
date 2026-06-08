@@ -6,6 +6,8 @@ Wizardry also includes a comprehensive set of POSIX shell tutorials, and optiona
 
 Wizardry includes a set of interactive menus that transparently show what command each menu item will call, making discovering and using the command line much easier. Wizardry assembles cross-platform UNIX knowledge into usable menus and memorable commands.
 
+For work that outgrows pure shell fan-out, wizardry now has a sister project: [theurgy](https://github.com/andersaamodt/theurgy).
+
 The language of magic—a human heirloom—is rich in evocative words for hidden forces and abstract transformations, making it a natural fit for extending the terminal's vocabulary, binding the worlds of thought and myth together as effective language.
 
 ## Status for target platforms:
