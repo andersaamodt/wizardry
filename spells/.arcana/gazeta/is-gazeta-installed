@@ -1,0 +1,24 @@
+#!/bin/sh
+
+# Check whether Gazeta is installed.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: is-gazeta-installed
+
+Exits successfully when the Gazeta repository and reusable web template are present.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+. "$script_dir/gazeta-common"
+
+gazeta_installed

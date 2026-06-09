@@ -1,0 +1,35 @@
+#!/bin/sh
+
+# Install Gazeta as the blog template source for web wizardry.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-gazeta
+
+Installs or updates Gazeta at ${GAZETA_DIR:-$HOME/git/gazeta}. Gazeta owns the
+blog/Nostr template and its site-specific CGI implementation.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+. "$script_dir/gazeta-common"
+
+gazeta_ensure_repo
+
+if ! gazeta_template_available; then
+  die "install-gazeta: Gazeta template source not found at $gazeta_dir"
+fi
+
+if ! gazeta_requirements_available; then
+  warn "install-gazeta: server requirements manifest missing at $gazeta_dir"
+fi
+
+success "Gazeta installed at $gazeta_dir"

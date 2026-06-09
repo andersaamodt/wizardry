@@ -25,11 +25,13 @@ fi
 trap 'exit 130' INT
 trap 'exit 0' TERM
 
-# Ensure web templates are installed (without symlink indirection).
+# Ensure Gazeta is installed when the blog template is needed. Other template
+# sources are discovered directly from installed project checkouts.
 WIZARDRY_DIR=${WIZARDRY_DIR:-$HOME/.wizardry}
-ensure_templates_cmd="$WIZARDRY_DIR/spells/.arcana/wizardry-apps/ensure-wizardry-apps-component"
-if [ -x "$ensure_templates_cmd" ]; then
-  "$ensure_templates_cmd" web-templates
+ensure_gazeta_cmd="$WIZARDRY_DIR/spells/.arcana/gazeta/install-gazeta"
+if ! create-from-template --resolve-template-dir blog >/dev/null 2>&1 && \
+  [ -x "$ensure_gazeta_cmd" ]; then
+  "$ensure_gazeta_cmd"
 fi
 
 # Prompt for site name

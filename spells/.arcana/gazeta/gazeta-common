@@ -1,0 +1,73 @@
+#!/bin/sh
+
+# Shared helpers for the Gazeta arcanum.
+
+case "${1-}" in
+--help|--usage|-h)
+  case "$0" in
+    */gazeta-common)
+      cat <<'USAGE'
+Usage: gazeta-common
+
+Shared helper library for Gazeta arcana spells.
+USAGE
+      exit 0
+      ;;
+  esac
+  ;;
+esac
+
+set +eu
+
+gazeta_repo_url=${GAZETA_REPO_URL:-https://github.com/andersaamodt/gazeta.git}
+gazeta_dir=${GAZETA_DIR:-$HOME/git/gazeta}
+
+gazeta_repo_installed() {
+  [ -d "$gazeta_dir/.git" ]
+}
+
+gazeta_template_available() {
+  [ -d "$gazeta_dir/pages" ] || [ -d "$gazeta_dir/site/pages" ]
+}
+
+gazeta_requirements_available() {
+  [ -f "$gazeta_dir/wizardry-server-requirements.conf" ]
+}
+
+gazeta_installed() {
+  gazeta_repo_installed && gazeta_template_available
+}
+
+gazeta_ensure_repo() {
+  if ! command -v git >/dev/null 2>&1; then
+    die "gazeta: git is required"
+  fi
+
+  gazeta_parent_dir=$(dirname "$gazeta_dir")
+  mkdir -p "$gazeta_parent_dir"
+
+  if [ -d "$gazeta_dir/.git" ]; then
+    step "Updating Gazeta repository..."
+    git -C "$gazeta_dir" fetch --depth 1 origin || die "gazeta: failed to fetch updates"
+    gazeta_origin_head_ref=refs/remotes/origin/HEAD
+    gazeta_default_branch=$(
+      git -C "$gazeta_dir" \
+        symbolic-ref --quiet --short "$gazeta_origin_head_ref" 2>/dev/null || true
+    )
+    if [ -n "$gazeta_default_branch" ]; then
+      gazeta_default_branch=${gazeta_default_branch#origin/}
+      git -C "$gazeta_dir" checkout -q "$gazeta_default_branch" || true
+      git -C "$gazeta_dir" reset --hard "origin/$gazeta_default_branch" >/dev/null 2>&1 || true
+    else
+      git -C "$gazeta_dir" pull --ff-only || die "gazeta: failed to update repository"
+    fi
+    return 0
+  fi
+
+  if [ -e "$gazeta_dir" ]; then
+    die "gazeta: $gazeta_dir exists and is not a git repository"
+  fi
+
+  step "Cloning Gazeta repository..."
+  git clone --depth 1 "$gazeta_repo_url" "$gazeta_dir" || die "gazeta: failed to clone repository"
+}

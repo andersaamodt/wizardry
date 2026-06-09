@@ -1,0 +1,34 @@
+#!/bin/sh
+
+# Uninstall Gazeta from the local git checkout path.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uninstall-gazeta
+
+Removes the Gazeta checkout installed at ${GAZETA_DIR:-$HOME/git/gazeta}.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+. "$script_dir/gazeta-common"
+
+if [ ! -d "$gazeta_dir" ]; then
+  info "Gazeta is not installed"
+  exit 0
+fi
+
+if [ ! -d "$gazeta_dir/.git" ]; then
+  die "uninstall-gazeta: $gazeta_dir is not a git repository"
+fi
+
+rm -rf "$gazeta_dir"
+success "Uninstalled Gazeta from $gazeta_dir"

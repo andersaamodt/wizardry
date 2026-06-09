@@ -1,0 +1,39 @@
+#!/bin/sh
+
+# Report Gazeta installation status.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: gazeta-status
+
+Reports whether Gazeta is installed and usable as the blog web template source.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+if command -v colors >/dev/null 2>&1; then
+  . colors
+else
+  RESET=""
+  THEME_SUCCESS=""
+  THEME_WARNING=""
+  GREY=""
+fi
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+. "$script_dir/gazeta-common"
+
+if gazeta_installed && gazeta_requirements_available; then
+  printf '%sinstalled%s\n' "$THEME_SUCCESS" "$RESET"
+elif gazeta_repo_installed; then
+  printf '%spartial install%s\n' "$THEME_WARNING" "$RESET"
+else
+  printf '%snot installed%s\n' "$GREY" "$RESET"
+fi
