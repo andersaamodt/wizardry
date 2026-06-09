@@ -22,10 +22,13 @@ set -eu
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 . "$script_dir/gazeta-common"
 
-gazeta_ensure_repo
+if ! gazeta_ensure_repo; then
+  exit 1
+fi
 
 if ! gazeta_template_available; then
   die "install-gazeta: Gazeta template source not found at $gazeta_dir"
+  exit 1
 fi
 
 if ! gazeta_requirements_available; then

@@ -28,6 +28,7 @@ fi
 
 if [ ! -d "$gazeta_dir/.git" ]; then
   die "uninstall-gazeta: $gazeta_dir is not a git repository"
+  exit 1
 fi
 
 rm -rf "$gazeta_dir"

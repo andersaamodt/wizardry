@@ -41,6 +41,7 @@ gazeta_installed() {
 gazeta_ensure_repo() {
   if ! command -v git >/dev/null 2>&1; then
     die "gazeta: git is required"
+    return 1
   fi
 
   gazeta_parent_dir=$(dirname "$gazeta_dir")
@@ -48,7 +49,10 @@ gazeta_ensure_repo() {
 
   if [ -d "$gazeta_dir/.git" ]; then
     step "Updating Gazeta repository..."
-    git -C "$gazeta_dir" fetch --depth 1 origin || die "gazeta: failed to fetch updates"
+    git -C "$gazeta_dir" fetch --depth 1 origin || {
+      die "gazeta: failed to fetch updates"
+      return 1
+    }
     gazeta_origin_head_ref=refs/remotes/origin/HEAD
     gazeta_default_branch=$(
       git -C "$gazeta_dir" \
@@ -59,15 +63,22 @@ gazeta_ensure_repo() {
       git -C "$gazeta_dir" checkout -q "$gazeta_default_branch" || true
       git -C "$gazeta_dir" reset --hard "origin/$gazeta_default_branch" >/dev/null 2>&1 || true
     else
-      git -C "$gazeta_dir" pull --ff-only || die "gazeta: failed to update repository"
+      git -C "$gazeta_dir" pull --ff-only || {
+        die "gazeta: failed to update repository"
+        return 1
+      }
     fi
     return 0
   fi
 
   if [ -e "$gazeta_dir" ]; then
     die "gazeta: $gazeta_dir exists and is not a git repository"
+    return 1
   fi
 
   step "Cloning Gazeta repository..."
-  git clone --depth 1 "$gazeta_repo_url" "$gazeta_dir" || die "gazeta: failed to clone repository"
+  git clone --depth 1 "$gazeta_repo_url" "$gazeta_dir" || {
+    die "gazeta: failed to clone repository"
+    return 1
+  }
 }
