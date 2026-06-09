@@ -10,11 +10,9 @@ For work that outgrows pure shell fan-out, wizardry now has a sister project: [t
 
 The language of magic—a human heirloom—is rich in evocative words for hidden forces and abstract transformations, making it a natural fit for extending the terminal's vocabulary, binding the worlds of thought and myth together as effective language.
 
-## Status for target platforms:
+## Project status
 
-**Current status:** 🟡 `install` + `menu` untested across listed platforms. Wizardry is brand new, so not all spells have been tested and debugged yet.
-
-## What is done / left
+**Current status:** Core wizardry works on macOS; other platforms still need testing.
 
 - ✅ POSIX shell spell and imp conventions
 - ✅ Interactive command-discovery menus
