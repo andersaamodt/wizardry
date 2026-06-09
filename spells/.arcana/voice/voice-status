@@ -1,0 +1,70 @@
+#!/bin/sh
+
+# Report combined installation status for voice components.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: voice-status
+
+Reports combined installation status for voice recognition and voice audio.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+if command -v colors >/dev/null 2>&1; then
+  # shellcheck source=/dev/null
+  . colors
+else
+  RESET=""
+  THEME_SUCCESS=""
+  THEME_WARNING=""
+  GREY=""
+fi
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+arcana_dir=$(CDPATH= cd -- "$script_dir/.." && pwd -P)
+
+installed=0
+partial=0
+total=0
+
+for status_spell in \
+  "$arcana_dir/voice-recognition/voice-recognition-status" \
+  "$arcana_dir/voice-audio/voice-audio-status"
+do
+  total=$((total + 1))
+  status_output=$("$status_spell" 2>/dev/null || printf 'not installed')
+  case "$status_output" in
+    *"partial install"*)
+      partial=1
+      ;;
+    *"not installed"*|*"not available"*)
+      ;;
+    *"installed"*)
+      installed=$((installed + 1))
+      ;;
+    *)
+      partial=1
+      ;;
+  esac
+done
+
+if [ "$installed" -eq "$total" ] && [ "$partial" -eq 0 ]; then
+  color="$THEME_SUCCESS"
+  status="installed"
+elif [ "$installed" -eq 0 ] && [ "$partial" -eq 0 ]; then
+  color="$GREY"
+  status="not installed"
+else
+  color="$THEME_WARNING"
+  status="partial install"
+fi
+
+printf '%s%s%s\n' "$color" "$status" "$RESET"

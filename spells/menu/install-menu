@@ -46,10 +46,9 @@ list_entries() {
     fi
 
     preferred_entries="
-      core mud web-wizardry openstreetmaps wizardry-projects
-      wizardry-apps theurgy ai-dev docker yt-dlp webcam
-      voice-recognition voice-audio tor syncthing simplex-chat
-      nostr crossposting bitcoin lightning btcpay
+      core mud web-wizardry wizardry-projects voice ai-dev
+      crossposting openstreetmaps wizardry-apps docker yt-dlp webcam
+      tor syncthing simplex-chat nostr bitcoin lightning btcpay
     "
     for entry_name in $preferred_entries; do
         if [ -e "$install_dir/$entry_name" ]; then
@@ -73,6 +72,11 @@ list_entries() {
         # Gazeta is managed from web wizardry so the root menu keeps a minimum
         # number of submenus while preserving accurate status for standalone apps.
         [ "$entry_name" = "gazeta" ] && continue
+        # Theurgy and voice subcomponents stay reachable through their parent
+        # submenus so root status stays meaningful without duplicating entries.
+        [ "$entry_name" = "theurgy" ] && continue
+        [ "$entry_name" = "voice-recognition" ] && continue
+        [ "$entry_name" = "voice-audio" ] && continue
         [ "$entry_name" = "import-arcanum" ] && continue
         printf '%s\n' "$entry_name"
     done
@@ -148,13 +152,11 @@ while :; do
             openstreetmaps) label="OpenStreetMap" ;;
             wizardry-projects) label="wizardry projects" ;;
             wizardry-apps) label="wizardry apps" ;;
-            theurgy) label="Theurgy" ;;
             ai-dev) label="AI dev" ;;
             docker) label="Docker" ;;
             yt-dlp) label="yt-dlp" ;;
             webcam) label="webcam" ;;
-            voice-recognition) label="voice recognition" ;;
-            voice-audio) label="voice audio" ;;
+            voice) label="voice" ;;
             tor) label="Tor" ;;
             syncthing) label="Syncthing" ;;
             simplex-chat) label="SimpleX" ;;

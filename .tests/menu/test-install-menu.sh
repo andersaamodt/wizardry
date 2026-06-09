@@ -223,11 +223,13 @@ test_install_menu_prefers_expected_core_order() {
     "$install_root/core" \
     "$install_root/mud" \
     "$install_root/web-wizardry" \
-    "$install_root/openstreetmaps" \
     "$install_root/wizardry-projects" \
+    "$install_root/voice" \
+    "$install_root/ai-dev" \
+    "$install_root/crossposting" \
+    "$install_root/openstreetmaps" \
     "$install_root/wizardry-apps" \
     "$install_root/theurgy" \
-    "$install_root/ai-dev" \
     "$install_root/docker" \
     "$install_root/yt-dlp" \
     "$install_root/webcam" \
@@ -237,7 +239,6 @@ test_install_menu_prefers_expected_core_order() {
     "$install_root/syncthing" \
     "$install_root/simplex-chat" \
     "$install_root/nostr" \
-    "$install_root/crossposting" \
     "$install_root/bitcoin" \
     "$install_root/lightning" \
     "$install_root/btcpay" \
@@ -245,7 +246,7 @@ test_install_menu_prefers_expected_core_order() {
 
   for name in \
     core mud web-wizardry openstreetmaps wizardry-projects \
-    wizardry-apps theurgy ai-dev docker yt-dlp webcam \
+    wizardry-apps theurgy voice ai-dev docker yt-dlp webcam \
     voice-recognition voice-audio tor syncthing simplex-chat \
     nostr crossposting bitcoin lightning btcpay gazeta
   do
@@ -292,21 +293,19 @@ SH
 core wizardry
 wizardry MUD
 web wizardry
-OpenStreetMap
 wizardry projects
-wizardry apps
-Theurgy
+voice
 AI dev
+crossposting
+OpenStreetMap
+wizardry apps
 Docker
 yt-dlp
 webcam
-voice recognition
-voice audio
 Tor
 Syncthing
 SimpleX
 Nostr
-crossposting
 Bitcoin
 Lightning
 BTCPay Server
@@ -315,6 +314,13 @@ LABELS
   case "$menu_args" in
     *"Gazeta - ready%"*)
       TEST_FAILURE_REASON="Gazeta should be managed from web wizardry, not the Arcana root"
+      return 1
+      ;;
+  esac
+
+  case "$menu_args" in
+    *"Theurgy - ready%"*|*"voice recognition - ready%"*|*"voice audio - ready%"*)
+      TEST_FAILURE_REASON="nested project/voice entries should not appear at the Arcana root"
       return 1
       ;;
   esac
