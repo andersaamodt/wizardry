@@ -22,6 +22,7 @@ template_source_candidates() {
   wizardry_root=${WIZARDRY_DIR:-$HOME/.wizardry}
   wizardry_parent=$(dirname "$wizardry_root")
   printf '%s\n' \
+    "$wizardry_root/.templates" \
     "$wizardry_root/templates/web" \
     "$wizardry_root/web" \
     "$wizardry_root/spells/web" \
@@ -71,6 +72,10 @@ resolve_template_dir() {
   create_template_name_is_safe "$template_name" || return 1
   template_candidates=$(template_source_candidates)
   while IFS= read -r candidate || [ -n "$candidate" ]; do
+    if [ "$template_name" = "demo" ] && [ -d "$candidate/web-demo" ]; then
+      printf '%s\n' "$candidate/web-demo"
+      return 0
+    fi
     if [ -d "$candidate/$template_name" ]; then
       printf '%s\n' "$candidate/$template_name"
       return 0
