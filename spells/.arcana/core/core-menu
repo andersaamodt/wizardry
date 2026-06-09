@@ -177,6 +177,11 @@ while true; do
   done <<ENTRIES
 $core_menu_entries
 ENTRIES
+
+  import_arcanum_cmd="$root_dir/spells/.arcana/import-arcanum"
+  if [ -x "$import_arcanum_cmd" ]; then
+    set -- "$@" "---" "Import arcanum%$import_arcanum_cmd"
+  fi
   
   # Add exit option
   set -- "$@" "$exit_entry"

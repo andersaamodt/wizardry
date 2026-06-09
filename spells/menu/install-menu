@@ -45,102 +45,34 @@ list_entries() {
         return
     fi
 
-    # Preferred order: core, mud, web-wizardry, OpenStreetMap,
-    # wizardry-projects, ai-dev, yt-dlp, webcam, voice-recognition,
-    # voice-audio, simplex-chat, nostr, crossposting, btcpay, then others
-    # alphabetically.
-    # First output 'core' if it exists
-    if [ -e "$install_dir/core" ]; then
-        printf '%s\n' "core"
-    fi
-    
-    # Then 'mud' if it exists
-    if [ -e "$install_dir/mud" ]; then
-        printf '%s\n' "mud"
-    fi
-    
-    # Then 'web-wizardry' if it exists
-    if [ -e "$install_dir/web-wizardry" ]; then
-        printf '%s\n' "web-wizardry"
-    fi
-
-    # Then 'openstreetmaps' if it exists
-    if [ -e "$install_dir/openstreetmaps" ]; then
-        printf '%s\n' "openstreetmaps"
-    fi
-
-    # Then 'wizardry-projects' if it exists
-    if [ -e "$install_dir/wizardry-projects" ]; then
-        printf '%s\n' "wizardry-projects"
-    fi
-
-    # Then 'ai-dev' if it exists
-    if [ -e "$install_dir/ai-dev" ]; then
-        printf '%s\n' "ai-dev"
-    fi
-
-    # Then 'yt-dlp' if it exists
-    if [ -e "$install_dir/yt-dlp" ]; then
-        printf '%s\n' "yt-dlp"
-    fi
-
-    # Then 'webcam' if it exists
-    if [ -e "$install_dir/webcam" ]; then
-        printf '%s\n' "webcam"
-    fi
-
-    # Then 'voice-recognition' if it exists
-    if [ -e "$install_dir/voice-recognition" ]; then
-        printf '%s\n' "voice-recognition"
-    fi
-
-    # Then 'voice-audio' if it exists
-    if [ -e "$install_dir/voice-audio" ]; then
-        printf '%s\n' "voice-audio"
-    fi
-
-    # Then 'simplex-chat' if it exists
-    if [ -e "$install_dir/simplex-chat" ]; then
-        printf '%s\n' "simplex-chat"
-    fi
-
-    # Then 'nostr' if it exists
-    if [ -e "$install_dir/nostr" ]; then
-        printf '%s\n' "nostr"
-    fi
-
-    # Then 'crossposting' if it exists
-    if [ -e "$install_dir/crossposting" ]; then
-        printf '%s\n' "crossposting"
-    fi
-
-    # Then 'btcpay' if it exists
-    if [ -e "$install_dir/btcpay" ]; then
-        printf '%s\n' "btcpay"
-    fi
+    preferred_entries="
+      core mud web-wizardry openstreetmaps wizardry-projects
+      wizardry-apps theurgy ai-dev docker yt-dlp webcam
+      voice-recognition voice-audio tor syncthing simplex-chat
+      nostr crossposting bitcoin lightning btcpay
+    "
+    for entry_name in $preferred_entries; do
+        if [ -e "$install_dir/$entry_name" ]; then
+            printf '%s\n' "$entry_name"
+        fi
+    done
     
     # Then output all other entries alphabetically
     for entry in "$install_dir"/*; do
         [ -e "$entry" ] || continue
         entry_name=$(basename "$entry")
         # Skip entries we already listed
-        [ "$entry_name" = "core" ] && continue
-        [ "$entry_name" = "mud" ] && continue
-        [ "$entry_name" = "web-wizardry" ] && continue
-        [ "$entry_name" = "openstreetmaps" ] && continue
-        [ "$entry_name" = "wizardry-projects" ] && continue
-        [ "$entry_name" = "wizardry-apps" ] && continue
-        [ "$entry_name" = "theurgy" ] && continue
-        [ "$entry_name" = "ai-dev" ] && continue
-        [ "$entry_name" = "yt-dlp" ] && continue
-        [ "$entry_name" = "webcam" ] && continue
-        [ "$entry_name" = "voice-recognition" ] && continue
-        [ "$entry_name" = "voice-audio" ] && continue
-        [ "$entry_name" = "simplex-chat" ] && continue
-        [ "$entry_name" = "nostr" ] && continue
-        [ "$entry_name" = "crossposting" ] && continue
-        [ "$entry_name" = "btcpay" ] && continue
-        # Skip 'import-arcanum' since it's a special menu item added separately
+        listed=0
+        for preferred_name in $preferred_entries; do
+            if [ "$entry_name" = "$preferred_name" ]; then
+                listed=1
+                break
+            fi
+        done
+        [ "$listed" -eq 1 ] && continue
+        # Gazeta is managed from web wizardry so the root menu keeps a minimum
+        # number of submenus while preserving accurate status for standalone apps.
+        [ "$entry_name" = "gazeta" ] && continue
         [ "$entry_name" = "import-arcanum" ] && continue
         printf '%s\n' "$entry_name"
     done
@@ -215,16 +147,22 @@ while :; do
             web-wizardry) label="web wizardry" ;;
             openstreetmaps) label="OpenStreetMap" ;;
             wizardry-projects) label="wizardry projects" ;;
+            wizardry-apps) label="wizardry apps" ;;
+            theurgy) label="Theurgy" ;;
             ai-dev) label="AI dev" ;;
+            docker) label="Docker" ;;
             yt-dlp) label="yt-dlp" ;;
             webcam) label="webcam" ;;
             voice-recognition) label="voice recognition" ;;
             voice-audio) label="voice audio" ;;
+            tor) label="Tor" ;;
+            syncthing) label="Syncthing" ;;
             simplex-chat) label="SimpleX" ;;
             nostr) label="Nostr" ;;
             crossposting) label="crossposting" ;;
+            bitcoin) label="Bitcoin" ;;
+            lightning) label="Lightning" ;;
             btcpay) label="BTCPay Server" ;;
-            docker) label="Docker" ;;
         esac
         
         if [ -n "$status" ]; then
@@ -235,19 +173,6 @@ while :; do
         # the menu cantrip.
         set -- "$@" "${label}%$cmd"
     done
-
-    # Add divider and Import arcanum menu item (only if the command exists)
-    import_arcanum_cmd=""
-    if [ -x "$install_dir/import-arcanum" ]; then
-        import_arcanum_cmd="$install_dir/import-arcanum"
-    elif command -v import-arcanum >/dev/null 2>&1; then
-        import_arcanum_cmd="import-arcanum"
-    fi
-    
-    if [ -n "$import_arcanum_cmd" ]; then
-        set -- "$@" "---"
-        set -- "$@" "Import arcanum%$import_arcanum_cmd"
-    fi
 
     # Exit button kills this menu script via TERM signal
     # Menu (child process) evals: kill -TERM $PPID → kills its parent (this script)

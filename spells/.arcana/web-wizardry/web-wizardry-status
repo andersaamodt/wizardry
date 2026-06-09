@@ -7,7 +7,7 @@ case "${1-}" in
   cat <<'USAGE'
 Usage: web-wizardry-status
 
-Reports the installation status of web wizardry components (pandoc, nginx, fcgiwrap, filesystem-tools, openssl, htmx, certbot, fauxzilla, coreutils).
+Reports the installation status of web wizardry components (pandoc, nginx, fcgiwrap, filesystem-tools, openssl, htmx, certbot, fauxzilla, gazeta).
 USAGE
   exit 0
   ;;
@@ -28,14 +28,15 @@ else
   GREY=""
 fi
 
-# Count installed components
-installed=0
-total=9
-
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+components="pandoc nginx fcgiwrap filesystem-tools openssl htmx certbot fauxzilla gazeta"
+
+installed=0
+total=0
 
 # Check each component using the helper
-for component in pandoc nginx fcgiwrap filesystem-tools openssl htmx certbot fauxzilla coreutils; do
+for component in $components; do
+  total=$((total + 1))
   if "$script_dir/is-web-component-installed" "$component" 2>/dev/null; then
     installed=$((installed + 1))
   fi
