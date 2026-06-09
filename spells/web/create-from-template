@@ -85,7 +85,7 @@ $template_candidates
 EOF
   template_candidates=$(external_template_candidates "$template_name")
   while IFS= read -r candidate || [ -n "$candidate" ]; do
-    if [ -d "$candidate/pages" ]; then
+    if [ -d "$candidate/pages" ] || [ -d "$candidate/site/pages" ]; then
       printf '%s\n' "$candidate"
       return 0
     fi
