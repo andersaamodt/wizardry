@@ -106,6 +106,8 @@ ec_saved_web_root="${WEB_WIZARDRY_ROOT:-}"
 ec_saved_sites_dir="${WIZARDRY_SITES_DIR:-}"
 ec_saved_web_js_dir="${WIZARDRY_WEB_JS_DIR:-}"
 ec_saved_apps_dir="${WIZARDRY_APPS_DIR:-}"
+ec_saved_gazeta_dir="${GAZETA_DIR:-}"
+ec_saved_gazeta_repo_url="${GAZETA_REPO_URL:-}"
 
 # Preserve menu selection tracking (used by site-menu, core-menu, etc.)
 ec_saved_selection_file="${SELECTION_FILE:-}"
@@ -204,6 +206,8 @@ export OLDPWD="$ec_saved_oldpwd"
 [ -n "$ec_saved_sites_dir" ] && export WIZARDRY_SITES_DIR="$ec_saved_sites_dir"
 [ -n "$ec_saved_web_js_dir" ] && export WIZARDRY_WEB_JS_DIR="$ec_saved_web_js_dir"
 [ -n "$ec_saved_apps_dir" ] && export WIZARDRY_APPS_DIR="$ec_saved_apps_dir"
+[ -n "$ec_saved_gazeta_dir" ] && export GAZETA_DIR="$ec_saved_gazeta_dir"
+[ -n "$ec_saved_gazeta_repo_url" ] && export GAZETA_REPO_URL="$ec_saved_gazeta_repo_url"
 
 # Restore menu selection tracking
 [ -n "$ec_saved_selection_file" ] && export SELECTION_FILE="$ec_saved_selection_file"
@@ -280,6 +284,7 @@ unset ec_saved_lang ec_saved_tmpdir ec_saved_pwd ec_saved_oldpwd
 unset ec_saved_wizardry_dir ec_saved_wizardry_invoked ec_saved_spellbook_dir
 unset ec_saved_mud_dir ec_saved_log_level ec_saved_mud_player
 unset ec_saved_web_root ec_saved_sites_dir ec_saved_web_js_dir
+unset ec_saved_gazeta_dir ec_saved_gazeta_repo_url
 unset ec_saved_nix_pkg
 unset ec_saved_apt_pkg ec_saved_pacman_pkg ec_saved_pkgin_pkg ec_saved_test_failure
 unset ec_saved_test_skip ec_saved_wiz_tmpdir ec_saved_global_subtest

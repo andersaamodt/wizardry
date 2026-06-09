@@ -274,8 +274,8 @@ while true; do
     "update-from-template $quoted_site_name")
 
   site_requirements_file="$site_dir/wizardry-server-requirements.conf"
-  if [ ! -f "$site_requirements_file" ] && [ "$site_template" = "blog" ] && [ -f "$HOME/git/nostr-blog/wizardry-server-requirements.conf" ]; then
-    site_requirements_file="$HOME/git/nostr-blog/wizardry-server-requirements.conf"
+  if [ ! -f "$site_requirements_file" ] && [ "$site_template" = "blog" ] && [ -f "$HOME/git/gazeta/wizardry-server-requirements.conf" ]; then
+    site_requirements_file="$HOME/git/gazeta/wizardry-server-requirements.conf"
   fi
   requirements_registry_dir="$WIZARDRY_DIR/spells/web/.requirements"
 
@@ -336,13 +336,6 @@ while true; do
     done < "$site_requirements_file"
   fi
 
-  mirror_nostr_option=""
-  if [ "$site_template" = "blog" ]; then
-    mirror_nostr_cmd_wrapped=$(wrap_cmd "Mirror Nostr events" \
-      "blog-nostr-mirror $quoted_site_name")
-    mirror_nostr_option="Mirror Nostr events%$mirror_nostr_cmd_wrapped"
-  fi
-  
   # Conditional: Copy .onion address
   if [ -n "$copy_site_onion" ]; then
     copy_cmd_wrapped=$(wrap_cmd "Copy .onion address" \
@@ -453,8 +446,7 @@ while true; do
   # Build menu array - restore original menu order
   set -- \
     ${open_browser_option:+"$open_browser_option"} \
-    "Build all & restart server%$build_restart_cmd_wrapped" \
-    ${mirror_nostr_option:+"$mirror_nostr_option"}
+    "Build all & restart server%$build_restart_cmd_wrapped"
   if [ -f "$requirement_menu_items_file" ]; then
     while IFS= read -r requirement_item; do
       [ -n "$requirement_item" ] || continue

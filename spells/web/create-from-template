@@ -40,10 +40,10 @@ external_template_candidates() {
   case "$template_name" in
     blog)
       printf '%s\n' \
+        "$wizardry_parent/git/gazeta" \
+        "$HOME/git/gazeta" \
         "$wizardry_parent/git/blog-template" \
-        "$HOME/git/blog-template" \
-        "$wizardry_parent/git/nostr-blog" \
-        "$HOME/git/nostr-blog"
+        "$HOME/git/blog-template"
       ;;
     unix-settings)
       printf '%s\n' \
@@ -85,7 +85,7 @@ $template_candidates
 EOF
   template_candidates=$(external_template_candidates "$template_name")
   while IFS= read -r candidate || [ -n "$candidate" ]; do
-    if [ -d "$candidate/pages" ]; then
+    if [ -d "$candidate/pages" ] || [ -d "$candidate/site/pages" ]; then
       printf '%s\n' "$candidate"
       return 0
     fi

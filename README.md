@@ -10,18 +10,26 @@ For work that outgrows pure shell fan-out, wizardry now has a sister project: [t
 
 The language of magic—a human heirloom—is rich in evocative words for hidden forces and abstract transformations, making it a natural fit for extending the terminal's vocabulary, binding the worlds of thought and myth together as effective language.
 
-## Status for target platforms:
+## Project status
 
-**Current status:** 🟡 `install` + `menu` untested across listed platforms. Wizardry is brand new, so not all spells have been tested and debugged yet.
+**Current status:** Core wizardry works on macOS; other platforms still need testing.
 
-| OS                        | Shortname | Status                              | `install` | `menu` | `banish` | `test-magic` | `demo-magic` |
-| ------------------------- | --------- | ----------------------------------- | --------- | ------ | -------- | ------------ | ------------ |
-| **Debian (and Ubuntu)**   | `debian`  | 🟡 **`install` + `menu` untested**    | 🟡        | 🟡     | 🟡       | 🟡           | 🟡           |
-| **NixOS**                 | `nixos`   | 🟡 **`install` + `menu` untested**    | 🟡        | 🟡     | 🟡       | 🟡           | 🟡           |
-| **MacOS**                 | `macos`   | 🟢 **core is working**    | 🟢        | 🟢     | 🟢 Lvl.23      | 🟡           | 🟡           |
-| **Arch**                  | `arch`    | 🟠 **untested**    | 🟠        | 🟠     | 🟠       | 🟠           | 🟠           |
-| **Android (Linux-based)** | —         | 🟠 **currently unsupported**    | 🟠        | 🟠     | 🟠       | 🟠           | 🟠           |
-| **Windows**               | —         | ✘ **no support planned (except WSL)**    | ✘         | ✘      | ✘        | ✘            | ✘            |
+- ✅ POSIX shell spell and imp conventions
+- ✅ Interactive command-discovery menus
+- ✅ Spellbook, memorized casts, and custom spell organization
+- ✅ Arcana installer menus for the free software suite
+- ✅ MUD-style command parsing and magical vocabulary
+- ☐ Terminal theming and MUD game: Patchy
+- ☐ Cross-platform testing: Only macOS tested
+
+| OS                        | Shortname | Status                              |
+| ------------------------- | --------- | ----------------------------------- |
+| **Debian (and Ubuntu)**   | `debian`  | 🟡 **untested**                     |
+| **NixOS**                 | `nixos`   | 🟡 **untested**                     |
+| **MacOS**                 | `macos`   | 🟢 **working**                      |
+| **Arch**                  | `arch`    | 🟠 **untested**                     |
+| **Android (Linux-based)** | —         | 🟠 **currently unsupported**        |
+| **Windows**               | —         | ✘ **no support planned (except WSL)** |
 
 ## Installation
 

@@ -12,6 +12,8 @@ resolve_test_template_root() {
     "$ROOT_DIR/templates/web" \
     "$ROOT_DIR/web" \
     "$ROOT_DIR/spells/web" \
+    "$root_parent/git/gazeta" \
+    "$HOME/git/gazeta" \
     "$root_parent/git/wizardry-apps/templates/web" \
     "$root_parent/git/wizardry-apps/web" \
     "$HOME/git/wizardry-apps/templates/web" \
@@ -45,7 +47,7 @@ test_help() {
   assert_output_contains "demo"
 }
 
-test_blog_template_has_sample_posts() {
+test_blog_template_uses_gazeta_layout() {
   skip-if-compiled || return $?
 
   test_web_root=$(temp-dir web-wizardry-test)
@@ -54,9 +56,14 @@ test_blog_template_has_sample_posts() {
   WIZARDRY_DIR="$ROOT_DIR" run_spell spells/web/create-from-template mytestblog blog
   assert_success
 
-  post_count=$(find "$test_web_root/mytestblog/site/pages/posts" -name "*.md" -type f | wc -l)
-  [ "$post_count" -gt 0 ] || {
-    TEST_FAILURE_REASON="no sample posts found (expected at least 1)"
+  [ -f "$test_web_root/mytestblog/site/pages/blog.md" ] || {
+    TEST_FAILURE_REASON="Gazeta blog page was not copied into site/pages"
+    rm -rf "$test_web_root"
+    return 1
+  }
+
+  [ -f "$test_web_root/mytestblog/wizardry-server-requirements.conf" ] || {
+    TEST_FAILURE_REASON="Gazeta server requirements manifest was not copied"
     rm -rf "$test_web_root"
     return 1
   }
@@ -261,16 +268,19 @@ test_create_from_template_resolves_external_repo_templates() {
   test_web_root=$(temp-dir web-wizardry-test)
 
   mkdir -p "$fake_wizardry_root"
-  mkdir -p "$fake_git_root/nostr-blog/pages" "$fake_git_root/nostr-blog/static"
+  mkdir -p "$fake_git_root/gazeta/pages" "$fake_git_root/gazeta/static"
   mkdir -p "$fake_git_root/unix-settings/hosted-web/pages" \
     "$fake_git_root/unix-settings/hosted-web/static" \
     "$fake_git_root/unix-settings/hosted-web/cgi"
 
-  cat > "$fake_git_root/nostr-blog/pages/index.md" <<'EOF'
-# External Blog
+  cat > "$fake_git_root/gazeta/pages/index.md" <<'EOF'
+# Gazeta Blog
 EOF
-  cat > "$fake_git_root/nostr-blog/static/style.css" <<'EOF'
+  cat > "$fake_git_root/gazeta/static/style.css" <<'EOF'
 body { color: #222; }
+EOF
+  cat > "$fake_git_root/gazeta/wizardry-server-requirements.conf" <<'EOF'
+nostril=required
 EOF
   cat > "$fake_git_root/unix-settings/hosted-web/pages/index.md" <<'EOF'
 # UNIX Settings
@@ -293,7 +303,12 @@ EOF
   assert_success || return 1
 
   [ -f "$test_web_root/blogsite/site/pages/index.md" ] || {
-    TEST_FAILURE_REASON="external blog template index not copied"
+    TEST_FAILURE_REASON="Gazeta blog template index not copied"
+    rm -rf "$fake_home" "$test_web_root"
+    return 1
+  }
+  [ -f "$test_web_root/blogsite/wizardry-server-requirements.conf" ] || {
+    TEST_FAILURE_REASON="Gazeta requirements manifest not copied"
     rm -rf "$fake_home" "$test_web_root"
     return 1
   }
@@ -313,9 +328,9 @@ EOF
 
 run_test_case "create-from-template shows help" test_help
 if [ -d "$ROOT_DIR/web/blog" ]; then
-  run_test_case "blog template has sample posts" test_blog_template_has_sample_posts
-elif [ -d "$ROOT_DIR/spells/web/blog" ] || [ -d "$(dirname "$ROOT_DIR")/git/wizardry-apps/web/blog" ] || [ -d "$HOME/git/wizardry-apps/web/blog" ]; then
-  run_test_case "blog template has sample posts" test_blog_template_has_sample_posts
+  run_test_case "blog template uses Gazeta layout" test_blog_template_uses_gazeta_layout
+elif [ -d "$ROOT_DIR/spells/web/blog" ] || [ -d "$(dirname "$ROOT_DIR")/git/gazeta" ] || [ -d "$HOME/git/gazeta" ] || [ -d "$(dirname "$ROOT_DIR")/git/wizardry-apps/web/blog" ] || [ -d "$HOME/git/wizardry-apps/web/blog" ]; then
+  run_test_case "blog template uses Gazeta layout" test_blog_template_uses_gazeta_layout
 fi
 run_test_case "all templates create expected site structure" test_all_web_templates_create_expected_structure
 run_test_case "create-from-template resolves templates from web" test_create_from_template_uses_web_directory

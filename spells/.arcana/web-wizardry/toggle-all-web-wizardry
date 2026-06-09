@@ -30,8 +30,8 @@ if [ "$action" = "--enable" ]; then
   "$script_dir/install-web-filesystem-tools" || true
   "$script_dir/install-web-openssl" || true
   "$script_dir/install-htmx" || true
-  "$script_dir/install-certbot" || true
-  "$script_dir/install-coreutils" || true
+  "$script_dir/install-acme" || true
+  "$script_dir/../gazeta/install-gazeta" || true
   
   printf '%s\n' "All components installation attempted."
 elif [ "$action" = "--disable" ]; then
@@ -43,8 +43,8 @@ elif [ "$action" = "--disable" ]; then
   "$script_dir/uninstall-web-filesystem-tools" || true
   "$script_dir/uninstall-web-openssl" || true
   "$script_dir/uninstall-htmx" || true
-  "$script_dir/uninstall-certbot" || true
-  # Note: coreutils cannot be uninstalled
+  "$script_dir/uninstall-acme" || true
+  "$script_dir/../gazeta/uninstall-gazeta" || true
   
   printf '%s\n' "All components uninstallation attempted."
 else

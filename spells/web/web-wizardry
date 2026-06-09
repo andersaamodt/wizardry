@@ -22,7 +22,6 @@ Commands:
   configure SITENAME Configure website settings
   autorebuild SITENAME [status|enable|disable|toggle]
                     Manage automatic rebuild watcher + cron for a site
-  nostr-mirror SITENAME  Mirror Nostr events for a blog site
   check-filesystem-tools Check filesystem growth tooling
   install-filesystem-tools Ensure filesystem growth tooling is installed
   uninstall-filesystem-tools Remove filesystem growth tooling
@@ -181,12 +180,6 @@ case "$cmd" in
         die 2 "web-wizardry: autorebuild action must be status|enable|disable|toggle"
         ;;
     esac
-    exit 0
-    ;;
-  nostr-mirror)
-    site_name=${2-}
-    require_web_site_name nostr-mirror "$site_name"
-    blog-nostr-mirror "$site_name"
     exit 0
     ;;
   check-filesystem-tools)

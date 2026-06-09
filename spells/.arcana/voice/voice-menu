@@ -1,0 +1,44 @@
+#!/bin/sh
+
+# Present the combined voice management menu.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: voice-menu
+
+Displays voice recognition and voice audio management menus.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+if ! require menu "The voice-menu needs the 'menu' command to present options."; then
+  exit 1
+fi
+
+trap 'exit 130' INT
+trap 'exit 0' TERM
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+arcana_dir=$(CDPATH= cd -- "$script_dir/.." && pwd -P)
+
+while :; do
+  exit_label=$(exit-label)
+  menu_status=0
+  menu "Voice:" \
+    "voice recognition%$arcana_dir/voice-recognition/voice-recognition-menu" \
+    "voice audio%$arcana_dir/voice-audio/voice-audio-menu" \
+    "$exit_label%kill -TERM \$PPID" || menu_status=$?
+
+  menu_status=${menu_status:-0}
+  if [ "$menu_status" -eq 130 ]; then
+    printf 'ESC\n' >&2
+    exit 0
+  fi
+done

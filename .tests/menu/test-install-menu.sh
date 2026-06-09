@@ -223,18 +223,33 @@ test_install_menu_prefers_expected_core_order() {
     "$install_root/core" \
     "$install_root/mud" \
     "$install_root/web-wizardry" \
-    "$install_root/openstreetmaps" \
     "$install_root/wizardry-projects" \
+    "$install_root/voice" \
     "$install_root/ai-dev" \
+    "$install_root/crossposting" \
+    "$install_root/openstreetmaps" \
+    "$install_root/wizardry-apps" \
+    "$install_root/theurgy" \
+    "$install_root/docker" \
     "$install_root/yt-dlp" \
     "$install_root/webcam" \
     "$install_root/voice-recognition" \
     "$install_root/voice-audio" \
+    "$install_root/tor" \
+    "$install_root/syncthing" \
     "$install_root/simplex-chat" \
     "$install_root/nostr" \
-    "$install_root/crossposting"
+    "$install_root/bitcoin" \
+    "$install_root/lightning" \
+    "$install_root/btcpay" \
+    "$install_root/gazeta"
 
-  for name in core mud web-wizardry openstreetmaps wizardry-projects ai-dev yt-dlp webcam voice-recognition voice-audio simplex-chat nostr crossposting; do
+  for name in \
+    core mud web-wizardry openstreetmaps wizardry-projects \
+    wizardry-apps theurgy voice ai-dev docker yt-dlp webcam \
+    voice-recognition voice-audio tor syncthing simplex-chat \
+    nostr crossposting bitcoin lightning btcpay gazeta
+  do
     cat >"$tmp/$name-status" <<'SH'
 #!/bin/sh
 echo ready
@@ -256,29 +271,59 @@ SH
 
   menu_args=$(cat "$tmp/log")
 
-  core_pos=$(printf '%s' "$menu_args" | grep -b -o "core wizardry - ready%" | head -1 | cut -d: -f1 || true)
-  mud_pos=$(printf '%s' "$menu_args" | grep -b -o "wizardry MUD - ready%" | head -1 | cut -d: -f1 || true)
-  web_pos=$(printf '%s' "$menu_args" | grep -b -o "web wizardry - ready%" | head -1 | cut -d: -f1 || true)
-  osm_pos=$(printf '%s' "$menu_args" | grep -b -o "OpenStreetMap - ready%" | head -1 | cut -d: -f1 || true)
-  projects_pos=$(printf '%s' "$menu_args" | grep -b -o "wizardry projects - ready%" | head -1 | cut -d: -f1 || true)
-  ai_pos=$(printf '%s' "$menu_args" | grep -b -o "AI dev - ready%" | head -1 | cut -d: -f1 || true)
-  ytdlp_pos=$(printf '%s' "$menu_args" | grep -b -o "yt-dlp - ready%" | head -1 | cut -d: -f1 || true)
-  webcam_pos=$(printf '%s' "$menu_args" | grep -b -o "webcam - ready%" | head -1 | cut -d: -f1 || true)
-  voice_pos=$(printf '%s' "$menu_args" | grep -b -o "voice recognition - ready%" | head -1 | cut -d: -f1 || true)
-  audio_pos=$(printf '%s' "$menu_args" | grep -b -o "voice audio - ready%" | head -1 | cut -d: -f1 || true)
-  simplex_pos=$(printf '%s' "$menu_args" | grep -b -o "SimpleX - ready%" | head -1 | cut -d: -f1 || true)
-  nostr_pos=$(printf '%s' "$menu_args" | grep -b -o "Nostr - ready%" | head -1 | cut -d: -f1 || true)
-  crossposting_pos=$(printf '%s' "$menu_args" | grep -b -o "crossposting - ready%" | head -1 | cut -d: -f1 || true)
+  previous_pos=-1
+  while IFS= read -r label; do
+    [ -n "$label" ] || continue
+    current_pos=$(
+      printf '%s' "$menu_args" |
+        grep -b -o "$label - ready%" |
+        head -1 |
+        cut -d: -f1 || true
+    )
+    if [ -z "$current_pos" ]; then
+      TEST_FAILURE_REASON="missing expected ordered entry: $label"
+      return 1
+    fi
+    if [ "$current_pos" -le "$previous_pos" ]; then
+      TEST_FAILURE_REASON="unexpected install-menu order near: $label"
+      return 1
+    fi
+    previous_pos=$current_pos
+  done <<'LABELS'
+core wizardry
+wizardry MUD
+web wizardry
+wizardry projects
+voice
+AI dev
+crossposting
+OpenStreetMap
+wizardry apps
+Docker
+yt-dlp
+webcam
+Tor
+Syncthing
+SimpleX
+Nostr
+Bitcoin
+Lightning
+BTCPay Server
+LABELS
 
-  [ "$core_pos" -gt 0 ] && [ "$mud_pos" -gt 0 ] && [ "$web_pos" -gt 0 ] && [ "$osm_pos" -gt 0 ] && [ "$projects_pos" -gt 0 ] && [ "$ai_pos" -gt 0 ] && [ "$ytdlp_pos" -gt 0 ] && [ "$webcam_pos" -gt 0 ] && [ "$voice_pos" -gt 0 ] && [ "$audio_pos" -gt 0 ] && [ "$simplex_pos" -gt 0 ] && [ "$nostr_pos" -gt 0 ] && [ "$crossposting_pos" -gt 0 ] || {
-    TEST_FAILURE_REASON="missing one or more expected ordered entries"
-    return 1
-  }
+  case "$menu_args" in
+    *"Gazeta - ready%"*)
+      TEST_FAILURE_REASON="Gazeta should be managed from web wizardry, not the Arcana root"
+      return 1
+      ;;
+  esac
 
-  [ "$core_pos" -lt "$mud_pos" ] && [ "$mud_pos" -lt "$web_pos" ] && [ "$web_pos" -lt "$osm_pos" ] && [ "$osm_pos" -lt "$projects_pos" ] && [ "$projects_pos" -lt "$ai_pos" ] && [ "$ai_pos" -lt "$ytdlp_pos" ] && [ "$ytdlp_pos" -lt "$webcam_pos" ] && [ "$webcam_pos" -lt "$voice_pos" ] && [ "$voice_pos" -lt "$audio_pos" ] && [ "$audio_pos" -lt "$simplex_pos" ] && [ "$simplex_pos" -lt "$nostr_pos" ] && [ "$nostr_pos" -lt "$crossposting_pos" ] || {
-    TEST_FAILURE_REASON="unexpected install-menu order for core/mud/web-wizardry/openstreetmaps/wizardry-projects/ai-dev/yt-dlp/webcam/voice-recognition/voice-audio/simplex/nostr/crossposting"
-    return 1
-  }
+  case "$menu_args" in
+    *"Theurgy - ready%"*|*"voice recognition - ready%"*|*"voice audio - ready%"*)
+      TEST_FAILURE_REASON="nested project/voice entries should not appear at the Arcana root"
+      return 1
+      ;;
+  esac
 }
 
 run_test_case "install-menu keeps preferred arcanum order" test_install_menu_prefers_expected_core_order
@@ -328,8 +373,8 @@ SH
 
 run_test_case "install-menu nested spacing behavior" test_nested_menu_spacing
 
-# Test that import-arcanum appears in menu with divider
-test_import_arcanum_in_menu() {
+# Test that import-arcanum stays out of the root install menu.
+test_import_arcanum_not_in_menu() {
   skip-if-compiled || return $?
   tmp=$(make_tempdir)
   make_stub_menu_env "$tmp"
@@ -358,17 +403,18 @@ SH
   run_cmd env PATH="$tmp:$PATH" INSTALL_MENU_ROOT="$install_root" INSTALL_MENU_DIRS="test" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/install-menu"
   assert_success || return 1
   
-  # Check that menu includes import-arcanum with divider before it
   menu_args=$(cat "$tmp/log")
   case "$menu_args" in
-    *"---"*"Import arcanum%"*) : ;;
-    *) TEST_FAILURE_REASON="import-arcanum with divider not found in menu"; return 1 ;;
+    *"Import arcanum%"*)
+      TEST_FAILURE_REASON="import-arcanum should not be a root install-menu entry"
+      return 1
+      ;;
   esac
   
   return 0
 }
 
-run_test_case "install-menu includes import-arcanum" test_import_arcanum_in_menu
+run_test_case "install-menu keeps import-arcanum out of root" test_import_arcanum_not_in_menu
 
 # Test that exactly one blank line appears when selecting menu items
 test_single_blank_line_on_selection() {
