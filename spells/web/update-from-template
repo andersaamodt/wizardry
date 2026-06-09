@@ -30,6 +30,7 @@ update_template_source_candidates() {
   wizardry_root=${WIZARDRY_DIR:-$HOME/.wizardry}
   wizardry_parent=$(dirname "$wizardry_root")
   printf '%s\n' \
+    "$wizardry_root/.templates" \
     "$wizardry_root/templates/web" \
     "$wizardry_root/web" \
     "$wizardry_root/spells/web" \

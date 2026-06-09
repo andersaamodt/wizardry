@@ -8,6 +8,7 @@ done
 resolve_test_template_root() {
   root_parent=$(dirname "$ROOT_DIR")
   for candidate in \
+    "$ROOT_DIR/.templates" \
     "$ROOT_DIR/templates/web" \
     "$ROOT_DIR/web" \
     "$ROOT_DIR/spells/web" \
@@ -24,6 +25,15 @@ resolve_test_template_root() {
     done
   done
   return 1
+}
+
+template_name_from_path() {
+  template_path=$1
+  template_name=$(basename "$template_path")
+  case "$template_name" in
+    web-demo) printf '%s\n' demo ;;
+    *) printf '%s\n' "$template_name" ;;
+  esac
 }
 
 TEST_TEMPLATE_ROOT=$(resolve_test_template_root 2>/dev/null || printf '')
@@ -70,7 +80,7 @@ test_all_web_templates_create_expected_structure() {
   for template_path in "$template_root"/*; do
     [ -d "$template_path" ] || continue
     found_template=1
-    template=$(basename "$template_path")
+    template=$(template_name_from_path "$template_path")
     site_name="tmpl-${template}"
     site_dir="$test_web_root/$site_name"
 
