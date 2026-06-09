@@ -26,7 +26,7 @@ The language of magic—a human heirloom—is rich in evocative words for hidden
 | ------------------------- | --------- | ----------------------------------- |
 | **Debian (and Ubuntu)**   | `debian`  | 🟡 **untested**                     |
 | **NixOS**                 | `nixos`   | 🟡 **untested**                     |
-| **MacOS**                 | `macos`   | 🟢 **core is working**              |
+| **MacOS**                 | `macos`   | 🟢 **working**                      |
 | **Arch**                  | `arch`    | 🟠 **untested**                     |
 | **Android (Linux-based)** | —         | 🟠 **currently unsupported**        |
 | **Windows**               | —         | ✘ **no support planned (except WSL)** |
