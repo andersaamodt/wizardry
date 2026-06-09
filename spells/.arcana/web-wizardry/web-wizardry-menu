@@ -44,6 +44,7 @@ while true; do
   htmx_was_installed=0
   certbot_was_installed=0
   fauxzilla_was_installed=0
+  gazeta_was_installed=0
   
   "$script_dir/is-web-component-installed" pandoc 2>/dev/null && pandoc_was_installed=1
   "$script_dir/is-web-component-installed" nginx 2>/dev/null && nginx_was_installed=1
@@ -54,6 +55,7 @@ while true; do
   "$script_dir/is-web-component-installed" htmx 2>/dev/null && htmx_was_installed=1
   "$script_dir/is-web-component-installed" certbot 2>/dev/null && certbot_was_installed=1
   "$script_dir/is-web-component-installed" fauxzilla 2>/dev/null && fauxzilla_was_installed=1
+  "$script_dir/is-web-component-installed" gazeta 2>/dev/null && gazeta_was_installed=1
   
   # Track starting position
   start_selection=${start_selection:-1}
@@ -159,10 +161,21 @@ while true; do
   pos=$((pos + 1))
 
   fauxzilla_client_configure="    configure Fauxzilla browser%configure-fauxzilla-client"
+
+  gazeta_install_cmd="$script_dir/../gazeta/install-gazeta"
+  gazeta_uninstall_cmd="$script_dir/../gazeta/uninstall-gazeta"
+  if [ "$gazeta_was_installed" -eq 1 ]; then
+    gazeta_toggle="[X] Gazeta blog template%$gazeta_uninstall_cmd"
+    gazeta_pos=$pos
+  else
+    gazeta_toggle="[ ] Gazeta blog template%$gazeta_install_cmd"
+    gazeta_pos=$pos
+  fi
+  pos=$((pos + 1))
   
   # Check if all are installed for enable/disable all toggle
   all_installed=1
-  for component in pandoc nginx fcgiwrap filesystem-tools openssl htmx certbot fauxzilla; do
+  for component in pandoc nginx fcgiwrap filesystem-tools openssl htmx certbot fauxzilla gazeta; do
     if ! "$script_dir/is-web-component-installed" "$component" 2>/dev/null; then
       all_installed=0
       break
@@ -189,6 +202,7 @@ while true; do
   [ -n "$https_admin" ] && set -- "$@" "$https_admin"
   set -- "$@" "$fauxzilla_toggle"
   set -- "$@" "$fauxzilla_client_configure"
+  set -- "$@" "$gazeta_toggle"
   set -- "$@" "$toggle_all" "$exit_item"
   
   menu --start-selection "$start_selection" "Install Web Wizardry:" "$@" || menu_status=$?
@@ -241,6 +255,11 @@ while true; do
   else
     fauxzilla_now_installed=0
   fi
+  if "$script_dir/is-web-component-installed" gazeta 2>/dev/null; then
+    gazeta_now_installed=1
+  else
+    gazeta_now_installed=0
+  fi
   
   # Update start_selection to the component that changed
   if [ "$pandoc_was_installed" -ne "$pandoc_now_installed" ]; then
@@ -259,6 +278,8 @@ while true; do
     start_selection=$certbot_pos
   elif [ "$fauxzilla_was_installed" -ne "$fauxzilla_now_installed" ]; then
     start_selection=$fauxzilla_pos
+  elif [ "$gazeta_was_installed" -ne "$gazeta_now_installed" ]; then
+    start_selection=$gazeta_pos
   fi
   # If no change detected, start_selection stays the same
   

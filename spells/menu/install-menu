@@ -45,7 +45,7 @@ list_entries() {
         return
     fi
 
-    # Preferred order: core, mud, web-wizardry, Gazeta, OpenStreetMap,
+    # Preferred order: core, mud, web-wizardry, OpenStreetMap,
     # wizardry-projects, ai-dev, yt-dlp, webcam, voice-recognition,
     # voice-audio, simplex-chat, nostr, crossposting, btcpay, then others
     # alphabetically.
@@ -62,11 +62,6 @@ list_entries() {
     # Then 'web-wizardry' if it exists
     if [ -e "$install_dir/web-wizardry" ]; then
         printf '%s\n' "web-wizardry"
-    fi
-
-    # Then 'gazeta' if it exists
-    if [ -e "$install_dir/gazeta" ]; then
-        printf '%s\n' "gazeta"
     fi
 
     # Then 'openstreetmaps' if it exists
@@ -132,7 +127,6 @@ list_entries() {
         [ "$entry_name" = "core" ] && continue
         [ "$entry_name" = "mud" ] && continue
         [ "$entry_name" = "web-wizardry" ] && continue
-        [ "$entry_name" = "gazeta" ] && continue
         [ "$entry_name" = "openstreetmaps" ] && continue
         [ "$entry_name" = "wizardry-projects" ] && continue
         [ "$entry_name" = "wizardry-apps" ] && continue
@@ -219,7 +213,6 @@ while :; do
             core) label="core wizardry" ;;
             mud) label="wizardry MUD" ;;
             web-wizardry) label="web wizardry" ;;
-            gazeta) label="Gazeta" ;;
             openstreetmaps) label="OpenStreetMap" ;;
             wizardry-projects) label="wizardry projects" ;;
             ai-dev) label="AI dev" ;;
