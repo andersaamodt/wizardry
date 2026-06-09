@@ -14,6 +14,16 @@ The language of magic—a human heirloom—is rich in evocative words for hidden
 
 **Current status:** 🟡 `install` + `menu` untested across listed platforms. Wizardry is brand new, so not all spells have been tested and debugged yet.
 
+## What is done / left
+
+- ✅ POSIX shell spell and imp conventions
+- ✅ Interactive command-discovery menus
+- ✅ Spellbook, memorized casts, and custom spell organization
+- ✅ Arcana installer menus for the free software suite
+- ✅ MUD-style command parsing and magical vocabulary
+- ☐ Terminal theming and MUD game: Patchy
+- ☐ Cross-platform testing: Only macOS tested
+
 | OS                        | Shortname | Status                              | `install` | `menu` | `banish` | `test-magic` | `demo-magic` |
 | ------------------------- | --------- | ----------------------------------- | --------- | ------ | -------- | ------------ | ------------ |
 | **Debian (and Ubuntu)**   | `debian`  | 🟡 **`install` + `menu` untested**    | 🟡        | 🟡     | 🟡       | 🟡           | 🟡           |
