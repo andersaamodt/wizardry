@@ -24,14 +24,14 @@ The language of magic—a human heirloom—is rich in evocative words for hidden
 - ☐ Terminal theming and MUD game: Patchy
 - ☐ Cross-platform testing: Only macOS tested
 
-| OS                        | Shortname | Status                              | `install` | `menu` | `banish` | `test-magic` | `demo-magic` |
-| ------------------------- | --------- | ----------------------------------- | --------- | ------ | -------- | ------------ | ------------ |
-| **Debian (and Ubuntu)**   | `debian`  | 🟡 **`install` + `menu` untested**    | 🟡        | 🟡     | 🟡       | 🟡           | 🟡           |
-| **NixOS**                 | `nixos`   | 🟡 **`install` + `menu` untested**    | 🟡        | 🟡     | 🟡       | 🟡           | 🟡           |
-| **MacOS**                 | `macos`   | 🟢 **core is working**    | 🟢        | 🟢     | 🟢 Lvl.23      | 🟡           | 🟡           |
-| **Arch**                  | `arch`    | 🟠 **untested**    | 🟠        | 🟠     | 🟠       | 🟠           | 🟠           |
-| **Android (Linux-based)** | —         | 🟠 **currently unsupported**    | 🟠        | 🟠     | 🟠       | 🟠           | 🟠           |
-| **Windows**               | —         | ✘ **no support planned (except WSL)**    | ✘         | ✘      | ✘        | ✘            | ✘            |
+| OS                        | Shortname | Status                              |
+| ------------------------- | --------- | ----------------------------------- |
+| **Debian (and Ubuntu)**   | `debian`  | 🟡 **untested**                     |
+| **NixOS**                 | `nixos`   | 🟡 **untested**                     |
+| **MacOS**                 | `macos`   | 🟢 **core is working**              |
+| **Arch**                  | `arch`    | 🟠 **untested**                     |
+| **Android (Linux-based)** | —         | 🟠 **currently unsupported**        |
+| **Windows**               | —         | ✘ **no support planned (except WSL)** |
 
 ## Installation
 
