@@ -1,0 +1,79 @@
+#!/bin/sh
+
+# Report or provide Wizardry voice audio capture streams.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: wizardry-audio-capture --status
+       wizardry-audio-capture --ensure-render-route
+       wizardry-audio-capture --mode mic [--duration SECONDS] [--rate HZ] [--channels N] [--output PATH|-]
+       wizardry-audio-capture --mode render [--duration SECONDS] [--rate HZ] [--channels N] [--output PATH|-]
+
+Reports availability of local microphone and render-reference capture.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+# shellcheck source=/dev/null
+. "$script_dir/voice-audio-common"
+
+case "${1-}" in
+  --status|"")
+    voice_audio_status_json
+    ;;
+  --ensure-render-route)
+    voice_audio_ensure_macos_blackhole_route
+    ;;
+  --mode)
+    mode=${2-}
+    case "$mode" in
+      mic|render)
+        shift 2
+        duration=2
+        rate=16000
+        channels=1
+        output=-
+        while [ "$#" -gt 0 ]; do
+          case "${1-}" in
+            --duration)
+              duration=${2-}
+              shift 2
+              ;;
+            --rate)
+              rate=${2-}
+              shift 2
+              ;;
+            --channels)
+              channels=${2-}
+              shift 2
+              ;;
+            --output)
+              output=${2-}
+              shift 2
+              ;;
+            *)
+              printf '%s\n' "wizardry-audio-capture: unknown stream option '$1'" >&2
+              exit 2
+              ;;
+          esac
+        done
+        case "$duration" in ''|*[!0-9]*) printf '%s\n' "wizardry-audio-capture: duration must be a positive integer" >&2; exit 2 ;; esac
+        case "$rate" in ''|*[!0-9]*) printf '%s\n' "wizardry-audio-capture: rate must be a positive integer" >&2; exit 2 ;; esac
+        case "$channels" in ''|*[!0-9]*) printf '%s\n' "wizardry-audio-capture: channels must be a positive integer" >&2; exit 2 ;; esac
+        voice_audio_capture_stream "$mode" "$duration" "$rate" "$channels" "$output"
+        ;;
+      *)
+        printf '%s\n' "wizardry-audio-capture: expected --mode mic or --mode render" >&2
+        exit 2
+        ;;
+    esac
+    ;;
+  *)
+    printf '%s\n' "wizardry-audio-capture: unknown option '$1'" >&2
+    exit 2
+    ;;
+esac

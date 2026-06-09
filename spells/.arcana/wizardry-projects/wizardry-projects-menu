@@ -1,0 +1,51 @@
+#!/bin/sh
+
+# Present installable sister projects in the wizardry project family.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: wizardry-projects-menu
+
+Shows install and status actions for wizardry's sister projects.
+USAGE
+  exit 0
+  ;;
+esac
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+if ! command -v require-wizardry >/dev/null 2>&1; then
+  wizardry_dir=$(CDPATH= cd -- "$script_dir/../../.." && pwd -P)
+  PATH="$wizardry_dir/spells/.imps/sys:$wizardry_dir/spells/.imps/out:$PATH"
+  PATH="$wizardry_dir/spells/.imps/cond:$wizardry_dir/spells/.imps/menu:$PATH"
+  PATH="$wizardry_dir/spells/cantrips:$PATH"
+  export PATH WIZARDRY_DIR="$wizardry_dir"
+fi
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+if ! require menu "wizardry-projects-menu needs the 'menu' command to present options."; then
+  exit 1
+fi
+
+trap 'exit 130' INT
+trap 'exit 0' TERM
+
+arcana_dir=$(CDPATH= cd -- "$script_dir/.." && pwd)
+
+while :; do
+  exit_label=$(exit-label)
+  menu_status=0
+  menu "wizardry projects" \
+    "wizardry apps%$arcana_dir/wizardry-apps/wizardry-apps-menu" \
+    "theurgy%$arcana_dir/theurgy/theurgy-menu" \
+    "$exit_label%kill -TERM \$PPID" || menu_status=$?
+
+  menu_status=${menu_status:-0}
+  if [ "$menu_status" -eq 130 ]; then
+    printf 'ESC\n' >&2
+    exit 0
+  fi
+done

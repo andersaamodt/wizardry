@@ -1,0 +1,37 @@
+#!/bin/sh
+
+# Report readiness of voice audio isolation dependencies.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: voice-audio-status
+
+Reports whether a render-reference capture adapter is available.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+# shellcheck source=/dev/null
+. "$script_dir/voice-audio-common"
+
+if command -v colors >/dev/null 2>&1; then
+  # shellcheck source=/dev/null
+  . colors
+else
+  RESET=""
+  THEME_SUCCESS=""
+  THEME_WARNING=""
+  GREY=""
+fi
+
+if voice_audio_render_reference_available; then
+  printf '%s%s%s\n' "$THEME_SUCCESS" "installed" "$RESET"
+elif voice_audio_is_macos || voice_audio_is_linux; then
+  printf '%s%s%s\n' "$THEME_WARNING" "partial install" "$RESET"
+else
+  printf '%s%s%s\n' "$GREY" "not available" "$RESET"
+fi

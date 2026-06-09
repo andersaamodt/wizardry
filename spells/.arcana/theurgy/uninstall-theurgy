@@ -1,0 +1,21 @@
+#!/bin/sh
+
+# Remove Theurgy and its command wrappers.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uninstall-theurgy
+
+Removes Theurgy wrappers and the ${THEURGY_HOME:-$HOME/theurgy} install.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+. "$script_dir/_theurgy"
+
+remove_theurgy
+say "Removed $theurgy_name"

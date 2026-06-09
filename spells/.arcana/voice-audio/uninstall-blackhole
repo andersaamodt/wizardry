@@ -1,0 +1,64 @@
+#!/bin/sh
+
+# Remove BlackHole macOS audio drivers installed under HAL plug-ins.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uninstall-blackhole
+
+Removes BlackHole HAL driver bundles from /Library/Audio/Plug-Ins/HAL.
+USAGE
+  exit 0
+  ;;
+esac
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+if ! command -v require-wizardry >/dev/null 2>&1; then
+  wizardry_dir=$(CDPATH= cd -- "$script_dir/../../.." && pwd -P)
+  PATH="$wizardry_dir/spells/.imps/sys:$wizardry_dir/spells/.imps/out:$wizardry_dir/spells/.imps/cond:$wizardry_dir/spells/.imps/pkg:$wizardry_dir/spells/cantrips:$PATH"
+  export PATH WIZARDRY_DIR="$wizardry_dir"
+fi
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+# shellcheck source=/dev/null
+. "$script_dir/voice-audio-common"
+
+if ! voice_audio_is_macos; then
+  printf '%s\n' "voice-audio: BlackHole uninstall is only supported on macOS" >&2
+  exit 1
+fi
+
+if ! voice_audio_has_blackhole; then
+  printf '%s\n' "voice-audio: BlackHole is not installed"
+  exit 0
+fi
+
+if [ "${WIZARDRY_VOICE_AUDIO_DRY_RUN-}" = 1 ]; then
+  printf '%s\n' "voice-audio: dry run would uninstall BlackHole"
+  exit 0
+fi
+
+for driver in \
+  /Library/Audio/Plug-Ins/HAL/BlackHole2ch.driver \
+  /Library/Audio/Plug-Ins/HAL/BlackHole16ch.driver \
+  /Library/Audio/Plug-Ins/HAL/BlackHole64ch.driver
+do
+  [ -e "$driver" ] || continue
+  if command -v sudo >/dev/null 2>&1; then
+    sudo rm -rf "$driver"
+  else
+    rm -rf "$driver"
+  fi
+done
+
+if command -v sudo >/dev/null 2>&1; then
+  sudo killall coreaudiod >/dev/null 2>&1 || true
+else
+  killall coreaudiod >/dev/null 2>&1 || true
+fi
+
+printf '%s\n' "voice-audio: BlackHole removed"

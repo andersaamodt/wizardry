@@ -1,0 +1,32 @@
+#!/bin/sh
+
+# Report whether Theurgy is installed.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: check-theurgy
+
+Reports whether Theurgy is installed.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+. "$script_dir/_theurgy"
+
+if is_theurgy_installed; then
+  printf 'status=ok\n'
+  printf 'summary=Theurgy is installed.\n'
+  printf 'home=%s\n' "$theurgy_home"
+  printf 'bin=%s\n' "$(user_bin_dir)"
+  exit 0
+fi
+
+printf 'status=bad\n'
+printf 'summary=Theurgy is not installed.\n'
+printf 'home=%s\n' "$theurgy_home"
+printf 'install=%s/install-theurgy\n' "$script_dir"
+exit 0

@@ -157,6 +157,29 @@ test_mud_colors_cleared_when_disabled() {
   esac
 }
 
+test_colors_keep_palette_when_tput_is_inconclusive() {
+  tmpdir=$(make_tempdir)
+
+  cat >"$tmpdir/tput" <<'SH'
+#!/bin/sh
+set -eu
+exit 1
+SH
+  chmod +x "$tmpdir/tput"
+
+  OUTPUT=$(TERM=xterm PATH="$tmpdir:$PATH" sh -c ". \"$ROOT_DIR/spells/cantrips/colors\"; printf 'avail:%s heading:%s\\n' \"\$WIZARDRY_COLORS_AVAILABLE\" \"\$THEME_HEADING\"")
+  STATUS=$?
+  export STATUS
+  assert_success || return 1
+  case "$OUTPUT" in
+    avail:1\ heading:*) : ;;
+    *)
+      TEST_FAILURE_REASON="expected palette to stay enabled when tput is inconclusive, got: $OUTPUT"
+      return 1
+      ;;
+  esac
+}
+
 run_test_case "colors enables palette on capable terminals" test_colors_enable_palette_by_default
 run_test_case "colors disables palette when NO_COLOR set" test_colors_disable_when_requested
 run_test_case "colors work with printf %s format" test_colors_printf_s_works
@@ -165,6 +188,7 @@ run_test_case "theme colors are defined when palette is enabled" test_theme_colo
 run_test_case "theme colors are cleared when palette is disabled" test_theme_colors_cleared_when_disabled
 run_test_case "MUD colors are defined when palette is enabled" test_mud_colors_defined_when_enabled
 run_test_case "MUD colors are cleared when palette is disabled" test_mud_colors_cleared_when_disabled
+run_test_case "colors keep palette when tput is inconclusive" test_colors_keep_palette_when_tput_is_inconclusive
 shows_help() {
   run_spell spells/cantrips/colors --help
   # Note: spell may not have --help implemented yet

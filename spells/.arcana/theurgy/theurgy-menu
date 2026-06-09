@@ -1,0 +1,44 @@
+#!/bin/sh
+
+# Present Theurgy install, status, and removal actions.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: theurgy-menu
+
+Shows Theurgy install and status actions.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
+export PATH
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+. "$script_dir/_theurgy"
+
+if ! command -v menu >/dev/null 2>&1; then
+  "$script_dir/theurgy-status"
+  exit 0
+fi
+
+trap 'exit 130' INT
+trap 'exit 0' TERM
+
+while true; do
+  if is_theurgy_installed; then
+    toggle="[X] Theurgy%$script_dir/install-theurgy"
+  else
+    toggle="[ ] Theurgy%$script_dir/install-theurgy"
+  fi
+  exit_label=$(exit-label 2>/dev/null || printf 'Exit')
+  menu_status=0
+  menu "Theurgy" \
+    "$toggle" \
+    "Check status%$script_dir/check-theurgy" \
+    "Uninstall%$script_dir/uninstall-theurgy" \
+    "$exit_label%kill -TERM \$PPID" || menu_status=$?
+  [ "$menu_status" -eq 130 ] && exit 0
+done

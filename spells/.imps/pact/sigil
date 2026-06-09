@@ -1,0 +1,58 @@
+#!/bin/sh
+# sigil FORMAT VALUE... - safely encode machine-readable output
+
+set -eu
+
+format=${1-}
+first=${2-}
+second=${3-}
+newline='
+'
+carriage_return=$(printf '\r')
+tab=$(printf '\t')
+
+case "$format" in
+  key-value)
+    key=$first
+    value=$second
+    case "$key" in
+      ''|.|..|-*|*[!A-Za-z0-9._-]*)
+        printf 'sigil: unsafe key: %s\n' "$key" >&2
+        exit 2
+        ;;
+    esac
+    case "$value" in
+      *"$newline"*|*"$carriage_return"*)
+        printf '%s\n' 'sigil: key-value value contains line break' >&2
+        exit 1
+        ;;
+    esac
+    printf '%s=%s\n' "$key" "$value"
+    ;;
+  tsv)
+    case "$first" in
+      *"$newline"*|*"$carriage_return"*|*"$tab"*)
+        printf '%s\n' 'sigil: tsv value contains delimiter' >&2
+        exit 1
+        ;;
+    esac
+    printf '%s' "$first"
+    ;;
+  json-string)
+    case "$first" in
+      *"$newline"*|*"$carriage_return"*)
+        printf '%s\n' 'sigil: json-string value contains line break' >&2
+        exit 1
+        ;;
+    esac
+    printf '%s' "$first" | awk '{
+      gsub(/\\/, "\\\\")
+      gsub(/"/, "\\\"")
+      printf "\"%s\"", $0
+    }'
+    ;;
+  *)
+    printf 'sigil: unknown format: %s\n' "$format" >&2
+    exit 2
+    ;;
+esac

@@ -33,13 +33,14 @@ EOF
 
 test_failure_without_supported_package_manager() {
   tmp_bin=$(temp-dir install-nostril-bin)
-  for tool in apt-get autoreconf brew cc curl dnf git make; do
+  for tool in apt-get autoreconf brew cc curl dnf git go make; do
     cat > "$tmp_bin/$tool" <<'EOF'
 #!/bin/sh
 exit 1
 EOF
     chmod +x "$tmp_bin/$tool"
   done
+  XDG_BIN_HOME="$tmp_bin" \
   PATH="$tmp_bin:$WIZARDRY_IMPS_PATH:/usr/bin:/bin:/usr/sbin:/sbin" \
     run_spell spells/web/install-nostril
   assert_failure
@@ -129,7 +130,13 @@ while [ "$#" -gt 0 ]; do
 done
 case "$url" in
   https://api.github.com/repos/fiatjaf/nak/releases/latest)
-    printf '%s\n' '{"assets":[{"browser_download_url":"file:///tmp/nak-v0.19.0-darwin-arm64"}]}'
+    cat <<'JSON'
+{"assets":[
+{"browser_download_url":"file:///tmp/nak-v0.19.0-darwin-arm64"},
+{"browser_download_url":"file:///tmp/nak-v0.19.0-linux-amd64"},
+{"browser_download_url":"file:///tmp/nak-v0.19.0-linux-arm64"}
+]}
+JSON
     ;;
   file://*)
     printf '%s\n' "downloaded untrusted URL" > "${NAK_BAD_DOWNLOAD_MARKER:?}"

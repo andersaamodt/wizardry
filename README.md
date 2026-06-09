@@ -6,6 +6,8 @@ Wizardry also includes a comprehensive set of POSIX shell tutorials, and optiona
 
 Wizardry includes a set of interactive menus that transparently show what command each menu item will call, making discovering and using the command line much easier. Wizardry assembles cross-platform UNIX knowledge into usable menus and memorable commands.
 
+For work that outgrows pure shell fan-out, wizardry now has a sister project: [theurgy](https://github.com/andersaamodt/theurgy).
+
 The language of magic—a human heirloom—is rich in evocative words for hidden forces and abstract transformations, making it a natural fit for extending the terminal's vocabulary, binding the worlds of thought and myth together as effective language.
 
 ## Status for target platforms:
@@ -164,9 +166,13 @@ Parsing is deterministic and always resolves to the most specific command, and i
 | **daemonic complex** | A subfolder within a demon family that groups related imps that must work together. |
 | **demon family** | A subfolder within `spells/.imps/` that groups related imps by function. Each folder represents a family of imps that share a common purpose (e.g., `str/` for string operations, `fs/` for filesystem operations). |
 | **divination** | Spells that detect or discover information. |
+| **essence** | The safe kind a value is expected to have after validation, such as `site-name`, `domain`, or `release-url`. |
 | **enchant** / **enchantment** | Spells that add or manipulate extended attributes (metadata) on files. |
+| **enthrall** / **disenthrall** | To take and release exclusive command over a resource such as a lock, release path, service, or port. Reserved pact vocabulary; helper imps may follow. |
 | **evoke** | To *mention* a spell name, presencing its aura without execution. |
+| **foresee** | A preflight check before mutation, rendering, deploy, or release. |
 | `forget` | Remove a spell from your memorized (`cast`) list. |
+| **hexagram** | A bounded, disposable working space, such as a clean environment for a risky probe or test. |
 | **imp** | The smallest building block of magic—a microscript that does exactly one thing. Imps dwell in `spells/.imps/`. |
 | **incantation** | The name of a spell, used to invoke it. |
 | `invoke` | Source a script into the current shell. |
@@ -176,9 +182,13 @@ Parsing is deterministic and always resolves to the most specific command, and i
 | **portkey** | A bookmark to a remote location. Use `enchant-portkey` to create one and `follow-portkey` to teleport there. (Future: If you have the `touch` hook installed, touching a portkey will also activate it.) |
 | **scribe** | Create a new custom spell. |
 | **scroll** | A linear script with zero or one internal functions (plus `show_usage`). All spells should ideally be scrolls—readable from top to bottom without "folds" that break narrative flow. |
+| **sigil** | A safe machine-readable representation for rows or scalar values, such as `key=value`, TSV, JSON strings, menu rows, or GUI records. |
 | **spell** | A specially-curated shell script that lives in `spells/` or your `.spellbook/` folder, has a unique name, and follows wizardry conventions. |
 | `spellbook` | Your personal grimoire for organizing and casting spells. Access it with `spellbook` or from the main `menu`. Also refers to custom spell folders. |
 | **spellcraft** | The writing of shell scripts. |
+| **taboo** / **transgress** | A dangerous operation and the justified, locally protected crossing of that operation. |
+| **threshold** | The point where untrusted input or imported metadata enters a trusted action path. |
+| **[theurgy](https://github.com/andersaamodt/theurgy)** | Institutional or divinely authorized magic: a graver working than ordinary spellcraft. |
 | **tome** | A text file containing the contents of several other text files concatenated together, so a whole folder of spells can be sent or carried easily. |
 | **ward** | A protective spell for security or access control. |
 
@@ -261,8 +271,35 @@ These standards describe the technical requirements that all spells, menus, and 
 | Standard exit codes             | Common helpers define exit codes and error shaping.                                                       |
 | Directory-resolution idiom      | One canonical pattern for locating sibling resources.                                                     |
 | Validation helpers              | A reusable suite provides common input checks.                                                            |
+| Pacts                           | High-risk code can use `:` markers to make wards, promises, taboos, thresholds, and seals visible to readers and `lint-magic`. |
 | Naming scheme                   | A consistent naming scheme governs helper functions. Spells use `snake_case` for helper functions when needed (discouraged - prefer flat code). |
 
+## Pacts
+
+Pacts are wizardry reliability contracts written with the POSIX null command `:`. They let a spell name its intent without causing action:
+
+```sh
+: pact publish-safely
+: threshold imported-site-name
+: essence site-name "$site_name"
+: divine site-name "$site_name"
+: taboo remote-shell
+: transgress remote-shell quoted-argv host-allowlisted
+```
+
+The marker is not the protection. Real protection still comes from validators, cleanup, locks, hermetic test fixtures, and atomic writes. The marker makes that contract readable and lintable. See `.github/PACT_LANGUAGE.md` for the pact vocabulary.
+
+Useful pact tools:
+
+| Command | Use |
+| ------- | --- |
+| `read-pacts [FILE...]` | Inspect pact markers without executing spells. |
+| `wards` | List reusable ward checks. |
+| `ward NAME VALUE...` | Run a concrete boundary check such as `safe-label`, `path-contained`, or `status-row-safe`. |
+| `sigil FORMAT VALUE...` | Emit safe machine-readable output for supported row/scalar formats. |
+| `hexagram COMMAND...` | Run a command with disposable `HOME`, `TMPDIR`, and a clean tool path. |
+
+Use these at trust boundaries, not as decoration or inside hot loops. Pact markers are cheap shell builtins; ward/sigil/hexagram helpers are real commands and should be used where their clarity and protection matter.
 
 ## Development
 
@@ -318,3 +355,26 @@ The portable build is automatically generated, and includes all spells that work
 ## Desktop Apps
 
 Wizardry includes optional desktop apps (`.apps/`) - graphical wrappers with commands hardcoded in the GUI for security. See `.apps/README.md` for details.
+
+## See Also
+
+Wizardry intentionally stays low-to-the-ground: POSIX shell-first, file-first, and lightweight.
+Some related projects solve adjacent problems with heavier stacks and broader product scope.
+
+### Terminal Learning and Command-Line Games
+
+- [Project N.O.M.A.D.](https://github.com/Crosstalk-Solutions/project-nomad) - Offline-first knowledge server with integrated content management, container orchestration, and local AI tooling.
+- [Bashcrawl](https://gitlab.com/slackermedia/bashcrawl) - Terminal adventure game for learning practical shell navigation and commands.
+- [TermAdventure](https://github.com/NaiveNeuron/TermAdventure) - Text-adventure-style UNIX command line teaching suite.
+- [OverTheWire: Bandit](https://overthewire.org/wargames/bandit/) - Beginner-friendly SSH/UNIX command-line wargame.
+- [Vim Adventures](https://vim-adventures.com/) - Gamified tutorial for modal terminal editing concepts via Vim motions.
+
+### MUD Clients and Lineage
+
+- [Tintin++](https://tintin.mudhalla.net/) - Long-running terminal MUD client from classic MUD culture.
+- [MUSHclient](https://www.gammon.com.au/mushclient/mushclient.htm) - Established scriptable MUD client used in many text-world communities.
+- [CMUD (zMUD successor)](https://www.zuggsoft.com/) - Historically influential MUD client platform.
+- [AberMUD](https://github.com/talkersource/abermud) - Early open-source MUD codebase lineage.
+- [DikuMUD](https://dikumud.com/) - Foundational MUD codebase that shaped many later derivatives.
+
+These projects are useful references, but are outside Wizardry's core implementation scope.

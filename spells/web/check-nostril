@@ -18,6 +18,16 @@ set -eu
 . env-clear
 
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
+for candidate_bin_dir in "${XDG_BIN_HOME-}" "${HOME-}/.local/bin"; do
+  [ -n "$candidate_bin_dir" ] || continue
+  [ -d "$candidate_bin_dir" ] || continue
+  case ":$PATH:" in
+    *":$candidate_bin_dir:"*) ;;
+    *)
+      PATH="$candidate_bin_dir:$PATH"
+      ;;
+  esac
+done
 
 missing=''
 for bin in nostril nak; do

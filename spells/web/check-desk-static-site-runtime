@@ -1,0 +1,36 @@
+#!/bin/sh
+
+# Check static-site runtime tools used by Desk links and generated pages.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: check-desk-static-site-runtime
+
+Checks whether the managed site runtime has the ordinary tools needed for static
+page serving and generated Overworld links.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
+missing=''
+for bin in nginx gzip; do
+  if ! command -v "$bin" >/dev/null 2>&1; then
+    missing="${missing}${missing:+, }$bin"
+  fi
+done
+
+if [ -z "$missing" ]; then
+  printf 'status=ok\n'
+  printf 'summary=%s\n' 'nginx and gzip are available for static site serving.'
+  exit 0
+fi
+
+printf 'status=bad\n'
+printf 'summary=Missing static site runtime tools: %s\n' "$missing"
+exit 0

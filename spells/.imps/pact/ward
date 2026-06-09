@@ -1,0 +1,82 @@
+#!/bin/sh
+# ward WARD VALUE BOUND... - enforce a named pact ward
+
+set -eu
+
+ward_name=${1-}
+ward_value=${2-}
+ward_bound=${3-}
+
+case "$ward_name" in
+  safe-label)
+    case "$ward_value" in
+      ''|.|..|-*|*[!A-Za-z0-9._-]*)
+        printf 'ward: unsafe label: %s\n' "$ward_value" >&2
+        exit 1
+        ;;
+    esac
+    ;;
+  no-linebreak|status-row-safe)
+    ward_newline='
+'
+    ward_carriage_return=$(printf '\r')
+    case "$ward_value" in
+      *"$ward_newline"*|*"$ward_carriage_return"*)
+        printf '%s\n' "ward: $ward_name failed" >&2
+        exit 1
+        ;;
+    esac
+    ;;
+  release-url-allowlisted)
+    [ -n "$ward_bound" ] || {
+      printf '%s\n' 'ward: release-url-allowlisted needs a prefix' >&2
+      exit 2
+    }
+    case "$ward_value" in
+      *[[:space:]]*)
+        printf '%s\n' 'ward: release URL contains whitespace' >&2
+        exit 1
+        ;;
+      "$ward_bound"*) ;;
+      *)
+        printf '%s\n' 'ward: release URL is outside allowlist' >&2
+        exit 1
+        ;;
+    esac
+    ;;
+  path-contained)
+    [ -n "$ward_value" ] && [ -n "$ward_bound" ] || {
+      printf '%s\n' 'ward: path-contained needs PATH and ROOT' >&2
+      exit 2
+    }
+    ward_root=$(CDPATH= cd -- "$ward_bound" 2>/dev/null && pwd -P) || {
+      printf 'ward: root not found: %s\n' "$ward_bound" >&2
+      exit 1
+    }
+    if [ -d "$ward_value" ]; then
+      ward_path=$(CDPATH= cd -- "$ward_value" 2>/dev/null && pwd -P) || exit 1
+    else
+      ward_parent=${ward_value%/*}
+      ward_base=${ward_value##*/}
+      [ "$ward_parent" != "$ward_value" ] || ward_parent=.
+      ward_parent_abs=$(CDPATH= cd -- "$ward_parent" 2>/dev/null && pwd -P) || {
+        printf 'ward: parent not found: %s\n' "$ward_parent" >&2
+        exit 1
+      }
+      ward_path=$ward_parent_abs/$ward_base
+    fi
+    case "$ward_path" in
+      "$ward_root"|"$ward_root"/*) ;;
+      *)
+        printf 'ward: path escapes root: %s\n' "$ward_value" >&2
+        exit 1
+        ;;
+    esac
+    ;;
+  *)
+    printf 'ward: unknown ward: %s\n' "$ward_name" >&2
+    exit 2
+    ;;
+esac
+
+exit 0

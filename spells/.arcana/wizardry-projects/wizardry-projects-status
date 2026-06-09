@@ -1,0 +1,49 @@
+#!/bin/sh
+
+# Report installation status for wizardry sister projects.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: wizardry-projects-status
+
+Reports installation status for wizardry-apps and Theurgy.
+USAGE
+  exit 0
+  ;;
+esac
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+if ! command -v require-wizardry >/dev/null 2>&1; then
+  wizardry_dir=$(CDPATH= cd -- "$script_dir/../../.." && pwd -P)
+  PATH="$wizardry_dir/spells/.imps/sys:$wizardry_dir/spells/.imps/out:$PATH"
+  PATH="$wizardry_dir/spells/.imps/cond:$wizardry_dir/spells/.imps/menu:$PATH"
+  PATH="$wizardry_dir/spells/cantrips:$PATH"
+  export PATH WIZARDRY_DIR="$wizardry_dir"
+fi
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+arcana_dir=$(CDPATH= cd -- "$script_dir/.." && pwd)
+
+installed=0
+total=2
+
+if "$arcana_dir/wizardry-apps/is-wizardry-apps-component-installed" web-templates >/dev/null 2>&1 ||
+  "$arcana_dir/wizardry-apps/is-wizardry-apps-component-installed" apps >/dev/null 2>&1; then
+  installed=$((installed + 1))
+fi
+
+if "$arcana_dir/theurgy/is-theurgy-installed" >/dev/null 2>&1; then
+  installed=$((installed + 1))
+fi
+
+if [ "$installed" -eq 0 ]; then
+  printf 'not installed\n'
+elif [ "$installed" -eq "$total" ]; then
+  printf 'installed\n'
+else
+  printf 'partial install\n'
+fi

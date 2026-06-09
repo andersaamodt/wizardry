@@ -1,0 +1,20 @@
+#!/bin/sh
+
+# Return success when Theurgy is installed and wrapped.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: is-theurgy-installed
+
+Returns success when Theurgy is installed and spell wrappers are present.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+. "$script_dir/_theurgy"
+
+is_theurgy_installed

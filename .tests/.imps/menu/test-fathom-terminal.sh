@@ -87,10 +87,71 @@ fails_without_tput() {
   [ "$STATUS" -ne 0 ] || { TEST_FAILURE_REASON="expected failure"; return 1; }
 }
 
+prefers_stty_size() {
+  stub=$(mktemp -d "${WIZARDRY_TMPDIR}/stty-stub.XXXXXX")
+  cat >"$stub/stty" <<'SH'
+#!/bin/sh
+set -eu
+case "${1-}" in
+  size) printf '24 80\n' ;;
+  *) exit 1 ;;
+esac
+SH
+  chmod +x "$stub/stty"
+  cat >"$stub/tput" <<'SH'
+#!/bin/sh
+set -eu
+exit 1
+SH
+  chmod +x "$stub/tput"
+
+  run_cmd env \
+    PATH="$stub:$PATH" \
+    FATHOM_TERMINAL_DEVICE=/dev/null \
+    "$ROOT_DIR/spells/.imps/menu/fathom-terminal" --height
+  [ "$STATUS" -eq 0 ] || return 1
+  [ "$OUTPUT" = "24" ] || {
+    TEST_FAILURE_REASON="expected height from stty size, got: $OUTPUT"
+    return 1
+  }
+}
+
+falls_back_to_tput_after_stty_failure() {
+  stub=$(mktemp -d "${WIZARDRY_TMPDIR}/term-stub.XXXXXX")
+  cat >"$stub/stty" <<'SH'
+#!/bin/sh
+set -eu
+exit 1
+SH
+  chmod +x "$stub/stty"
+  cat >"$stub/tput" <<'SH'
+#!/bin/sh
+set -eu
+case "${1-}" in
+  cols) printf '90\n' ;;
+  lines) printf '33\n' ;;
+  *) exit 1 ;;
+esac
+SH
+  chmod +x "$stub/tput"
+
+  run_cmd env \
+    PATH="$stub:$PATH" \
+    FATHOM_TERMINAL_DEVICE=/dev/null \
+    "$ROOT_DIR/spells/.imps/menu/fathom-terminal" --width
+  [ "$STATUS" -eq 0 ] || return 1
+  [ "$OUTPUT" = "90" ] || {
+    TEST_FAILURE_REASON="expected width from tput fallback, got: $OUTPUT"
+    return 1
+  }
+}
+
 run_test_case "reports width and height" reports_width_and_height
 run_test_case "selects a single dimension" selects_single_dimension
 run_test_case "adds verbose labels" prints_verbose_labels
 run_test_case "fails when tput is missing" fails_without_tput
+run_test_case "fathom-terminal prefers stty size" prefers_stty_size
+run_test_case "fathom-terminal falls back to tput" falls_back_to_tput_after_stty_failure
 
 shows_help() {
   run_spell spells/.imps/menu/fathom-terminal --help

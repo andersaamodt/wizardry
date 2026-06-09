@@ -1026,6 +1026,7 @@ if [ "$min_level_range" -eq 0 ]; then
         continue
         ;;
     esac
+    [ -x "$root_dir/$rel" ] || continue
     coverage_total=$((coverage_total + 1))
 
     rel_check=${spell#spells/}

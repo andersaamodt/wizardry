@@ -1,0 +1,37 @@
+#!/bin/sh
+
+# Check whether Stonr tooling is available for Desk relay links and state flows.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: check-desk-stonr
+
+Checks whether the stonr CLI is available on the server.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
+for candidate_bin_dir in "${XDG_BIN_HOME-}" "${HOME-}/.local/bin"; do
+  [ -n "$candidate_bin_dir" ] || continue
+  [ -d "$candidate_bin_dir" ] || continue
+  case ":$PATH:" in
+    *":$candidate_bin_dir:"*) ;;
+    *) PATH="$candidate_bin_dir:$PATH" ;;
+  esac
+done
+
+if command -v stonr >/dev/null 2>&1; then
+  printf 'status=ok\n'
+  printf 'summary=%s\n' 'stonr is available on PATH.'
+  exit 0
+fi
+
+printf 'status=bad\n'
+printf 'summary=%s\n' 'stonr is not installed.'
+exit 0

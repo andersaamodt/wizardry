@@ -12,6 +12,41 @@ cached_custom_synonym_gloss_file=""
 cached_custom_synonym_spellbook=""
 cached_alias_gloss_file=""
 cached_alias_spellbook=""
+cached_minimal_wizardry_dir=""
+
+ensure_minimal_wizardry_dir() {
+  if [ -n "$cached_minimal_wizardry_dir" ] && [ -d "$cached_minimal_wizardry_dir" ]; then
+    return 0
+  fi
+
+  tmpdir=$(make_tempdir)
+  cached_minimal_wizardry_dir="$tmpdir/wizardry"
+  mkdir -p \
+    "$cached_minimal_wizardry_dir/spells/cantrips" \
+    "$cached_minimal_wizardry_dir/spells/.wizardry" \
+    "$cached_minimal_wizardry_dir/spells/translocation"
+
+  cat > "$cached_minimal_wizardry_dir/spells/cantrips/ask-yn" <<'EOF'
+#!/bin/sh
+printf 'Usage: ask-yn\n'
+EOF
+  cat > "$cached_minimal_wizardry_dir/spells/.wizardry/generate-glosses" <<'EOF'
+#!/bin/sh
+printf 'Usage: generate-glosses\n'
+EOF
+  cat > "$cached_minimal_wizardry_dir/spells/translocation/jump-to-marker" <<'EOF'
+#!/bin/sh
+# Uncastable pattern
+case "${1-}" in
+  --help|--usage|-h) printf 'Usage: jump-to-marker\n' ;;
+  *) printf 'MINIMAL_JUMP_TO_MARKER\n' ;;
+esac
+EOF
+  chmod +x \
+    "$cached_minimal_wizardry_dir/spells/cantrips/ask-yn" \
+    "$cached_minimal_wizardry_dir/spells/.wizardry/generate-glosses" \
+    "$cached_minimal_wizardry_dir/spells/translocation/jump-to-marker"
+}
 
 ensure_default_glosses() {
   if [ -n "$cached_default_gloss_file" ] && [ -f "$cached_default_gloss_file" ]; then
@@ -52,6 +87,7 @@ ensure_alias_glosses() {
     return 0
   fi
 
+  ensure_minimal_wizardry_dir || return 1
   tmpdir=$(make_tempdir)
   cached_alias_spellbook="$tmpdir/spellbook"
   cached_alias_gloss_file="$tmpdir/glosses"
@@ -73,7 +109,7 @@ test~tilde=echo TILDE_WORKS
 test.dot-extra=echo DOT_EXTRA_WORKS
 EOF
 
-  WIZARDRY_DIR="$ROOT_DIR" SPELLBOOK_DIR="$cached_alias_spellbook" \
+  WIZARDRY_DIR="$cached_minimal_wizardry_dir" SPELLBOOK_DIR="$cached_alias_spellbook" \
     run_spell spells/.wizardry/generate-glosses --quiet --output "$cached_alias_gloss_file"
   assert_success || return 1
 }
@@ -116,11 +152,13 @@ test_quiet_option() {
 }
 
 test_output_option() {
+  ensure_minimal_wizardry_dir || return 1
   tmpdir=$(make_tempdir)
   output_file="$tmpdir/glosses.sh"
   
   # Run with --output to save to file
-  WIZARDRY_DIR="$ROOT_DIR" run_spell spells/.wizardry/generate-glosses --quiet --output "$output_file"
+  WIZARDRY_DIR="$cached_minimal_wizardry_dir" \
+    run_spell spells/.wizardry/generate-glosses --quiet --output "$output_file"
   assert_success || return 1
   
   # Check that file was created
@@ -148,6 +186,7 @@ test_all_spell_categories() {
 }
 
 test_invalid_default_synonyms_hard_fail() {
+  ensure_minimal_wizardry_dir || return 1
   # Test that invalid default synonyms cause script to fail
   # This catches bad default synonyms at development time
   tmpdir=$(make_tempdir)
@@ -161,7 +200,7 @@ valid=echo
 EOF
   
   # Run generate-glosses - should fail due to invalid default synonym
-  WIZARDRY_DIR="$ROOT_DIR" SPELLBOOK_DIR="$tmpdir" \
+  WIZARDRY_DIR="$cached_minimal_wizardry_dir" SPELLBOOK_DIR="$tmpdir" \
     run_spell spells/.wizardry/generate-glosses --quiet
   
   # Should fail (exit non-zero) to catch bad default synonyms at dev time
@@ -369,6 +408,7 @@ test_special_char_hyphenated_synonym_does_not_emit_invalid_function() {
 }
 
 test_single_quote_synonym_target_does_not_break_gloss_file() {
+  ensure_minimal_wizardry_dir || return 1
   tmpdir=$(make_tempdir)
 
   cat > "$tmpdir/.synonyms" <<'EOF'
@@ -376,7 +416,7 @@ bad-quote=printf it's-broken
 safe-alias=printf safe
 EOF
 
-  WIZARDRY_DIR="$ROOT_DIR" SPELLBOOK_DIR="$tmpdir" \
+  WIZARDRY_DIR="$cached_minimal_wizardry_dir" SPELLBOOK_DIR="$tmpdir" \
     run_spell spells/.wizardry/generate-glosses --quiet
   assert_success || return 1
 
@@ -411,10 +451,11 @@ test_first_word_gloss_handles_unset_wizardry_dir_under_set_u() {
 }
 
 test_parse_disabled_crlf_config_suppresses_first_word_glosses() {
+  ensure_minimal_wizardry_dir || return 1
   tmpdir=$(make_tempdir)
   printf 'parse-enabled=0\r\n' > "$tmpdir/.mud"
 
-  WIZARDRY_DIR="$ROOT_DIR" SPELLBOOK_DIR="$tmpdir" \
+  WIZARDRY_DIR="$cached_minimal_wizardry_dir" SPELLBOOK_DIR="$tmpdir" \
     run_spell spells/.wizardry/generate-glosses --quiet
   assert_success || return 1
 
@@ -439,9 +480,10 @@ test_parse_disabled_hyphenated_alias_accepts_arguments() {
   fi
 
   tmpdir=$(make_tempdir)
+  ensure_minimal_wizardry_dir || return 1
   printf 'parse-enabled=0\n' > "$tmpdir/.mud"
 
-  WIZARDRY_DIR="$ROOT_DIR" SPELLBOOK_DIR="$tmpdir" \
+  WIZARDRY_DIR="$cached_minimal_wizardry_dir" SPELLBOOK_DIR="$tmpdir" \
     run_spell spells/.wizardry/generate-glosses --output "$tmpdir/glosses" --quiet
   assert_success || return 1
 
@@ -631,6 +673,7 @@ TESTSCRIPT
 }
 
 test_generate_glosses_skips_system_command_prefixes() {
+  ensure_minimal_wizardry_dir || return 1
   tmpdir=$(make_tempdir)
   mkdir -p "$tmpdir/bin" "$tmpdir/spellbook"
 
@@ -642,7 +685,7 @@ STUB
 
   run_cmd env \
     PATH="$tmpdir/bin:/usr/bin:/bin" \
-    WIZARDRY_DIR="$ROOT_DIR" \
+    WIZARDRY_DIR="$cached_minimal_wizardry_dir" \
     SPELLBOOK_DIR="$tmpdir/spellbook" \
     "$ROOT_DIR/spells/.wizardry/generate-glosses" --quiet
   assert_success || return 1
@@ -718,13 +761,14 @@ test_user_synonym_target_cannot_inject_generated_function() {
   fi
 
   tmpdir=$(make_tempdir)
+  ensure_minimal_wizardry_dir || return 1
   spellbook="$tmpdir/spellbook"
   payload_file="$tmpdir/synonym-target-injected"
   mkdir -p "$spellbook"
 
   printf '%s\n' "zap=printf SAFE; touch $payload_file" > "$spellbook/.synonyms"
 
-  WIZARDRY_DIR="$ROOT_DIR" SPELLBOOK_DIR="$spellbook" \
+  WIZARDRY_DIR="$cached_minimal_wizardry_dir" SPELLBOOK_DIR="$spellbook" \
     run_spell spells/.wizardry/generate-glosses --output "$tmpdir/glosses" --quiet
   assert_success || return 1
 
@@ -748,12 +792,13 @@ EOF
 
 test_user_synonym_target_cannot_escape_spell_tree() {
   tmpdir=$(make_tempdir)
+  ensure_minimal_wizardry_dir || return 1
   spellbook="$tmpdir/spellbook"
   mkdir -p "$spellbook"
 
   printf '%s\n' 'escapetest=../../outside/evil' 'safe=custom/path-target preset' > "$spellbook/.synonyms"
 
-  WIZARDRY_DIR="$ROOT_DIR" SPELLBOOK_DIR="$spellbook" \
+  WIZARDRY_DIR="$cached_minimal_wizardry_dir" SPELLBOOK_DIR="$spellbook" \
     run_spell spells/.wizardry/generate-glosses --output "$tmpdir/glosses" --quiet
   assert_success || return 1
 

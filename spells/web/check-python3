@@ -1,0 +1,29 @@
+#!/bin/sh
+# Check whether Python 3 is installed and callable.
+# Used by managed web sites that rely on Python helper scripts.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: check-python3
+
+Checks whether python3 is available for Wizardry site helpers.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
+
+if command -v python3 >/dev/null 2>&1; then
+  printf 'status=ok\n'
+  printf 'summary=%s\n' 'python3 is available on PATH.'
+  exit 0
+fi
+
+printf 'status=bad\n'
+printf 'summary=%s\n' 'python3 is not installed.'
+exit 0

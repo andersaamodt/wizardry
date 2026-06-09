@@ -1,0 +1,25 @@
+#!/bin/sh
+
+# Install Theurgy and expose its command wrappers.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-theurgy
+
+Installs Theurgy to ${THEURGY_HOME:-$HOME/theurgy} and exposes Theurgy spells by name.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+. "$script_dir/_theurgy"
+
+install_theurgy_source
+write_theurgy_wrappers
+
+say "Installed $theurgy_name"
+say "Home: $theurgy_home"
+say "Wrappers: $(user_bin_dir)"

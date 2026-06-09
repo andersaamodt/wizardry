@@ -18,6 +18,7 @@
 # - lint-magic passes imps with variadic params (...) that don't count toward limit
 # - lint-magic fails imps with duplicate set -eu statements
 # - lint-magic passes imps with single set -eu statement
+# - lint-magic checks pact language in spells
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do
@@ -218,6 +219,36 @@ test_unknown_option() {
 test_fails_nonexistent_file() {
   run_spell "spells/spellcraft/lint-magic" "/nonexistent/path/to/spell"
   assert_failure && assert_output_contains "file not found"
+}
+
+test_rejects_bad_pact_language() {
+  spell_dir=$(make_spell_dir)
+  cat >"$spell_dir/bad-pact-spell" <<'EOF'
+#!/bin/sh
+
+# This spell has malformed pact language.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: bad-pact-spell
+
+Demonstrates malformed pact language.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+: pact release-safely
+: promise cleanse-stage "$stage_dir"
+printf '%s\n' "bad"
+EOF
+  chmod +x "$spell_dir/bad-pact-spell"
+  run_spell "spells/spellcraft/lint-magic" "$spell_dir/bad-pact-spell"
+  assert_failure || return 1
+  assert_output_contains "invalid pact language" || return 1
+  assert_output_contains "promise is not fulfilled or released" || return 1
 }
 
 test_imp_fails_with_help_handler() {
@@ -577,6 +608,7 @@ run_test_case "lint-magic passes imp with variadic params" test_imp_passes_with_
 # run_test_case "lint-magic passes spell with underscore call" test_spell_passes_with_underscore_function_call
 run_test_case "lint-magic fails imp with duplicate set -eu" test_imp_fails_with_duplicate_set_eu
 run_test_case "lint-magic passes imp with single set -eu" test_imp_passes_with_single_set_eu
+run_test_case "lint-magic rejects bad pact language" test_rejects_bad_pact_language
 run_test_case "lint-magic shows progress numbering" test_shows_progress_numbering
 run_test_case "lint-magic shows numbering in failures" test_shows_numbering_in_failures
 run_test_case "lint-magic shows all bashism violations with reasons" test_shows_all_bashism_violations_with_reasons
