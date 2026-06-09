@@ -47,7 +47,7 @@ test_help() {
   assert_output_contains "demo"
 }
 
-test_blog_template_has_sample_posts() {
+test_blog_template_uses_gazeta_layout() {
   skip-if-compiled || return $?
 
   test_web_root=$(temp-dir web-wizardry-test)
@@ -56,9 +56,14 @@ test_blog_template_has_sample_posts() {
   WIZARDRY_DIR="$ROOT_DIR" run_spell spells/web/create-from-template mytestblog blog
   assert_success
 
-  post_count=$(find "$test_web_root/mytestblog/site/pages/posts" -name "*.md" -type f | wc -l)
-  [ "$post_count" -gt 0 ] || {
-    TEST_FAILURE_REASON="no sample posts found (expected at least 1)"
+  [ -f "$test_web_root/mytestblog/site/pages/blog.md" ] || {
+    TEST_FAILURE_REASON="Gazeta blog page was not copied into site/pages"
+    rm -rf "$test_web_root"
+    return 1
+  }
+
+  [ -f "$test_web_root/mytestblog/wizardry-server-requirements.conf" ] || {
+    TEST_FAILURE_REASON="Gazeta server requirements manifest was not copied"
     rm -rf "$test_web_root"
     return 1
   }
@@ -323,9 +328,9 @@ EOF
 
 run_test_case "create-from-template shows help" test_help
 if [ -d "$ROOT_DIR/web/blog" ]; then
-  run_test_case "blog template has sample posts" test_blog_template_has_sample_posts
+  run_test_case "blog template uses Gazeta layout" test_blog_template_uses_gazeta_layout
 elif [ -d "$ROOT_DIR/spells/web/blog" ] || [ -d "$(dirname "$ROOT_DIR")/git/gazeta" ] || [ -d "$HOME/git/gazeta" ] || [ -d "$(dirname "$ROOT_DIR")/git/wizardry-apps/web/blog" ] || [ -d "$HOME/git/wizardry-apps/web/blog" ]; then
-  run_test_case "blog template has sample posts" test_blog_template_has_sample_posts
+  run_test_case "blog template uses Gazeta layout" test_blog_template_uses_gazeta_layout
 fi
 run_test_case "all templates create expected site structure" test_all_web_templates_create_expected_structure
 run_test_case "create-from-template resolves templates from web" test_create_from_template_uses_web_directory
