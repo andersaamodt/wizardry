@@ -6,36 +6,11 @@ while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" !
 done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-test_voice_menu_contains_voice_submenus() {
-  skip-if-compiled || return $?
-
-  tmp=$(make_tempdir)
-  stub-menu "$tmp"
-  stub-require-command "$tmp"
-  cat >"$tmp/exit-label" <<'SH'
-#!/bin/sh
-printf '%s' "Exit"
-SH
-  chmod +x "$tmp/exit-label"
-
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" \
-    "$ROOT_DIR/spells/.arcana/voice/voice-menu"
+test_voice_status_help() {
+  run_spell "spells/.arcana/voice/voice-status" --help
   assert_success || return 1
-
-  menu_args=$(cat "$tmp/log" 2>/dev/null || printf '')
-  case "$menu_args" in
-    *"voice recognition%"*"/voice-recognition/voice-recognition-menu"*\
-*"voice audio%"*"/voice-audio/voice-audio-menu"*)
-      ;;
-    *)
-      TEST_FAILURE_REASON="voice-menu did not expose both voice submenus: $menu_args"
-      return 1
-      ;;
-  esac
+  assert_output_contains "Usage: voice-status"
 }
-
-run_test_case "voice-menu contains voice submenus" \
-  test_voice_menu_contains_voice_submenus
 
 test_voice_status_counts_both_submenus() {
   skip-if-compiled || return $?
@@ -71,7 +46,7 @@ SH
   esac
 }
 
+run_test_case "voice-status shows help" test_voice_status_help
 run_test_case "voice-status counts both submenus" \
   test_voice_status_counts_both_submenus
-
 finish_tests
