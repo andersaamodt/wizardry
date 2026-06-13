@@ -78,6 +78,7 @@ site_build_dir() {
 }
 
 build_dir=$(site_build_dir "$site_dir")
+nginx_dir=$("$wizardry_dir/spells/.imps/web/site-runtime-dir" "$site_dir" nginx)
 
 find_nginx_bin() {
   if command -v nginx >/dev/null 2>&1; then
@@ -119,7 +120,7 @@ if [ ! -f "$build_dir/pages/index.html" ]; then
 fi
 
 # Generate nginx config if not exists
-if [ ! -f "$site_dir/nginx/nginx.conf" ]; then
+if [ ! -f "$nginx_dir/nginx.conf" ]; then
   printf 'run-site-daemon: nginx.conf missing - run configure-nginx first\n' >&2
   exit 1
 fi
@@ -128,8 +129,8 @@ cleanup_fcgiwrap() {
   if [ -n "${fcgi_pid-}" ] && kill -0 "$fcgi_pid" 2>/dev/null; then
     kill "$fcgi_pid" 2>/dev/null || true
   fi
-  if [ -f "$site_dir/nginx/fcgiwrap.sock" ]; then
-    rm -f "$site_dir/nginx/fcgiwrap.sock"
+  if [ -f "$nginx_dir/fcgiwrap.sock" ]; then
+    rm -f "$nginx_dir/fcgiwrap.sock"
   fi
 }
 
@@ -137,13 +138,13 @@ trap 'cleanup_fcgiwrap' INT TERM EXIT
 
 # Start fcgiwrap if available (for CGI support)
 if command -v fcgiwrap >/dev/null 2>&1; then
-  fcgi_sock="$site_dir/nginx/fcgiwrap.sock"
-  if [ -S "$fcgi_sock" ] && [ -f "$site_dir/nginx/fcgiwrap.pid" ]; then
-    stale_pid=$(cat "$site_dir/nginx/fcgiwrap.pid" 2>/dev/null || echo "")
+  fcgi_sock="$nginx_dir/fcgiwrap.sock"
+  if [ -S "$fcgi_sock" ] && [ -f "$nginx_dir/fcgiwrap.pid" ]; then
+    stale_pid=$(cat "$nginx_dir/fcgiwrap.pid" 2>/dev/null || echo "")
     if [ -n "$stale_pid" ] && kill -0 "$stale_pid" 2>/dev/null; then
       :
     else
-      rm -f "$site_dir/nginx/fcgiwrap.pid" "$fcgi_sock"
+      rm -f "$nginx_dir/fcgiwrap.pid" "$fcgi_sock"
     fi
   fi
 
@@ -183,7 +184,7 @@ if command -v fcgiwrap >/dev/null 2>&1; then
         WIZARDRY_SITE_NAME="$site_name" \
         fcgiwrap -c "$fcgiwrap_workers" -s "unix:$fcgi_sock" &
     fcgi_pid=$!
-    printf '%s\n' "$fcgi_pid" > "$site_dir/nginx/fcgiwrap.pid"
+    printf '%s\n' "$fcgi_pid" > "$nginx_dir/fcgiwrap.pid"
     sleep 1
   fi
 fi
@@ -191,8 +192,8 @@ fi
 printf 'Starting nginx for %s...\n' "$site_name" >&2
 
 # Capture nginx startup errors to help debug issues  
-nginx_startup_log="$site_dir/nginx/startup.log"
-"$nginx_bin" -p "$site_dir" -e "$site_dir/nginx/error.log" -c "$site_dir/nginx/nginx.conf" 2>"$nginx_startup_log" &
+nginx_startup_log="$nginx_dir/startup.log"
+"$nginx_bin" -p "$nginx_dir" -e "$nginx_dir/error.log" -c "$nginx_dir/nginx.conf" 2>"$nginx_startup_log" &
 nginx_pid=$!
 
 sleep 1
@@ -203,17 +204,17 @@ if ! kill -0 "$nginx_pid" 2>/dev/null; then
     printf 'nginx startup error (stderr):\n' >&2
     cat "$nginx_startup_log" >&2
   fi
-  if [ -f "$site_dir/nginx/error.log" ] && [ -s "$site_dir/nginx/error.log" ]; then
+  if [ -f "$nginx_dir/error.log" ] && [ -s "$nginx_dir/error.log" ]; then
     printf 'nginx error log (last 20 lines):\n' >&2
-    tail -20 "$site_dir/nginx/error.log" >&2
+    tail -20 "$nginx_dir/error.log" >&2
   fi
   printf 'run-site-daemon: nginx failed to start (process exited immediately)\n' >&2
   exit 1
 fi
 
 # Ensure a readable PID file exists even if nginx delays writing its own pid path.
-if [ ! -f "$site_dir/nginx/nginx.pid" ]; then
-  printf '%s\n' "$nginx_pid" > "$site_dir/nginx/nginx.pid" 2>/dev/null || true
+if [ ! -f "$nginx_dir/nginx.pid" ]; then
+  printf '%s\n' "$nginx_pid" > "$nginx_dir/nginx.pid" 2>/dev/null || true
 fi
 
 printf 'Site daemon running. nginx PID: %s\n' "$nginx_pid" >&2

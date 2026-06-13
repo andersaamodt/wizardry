@@ -406,6 +406,64 @@ EOF
   rm -rf "$test_web_root" "$stub_dir"
 }
 
+test_configure_nginx_uses_xdg_runtime_for_git_workspace_roots() {
+  skip-if-compiled || return $?
+
+  tmpdir=$(make_tempdir)
+  test_home="$tmpdir/home"
+  test_web_root="$test_home/git"
+  site_dir="$test_web_root/mytestsite"
+  stub_dir=$(temp-dir web-wizardry-stub)
+
+  mkdir -p "$site_dir/nginx"
+  printf '%s\n' legacy > "$site_dir/nginx/error.log"
+  stub-sudo "$stub_dir"
+
+  status=0
+  HOME="$test_home" WEB_WIZARDRY_ROOT="$test_web_root" PATH="$stub_dir:$PATH" \
+    sh "$test_root/spells/web/configure-nginx" mytestsite >/dev/null 2>"$tmpdir/error" || status=$?
+  [ "$status" -eq 0 ] || {
+    TEST_FAILURE_REASON="configure-nginx should succeed for git workspace checkouts"
+    rm -rf "$tmpdir" "$stub_dir"
+    return 1
+  }
+  [ ! -s "$tmpdir/error" ] || {
+    TEST_FAILURE_REASON="configure-nginx should not emit errors for git workspace checkouts"
+    rm -rf "$tmpdir" "$stub_dir"
+    return 1
+  }
+
+  runtime_dir=$(HOME="$test_home" sh "$test_root/spells/.imps/web/site-runtime-dir" "$site_dir" nginx)
+  [ -f "$runtime_dir/nginx.conf" ] || {
+    TEST_FAILURE_REASON="configure-nginx should write nginx.conf under the external runtime dir"
+    rm -rf "$tmpdir" "$stub_dir"
+    return 1
+  }
+  [ -f "$runtime_dir/error.log" ] || {
+    TEST_FAILURE_REASON="configure-nginx should migrate legacy runtime log files into XDG state"
+    rm -rf "$tmpdir" "$stub_dir"
+    return 1
+  }
+  [ ! -e "$site_dir/nginx/nginx.conf" ] || {
+    TEST_FAILURE_REASON="configure-nginx should not recreate repo-local nginx.conf for git workspaces"
+    rm -rf "$tmpdir" "$stub_dir"
+    return 1
+  }
+
+  grep -q "error_log $runtime_dir/error.log warn;" "$runtime_dir/nginx.conf" || {
+    TEST_FAILURE_REASON="nginx.conf should point error_log at the external runtime dir"
+    rm -rf "$tmpdir" "$stub_dir"
+    return 1
+  }
+  grep -q "access_log $runtime_dir/access.log;" "$runtime_dir/nginx.conf" || {
+    TEST_FAILURE_REASON="nginx.conf should point access_log at the external runtime dir"
+    rm -rf "$tmpdir" "$stub_dir"
+    return 1
+  }
+
+  rm -rf "$tmpdir" "$stub_dir"
+}
+
 run_test_case "configure-nginx --help" test_configure_nginx_help
 run_test_case "configure-nginx creates local mime.types" test_configure_nginx_creates_local_mimetypes
 run_test_case "configure-nginx supports .onion addresses" test_configure_nginx_supports_onion_addresses
@@ -426,5 +484,7 @@ run_test_case "configure-nginx rejects invalid imported site-user" \
   test_configure_nginx_rejects_invalid_imported_site_user
 run_test_case "configure-nginx honors external build-dir" \
   test_configure_nginx_honors_external_build_dir
+run_test_case "configure-nginx uses XDG runtime dirs for git workspace sites" \
+  test_configure_nginx_uses_xdg_runtime_for_git_workspace_roots
 
 finish_tests

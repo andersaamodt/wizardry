@@ -384,7 +384,8 @@ case "$build_dir" in
 esac
 
 fix_security_run_priv mkdir -p "$sites_dir/.sitedata" "$site_data_dir"
-fix_security_run_priv mkdir -p "$build_dir" "$site_dir/nginx"
+nginx_dir=$("${WIZARDRY_DIR:-$HOME/.wizardry}/spells/.imps/web/site-runtime-dir" "$site_dir" nginx)
+fix_security_run_priv mkdir -p "$build_dir" "$nginx_dir"
 
 # Set ownership based on who needs to write vs who needs to read
 # - build dir: actual user builds, site user (nginx) reads → actual user owns
@@ -392,7 +393,7 @@ fix_security_run_priv mkdir -p "$build_dir" "$site_dir/nginx"
 # - .sitedata/: actual user (runs nginx/fcgiwrap/CGI) writes → actual user owns
 : transgress recursive-ownership site-name-divined account-names-divined allowlist-validated
 fix_security_run_priv chown -R "$actual_user":"$site_group" "$build_dir"
-fix_security_run_priv chown -R "$actual_user":"$site_group" "$site_dir/nginx"
+fix_security_run_priv chown -R "$actual_user":"$site_group" "$nginx_dir"
 fix_security_run_priv chown -R "$actual_user":"$site_group" "$site_data_dir"
 
 # Set permissions on build directory - actual user writes, site user reads
@@ -403,16 +404,16 @@ fi
 
 # Set permissions on nginx directory - both actual user and site user need write access.
 # Create nginx temp directories if they don't exist (nginx writes to these)
-if [ -d "$site_dir/nginx" ]; then
-  fix_security_run_priv mkdir -p "$site_dir/nginx/temp/client_body"
-  fix_security_run_priv mkdir -p "$site_dir/nginx/temp/proxy"
-  fix_security_run_priv mkdir -p "$site_dir/nginx/temp/fastcgi"
-  fix_security_run_priv mkdir -p "$site_dir/nginx/temp/uwsgi"
-  fix_security_run_priv mkdir -p "$site_dir/nginx/temp/scgi"
+if [ -d "$nginx_dir" ]; then
+  fix_security_run_priv mkdir -p "$nginx_dir/temp/client_body"
+  fix_security_run_priv mkdir -p "$nginx_dir/temp/proxy"
+  fix_security_run_priv mkdir -p "$nginx_dir/temp/fastcgi"
+  fix_security_run_priv mkdir -p "$nginx_dir/temp/uwsgi"
+  fix_security_run_priv mkdir -p "$nginx_dir/temp/scgi"
   
   # Group-write allows the site user to create/update pid, logs, sockets, and temp files.
-  fix_security_run_priv find "$site_dir/nginx" -type d -exec chmod 775 {} + 2>/dev/null || true
-  fix_security_run_priv find "$site_dir/nginx" -type f -exec chmod 664 {} + 2>/dev/null || true
+  fix_security_run_priv find "$nginx_dir" -type d -exec chmod 775 {} + 2>/dev/null || true
+  fix_security_run_priv find "$nginx_dir" -type f -exec chmod 664 {} + 2>/dev/null || true
 fi
 
 # Set permissions on site data directory - make it accessible to actual user

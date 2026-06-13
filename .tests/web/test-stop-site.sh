@@ -63,28 +63,22 @@ test_stop_site_kills_nginx_pid_when_daemon_missing() {
   stub-uname-linux "$stub_dir"
   stub-sudo "$stub_dir"
   state_dir=$(temp-dir web-wizardry-state)
-  cat > "$stub_dir/ps" <<EOF
-#!/bin/sh
-printf '%s\n' "nginx -p $site_dir"
-EOF
-  chmod +x "$stub_dir/ps"
-
-  # Create a long-running process whose command line clearly identifies
-  # an nginx process bound to this site path.
-  cat > "$stub_dir/nginx-daemon" <<EOF
-#!/bin/sh
-while :; do
-  sleep 5
-done
-EOF
-  chmod +x "$stub_dir/nginx-daemon"
-  sh "$stub_dir/nginx-daemon" -p "$site_dir" &
+  ln -s /bin/sleep "$stub_dir/nginx"
+  "$stub_dir/nginx" 15 &
   sleeper_pid=$!
   printf '%s\n' "$sleeper_pid" > "$site_dir/nginx/nginx.pid"
 
+  status=0
   PATH="$stub_dir:$PATH" WEB_WIZARDRY_ROOT="$web_root" SYSTEMCTL_STATE_DIR="$state_dir" \
-    run_spell spells/web/stop-site mysite
-  assert_success
+    WIZARDRY_TEST_HELPERS_ONLY=1 \
+    sh "$test_root/spells/web/stop-site" mysite >/dev/null 2>"$state_dir/error" || status=$?
+  [ "$status" -eq 0 ] || {
+    TEST_FAILURE_REASON="stop-site should succeed when only a fallback nginx pid is present"
+    kill -9 "$sleeper_pid" 2>/dev/null || true
+    return 1
+  }
+
+  wait "$sleeper_pid" 2>/dev/null || true
 
   if kill -0 "$sleeper_pid" 2>/dev/null; then
     kill -9 "$sleeper_pid" 2>/dev/null || true

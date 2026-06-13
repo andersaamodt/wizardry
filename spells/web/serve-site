@@ -31,6 +31,7 @@ esac
 web_root=${WEB_WIZARDRY_ROOT:-$HOME/sites}
 sites_dir="$web_root"
 site_dir="$sites_dir/$site_name"
+nginx_dir=$("${WIZARDRY_DIR:-$HOME/.wizardry}/spells/.imps/web/site-runtime-dir" "$site_dir" nginx)
 
 if [ ! -d "$site_dir" ]; then
   die "serve-site: site '$site_name' not found"
@@ -83,14 +84,14 @@ if ! has nginx; then
 fi
 
 # Check if nginx.conf exists - if not, run configure-nginx
-if [ ! -f "$site_dir/nginx/nginx.conf" ]; then
+if [ ! -f "$nginx_dir/nginx.conf" ]; then
   step "Generating nginx configuration..."
   configure-nginx "$site_name"
 fi
 
 # Check if site is already running
-if [ -f "$site_dir/nginx/nginx.pid" ]; then
-  pid=$(cat "$site_dir/nginx/nginx.pid" 2>/dev/null || echo "")
+if [ -f "$nginx_dir/nginx.pid" ]; then
+  pid=$(cat "$nginx_dir/nginx.pid" 2>/dev/null || echo "")
   if serve_site_nginx_pid_running "$pid"; then
     warn "serve-site: $site_name is already running (PID $pid)"
     # Read port and show URL
@@ -101,7 +102,7 @@ if [ -f "$site_dir/nginx/nginx.pid" ]; then
     exit 0
   fi
   # Stale PID file - remove it
-  rm -f "$site_dir/nginx/nginx.pid"
+  rm -f "$nginx_dir/nginx.pid"
 fi
 
 # Check if daemon configuration exists
@@ -172,8 +173,8 @@ domain=$(config-get "$site_dir/site.conf" domain 2>/dev/null || echo "localhost"
 
 is_serving=0
 for _ in 1 2 3 4 5; do
-  if [ -f "$site_dir/nginx/nginx.pid" ]; then
-    pid=$(cat "$site_dir/nginx/nginx.pid" 2>/dev/null || echo "")
+  if [ -f "$nginx_dir/nginx.pid" ]; then
+    pid=$(cat "$nginx_dir/nginx.pid" 2>/dev/null || echo "")
     if serve_site_nginx_pid_running "$pid"; then
       is_serving=1
       break
@@ -195,21 +196,21 @@ else
   warn "serve-site: daemon for '$site_name' failed to start"
   
   # Check nginx error log
-  if [ -f "$site_dir/nginx/error.log" ] && [ -s "$site_dir/nginx/error.log" ]; then
+  if [ -f "$nginx_dir/error.log" ] && [ -s "$nginx_dir/error.log" ]; then
     warn "Nginx error log (last 20 lines):"
-    tail -20 "$site_dir/nginx/error.log" >&2
+    tail -20 "$nginx_dir/error.log" >&2
   fi
   
   # Check startup log from run-site-daemon
-  if [ -f "$site_dir/nginx/startup.log" ] && [ -s "$site_dir/nginx/startup.log" ]; then
+  if [ -f "$nginx_dir/startup.log" ] && [ -s "$nginx_dir/startup.log" ]; then
     warn "Nginx startup errors:"
-    cat "$site_dir/nginx/startup.log" >&2
+    cat "$nginx_dir/startup.log" >&2
   fi
 
   # Check daemon stderr log from launchd/systemd wrapper.
-  if [ -f "$site_dir/nginx/daemon-error.log" ] && [ -s "$site_dir/nginx/daemon-error.log" ]; then
+  if [ -f "$nginx_dir/daemon-error.log" ] && [ -s "$nginx_dir/daemon-error.log" ]; then
     warn "Daemon error log (last 40 lines):"
-    tail -40 "$site_dir/nginx/daemon-error.log" >&2
+    tail -40 "$nginx_dir/daemon-error.log" >&2
   fi
   
   die "serve-site: check the error output above for details"

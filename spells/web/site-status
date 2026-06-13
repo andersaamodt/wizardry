@@ -31,6 +31,7 @@ esac
 web_root=${WEB_WIZARDRY_ROOT:-$HOME/sites}
 sites_dir="$web_root"
 site_dir="$sites_dir/$site_name"
+nginx_dir=$("${WIZARDRY_DIR:-$HOME/.wizardry}/spells/.imps/web/site-runtime-dir" "$site_dir" nginx)
 cr=$(printf '\r')
 
 if [ ! -d "$site_dir" ]; then
@@ -101,8 +102,8 @@ site_status_nginx_pid_running() {
   return 1
 }
 
-if [ -f "$site_dir/nginx/nginx.pid" ]; then
-  pid=$(cat "$site_dir/nginx/nginx.pid" 2>/dev/null || echo "")
+if [ -f "$nginx_dir/nginx.pid" ]; then
+  pid=$(cat "$nginx_dir/nginx.pid" 2>/dev/null || echo "")
   if site_status_nginx_pid_running "$pid"; then
     serve_status="serving"
   fi

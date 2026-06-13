@@ -33,6 +33,7 @@ web_root=${WEB_WIZARDRY_ROOT:-$HOME/sites}
 sites_dir="$web_root"
 site_dir="$sites_dir/$site_name"
 site_config="$site_dir/site.conf"
+nginx_dir=$("${WIZARDRY_DIR:-$HOME/.wizardry}/spells/.imps/web/site-runtime-dir" "$site_dir" nginx)
 
 if [ ! -d "$site_dir" ]; then
   die "repair-site-daemon: site '$site_name' not found"
@@ -117,7 +118,7 @@ launchd_install() {
   label="org.wizardry.web.${site_name}"
   plist_file="$launch_dir/${label}.plist"
 
-  repair_run_priv mkdir -p "$launch_dir" "$site_dir/nginx"
+  repair_run_priv mkdir -p "$launch_dir" "$nginx_dir"
   # Note: nginx/ ownership is managed by fix-site-security
   # (owned by actual user so configure-nginx can write configs)
 
@@ -152,9 +153,9 @@ launchd_install() {
   <key>UserName</key>
   <string>$site_user</string>
   <key>StandardOutPath</key>
-  <string>$site_dir/nginx/daemon.log</string>
+  <string>$nginx_dir/daemon.log</string>
   <key>StandardErrorPath</key>
-  <string>$site_dir/nginx/daemon-error.log</string>
+  <string>$nginx_dir/daemon-error.log</string>
 </dict>
 </plist>
 EOF

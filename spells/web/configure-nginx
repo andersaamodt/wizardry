@@ -265,7 +265,7 @@ elif [ -n "$desk_route_host" ]; then
 fi
 
 # Create nginx config directory
-nginx_conf_dir="$site_dir/nginx"
+nginx_conf_dir=$("${WIZARDRY_DIR:-$HOME/.wizardry}/spells/.imps/web/site-runtime-dir" "$site_dir" nginx)
 mkdir -p "$nginx_conf_dir"
 
 # Ensure nginx temp directories exist with proper permissions
@@ -375,8 +375,8 @@ cat > "$nginx_conf" <<EOF
 
 worker_processes 1;
 daemon off;
-error_log $site_dir/nginx/error.log warn;
-pid $site_dir/nginx/nginx.pid;
+error_log $nginx_conf_dir/error.log warn;
+pid $nginx_conf_dir/nginx.pid;
 
 events {
     worker_connections 256;
@@ -393,7 +393,7 @@ http {
     uwsgi_temp_path $nginx_conf_dir/temp/uwsgi;
     scgi_temp_path $nginx_conf_dir/temp/scgi;
     
-    access_log $site_dir/nginx/access.log;
+    access_log $nginx_conf_dir/access.log;
     
     sendfile on;
     keepalive_timeout 65;
@@ -509,7 +509,7 @@ $desk_host_path_rewrite
             fastcgi_send_timeout 300s;
             
             # FastCGI configuration
-            fastcgi_pass unix:$site_dir/nginx/fcgiwrap.sock;
+            fastcgi_pass unix:$nginx_conf_dir/fcgiwrap.sock;
             fastcgi_param SCRIPT_FILENAME \$cgi_path;
             fastcgi_param QUERY_STRING \$query_string;
             fastcgi_param REQUEST_METHOD \$request_method;
@@ -547,7 +547,7 @@ $desk_host_path_rewrite
             fastcgi_read_timeout 900s;
             
             # FastCGI configuration
-            fastcgi_pass unix:$site_dir/nginx/fcgiwrap.sock;
+            fastcgi_pass unix:$nginx_conf_dir/fcgiwrap.sock;
             fastcgi_param SCRIPT_FILENAME \$cgi_path;
             fastcgi_param QUERY_STRING \$query_string;
             fastcgi_param REQUEST_METHOD \$request_method;
