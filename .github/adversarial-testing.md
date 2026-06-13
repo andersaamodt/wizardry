@@ -346,6 +346,23 @@ PATH="$stubdir:$PATH" run_spell "spells/category/spell-name" arg
 assert_failure || return 1
 ```
 
+For stateful filesystem effects, verify the real host-side path instead of only the harness sandbox path:
+
+```sh
+tmpdir=$(make_tempdir)
+target_dir="$tmpdir/workspace"
+mkdir -p "$target_dir"
+legacy_file="$target_dir/.log"
+printf '%s\n' "legacy" > "$legacy_file"
+
+output=$(HOME="$tmpdir/home" sh "$test_root/spells/category/spell-name" "$target_dir")
+status=$?
+[ "$status" -eq 0 ] || return 1
+[ ! -e "$legacy_file" ] || return 1
+expected_file="$tmpdir/home/.local/state/app/$(basename "$target_dir").log"
+[ -f "$expected_file" ] || return 1
+```
+
 For eval-printing commands, assert failure output does not contain command text:
 
 ```sh

@@ -7,7 +7,7 @@ case "${1-}" in
   cat <<'USAGE'
 Usage: say [-v] <message>
 
-Speak in the current room by appending your message to the .log file.
+Speak in the current room by appending your message to the room activity log.
 Other players in the same room (directory) can see your messages by reading
 the log file or using 'listen' which displays activity in real-time.
 
@@ -61,7 +61,7 @@ timestamp=$(log-timestamp)
 log_entry="[$timestamp] $player_name: $message"
 
 # Append to room log
-room_log="$room_dir/.log"
+room_log=$(log-path "$room_dir")
 
 # Create or append to log file
 if printf '%s\n' "$log_entry" >> "$room_log" 2>/dev/null; then

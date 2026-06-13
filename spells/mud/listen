@@ -7,8 +7,8 @@ case "${1-}" in
 Usage: listen [room_path]
        . listen [room_path]
 
-Start background monitoring of the .log file in the current (or specified)
-directory and display new entries in real-time.
+Start background monitoring of the current room activity log and display new
+entries in real-time.
 
 This enables live MUD multiplayer notifications - when other players speak,
 cast spells, or perform actions, you see them immediately in your terminal.
@@ -158,7 +158,7 @@ if [ ! -d "$listen_room_path" ]; then
   return 1 2>/dev/null || exit 1
 fi
 
-listen_room_log="$listen_room_path/.log"
+listen_room_log=$(log-path "$listen_room_path")
 
 # Create log file if it doesn't exist
 if [ ! -f "$listen_room_log" ]; then

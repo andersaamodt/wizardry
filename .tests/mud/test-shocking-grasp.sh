@@ -27,17 +27,20 @@ test_shocking_grasp_charges_avatar() {
   
   # Cast shocking-grasp with -v to see output
   cd "$test_tempdir" || return 1
-  run_spell "spells/mud/shocking-grasp" -v
-  assert_success || return 1
-  assert_output_contains "electrical energy" || return 1
+  OUTPUT=$(HOME="$test_tempdir" SPELLBOOK_DIR="$test_tempdir" sh "$test_root/spells/mud/shocking-grasp" -v 2>"$test_tempdir/error")
+  status=$?
+  [ "$status" -eq 0 ] || return 1
+  [ ! -s "$test_tempdir/error" ] || return 1
+  printf '%s' "$OUTPUT" | grep -q "electrical energy" || return 1
   
   # Verify on_toucher effect was added
   on_toucher=$(read-magic "$avatar_path" on_toucher 2>/dev/null || printf '')
   [ "$on_toucher" = "damage:4" ] || fail "Expected on_toucher=damage:4, got: $on_toucher"
   
-  # Verify it logged to .log in the test directory
-  [ -f ".log" ] || fail "Expected .log file to be created"
-  grep -q "shocking grasp" ".log" || fail "Expected log entry for shocking grasp"
+  # Verify it logged to the operator-local room activity log
+  room_log=$(HOME="$test_tempdir" sh "$test_root/spells/.imps/mud/log-path" "$test_tempdir")
+  [ -f "$room_log" ] || fail "Expected room activity log to be created"
+  grep -q "shocking grasp" "$room_log" || fail "Expected log entry for shocking grasp"
   
   # Cleanup
   cd / || true
@@ -66,12 +69,15 @@ test_shocking_grasp_silent_by_default() {
   
   # Cast shocking-grasp without -v (should be silent)
   cd "$test_tempdir" || return 1
-  run_spell "spells/mud/shocking-grasp"
-  assert_success || return 1
+  OUTPUT=$(HOME="$test_tempdir" SPELLBOOK_DIR="$test_tempdir" sh "$test_root/spells/mud/shocking-grasp" 2>"$test_tempdir/error")
+  status=$?
+  [ "$status" -eq 0 ] || return 1
+  [ ! -s "$test_tempdir/error" ] || return 1
   [ -z "$OUTPUT" ] || return 1
   
-  # Verify it still logged to .log
-  [ -f ".log" ] || fail "Expected .log file to be created"
+  # Verify it still logged to the room activity log
+  room_log=$(HOME="$test_tempdir" sh "$test_root/spells/.imps/mud/log-path" "$test_tempdir")
+  [ -f "$room_log" ] || fail "Expected room activity log to be created"
   
   # Cleanup
   cd / || true

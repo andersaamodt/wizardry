@@ -306,8 +306,10 @@ TAIL
   sleep 2
   
   # Verify relative cd path was resolved correctly by listen.
-  # If listen incorrectly inherited cd's $1 ("sites"), it won't create this file.
-  [ -f "$tmpdir/sites/.log" ] || return 1
+  # If listen incorrectly inherited cd's $1 ("sites"), it won't create the
+  # operator-local room activity log for the actual resolved directory.
+  site_log=$(HOME="$tmpdir" sh "$test_root/spells/.imps/mud/log-path" "$tmpdir/sites")
+  [ -f "$site_log" ] || return 1
 
   # Clean up listener so test runners don't hang on background tail jobs.
   . "$test_root/spells/mud/listen" --stop >/dev/null 2>&1 || true

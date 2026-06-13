@@ -2,7 +2,7 @@
 # Test coverage for think spell:
 # - Shows usage with --help
 # - Requires a thought argument  
-# - Appends thought to avatar's .log with quotes format
+# - Appends thought to the operator-local avatar activity log with quotes format
 # - Includes timestamp and player name
 # - Fails if no avatar exists
 
@@ -41,15 +41,20 @@ test_appends_to_avatar_log() {
   printf 'avatar-path=%s/.testplayer\n' "$tmpdir" > "$config_file"
   
   # Think something
-  SPELLBOOK_DIR="$config_home/.spellbook" MUD_PLAYER="testplayer" run_spell "spells/mud/think" "I wonder what's next"
-  assert_success || return 1
+  OUTPUT=$(HOME="$config_home" SPELLBOOK_DIR="$config_home/.spellbook" MUD_PLAYER="testplayer" sh "$test_root/spells/mud/think" "I wonder what's next" 2>"$tmpdir/error")
+  status=$?
+  [ "$status" -eq 0 ] || return 1
+  [ ! -s "$tmpdir/error" ] || return 1
+  printf '%s' "$OUTPUT" | grep -q 'testplayer thinks, "I wonder what'"'"'s next"' || return 1
   
-  # Check avatar log file was created (not room log)
-  [ -f ".testplayer/.log" ] || return 1
+  # Check avatar activity log file was created outside the avatar directory
+  avatar_log=$(HOME="$config_home" sh "$test_root/spells/.imps/mud/log-path" "$tmpdir/.testplayer")
+  [ -f "$avatar_log" ] || return 1
+  [ ! -f ".testplayer/.log" ] || return 1
   [ ! -f ".log" ] || return 1
   
   # Check log contains the thought with correct format (name thinks, "thought")
-  grep -q 'testplayer thinks, "I wonder what'"'"'s next"' .testplayer/.log || return 1
+  grep -q 'testplayer thinks, "I wonder what'"'"'s next"' "$avatar_log" || return 1
 }
 
 test_fails_without_avatar() {

@@ -321,3 +321,4 @@
 - Mechanical variable renames must search for every remaining reference; structural naming checks can pass while stale runtime references remain.
 - Build post-processors that replace generated public files through restrictive temp files must normalize final modes after the last rewrite, not only after the initial render.
 - Test harnesses should prefer sourced-command status over exported success sentinels; avoid adding shell variables just to prove a helper returned successfully.
+- Filesystem-state regressions that assert real `HOME`/XDG side effects should invoke the spell directly instead of `run_spell`; the harness sandbox rewrites those paths and can hide host-side migration bugs.

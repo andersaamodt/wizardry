@@ -65,7 +65,7 @@ timestamp=$(log-timestamp)
 log_entry="[$timestamp] $player_name thinks, \"$thought\""
 
 # Append to avatar's personal log
-avatar_log="$avatar_path/.log"
+avatar_log=$(log-path "$avatar_path")
 
 # Create or append to log file
 if printf '%s\n' "$log_entry" >> "$avatar_log" 2>/dev/null; then
