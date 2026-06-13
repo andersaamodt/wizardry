@@ -130,6 +130,7 @@ done
 web_root=${WEB_WIZARDRY_ROOT:-$HOME/sites}
 sites_dir="$web_root"
 site_dir="$sites_dir/$site_name"
+cr=$(printf '\r')
 
 if [ ! -d "$site_dir" ]; then
   die "configure-nginx: site '$site_name' not found"
@@ -301,6 +302,38 @@ if ! valid_nginx_quoted_path "$cgi_dir"; then
   die 2 "configure-nginx: invalid wizardry cgi path"
 fi
 
+site_build_dir() {
+  site_build_dir_site_dir=$1
+  site_build_dir_config=$(config-get "$site_build_dir_site_dir/site.conf" build-dir 2>/dev/null || printf '')
+  case "$site_build_dir_config" in
+    '')
+      site_build_dir_path="$site_build_dir_site_dir/build"
+      ;;
+    *"$cr"*|*'
+'*|.|..|../*|*/../*|*/..)
+      die 2 "configure-nginx: invalid build-dir"
+      ;;
+    \~)
+      site_build_dir_path=$HOME
+      ;;
+    \~/*)
+      site_build_dir_path="$HOME/${site_build_dir_config#\~/}"
+      ;;
+    /*)
+      site_build_dir_path=$site_build_dir_config
+      ;;
+    *)
+      site_build_dir_path="$site_build_dir_site_dir/$site_build_dir_config"
+      ;;
+  esac
+  if ! valid_nginx_quoted_path "$site_build_dir_path"; then
+    die 2 "configure-nginx: invalid build-dir"
+  fi
+  printf '%s\n' "$site_build_dir_path"
+}
+
+build_dir=$(site_build_dir "$site_dir")
+
 # Copy mime.types to local directory if not exists
 # nginx/ is owned by actual user, so we can write directly
 mime_types="$nginx_conf_dir/mime.types"
@@ -373,7 +406,7 @@ http {
         # Accept configured domain and any .onion address (for Tor hidden services)
         server_name $server_names;
         
-        root $site_dir/build;
+        root $build_dir;
 
         # Agent runs can take minutes; keep FastCGI timeouts high globally.
         fastcgi_connect_timeout 30s;
@@ -437,7 +470,7 @@ $desk_host_path_rewrite
         
         # Serve static files
         location /static/ {
-            alias $site_dir/build/static/;
+            alias $build_dir/static/;
         }
 
         # Authorized attachments are handed off from CGI using X-Accel-Redirect

@@ -43,11 +43,41 @@ esac
 web_root=${WEB_WIZARDRY_ROOT:-${WIZARDRY_SITES_DIR:-$HOME/sites}}
 sites_dir="$web_root"
 site_dir="$sites_dir/$site_name"
+cr=$(printf '\r')
 
 if [ ! -d "$site_dir" ]; then
   printf 'run-site-daemon: site '\''%s'\'' not found\n' "$site_name" >&2
   exit 1
 fi
+
+site_build_dir() {
+  site_build_dir_site_dir=$1
+  site_build_dir_config=$(config-get "$site_build_dir_site_dir/site.conf" build-dir 2>/dev/null || printf '')
+  case "$site_build_dir_config" in
+    '')
+      printf '%s\n' "$site_build_dir_site_dir/build"
+      ;;
+    *"$cr"*|*'
+'*|.|..|../*|*/../*|*/..)
+      printf 'run-site-daemon: invalid build-dir\n' >&2
+      exit 2
+      ;;
+    \~)
+      printf '%s\n' "$HOME"
+      ;;
+    \~/*)
+      printf '%s\n' "$HOME/${site_build_dir_config#\~/}"
+      ;;
+    /*)
+      printf '%s\n' "$site_build_dir_config"
+      ;;
+    *)
+      printf '%s\n' "$site_build_dir_site_dir/$site_build_dir_config"
+      ;;
+  esac
+}
+
+build_dir=$(site_build_dir "$site_dir")
 
 find_nginx_bin() {
   if command -v nginx >/dev/null 2>&1; then
@@ -82,10 +112,10 @@ fi
 printf 'Using nginx binary: %s\n' "$nginx_bin" >&2
 
 # Build site if not built
-if [ ! -f "$site_dir/build/pages/index.html" ]; then
+if [ ! -f "$build_dir/pages/index.html" ]; then
   printf 'Building site before serving...\n' >&2
   # Note: Can't call 'build' spell here - it's not in PATH after env-clear
-  # If build/ doesn't exist, nginx will fail to start and error will be logged
+  # If the configured build dir doesn't exist, nginx will fail to start and error will be logged
 fi
 
 # Generate nginx config if not exists

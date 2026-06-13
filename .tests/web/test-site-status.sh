@@ -45,7 +45,33 @@ EOF
   rm -rf "$web_root" "$stub_dir"
 }
 
+test_site_status_honors_external_build_dir() {
+  skip-if-compiled || return $?
+
+  web_root=$(temp-dir web-wizardry-test)
+  site_dir="$web_root/mysite"
+  build_dir="$web_root/.sitedata/mysite-build"
+  mkdir -p "$site_dir/nginx" "$build_dir/pages"
+  cat > "$site_dir/site.conf" <<EOF
+site-name=mysite
+build-dir=$build_dir
+EOF
+  touch "$build_dir/pages/index.html"
+
+  WEB_WIZARDRY_ROOT="$web_root" run_spell spells/web/site-status mysite
+  assert_success || return 1
+  if [ "$OUTPUT" != "built, not serving" ]; then
+    TEST_FAILURE_REASON="expected external build-dir to report 'built, not serving', got '$OUTPUT'"
+    rm -rf "$web_root"
+    return 1
+  fi
+
+  rm -rf "$web_root"
+}
+
 run_test_case "site-status shows help" test_help
 run_test_case "site-status ignores stale non-nginx PID files" \
   test_site_status_ignores_stale_non_nginx_pid
+run_test_case "site-status honors external build-dir" \
+  test_site_status_honors_external_build_dir
 finish_tests

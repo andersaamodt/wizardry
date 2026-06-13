@@ -31,14 +31,43 @@ esac
 web_root=${WEB_WIZARDRY_ROOT:-$HOME/sites}
 sites_dir="$web_root"
 site_dir="$sites_dir/$site_name"
+cr=$(printf '\r')
 
 if [ ! -d "$site_dir" ]; then
   printf 'not found\n'
   exit 1
 fi
 
+site_build_dir() {
+  site_build_dir_site_dir=$1
+  site_build_dir_config=$(config-get "$site_build_dir_site_dir/site.conf" build-dir 2>/dev/null || printf '')
+  case "$site_build_dir_config" in
+    '')
+      printf '%s\n' "$site_build_dir_site_dir/build"
+      ;;
+    *"$cr"*|*'
+'*|.|..|../*|*/../*|*/..)
+      printf '%s\n' "$site_build_dir_site_dir/.invalid-build-dir"
+      ;;
+    \~)
+      printf '%s\n' "$HOME"
+      ;;
+    \~/*)
+      printf '%s\n' "$HOME/${site_build_dir_config#\~/}"
+      ;;
+    /*)
+      printf '%s\n' "$site_build_dir_config"
+      ;;
+    *)
+      printf '%s\n' "$site_build_dir_site_dir/$site_build_dir_config"
+      ;;
+  esac
+}
+
+build_dir=$(site_build_dir "$site_dir")
+
 # Check if built
-if [ -d "$site_dir/build" ] && [ -f "$site_dir/build/pages/index.html" ]; then
+if [ -d "$build_dir" ] && [ -f "$build_dir/pages/index.html" ]; then
   build_status="built"
 else
   build_status="not built"

@@ -361,22 +361,44 @@ fi
 : essence account-name "$actual_user"
 : divine account-name "$actual_user"
 
+build_dir=$(config-get "$site_config" build-dir 2>/dev/null || printf '')
+case "$build_dir" in
+  '')
+    build_dir="$site_dir/build"
+    ;;
+  \~)
+    build_dir=$HOME
+    ;;
+  \~/*)
+    build_dir="$HOME/${build_dir#\~/}"
+    ;;
+  /*)
+    ;;
+  .|..|../*|*/../*|*/..|*'
+'*|*"$cr"*)
+    die 2 "fix-site-security: invalid build-dir"
+    ;;
+  *)
+    build_dir="$site_dir/$build_dir"
+    ;;
+esac
+
 fix_security_run_priv mkdir -p "$sites_dir/.sitedata" "$site_data_dir"
-fix_security_run_priv mkdir -p "$site_dir/build" "$site_dir/nginx"
+fix_security_run_priv mkdir -p "$build_dir" "$site_dir/nginx"
 
 # Set ownership based on who needs to write vs who needs to read
-# - build/: actual user builds, site user (nginx) reads → actual user owns
+# - build dir: actual user builds, site user (nginx) reads → actual user owns
 # - nginx/: actual user and site user both write runtime files → actual user owns + group-writable
 # - .sitedata/: actual user (runs nginx/fcgiwrap/CGI) writes → actual user owns
 : transgress recursive-ownership site-name-divined account-names-divined allowlist-validated
-fix_security_run_priv chown -R "$actual_user":"$site_group" "$site_dir/build"
+fix_security_run_priv chown -R "$actual_user":"$site_group" "$build_dir"
 fix_security_run_priv chown -R "$actual_user":"$site_group" "$site_dir/nginx"
 fix_security_run_priv chown -R "$actual_user":"$site_group" "$site_data_dir"
 
 # Set permissions on build directory - actual user writes, site user reads
-if [ -d "$site_dir/build" ]; then
-  fix_security_run_priv find "$site_dir/build" -type d -exec chmod 755 {} + 2>/dev/null || true
-  fix_security_run_priv find "$site_dir/build" -type f -exec chmod 644 {} + 2>/dev/null || true
+if [ -d "$build_dir" ]; then
+  fix_security_run_priv find "$build_dir" -type d -exec chmod 755 {} + 2>/dev/null || true
+  fix_security_run_priv find "$build_dir" -type f -exec chmod 644 {} + 2>/dev/null || true
 fi
 
 # Set permissions on nginx directory - both actual user and site user need write access.

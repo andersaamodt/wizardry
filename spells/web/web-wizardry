@@ -43,7 +43,8 @@ The web platform integrates:
   - htmx (client-side interactivity)
 
 All site files live under $HOME/sites/SITENAME/
-Build output goes to $HOME/sites/SITENAME/build/
+Build output goes to $HOME/sites/SITENAME/build/ by default.
+Set site.conf `build-dir` to move generated output outside the site checkout.
 CGI scripts may live in $HOME/sites/SITENAME/cgi/ (site-specific) or spells/.imps/cgi/ (shared)
 USAGE
   exit 0

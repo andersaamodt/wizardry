@@ -371,6 +371,41 @@ EOF
   rm -rf "$test_web_root" "$stub_dir"
 }
 
+test_configure_nginx_honors_external_build_dir() {
+  skip-if-compiled || return $?
+
+  test_web_root=$(temp-dir web-wizardry-test)
+  export WEB_WIZARDRY_ROOT="$test_web_root"
+
+  stub_dir=$(temp-dir web-wizardry-stub)
+  stub-sudo "$stub_dir"
+  export PATH="$stub_dir:$PATH"
+
+  mkdir -p "$test_web_root/mytestsite"
+  cat > "$test_web_root/mytestsite/site.conf" <<EOF
+site-name=mytestsite
+port=8080
+domain=localhost
+https=false
+build-dir=$test_web_root/.sitedata/mytestsite-build
+EOF
+
+  run_spell spells/web/configure-nginx mytestsite
+  assert_success || return 1
+
+  grep -q "root $test_web_root/.sitedata/mytestsite-build;" "$test_web_root/mytestsite/nginx/nginx.conf" || {
+    TEST_FAILURE_REASON="configure-nginx should use configured external build-dir as nginx root"
+    return 1
+  }
+
+  grep -q "alias $test_web_root/.sitedata/mytestsite-build/static/;" "$test_web_root/mytestsite/nginx/nginx.conf" || {
+    TEST_FAILURE_REASON="configure-nginx should use configured external build-dir for static alias"
+    return 1
+  }
+
+  rm -rf "$test_web_root" "$stub_dir"
+}
+
 run_test_case "configure-nginx --help" test_configure_nginx_help
 run_test_case "configure-nginx creates local mime.types" test_configure_nginx_creates_local_mimetypes
 run_test_case "configure-nginx supports .onion addresses" test_configure_nginx_supports_onion_addresses
@@ -389,5 +424,7 @@ run_test_case "configure-nginx rejects imported cgi-dir injection" \
   test_configure_nginx_rejects_imported_cgi_dir_injection
 run_test_case "configure-nginx rejects invalid imported site-user" \
   test_configure_nginx_rejects_invalid_imported_site_user
+run_test_case "configure-nginx honors external build-dir" \
+  test_configure_nginx_honors_external_build_dir
 
 finish_tests

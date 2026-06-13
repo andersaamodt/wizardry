@@ -53,10 +53,37 @@ web_root=${WEB_WIZARDRY_ROOT:-$HOME/sites}
 sites_dir="$web_root"
 site_dir="$sites_dir/$site_name"
 site_data_dir="$sites_dir/.sitedata/$site_name"
+cr=$(printf '\r')
 
 if [ ! -d "$site_dir" ]; then
   die "build: site '$site_name' not found"
 fi
+
+site_build_dir() {
+  site_build_dir_site_dir=$1
+  site_build_dir_config=$(config-get "$site_build_dir_site_dir/site.conf" build-dir 2>/dev/null || printf '')
+  case "$site_build_dir_config" in
+    '')
+      printf '%s\n' "$site_build_dir_site_dir/build"
+      ;;
+    *"$cr"*|*'
+'*|.|..|../*|*/../*|*/..)
+      die 2 "build: invalid build-dir"
+      ;;
+    \~)
+      printf '%s\n' "$HOME"
+      ;;
+    \~/*)
+      printf '%s\n' "$HOME/${site_build_dir_config#\~/}"
+      ;;
+    /*)
+      printf '%s\n' "$site_build_dir_config"
+      ;;
+    *)
+      printf '%s\n' "$site_build_dir_site_dir/$site_build_dir_config"
+      ;;
+  esac
+}
 
 if ! has pandoc; then
   die "build: pandoc is required but not installed"
@@ -360,7 +387,7 @@ run_site_pre_build_hook() {
 
 generate_blog_feeds_and_sitemap() {
   posts_dir="$site_dir/site/pages/posts"
-  build_pages_dir="$site_dir/build/pages"
+  build_pages_dir="$build_dir/pages"
 
   if [ ! -d "$posts_dir" ]; then
     return 0
@@ -404,10 +431,10 @@ generate_blog_feeds_and_sitemap() {
     latest_iso=$(date -u +%Y-%m-%dT%H:%M:%SZ)
   fi
 
-  rss_file="$site_dir/build/rss.xml"
-  atom_file="$site_dir/build/atom.xml"
-  sitemap_file="$site_dir/build/sitemap.xml"
-  robots_file="$site_dir/build/robots.txt"
+  rss_file="$build_dir/rss.xml"
+  atom_file="$build_dir/atom.xml"
+  sitemap_file="$build_dir/sitemap.xml"
+  robots_file="$build_dir/robots.txt"
 
   {
     printf '<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -684,10 +711,10 @@ prerender_blog_dynamic_sections() {
     return 0
   fi
 
-  if [ -f "$site_dir/build/pages/index.html" ] &&
+  if [ -f "$build_dir/pages/index.html" ] &&
      [ -x "$cgi_dir/blog-index" ] &&
      blog_dynamic_section_needs_refresh \
-       "$site_dir/build/pages/index.html" \
+       "$build_dir/pages/index.html" \
        "$cgi_dir/blog-index" \
        "$cgi_dir/blog-lib.sh" \
        "$cgi_dir/blog-list-common.sh" \
@@ -696,7 +723,7 @@ prerender_blog_dynamic_sections() {
     post_list_tmp=$(temp-file blog-index-fragment)
     if render_cgi_fragment "$cgi_dir/blog-index" "page=1" "$post_list_tmp"; then
       replace_html_container_by_id \
-        "$site_dir/build/pages/index.html" \
+        "$build_dir/pages/index.html" \
         "post-list" \
         "$post_list_tmp" ||
         true
@@ -704,10 +731,10 @@ prerender_blog_dynamic_sections() {
     rm -f "$post_list_tmp"
   fi
 
-  if [ -f "$site_dir/build/pages/tags.html" ] &&
+  if [ -f "$build_dir/pages/tags.html" ] &&
      [ -x "$cgi_dir/blog-tags" ] &&
      blog_dynamic_section_needs_refresh \
-       "$site_dir/build/pages/tags.html" \
+       "$build_dir/pages/tags.html" \
        "$cgi_dir/blog-tags" \
        "$cgi_dir/blog-lib.sh" \
        "$cgi_dir/blog-list-common.sh" \
@@ -716,7 +743,7 @@ prerender_blog_dynamic_sections() {
     tag_cloud_tmp=$(temp-file blog-tags-fragment)
     if render_cgi_fragment "$cgi_dir/blog-tags" "" "$tag_cloud_tmp"; then
       replace_html_container_by_id \
-        "$site_dir/build/pages/tags.html" \
+        "$build_dir/pages/tags.html" \
         "tag-cloud" \
         "$tag_cloud_tmp" ||
         true
@@ -724,10 +751,10 @@ prerender_blog_dynamic_sections() {
     rm -f "$tag_cloud_tmp"
   fi
 
-  if [ -f "$site_dir/build/pages/archive.html" ] &&
+  if [ -f "$build_dir/pages/archive.html" ] &&
      [ -x "$cgi_dir/blog-archive" ] &&
      blog_dynamic_section_needs_refresh \
-       "$site_dir/build/pages/archive.html" \
+       "$build_dir/pages/archive.html" \
        "$cgi_dir/blog-archive" \
        "$cgi_dir/blog-lib.sh" \
        "$cgi_dir/blog-list-common.sh" \
@@ -736,7 +763,7 @@ prerender_blog_dynamic_sections() {
     archive_list_tmp=$(temp-file blog-archive-fragment)
     if render_cgi_fragment "$cgi_dir/blog-archive" "" "$archive_list_tmp"; then
       replace_html_container_by_id \
-        "$site_dir/build/pages/archive.html" \
+        "$build_dir/pages/archive.html" \
         "archive-list" \
         "$archive_list_tmp" ||
         true
@@ -787,10 +814,11 @@ build_site() {
   fi
 
   run_site_pre_build_hook
+  build_dir=$(site_build_dir "$site_dir")
 
-  mkdir -p "$site_dir/build/pages"
-  mkdir -p "$site_dir/build/static"
-  mkdir -p "$site_dir/build/static/js"
+  mkdir -p "$build_dir/pages"
+  mkdir -p "$build_dir/static"
+  mkdir -p "$build_dir/static/js"
 
   default_js_lib_dir="$site_data_dir/.web-libs/js"
   js_lib_dir="${WIZARDRY_WEB_JS_DIR:-$default_js_lib_dir}"
@@ -813,9 +841,9 @@ build_site() {
   fi
 
   info "Copying web libraries to build/static/js/..."
-  cp "$js_lib_dir/htmx.min.js" "$site_dir/build/static/js/" ||
+  cp "$js_lib_dir/htmx.min.js" "$build_dir/static/js/" ||
     die "build: failed to copy htmx.min.js"
-  cp "$js_lib_dir/idiomorph-ext.min.js" "$site_dir/build/static/js/" ||
+  cp "$js_lib_dir/idiomorph-ext.min.js" "$build_dir/static/js/" ||
     die "build: failed to copy idiomorph-ext.min.js"
 
   if [ -d "$shared_theme_dir" ]; then
@@ -825,14 +853,14 @@ build_site() {
 
   if [ -d "$site_dir/site/static" ]; then
     info "Copying static files to build/static/..."
-    cp -r "$site_dir/site/static"/* "$site_dir/build/static/" 2>/dev/null || true
+    cp -r "$site_dir/site/static"/* "$build_dir/static/" 2>/dev/null || true
   fi
-  build_cache_token=$(compute_static_asset_cache_token "$site_dir/build/static")
+  build_cache_token=$(compute_static_asset_cache_token "$build_dir/static")
   if [ -z "$build_cache_token" ]; then
     build_cache_token=0
   fi
 
-  prune_stale_build_pages "$site_dir/build/pages" "$site_dir/site/pages"
+  prune_stale_build_pages "$build_dir/pages" "$site_dir/site/pages"
 
   info "Converting Markdown to HTML..."
   built_count=0
@@ -840,7 +868,7 @@ build_site() {
     includes_dir="$site_dir/site/includes"
     footer_file="$includes_dir/footer.md"
     head_file="$includes_dir/head.html"
-    deps_pages_dir="$site_dir/build/.deps/pages"
+    deps_pages_dir="$build_dir/.deps/pages"
     mkdir -p "$deps_pages_dir"
     md_file_count=$(
       find "$site_dir/site/pages" -type f -name '*.md' ! -name '._*' 2>/dev/null | wc -l
@@ -859,7 +887,7 @@ build_site() {
       while IFS= read -r md_file; do
       rel_path=${md_file#"$site_dir/site/pages/"}
       rel_html=${rel_path%.md}.html
-      html_file="$site_dir/build/pages/$rel_html"
+      html_file="$build_dir/pages/$rel_html"
       html_dir=$(dirname "$html_file")
       signature_file="$deps_pages_dir/$rel_html.sig"
       signature_dir=$(dirname "$signature_file")
@@ -974,35 +1002,35 @@ BLOG_FOOTER
       mv "$signature_tmp" "$signature_file"
       chmod 644 "$html_file"
       built_count=$((built_count + 1))
-      printf '%s\n' "$built_count" > "$site_dir/build/.build-count.tmp"
+      printf '%s\n' "$built_count" > "$build_dir/.build-count.tmp"
     done
 
-    if [ -f "$site_dir/build/.build-count.tmp" ]; then
-      built_count=$(cat "$site_dir/build/.build-count.tmp" 2>/dev/null || printf '0')
-      rm -f "$site_dir/build/.build-count.tmp"
+    if [ -f "$build_dir/.build-count.tmp" ]; then
+      built_count=$(cat "$build_dir/.build-count.tmp" 2>/dev/null || printf '0')
+      rm -f "$build_dir/.build-count.tmp"
     fi
   else
     warn "Pages directory not found: $site_dir/site/pages/"
     warn "Expected site structure:"
     warn "  $site_dir/site/pages/    - Markdown files (.md)"
     warn "  $site_dir/site/static/   - CSS, images, etc."
-    warn "  $site_dir/build/         - Generated HTML (output)"
+    warn "  $build_dir/         - Generated HTML (output)"
   fi
 
   generate_blog_feeds_and_sitemap
   prerender_blog_dynamic_sections
 
-  find "$site_dir/build/pages" -type f -name '*.html' ! -name '._*' | \
+  find "$build_dir/pages" -type f -name '*.html' ! -name '._*' | \
     while IFS= read -r html_page; do
     append_local_static_cache_bust "$html_page" "$build_cache_token"
   done
-  find "$site_dir/build/pages" -type f -name '*.html' ! -name '._*' -exec chmod 644 {} +
+  find "$build_dir/pages" -type f -name '*.html' ! -name '._*' -exec chmod 644 {} +
 
-  date -u +%Y-%m-%dT%H:%M:%SZ > "$site_dir/build/.wizardry-build-stamp"
-  chmod 644 "$site_dir/build/.wizardry-build-stamp" 2>/dev/null || true
+  date -u +%Y-%m-%dT%H:%M:%SZ > "$build_dir/.wizardry-build-stamp"
+  chmod 644 "$build_dir/.wizardry-build-stamp" 2>/dev/null || true
 
   success "Built $built_count pages for $site_name"
-  info "Build output: $site_dir/build/"
+  info "Build output: $build_dir/"
 }
 
 if [ "$watch_mode" -eq 1 ]; then

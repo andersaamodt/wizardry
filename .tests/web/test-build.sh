@@ -385,6 +385,39 @@ EOF
   rm -rf "$test_web_root" "$stub_dir"
 }
 
+test_build_honors_external_build_dir() {
+  skip-if-compiled || return $?
+
+  test_web_root=$(temp-dir web-build-root)
+  stub_dir=$(make_build_stub_dir)
+  site_name="external-build-dir"
+  site_dir="$test_web_root/$site_name"
+  build_dir="$test_web_root/.sitedata/$site_name-preview-build"
+
+  WEB_WIZARDRY_ROOT="$test_web_root" WIZARDRY_DIR="$ROOT_DIR" run_spell spells/web/create-from-template "$site_name" demo
+  assert_success || return 1
+
+  printf '%s\n' "build-dir=$build_dir" >> "$site_dir/site.conf"
+
+  PATH="$stub_dir:$PATH" WEB_WIZARDRY_ROOT="$test_web_root" WIZARDRY_DIR="$ROOT_DIR" \
+    run_spell spells/web/build "$site_name" --full
+  assert_success || return 1
+
+  [ -f "$build_dir/pages/index.html" ] || {
+    TEST_FAILURE_REASON="build should write index.html to configured external build-dir"
+    rm -rf "$test_web_root" "$stub_dir"
+    return 1
+  }
+
+  if [ -e "$site_dir/build/pages/index.html" ]; then
+    TEST_FAILURE_REASON="build should not recreate site-local build output when build-dir is external"
+    rm -rf "$test_web_root" "$stub_dir"
+    return 1
+  fi
+
+  rm -rf "$test_web_root" "$stub_dir"
+}
+
 test_build_adds_cache_bust_for_local_static_assets() {
   skip-if-compiled || return $?
 
@@ -622,6 +655,7 @@ run_test_case "build --help works" test_build_help
 run_test_case "build generates output for every template" test_build_generates_html_for_every_template
 run_test_case "build cache falls back to site data cache" test_build_cache_falls_back_to_site_data_only
 run_test_case "build runs site pre-build hook" test_build_runs_site_pre_build_hook
+run_test_case "build honors external build-dir" test_build_honors_external_build_dir
 run_test_case "build appends cache bust tokens to local static assets" test_build_adds_cache_bust_for_local_static_assets
 run_test_case "build incremental uses content signatures" test_build_incremental_uses_content_signatures
 run_test_case "build rejects path-shaped site names" test_build_rejects_path_shaped_site_name
