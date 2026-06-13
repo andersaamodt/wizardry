@@ -9,6 +9,7 @@ wizardry is a collection of POSIX shell scripts themed as magical spells for the
 ## Tech Stack
 
 - **Language**: POSIX sh only (`#!/bin/sh`)
+- **Authorization boundary**: Wizardry is POSIX sh-first; Python or Rust may exist in the broader ecosystem, but they are never implicitly authorized for a Wizardry project and require explicit user permission before introduction or retention.
 - **Style checker**: `lint-magic` and `checkbashisms`
 - **Testing**: `.tests/` directory with `spells/.imps/test/test-bootstrap`
 
@@ -55,6 +56,7 @@ When you find a new bug class, update `.github/adversarial-testing.md` and add a
 
 ### Never
 - Bash-isms: arrays, `local`, `source`, `[[ ]]`, `$RANDOM`
+- Introduce or retain Python or Rust in a Wizardry project without explicit user authorization
 - Imperative error messages ("Please install X")
 - Global variables (use parameters/stdout)
 - Unquoted variables
@@ -129,6 +131,10 @@ tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/prefix.XXXXXX")
 
 - Keep repos continuously push-ready; do not treat cleanup as a separate final phase.
 - Runtime state, logs, assay output, compiled artifacts, and private notes belong outside tracked source trees by default.
+- Never store app-instance state, user settings, runtime logs, browser profiles, temp homes, caches, or other operator-local cruft inside a repo checkout.
+- Treat a repo checkout as canonical source and development context, not as an app-instance directory.
+- Put transient output in an appropriate temp path such as `/tmp` or `${TMPDIR:-/tmp}`, and put durable operator-local state in XDG/user-local state directories outside the checkout.
+- If a tool or app writes cruft into a repo, treat that as a bug to fix at the source rather than a mess to tolerate.
 - Read `.github/PUSH_READY_CHECKLIST.md` before adding new storage paths, generated outputs, or release tooling.
 
 ## References

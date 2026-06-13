@@ -138,6 +138,7 @@
 - Async promise completion must be awaited before dependent operations; SSE setup reading log file before avatar creation completes causes race conditions and missed events.
 - Filesystem directory mtime has 1-second granularity AND count-based change detection misses simultaneous join/leave; use sorted member name signature for robust change detection.
 - CGI script stdout pollution: commands like `enchant` that output success messages must redirect stdout (`>/dev/null 2>&1`) to prevent corrupting JSON responses.
+- In Wizardry projects, Python and Rust are opt-in exceptions, not ambient permission; AI agents must not introduce, preserve, or route runtime behavior through them without explicit user authorization.
 - Button visibility logic must use consistent thresholds across all update paths; inconsistent conditions (count===0 vs count<=1) cause UI desync between clients.
 - Installation cancellation or interruption should trigger cleanup of downloaded wizardry directory to avoid leaving partial installations (PR #627).
 - Debug logging with timestamps, file paths, and success/failure counts helps diagnose complex shell initialization and sourcing issues (PR #629).

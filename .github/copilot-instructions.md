@@ -25,6 +25,7 @@
 ## Non-Negotiable Rules
 
 - Use POSIX sh only: `#!/bin/sh`, `[ ]`, `=`, `.`, `$()`, no arrays, no `local`, no `[[ ]]`.
+- Treat Wizardry as POSIX sh-first: Python or Rust are not authorized by default, even if nearby repos use them; do not add, keep, or route runtime behavior through them without explicit user approval.
 - Quote variables unless intentional splitting is documented.
 - Use `printf`, not `echo`.
 - Use `command -v`, not `which`.
@@ -40,6 +41,10 @@
 - Document new cross-platform discoveries in `.github/CROSS_PLATFORM_PATTERNS.md`.
 - Create new imps only for reused/internal behavior; prefer existing imps before inline helpers.
 - Spells can assume wizardry is installed and in `PATH`; testing setup belongs in tests, not spell code.
+- Never store app-instance state, user settings, runtime logs, temp homes, browser profiles, caches, or other operator-local cruft inside a repo checkout.
+- Treat repo folders as canonical source/development context only; do not turn them into app-instance state directories.
+- Put transient output in an appropriate temp path such as `/tmp` or `${TMPDIR:-/tmp}`, and put durable operator-local state in XDG/user-local state directories outside the checkout.
+- If a tool or app currently writes cruft into a repo, treat that as a bug to fix at the source, not a pattern to preserve, normalize, or hide with ignores.
 - Error messages are descriptive, not imperative; prefer self-healing missing prerequisites.
 - Do not add new exemptions without explicit reason and `.github/EXEMPTIONS.md` documentation.
 - Do not create AI/debug docs in the repo root; AI-facing docs belong in `.github/`.

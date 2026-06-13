@@ -12,6 +12,25 @@
 
 ## Critical POSIX sh Patterns
 
+### Script-Local Safe PATH
+
+**CRITICAL:** Generated or operator-invoked POSIX helper scripts must seed a safe baseline `PATH` themselves.
+
+```sh
+# WRONG: assumes caller PATH includes required POSIX tools
+#!/bin/sh
+set -eu
+root=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd -P)
+
+# RIGHT: establish a baseline PATH before using dirname/sed/mkdir/find/etc.
+#!/bin/sh
+set -eu
+PATH=/usr/bin:/bin:/usr/sbin:/sbin${PATH:+:$PATH}
+root=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd -P)
+```
+
+**Why:** App-generated scripts, release helpers, and repo-local verification commands may run from GUI hosts, automation sandboxes, or restricted shells that do not inherit a normal interactive `PATH`. If the script uses standard POSIX tools, seed the baseline explicitly at the top instead of depending on the caller environment.
+
 ### Stage Names and Long-Running Cron Safety
 
 **CRITICAL:** Do not block on wall-clock time to pick a unique staged release path.
