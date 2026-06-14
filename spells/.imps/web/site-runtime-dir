@@ -51,7 +51,7 @@ else
   runtime_path=$runtime_root
 fi
 
-if [ "$runtime_path" != "$site_dir" ] && [ -n "$runtime_component" ]; then
+if [ -n "$runtime_component" ] && [ "$runtime_path" != "$site_dir/$runtime_component" ]; then
   legacy_path=$site_dir/$runtime_component
   mkdir -p "$(dirname "$runtime_path")"
   if [ -e "$legacy_path" ]; then
