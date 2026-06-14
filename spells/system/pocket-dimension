@@ -2,9 +2,8 @@
 
 # Run a command inside an isolated "pocket dimension" environment.
 
-case "${1-}" in
-  --help|--usage|-h)
-    cat <<'USAGE'
+pocket_dimension_usage() {
+  cat <<'USAGE'
 Usage: pocket-dimension [OPTIONS] -- command [args...]
 
 Create a short-lived isolated environment and execute a command within it.
@@ -18,6 +17,11 @@ Options:
   --allow-write PATH      Allow write access to PATH (repeatable)
   --help, --usage, -h     Show this help message
 USAGE
+}
+
+case "${1-}" in
+  --help|--usage|-h)
+    pocket_dimension_usage
     exit 0
     ;;
 esac

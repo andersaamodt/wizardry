@@ -47,7 +47,7 @@ The install script requires either `git` or `tar` plus either `curl` or `wget`.
 
 To download wizardry using git and then install it:
 
-```bash
+```sh
 git clone https://github.com/andersaamodt/wizardry ~/.wizardry
 cd ~/.wizardry
 ./install

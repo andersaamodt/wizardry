@@ -15,6 +15,13 @@ shows_help() {
   assert_output_contains "Usage: pocket-dimension"
 }
 
+requires_command() {
+  run_spell spells/system/pocket-dimension
+  assert_failure
+  assert_status 2
+  assert_error_contains "Usage: pocket-dimension"
+}
+
 check_reports_availability() {
   platform=$(uname -s 2>/dev/null || printf 'unknown')
   if [ "$platform" = "Linux" ] && ! command -v bwrap >/dev/null 2>&1; then
@@ -51,6 +58,7 @@ sets_pocket_flag() {
 }
 
 run_test_case "pocket-dimension shows help" shows_help
+run_test_case "pocket-dimension requires a command" requires_command
 run_test_case "pocket-dimension check reports availability" check_reports_availability
 run_test_case "pocket-dimension clears environment" clears_environment
 run_test_case "pocket-dimension sets pocket flag" sets_pocket_flag
