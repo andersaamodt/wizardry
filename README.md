@@ -8,7 +8,7 @@ Wizardry includes a set of interactive menus that transparently show what comman
 
 For work that outgrows pure shell fan-out, wizardry now has a sister project: [theurgy](https://github.com/andersaamodt/theurgy).
 
-The language of magic—a human heirloom—is rich in evocative words for hidden forces and abstract transformations, making it a natural fit for extending the terminal's vocabulary, binding the worlds of thought and myth together as effective language.
+The language of magic—a human heirloom—is rich in evocative words for hidden forces and abstract transformations, making it a natural fit for extending the terminal's vocabulary, binding the worlds of thought and myth together as effective language. The semantic theory behind this direction is developed in [Doing Nothing on Purpose](https://raw.githubusercontent.com/andersaamodt/phronesis/main/papers/semanthesis-v1.0.pdf), which argues that shell scripts can host rigorous meaning and intention without confusing meaning with execution.
 
 ## Project status
 
