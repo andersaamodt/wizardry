@@ -283,27 +283,20 @@ builtin cd "$@"  # Works correctly with relative paths
 
 **CRITICAL: Bypassing checkbashisms static analysis**
 
-When defining a cd() function override that must work across all shells, checkbashisms will flag the bare `builtin` keyword as a bashism even inside runtime shell detection. To bypass this static analysis, wrap the builtin call in eval:
+When defining a cd() function override that must work across all shells, `checkbashisms` may still flag the guarded `builtin` usage. Do not hide the builtin call with `eval`. Keep the runtime guard, add the exemption comment, and treat any remaining static-tool disagreement as documentation-driven justified variance.
 
 ```sh
-# FAILS checkbashisms (static analysis detects bare 'builtin' keyword):
-# Error: "possible bashism in ... line X (builtin): builtin cd "$@" || return $?"
+# Canonical pattern:
+# checkbashisms: builtin is bash/zsh-specific but guarded by runtime version check
 if eval '[ -n "${BASH_VERSION:-}" ] || [ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; then
+    # shellcheck disable=SC2039
     builtin cd "$@" || return $?
-fi
-
-# PASSES checkbashisms (eval hides 'builtin' from static analysis):
-if eval '[ -n "${BASH_VERSION:-}" ] || [ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; then
-    eval 'builtin cd "$@"' || return $?
+else
+    command cd "$@" || return $?
 fi
 ```
 
-**Security note:** This pattern is safe because:
-1. `$@` is quoted inside the eval string, preventing word splitting
-2. `cd` builtin treats arguments as paths, not executable commands
-3. Special characters like `;` or `$()` in directory names are treated literally as path components
-
-**Why this works:** checkbashisms performs static pattern matching and cannot detect that `builtin` is only executed in bash/zsh contexts. The eval wrapper hides the keyword from the parser while preserving runtime behavior. The checkbashisms tool specifically flags the word `builtin` as a bash-ism regardless of context.
+**Why:** The runtime guard is the real safety boundary. Wrapping `builtin` in `eval` breaks argument handling for relative paths and teaches an unsafe workaround. The documented exemption comment is the approved way to record the intentional shell-specific boundary.
 
 ### Function Overrides and Shell Completion
 
