@@ -402,19 +402,15 @@ while [ "$#" -gt 0 ]; do
     progress_msg "pocket-dimension: skipping host filesystem snapshot in strict macOS mode"
   fi
 
-  snapshot_files() {
-    snapshot_target=$1
+  if [ "$record_mutations" -eq 1 ] && [ "$snapshot_enabled" -eq 1 ]; then
+    snapshot_target=$record_dir/before
     if command -v cksum >/dev/null 2>&1; then
       find "$workdir" -type f -print | sort | while IFS= read -r file; do
         cksum "$file"
-      done >"$snapshot_target"
+      done >"$snapshot_target" 2>/dev/null || true
     else
-      find "$workdir" -type f -print | sort >"$snapshot_target"
+      find "$workdir" -type f -print | sort >"$snapshot_target" 2>/dev/null || true
     fi
-  }
-
-  if [ "$record_mutations" -eq 1 ] && [ "$snapshot_enabled" -eq 1 ]; then
-    snapshot_files "$record_dir/before" 2>/dev/null || true
   fi
 
   env_args=""
@@ -685,7 +681,14 @@ RUNNER
   cleanup_active_macos_temp_user
 
   if [ "$record_mutations" -eq 1 ] && [ "$snapshot_enabled" -eq 1 ]; then
-    snapshot_files "$record_dir/after" 2>/dev/null || true
+    snapshot_target=$record_dir/after
+    if command -v cksum >/dev/null 2>&1; then
+      find "$workdir" -type f -print | sort | while IFS= read -r file; do
+        cksum "$file"
+      done >"$snapshot_target" 2>/dev/null || true
+    else
+      find "$workdir" -type f -print | sort >"$snapshot_target" 2>/dev/null || true
+    fi
     if command -v diff >/dev/null 2>&1; then
       diff -u "$record_dir/before" "$record_dir/after" \
         >"$record_dir/mutations.diff" 2>/dev/null || true

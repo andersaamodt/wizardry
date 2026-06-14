@@ -193,7 +193,7 @@ This table shows all files in the repository with their audit results. Files are
 | spells/system/learn-spellbook | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/system/logs | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/system/package-managers | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/system/pocket-dimension | 2026-06-14 05:05 | 🔍 Perused | 🟡 | 🟢 | 🟢 | 🟢 | 🔴 | 🟡 | Policy violation: has `snapshot_files()` function (should inline or extract to imp); runtime usage path now resolves correctly and pocket-dimension theming remains apt for the isolation concept | 🔧 fixed undefined usage path, 2026-06-14 |
+| spells/system/pocket-dimension | 2026-06-14 05:08 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - runtime usage path resolved, mutation snapshot helper inlined, and pocket-dimension theming remains apt for the isolation concept | 🔧 fixed undefined usage path and inlined snapshot helper, 2026-06-14 |
 | spells/system/reload-ssh | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/system/remove-service | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/system/restart-service | 2026-02-06 19:00 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - clean service management, uses prompt-with-fallback imp, proper sudo handling, minimal theming appropriate | - |
