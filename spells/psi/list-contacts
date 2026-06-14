@@ -29,20 +29,59 @@ find "$contacts_dir" -name '*.vcf' | while IFS= read -r file; do
   [ -f "$file" ] || continue
   
   # Attempt to extract the FN, ORG, or TEL field from the vCard
-  name=$(perl -pe 's/\r\n[[:space:]]/ /g' "$file" |
-    awk -v RS='END:VCARD' '
-      BEGIN {FPAT = "([^:]+:)?([^\\\\]*\\\\.)*[^\\\\]*"}
-      /^FN:/  {name = substr($0,5); gsub(/\\\\n/,"\n",name); \
-               gsub(/\\\\,/,",",name); gsub(/\\\\;/,";",name); \
-               gsub(/\\\\\\\\/,"\\",name); return 1}
-      /^ORG:/ {org  = substr($0,5); gsub(/\\\\n/,"\n",org); \
-               gsub(/\\\\,/,",",org); gsub(/\\\\;/,";",org); \
-               gsub(/\\\\\\\\/,"\\",org);}
-      /^TEL:/ {tel  = substr($0,5); gsub(/\\\\n/,"\n",tel); \
-               gsub(/\\\\,/,",",tel); gsub(/\\\\;/,";",tel); \
-               gsub(/\\\\\\\\/,"\\",tel);}
-      END     {print name != "" ? name : (org != "" ? org : tel)}
-    ')
+  name=$(
+    awk '
+      function unescape(value) {
+        gsub(/\\n/, "\n", value)
+        gsub(/\\,/, ",", value)
+        gsub(/\\;/, ";", value)
+        gsub(/\\\\/, "\\", value)
+        return value
+      }
+      function process_line(line, colon_pos, field_name, field_value) {
+        if (line == "") {
+          return
+        }
+        colon_pos = index(line, ":")
+        if (colon_pos < 1) {
+          return
+        }
+        field_name = substr(line, 1, colon_pos - 1)
+        sub(/;.*/, "", field_name)
+        field_value = substr(line, colon_pos + 1)
+        if (field_name == "FN" && name == "") {
+          name = unescape(field_value)
+          return
+        }
+        if (field_name == "ORG" && org == "") {
+          org = unescape(field_value)
+          return
+        }
+        if (field_name == "TEL" && tel == "") {
+          tel = unescape(field_value)
+        }
+      }
+      {
+        sub(/\r$/, "", $0)
+        if ($0 ~ /^[[:space:]]/) {
+          current = current substr($0, 2)
+          next
+        }
+        process_line(current)
+        current = $0
+      }
+      END {
+        process_line(current)
+        if (name != "") {
+          print name
+        } else if (org != "") {
+          print org
+        } else if (tel != "") {
+          print tel
+        }
+      }
+    ' "$file"
+  )
 
   if [ -z "$name" ]; then
     # No name, organization, or telephone found, print the filename
