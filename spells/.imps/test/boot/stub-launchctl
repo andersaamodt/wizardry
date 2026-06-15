@@ -5,7 +5,7 @@ set -eu
 dir=$1
 cat >"$dir/launchctl" <<'STUB'
 #!/bin/sh
-state_dir=${LAUNCHCTL_STATE_DIR:-$(mktemp -d)}
+state_dir=${LAUNCHCTL_STATE_DIR:-${WIZARDRY_TMPDIR:-${TMPDIR:-/tmp}}/launchctl-state}
 mkdir -p "$state_dir"
 log_file="$state_dir/launchctl.log"
 loaded_file="$state_dir/loaded"

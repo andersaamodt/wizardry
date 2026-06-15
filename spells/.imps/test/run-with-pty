@@ -22,9 +22,15 @@ if ! command -v socat >/dev/null 2>&1; then
   exit 1
 fi
 
-# Create temporary directory
-tmpdir=${TMPDIR:-/tmp}
-test_dir=$(mktemp -d "$tmpdir/run-pty.XXXXXX")
+# Create a stable test directory when the Wizardry harness provides one.
+if [ -n "${WIZARDRY_TMPDIR-}" ] && [ -d "$WIZARDRY_TMPDIR" ]; then
+  test_dir=$WIZARDRY_TMPDIR/run-pty
+  rm -rf "$test_dir"
+  mkdir -p "$test_dir"
+else
+  tmpdir=${TMPDIR:-/tmp}
+  test_dir=$(mktemp -d "$tmpdir/run-pty.XXXXXX")
+fi
 trap 'rm -rf "$test_dir"' EXIT INT TERM
 
 # Determine input data

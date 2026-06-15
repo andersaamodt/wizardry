@@ -7,7 +7,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 make_stub_dir() {
-  dir=$(mktemp -d "$WIZARDRY_TMPDIR/install-service-template.XXXXXX") || exit 1
+  dir=$(make_tempdir) || exit 1
   printf '%s\n' "$dir"
 }
 
@@ -31,7 +31,7 @@ test_declines_overwrite() {
   stub-ask-text-simple "$stub_dir"
   stub-systemctl-simple "$stub_dir"
 
-  service_dir=$(mktemp -d "$WIZARDRY_TMPDIR/services.XXXXXX") || return 1
+  service_dir=$(make_tempdir) || return 1
   template="$service_dir/example.service"
   printf 'placeholder=$VALUE\n' >"$template"
   service_path="$service_dir/existing.service"
@@ -54,7 +54,7 @@ test_fills_placeholders_and_reloads() {
   stub-ask-text-simple "$stub_dir"
   stub-systemctl-simple "$stub_dir"
 
-  service_dir=$(mktemp -d "$WIZARDRY_TMPDIR/services.XXXXXX") || return 1
+  service_dir=$(make_tempdir) || return 1
   template="$service_dir/example.service"
   cat >"$template" <<'SERVICE'
 [Unit]
@@ -99,7 +99,7 @@ test_skips_sudo_when_service_dir_writable() {
   printf '#!/bin/sh\nexit 99' >"$stub_dir/sudo"
   chmod +x "$stub_dir/sudo"
 
-  service_dir=$(mktemp -d "$WIZARDRY_TMPDIR/services.XXXXXX") || return 1
+  service_dir=$(make_tempdir) || return 1
   template="$service_dir/example.service"
   printf 'Name=$NAME\n' >"$template"
 
@@ -122,7 +122,7 @@ test_replaces_special_characters() {
   stub-ask-text-simple "$stub_dir"
   stub-systemctl-simple "$stub_dir"
 
-  service_dir=$(mktemp -d "$WIZARDRY_TMPDIR/services.XXXXXX") || return 1
+  service_dir=$(make_tempdir) || return 1
   template="$service_dir/example.service"
   cat >"$template" <<'SERVICE'
 [Service]

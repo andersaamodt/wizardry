@@ -7,7 +7,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 make_stub_dir() {
-  dir=$(mktemp -d "$WIZARDRY_TMPDIR/is-service-installed.XXXXXX") || exit 1
+  dir=$(make_tempdir) || exit 1
   printf '%s\n' "$dir"
 }
 
@@ -27,7 +27,7 @@ test_reports_installed_service() {
   skip-if-compiled || return $?
   stub_dir=$(make_stub_dir)
   stub-ask-text-simple "$stub_dir"
-  service_dir=$(mktemp -d "$WIZARDRY_TMPDIR/services.XXXXXX") || return 1
+  service_dir=$(make_tempdir) || return 1
   printf 'unit' >"$service_dir/demo.service"
   SERVICE_DIR="$service_dir" IS_SERVICE_INSTALLED_ASK_TEXT="$stub_dir/ask-text" PATH="$WIZARDRY_IMPS_PATH:$stub_dir:/bin:/usr/bin" run_spell "spells/system/is-service-installed" demo
   assert_success && assert_output_contains "demo.service is installed"
@@ -37,7 +37,7 @@ test_reports_missing_service() {
   skip-if-compiled || return $?
   stub_dir=$(make_stub_dir)
   stub-ask-text-simple "$stub_dir"
-  service_dir=$(mktemp -d "$WIZARDRY_TMPDIR/services.XXXXXX") || return 1
+  service_dir=$(make_tempdir) || return 1
   SERVICE_DIR="$service_dir" IS_SERVICE_INSTALLED_ASK_TEXT="$stub_dir/ask-text" PATH="$WIZARDRY_IMPS_PATH:$stub_dir:/bin:/usr/bin" run_spell "spells/system/is-service-installed" demo.service
   assert_failure && assert_output_contains "demo.service is not installed"
 }

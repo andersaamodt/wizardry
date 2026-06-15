@@ -5,7 +5,7 @@ set -eu
 dir=$1
 cat >"$dir/systemctl" <<'STUB'
 #!/bin/sh
-state_dir=${SYSTEMCTL_STATE_DIR:-$(mktemp -d)}
+state_dir=${SYSTEMCTL_STATE_DIR:-${WIZARDRY_TMPDIR:-${TMPDIR:-/tmp}}/systemctl-state}
 mkdir -p "$state_dir"
 log_file="$state_dir/systemctl.log"
 

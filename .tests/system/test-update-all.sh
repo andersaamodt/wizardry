@@ -39,7 +39,7 @@ test_missing_confirmation_helper() {
 
 test_user_declines_updates() {
   skip-if-compiled || return $?
-  stub_dir=$(mktemp -d "$WIZARDRY_TMPDIR/update-all.decline.XXXXXX")
+  stub_dir=$(make_tempdir)
 
   cat >"$stub_dir/ask-yn" <<'EOF'
 #!/bin/sh
@@ -73,7 +73,7 @@ EOF
 
 test_debian_update_flow() {
   skip-if-compiled || return $?
-  stub_dir=$(mktemp -d "$WIZARDRY_TMPDIR/update-all.XXXXXX")
+  stub_dir=$(make_tempdir)
   log="$stub_dir/log"
 
   cat >"$stub_dir/sudo" <<EOF
@@ -103,7 +103,7 @@ EOF
 
 test_debian_update_failure_propagates() {
   skip-if-compiled || return $?
-  stub_dir=$(mktemp -d "$WIZARDRY_TMPDIR/update-all.fail.XXXXXX")
+  stub_dir=$(make_tempdir)
   log="$stub_dir/log"
 
   cat >"$stub_dir/sudo" <<EOF
@@ -132,7 +132,7 @@ EOF
 
 test_arch_update_flow() {
   skip-if-compiled || return $?
-  stub_dir=$(mktemp -d "$WIZARDRY_TMPDIR/update-all.arch.XXXXXX")
+  stub_dir=$(make_tempdir)
   log="$stub_dir/log"
 
   cat >"$stub_dir/sudo" <<EOF
@@ -168,7 +168,7 @@ EOF
 
 test_nixos_update_flow() {
   skip-if-compiled || return $?
-  stub_dir=$(mktemp -d "$WIZARDRY_TMPDIR/update-all.nixos.XXXXXX")
+  stub_dir=$(make_tempdir)
   log="$stub_dir/log"
 
   cat >"$stub_dir/sudo" <<EOF

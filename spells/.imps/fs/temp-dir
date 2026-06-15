@@ -8,7 +8,20 @@ td_prefix=${1:-wizardry}
 # Prefer WIZARDRY_TMPDIR if set and exists, otherwise use TMPDIR or /tmp
 # This handles test environments where TMPDIR may point to sandbox dirs
 if [ -n "${WIZARDRY_TMPDIR-}" ] && [ -d "$WIZARDRY_TMPDIR" ]; then
-  mktemp -d "${WIZARDRY_TMPDIR}/${td_prefix}.XXXXXX"
+  td_counter_file=$WIZARDRY_TMPDIR/_temp_dir_index
+  td_counter=0
+  if [ -f "$td_counter_file" ]; then
+    td_counter=$(cat "$td_counter_file" 2>/dev/null || printf '0')
+  fi
+  while :; do
+    td_counter=$((td_counter + 1))
+    td_dir=$WIZARDRY_TMPDIR/$td_prefix.$td_counter
+    if mkdir "$td_dir" 2>/dev/null; then
+      printf '%s' "$td_counter" > "$td_counter_file"
+      printf '%s\n' "$td_dir"
+      exit 0
+    fi
+  done
 elif [ -n "${TMPDIR-}" ] && [ -d "$TMPDIR" ]; then
   mktemp -d "${TMPDIR}/${td_prefix}.XXXXXX"
 else

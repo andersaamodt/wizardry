@@ -1999,7 +1999,7 @@ test_output_streams_line_by_line() {
   fi
   
   # Create a simple test that outputs PASS lines with timing
-  tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/streaming-test.XXXXXX")
+  tmpdir=$(make_tempdir)
   test_file="$tmpdir/streaming-test.sh"
   
   cat > "$test_file" << 'EOF'

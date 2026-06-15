@@ -141,8 +141,18 @@ fi
 WIZARDRY_SYSTEM_PATH="$initial_path"
 export WIZARDRY_SYSTEM_PATH
 
-: "${WIZARDRY_TMPDIR:=$(mktemp -d "${TMPDIR:-/tmp}/wizardry-test.XXXXXX")}" || exit 1
-# Normalize path for macOS compatibility (TMPDIR ends with /)
+if [ -z "${WIZARDRY_TMPDIR-}" ]; then
+  wizardry_state_home=${XDG_STATE_HOME:-${HOME:-/tmp}/.local/state}
+  wizardry_test_scratch_root=${WIZARDRY_TEST_SCRATCH_ROOT:-$wizardry_state_home/wizardry/test-scratch}
+  wizardry_test_label=$(printf '%s' "${0:-wizardry-test}" | sed 's|[^A-Za-z0-9._-]|_|g')
+  WIZARDRY_TMPDIR=$wizardry_test_scratch_root/$wizardry_test_label
+  rm -rf "$WIZARDRY_TMPDIR"
+  mkdir -p "$WIZARDRY_TMPDIR" || exit 1
+  unset wizardry_state_home wizardry_test_scratch_root wizardry_test_label
+else
+  mkdir -p "$WIZARDRY_TMPDIR" || exit 1
+fi
+# Normalize path for macOS compatibility (TMPDIR may end with /)
 WIZARDRY_TMPDIR=$(printf '%s' "$WIZARDRY_TMPDIR" | sed 's|//|/|g')
 export WIZARDRY_TMPDIR
 

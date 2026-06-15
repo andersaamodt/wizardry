@@ -3,6 +3,22 @@
 # Returns normalized path for macOS compatibility.
 set -eu
 
-mktemp -d "${WIZARDRY_TMPDIR}/case.XXXXXX" | sed 's|//|/|g'
+: "${WIZARDRY_TMPDIR:?WIZARDRY_TMPDIR is required}"
+mkdir -p "$WIZARDRY_TMPDIR"
 
+counter_file=$WIZARDRY_TMPDIR/_tempdir_index
+counter=0
+if [ -f "$counter_file" ]; then
+  counter=$(cat "$counter_file" 2>/dev/null || printf '0')
+fi
+
+while :; do
+  counter=$((counter + 1))
+  tempdir=$WIZARDRY_TMPDIR/case.$counter
+  if mkdir "$tempdir" 2>/dev/null; then
+    printf '%s' "$counter" > "$counter_file"
+    printf '%s\n' "$tempdir" | sed 's|//|/|g'
+    exit 0
+  fi
+done
 

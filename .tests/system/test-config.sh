@@ -12,7 +12,7 @@ done
 test_config_set_creates_file() {
   skip-if-compiled || return $?
   run_cmd sh -c '
-    tmpdir=$(mktemp -d) &&
+    tmpdir=$(temp-dir config-test) &&
     '"$ROOT_DIR"'/spells/system/config set "$tmpdir/config" "key1" "value1" &&
     [ -f "$tmpdir/config" ] &&
     grep -q "key1=value1" "$tmpdir/config" &&
@@ -26,7 +26,7 @@ test_config_set_creates_file() {
 test_config_set_updates_existing_key() {
   skip-if-compiled || return $?
   run_cmd sh -c '
-    tmpdir=$(mktemp -d) &&
+    tmpdir=$(temp-dir config-test) &&
     printf "key1=old\nkey2=keep\n" > "$tmpdir/config" &&
     '"$ROOT_DIR"'/spells/system/config set "$tmpdir/config" "key1" "new" &&
     grep -q "key1=new" "$tmpdir/config" &&
@@ -42,7 +42,7 @@ test_config_set_updates_existing_key() {
 test_config_set_handles_equals_in_value() {
   skip-if-compiled || return $?
   run_cmd sh -c '
-    tmpdir=$(mktemp -d) &&
+    tmpdir=$(temp-dir config-test) &&
     '"$ROOT_DIR"'/spells/system/config set "$tmpdir/config" "key1" "a=b=c" &&
     grep -q "key1=a=b=c" "$tmpdir/config" &&
     rm -rf "$tmpdir" &&
@@ -94,7 +94,7 @@ line2" 2>&1)
 test_config_get_retrieves_value() {
   skip-if-compiled || return $?
   run_cmd sh -c '
-    tmpdir=$(mktemp -d) &&
+    tmpdir=$(temp-dir config-test) &&
     printf "key1=value1\nkey2=value2\n" > "$tmpdir/config" &&
     '"$ROOT_DIR"'/spells/.imps/fs/config-get "$tmpdir/config" "key1" &&
     rm -rf "$tmpdir"
@@ -106,7 +106,7 @@ test_config_get_retrieves_value() {
 test_config_get_handles_equals_in_value() {
   skip-if-compiled || return $?
   run_cmd sh -c '
-    tmpdir=$(mktemp -d) &&
+    tmpdir=$(temp-dir config-test) &&
     printf "key1=a=b=c\n" > "$tmpdir/config" &&
     '"$ROOT_DIR"'/spells/.imps/fs/config-get "$tmpdir/config" "key1" &&
     rm -rf "$tmpdir"
@@ -134,7 +134,7 @@ test_config_get_rejects_invalid_key() {
 test_config_has_returns_true_when_exists() {
   skip-if-compiled || return $?
   run_cmd sh -c '
-    tmpdir=$(mktemp -d) &&
+    tmpdir=$(temp-dir config-test) &&
     printf "key1=value1\n" > "$tmpdir/config" &&
     '"$ROOT_DIR"'/spells/.imps/fs/config-has "$tmpdir/config" "key1" &&
     rm -rf "$tmpdir" &&
@@ -147,7 +147,7 @@ test_config_has_returns_true_when_exists() {
 test_config_has_returns_false_when_missing() {
   skip-if-compiled || return $?
   run_cmd sh -c '
-    tmpdir=$(mktemp -d) &&
+    tmpdir=$(temp-dir config-test) &&
     printf "key1=value1\n" > "$tmpdir/config" &&
     '"$ROOT_DIR"'/spells/.imps/fs/config-has "$tmpdir/config" "key2"
     result=$?
@@ -168,7 +168,7 @@ test_config_has_returns_false_for_missing_file() {
 test_config_del_removes_key() {
   skip-if-compiled || return $?
   run_cmd sh -c '
-    tmpdir=$(mktemp -d) &&
+    tmpdir=$(temp-dir config-test) &&
     printf "key1=value1\nkey2=value2\n" > "$tmpdir/config" &&
     '"$ROOT_DIR"'/spells/system/config del "$tmpdir/config" "key1" &&
     grep -q "key2=value2" "$tmpdir/config" &&
@@ -191,7 +191,7 @@ test_config_del_handles_missing_file() {
 test_config_roundtrip_special_chars() {
   skip-if-compiled || return $?
   run_cmd sh -c '
-    tmpdir=$(mktemp -d) &&
+    tmpdir=$(temp-dir config-test) &&
     val="!@#\$%^&*()[]{}|;:,./<>?\\\\" &&
     '"$ROOT_DIR"'/spells/.imps/fs/config-set "$tmpdir/config" "key1" "$val" &&
     result=$('"$ROOT_DIR"'/spells/.imps/fs/config-get "$tmpdir/config" "key1") &&
@@ -206,7 +206,7 @@ test_config_roundtrip_special_chars() {
 test_config_many_keys() {
   skip-if-compiled || return $?
   run_cmd sh -c '
-    tmpdir=$(mktemp -d) &&
+    tmpdir=$(temp-dir config-test) &&
     i=1 &&
     while [ "$i" -le 20 ]; do
       '"$ROOT_DIR"'/spells/.imps/fs/config-set "$tmpdir/config" "key$i" "value$i" || exit 1

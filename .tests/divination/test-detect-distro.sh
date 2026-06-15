@@ -15,7 +15,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 make_fake_root() {
-  dir=$(mktemp -d "$WIZARDRY_TMPDIR/detect-distro.XXXXXX") || return 1
+  dir=$(make_tempdir) || return 1
   mkdir -p "$dir/etc"
   printf '%s' "$dir"
 }

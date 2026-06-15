@@ -10,13 +10,30 @@ saved_path=$PATH
 saved_home=${HOME-}
 PATH=${WIZARDRY_SYSTEM_PATH:-$PATH}
 
-stdout=$(mktemp "${WIZARDRY_TMPDIR}/stdout.XXXXXX") || exit 1
-stderr=$(mktemp "${WIZARDRY_TMPDIR}/stderr.XXXXXX") || exit 1
+: "${WIZARDRY_TMPDIR:?WIZARDRY_TMPDIR is required}"
+mkdir -p "$WIZARDRY_TMPDIR"
+run_cmd_counter_file=$WIZARDRY_TMPDIR/_run_cmd_index
+run_cmd_counter=0
+if [ -f "$run_cmd_counter_file" ]; then
+  run_cmd_counter=$(cat "$run_cmd_counter_file" 2>/dev/null || printf '0')
+fi
+while :; do
+  run_cmd_counter=$((run_cmd_counter + 1))
+  sandbox=$WIZARDRY_TMPDIR/sandbox.$run_cmd_counter
+  if mkdir "$sandbox" 2>/dev/null; then
+    printf '%s' "$run_cmd_counter" > "$run_cmd_counter_file"
+    break
+  fi
+done
+
+stdout=$WIZARDRY_TMPDIR/stdout.$run_cmd_counter
+stderr=$WIZARDRY_TMPDIR/stderr.$run_cmd_counter
+: > "$stdout"
+: > "$stderr"
 
 workdir=${RUN_CMD_WORKDIR:-$(pwd)}
 mkdir -p "$workdir"
 
-sandbox=$(mktemp -d "${WIZARDRY_TMPDIR}/sandbox.XXXXXX") || exit 1
 tmpdir="$sandbox/tmp"
 homedir="$sandbox/home"
 mkdir -p "$tmpdir" "$homedir"

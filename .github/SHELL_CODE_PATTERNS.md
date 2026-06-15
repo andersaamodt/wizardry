@@ -79,6 +79,33 @@ mv "$stage_bundle" "$bundle"
 
 **Why:** macOS can return `Operation not permitted` when copying into `.../MyApp.app/Contents/...` for a bundle that is currently running. Build a fresh staged bundle and swap it into place only after the old process is stopped.
 
+### macOS Executable Staging
+
+**CRITICAL:** Test harnesses and run/build flows that create executable stubs, compiled binaries, or `.app` bundles should reuse stable external scratch roots on macOS.
+
+```sh
+# WRONG: every run creates a new executable path for macOS launch assessment
+stage=$(mktemp -d "${TMPDIR:-/tmp}/my-run.XXXXXX")
+cat >"$stage/tool" <<'EOF'
+#!/bin/sh
+exec "$@"
+EOF
+chmod +x "$stage/tool"
+
+# RIGHT: reuse a stable operator-local root and clean it before rebuilding
+state_home=${XDG_STATE_HOME:-${HOME:-/tmp}/.local/state}
+stage=${MY_TOOL_SCRATCH_ROOT:-$state_home/my-tool/run-staging}
+rm -rf "$stage"
+mkdir -p "$stage"
+cat >"$stage/tool" <<'EOF'
+#!/bin/sh
+exec "$@"
+EOF
+chmod +x "$stage/tool"
+```
+
+**Why:** Launching many never-before-seen executable paths can force `syspolicyd` into sustained assessment work. Reusing stable paths keeps Codex/test/build loops from becoming a launch-assessment fanout source while still keeping generated artifacts out of source checkouts.
+
 ### Performance: Basename Replacement
 
 **CRITICAL FOR PERFORMANCE:** When processing many files, avoid subprocess calls.

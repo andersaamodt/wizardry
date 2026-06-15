@@ -135,7 +135,7 @@ test_ward_system_ssh_check() {
   skip-if-compiled || return $?
   
   # Create temporary test environment
-  tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/ward-system-test.XXXXXX")
+  tmpdir=$(make_tempdir)
   
   # Save original HOME and set to temp
   old_home=$HOME
@@ -163,7 +163,7 @@ test_ward_system_detects_bad_ssh_perms() {
   skip-if-compiled || return $?
   
   # Create a wrapper script that sets up bad SSH perms and then runs ward-system
-  tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/ward-system-test.XXXXXX")
+  tmpdir=$(make_tempdir)
   wrapper="$tmpdir/test-wrapper.sh"
   
   cat >"$wrapper" <<'WRAPPER'

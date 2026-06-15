@@ -7,7 +7,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 make_stub_dir() {
-  dir=$(mktemp -d "$WIZARDRY_TMPDIR/remove-service.XXXXXX") || exit 1
+  dir=$(make_tempdir) || exit 1
   printf '%s\n' "$dir"
 }
 
@@ -46,7 +46,7 @@ test_reports_missing_service() {
   stub-systemctl-simple "$stub_dir"
   write_sudo_stub "$stub_dir"
 
-  service_dir=$(mktemp -d "$WIZARDRY_TMPDIR/services.XXXXXX") || return 1
+  service_dir=$(make_tempdir) || return 1
   SERVICE_DIR="$service_dir" \
   REMOVE_SERVICE_ASK_TEXT="$stub_dir/ask-text" \
   SYSTEMCTL_STATE_DIR="$stub_dir/state" \
@@ -65,7 +65,7 @@ test_stops_and_removes_service() {
   stub-systemctl-simple "$stub_dir"
   write_sudo_stub "$stub_dir"
 
-  service_dir=$(mktemp -d "$WIZARDRY_TMPDIR/services.XXXXXX") || return 1
+  service_dir=$(make_tempdir) || return 1
   service_path="$service_dir/demo.service"
   printf 'active' >"$service_path"
 

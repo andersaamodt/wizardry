@@ -8,7 +8,7 @@ done
 
 test_shocking_grasp_charges_avatar() {
   # Create test directory (like the original test)
-  test_tempdir=$(mktemp -d)
+  test_tempdir=$(make_tempdir)
   
   # Create avatar
   avatar_path="$test_tempdir/.testuser"
@@ -50,7 +50,7 @@ test_shocking_grasp_charges_avatar() {
 
 test_shocking_grasp_silent_by_default() {
   # Create test directory
-  test_tempdir=$(mktemp -d)
+  test_tempdir=$(make_tempdir)
   
   # Create avatar
   avatar_path="$test_tempdir/.testuser"

@@ -14,7 +14,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 cast_env() {
-  dir=$(mktemp -d "${WIZARDRY_TMPDIR}/cast.XXXXXX")
+  dir=$(make_tempdir)
   mkdir -p "$dir"
   printf 'WIZARDRY_CAST_DIR=%s' "$dir"
 }

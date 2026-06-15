@@ -14,7 +14,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 make_stub_dir() {
-  dir=$(mktemp -d "$WIZARDRY_TMPDIR/spell-menu.XXXXXX") || exit 1
+  dir=$(make_tempdir) || exit 1
   printf '%s\n' "$dir"
 }
 
