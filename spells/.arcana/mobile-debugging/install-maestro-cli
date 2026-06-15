@@ -1,0 +1,23 @@
+#!/bin/sh
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-maestro-cli
+
+Installs Maestro CLI into Wizardry's dedicated mobile debugging root.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+. "$script_dir/mobile-debugging-common"
+set -eu
+
+install_maestro_cli_main

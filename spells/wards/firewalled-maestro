@@ -1,0 +1,114 @@
+#!/bin/sh
+
+# Run Maestro through a local adb shim that always delegates to firewalled-adb.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: firewalled-maestro [--serial SERIAL] [--allow IPV4[:PORT]]... -- MAESTRO_ARGS...
+
+Runs Maestro CLI with an adb shim that routes every device command through
+firewalled-adb. Use --serial for a specific device, especially wireless adb.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+. "$script_dir/../.arcana/mobile-debugging/mobile-debugging-common"
+set -eu
+
+serial=
+allow_file=$(temp-file)
+shim_dir=$(temp-dir)
+on-exit cleanup-file "$allow_file"
+on-exit cleanup-dir "$shim_dir"
+mkdir -p "$shim_dir"
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --serial)
+      [ "${2-}" ] || die "firewalled-maestro: --serial requires a value"
+      serial=$2
+      shift 2
+      ;;
+    --allow)
+      [ "${2-}" ] || die "firewalled-maestro: --allow requires a value"
+      case "$2" in
+        *'
+'*)
+          die "firewalled-maestro: allow endpoints must not contain line breaks"
+          ;;
+      esac
+      printf '%s\n' "$2" >>"$allow_file"
+      shift 2
+      ;;
+    --)
+      shift
+      break
+      ;;
+    *)
+      die 2 "firewalled-maestro: unknown option '$1'"
+      ;;
+  esac
+done
+
+[ "$#" -gt 0 ] || die 2 "firewalled-maestro: MAESTRO_ARGS are required"
+
+maestro_exec=$(mobile_debugging_maestro_exec || true)
+[ -n "$maestro_exec" ] || die "firewalled-maestro: Maestro CLI not found; install it from mobile-debugging-menu"
+
+firewalled_adb_exec=$(command -v firewalled-adb || true)
+[ -n "$firewalled_adb_exec" ] || firewalled_adb_exec="$script_dir/firewalled-adb"
+[ -x "$firewalled_adb_exec" ] || die "firewalled-maestro: firewalled-adb not found"
+
+cat >"$shim_dir/adb" <<'SH'
+#!/bin/sh
+set -eu
+
+fw=${FIREWALLED_MAESTRO_FIREWALLED_ADB:?}
+serial=${FIREWALLED_MAESTRO_SERIAL:-}
+allow_file=${FIREWALLED_MAESTRO_ALLOW_FILE:-}
+args_file=$(mktemp "${TMPDIR:-/tmp}/firewalled-maestro-adb-args.XXXXXX")
+trap 'rm -f "$args_file"' EXIT HUP INT TERM
+
+for arg in "$@"; do
+  case "$arg" in
+    *'
+'*)
+      printf '%s\n' "firewalled-maestro adb shim: adb arguments must not contain line breaks" >&2
+      exit 1
+      ;;
+  esac
+  printf '%s\n' "$arg" >>"$args_file"
+done
+
+set -- "$fw"
+[ -n "$serial" ] && set -- "$@" --serial "$serial"
+
+if [ -n "$allow_file" ] && [ -f "$allow_file" ]; then
+  while IFS= read -r endpoint || [ -n "$endpoint" ]; do
+    [ -n "$endpoint" ] || continue
+    set -- "$@" --allow "$endpoint"
+  done < "$allow_file"
+fi
+
+set -- "$@" --
+while IFS= read -r adb_arg || [ -n "$adb_arg" ]; do
+  set -- "$@" "$adb_arg"
+done < "$args_file"
+
+exec "$@"
+SH
+chmod +x "$shim_dir/adb"
+
+PATH="$shim_dir:$PATH"
+FIREWALLED_MAESTRO_FIREWALLED_ADB=$firewalled_adb_exec
+FIREWALLED_MAESTRO_SERIAL=$serial
+FIREWALLED_MAESTRO_ALLOW_FILE=$allow_file
+export PATH FIREWALLED_MAESTRO_FIREWALLED_ADB FIREWALLED_MAESTRO_SERIAL FIREWALLED_MAESTRO_ALLOW_FILE
+
+exec "$maestro_exec" "$@"

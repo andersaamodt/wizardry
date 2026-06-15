@@ -34,11 +34,23 @@ while :; do
     platform_tools_toggle="[ ] Android platform tools (adb)%$script_dir/install-android-platform-tools"
   fi
 
+  if mobile_debugging_maestro_installed; then
+    if mobile_debugging_java_ready; then
+      maestro_toggle="[X] Maestro CLI%$script_dir/uninstall-maestro-cli"
+    else
+      maestro_toggle="[X] Maestro CLI (Java missing)%$script_dir/uninstall-maestro-cli"
+    fi
+  else
+    maestro_toggle="[ ] Maestro CLI%$script_dir/install-maestro-cli"
+  fi
+
   exit_label=$(exit-label)
   menu_status=0
   menu "Mobile Debugging" \
     "$platform_tools_toggle" \
+    "$maestro_toggle" \
     "firewalled-adb help%firewalled-adb --help" \
+    "firewalled-maestro help%firewalled-maestro --help" \
     "$exit_label%kill -TERM \$PPID" || menu_status=$?
 
   if [ "$menu_status" -eq 130 ]; then
