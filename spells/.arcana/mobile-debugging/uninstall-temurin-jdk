@@ -1,0 +1,23 @@
+#!/bin/sh
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uninstall-temurin-jdk
+
+Removes the Wizardry-managed Eclipse Temurin JDK 17 install.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+. "$script_dir/mobile-debugging-common"
+set -eu
+
+uninstall_temurin_jdk_main

@@ -31,6 +31,31 @@ mobile_debugging_sdk_root() {
   printf '%s\n' "$(mobile_debugging_data_root)/android-sdk"
 }
 
+mobile_debugging_java_root() {
+  printf '%s\n' "$(mobile_debugging_data_root)/java"
+}
+
+mobile_debugging_java_install_dir() {
+  printf '%s\n' "$(mobile_debugging_java_root)/current"
+}
+
+mobile_debugging_java_home_dir() {
+  install_dir=$(mobile_debugging_java_install_dir)
+  if [ -d "$install_dir/Contents/Home" ]; then
+    printf '%s\n' "$install_dir/Contents/Home"
+  else
+    printf '%s\n' "$install_dir"
+  fi
+}
+
+mobile_debugging_java_bin_dir() {
+  printf '%s\n' "$(mobile_debugging_java_home_dir)/bin"
+}
+
+mobile_debugging_java_path() {
+  printf '%s\n' "$(mobile_debugging_java_bin_dir)/java"
+}
+
 mobile_debugging_platform_tools_dir() {
   printf '%s\n' "$(mobile_debugging_sdk_root)/platform-tools"
 }
@@ -56,6 +81,11 @@ mobile_debugging_maestro_path() {
 }
 
 mobile_debugging_java_exec() {
+  mobile_debugging_installed_java=$(mobile_debugging_java_path)
+  if [ -x "$mobile_debugging_installed_java" ]; then
+    printf '%s\n' "$mobile_debugging_installed_java"
+    return 0
+  fi
   if command -v java >/dev/null 2>&1; then
     command -v java
     return 0
@@ -119,6 +149,10 @@ mobile_debugging_maestro_installed() {
   [ -x "$(mobile_debugging_maestro_path)" ]
 }
 
+mobile_debugging_java_installed() {
+  [ -x "$(mobile_debugging_java_path)" ]
+}
+
 mobile_debugging_sha256_exec() {
   if command -v sha256sum >/dev/null 2>&1; then
     printf '%s\n' "sha256sum"
@@ -155,6 +189,38 @@ mobile_debugging_download_to_file() {
 
 mobile_debugging_maestro_release_api_url() {
   printf '%s\n' "${MOBILE_DEBUGGING_MAESTRO_RELEASE_API_URL:-https://api.github.com/repos/mobile-dev-inc/Maestro/releases/latest}"
+}
+
+mobile_debugging_temurin_release_api_url() {
+  printf '%s\n' "${MOBILE_DEBUGGING_TEMURIN_RELEASE_API_URL:-https://api.adoptium.net/v3/assets/latest/17/hotspot?architecture=$(mobile_debugging_temurin_architecture)&heap_size=normal&image_type=jdk&jvm_impl=hotspot&os=$(mobile_debugging_temurin_os)&vendor=eclipse}"
+}
+
+mobile_debugging_temurin_architecture() {
+  case "$(uname -m 2>/dev/null || printf unknown)" in
+    arm64|aarch64)
+      printf '%s\n' "aarch64"
+      ;;
+    x86_64|amd64)
+      printf '%s\n' "x64"
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+mobile_debugging_temurin_os() {
+  case "$(uname -s 2>/dev/null || printf unknown)" in
+    Darwin)
+      printf '%s\n' "mac"
+      ;;
+    Linux)
+      printf '%s\n' "linux"
+      ;;
+    *)
+      return 1
+      ;;
+  esac
 }
 
 mobile_debugging_extract_json_string() {
@@ -226,6 +292,36 @@ PY
       asset_match = 0
     }
   ' "$json_file"
+}
+
+mobile_debugging_extract_json_list0_string() {
+  json_file=$1
+  field_path=$2
+  python3_exec=$(mobile_debugging_python3_exec || true)
+  if [ -n "$python3_exec" ]; then
+    "$python3_exec" - "$json_file" "$field_path" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], 'r', encoding='utf-8') as handle:
+    data = json.load(handle)
+
+if not isinstance(data, list) or not data:
+    sys.exit(0)
+
+value = data[0]
+for part in sys.argv[2].split('.'):
+    if not isinstance(value, dict):
+        value = ""
+        break
+    value = value.get(part, "")
+
+if isinstance(value, str):
+    print(value)
+PY
+    return 0
+  fi
+  return 1
 }
 
 mobile_debugging_sha256_file() {
@@ -301,6 +397,8 @@ install_maestro_cli_main() {
   on-exit cleanup-file "$metadata_file"
   on-exit cleanup-file "$archive_file"
   on-exit cleanup-dir "$archive_dir"
+  mkdir -p "$archive_dir"
+  mkdir -p "$archive_dir"
 
   release_api_url=$(mobile_debugging_maestro_release_api_url)
   step "Fetching Maestro CLI release metadata..."
@@ -353,6 +451,70 @@ install_maestro_cli_main() {
   fi
 }
 
+install_temurin_jdk_main() {
+  if mobile_debugging_java_installed && mobile_debugging_java_ready; then
+    success "Temurin JDK already installed at $(mobile_debugging_java_install_dir)"
+    return 0
+  fi
+
+  mobile_debugging_download_supported || die "install-temurin-jdk: curl or wget is required"
+  command -v tar >/dev/null 2>&1 || die "install-temurin-jdk: tar is required"
+
+  java_root=$(mobile_debugging_java_root)
+  metadata_file=$(temp-file)
+  archive_file=$(temp-file)
+  archive_dir=$(temp-dir)
+  on-exit cleanup-file "$metadata_file"
+  on-exit cleanup-file "$archive_file"
+  on-exit cleanup-dir "$archive_dir"
+  mkdir -p "$archive_dir"
+
+  release_api_url=$(mobile_debugging_temurin_release_api_url)
+  step "Fetching Temurin JDK release metadata..."
+  mobile_debugging_download_to_file "$release_api_url" "$metadata_file" || die "install-temurin-jdk: failed to fetch release metadata"
+
+  release_name=$(mobile_debugging_extract_json_list0_string "$metadata_file" "release_name")
+  archive_url=$(mobile_debugging_extract_json_list0_string "$metadata_file" "binary.package.link")
+  archive_sha=$(mobile_debugging_extract_json_list0_string "$metadata_file" "binary.package.checksum")
+  archive_name=$(mobile_debugging_extract_json_list0_string "$metadata_file" "binary.package.name")
+  [ -n "$release_name" ] || die "install-temurin-jdk: release metadata did not include a release name"
+  [ -n "$archive_url" ] || die "install-temurin-jdk: release metadata did not include a package URL"
+
+  step "Downloading Temurin JDK $release_name..."
+  mobile_debugging_download_to_file "$archive_url" "$archive_file" || die "install-temurin-jdk: failed to download archive"
+
+  if [ -n "$archive_sha" ]; then
+    actual_sha=$(mobile_debugging_sha256_file "$archive_file")
+    [ "$actual_sha" = "$archive_sha" ] || die "install-temurin-jdk: sha256 mismatch for $archive_name"
+  fi
+
+  mkdir -p "$java_root"
+  staging_dir="$java_root/current.new"
+  rm -rf "$staging_dir"
+  mkdir -p "$staging_dir"
+
+  tar -xzf "$archive_file" -C "$archive_dir" || die "install-temurin-jdk: failed to extract archive"
+  extracted_root=$(find "$archive_dir" -mindepth 1 -maxdepth 1 -type d | head -n 1)
+  [ -n "$extracted_root" ] || die "install-temurin-jdk: archive did not contain an extracted directory"
+
+  mv "$extracted_root" "$staging_dir" || die "install-temurin-jdk: failed to stage Temurin JDK"
+  if [ -d "$staging_dir/$(basename "$extracted_root")" ] && [ ! -x "$staging_dir/bin/java" ] && [ -x "$staging_dir/$(basename "$extracted_root")/Contents/Home/bin/java" ]; then
+    moved_root="$staging_dir/$(basename "$extracted_root")"
+    temp_flat="$java_root/current.flat"
+    rm -rf "$temp_flat"
+    mv "$moved_root" "$temp_flat" || die "install-temurin-jdk: failed to flatten Temurin JDK"
+    rm -rf "$staging_dir"
+    mv "$temp_flat" "$staging_dir" || die "install-temurin-jdk: failed to finalize Temurin JDK layout"
+  fi
+
+  printf '%s\n' "$release_name" >"$staging_dir/RELEASE_TAG"
+  rm -rf "$(mobile_debugging_java_install_dir)"
+  mv "$staging_dir" "$(mobile_debugging_java_install_dir)" || die "install-temurin-jdk: failed to activate install"
+
+  mobile_debugging_java_ready || die "install-temurin-jdk: java was not installed correctly"
+  success "Installed Temurin JDK $release_name at $(mobile_debugging_java_install_dir)"
+}
+
 uninstall_android_platform_tools_main() {
   sdk_root=$(mobile_debugging_sdk_root)
   if [ ! -d "$sdk_root" ]; then
@@ -373,4 +535,15 @@ uninstall_maestro_cli_main() {
 
   rm -rf "$maestro_root"
   success "Removed Maestro CLI from $maestro_root"
+}
+
+uninstall_temurin_jdk_main() {
+  java_root=$(mobile_debugging_java_root)
+  if [ ! -d "$java_root" ]; then
+    info "Temurin JDK is not installed"
+    return 0
+  fi
+
+  rm -rf "$java_root"
+  success "Removed Temurin JDK from $java_root"
 }

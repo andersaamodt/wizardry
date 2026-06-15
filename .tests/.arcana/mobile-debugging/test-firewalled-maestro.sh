@@ -18,10 +18,17 @@ routes_adb_through_firewalled_adb() {
   tmpdir=$(make_tempdir)
   stub_dir="$tmpdir/bin"
   data_home="$tmpdir/data"
-  mkdir -p "$stub_dir" "$data_home/wizardry/mobile-debugging/maestro-cli/current/bin"
+  mkdir -p "$stub_dir" "$data_home/wizardry/mobile-debugging/maestro-cli/current/bin" "$data_home/wizardry/mobile-debugging/java/current/Contents/Home/bin"
+
+  cat >"$data_home/wizardry/mobile-debugging/java/current/Contents/Home/bin/java" <<'SH'
+#!/bin/sh
+exit 0
+SH
+  chmod +x "$data_home/wizardry/mobile-debugging/java/current/Contents/Home/bin/java"
 
   cat >"$data_home/wizardry/mobile-debugging/maestro-cli/current/bin/maestro" <<'SH'
 #!/bin/sh
+printf '%s\n' "${JAVA_HOME:-}" >"${MAESTRO_JAVA_HOME_LOG:?}"
 adb devices
 SH
   chmod +x "$data_home/wizardry/mobile-debugging/maestro-cli/current/bin/maestro"
@@ -34,9 +41,11 @@ SH
   chmod +x "$stub_dir/firewalled-adb"
 
   run_cmd env PATH="$stub_dir:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" XDG_DATA_HOME="$data_home" FIREWALLED_ADB_LOG="$tmpdir/firewalled-adb.log" \
+    MAESTRO_JAVA_HOME_LOG="$tmpdir/java-home.log" \
     "$ROOT_DIR/spells/wards/firewalled-maestro" --serial 192.168.1.9:5555 --allow 192.168.1.10 -- devices
 
   assert_success || return 1
+  assert_file_contains "$tmpdir/java-home.log" "$data_home/wizardry/mobile-debugging/java/current/Contents/Home"
   assert_file_contains "$tmpdir/firewalled-adb.log" "--serial"
   assert_file_contains "$tmpdir/firewalled-adb.log" "192.168.1.9:5555"
   assert_file_contains "$tmpdir/firewalled-adb.log" "--allow"
@@ -46,5 +55,46 @@ SH
 
 run_test_case "firewalled-maestro shows help" shows_help
 run_test_case "firewalled-maestro routes adb through firewalled-adb" routes_adb_through_firewalled_adb
+
+uses_direct_java_entrypoint_for_managed_install() {
+  tmpdir=$(make_tempdir)
+  stub_dir="$tmpdir/bin"
+  data_home="$tmpdir/data"
+  maestro_root="$data_home/wizardry/mobile-debugging/maestro-cli/current"
+  java_home="$data_home/wizardry/mobile-debugging/java/current/Contents/Home"
+  mkdir -p "$stub_dir" "$maestro_root/bin" "$maestro_root/lib" "$java_home/bin"
+
+  : >"$maestro_root/lib/maestro-cli.jar"
+
+  cat >"$maestro_root/bin/maestro" <<'SH'
+#!/bin/sh
+exit 99
+SH
+  chmod +x "$maestro_root/bin/maestro"
+
+  cat >"$java_home/bin/java" <<'SH'
+#!/bin/sh
+printf '%s\n' "$@" >"${JAVA_ARGS_LOG:?}"
+exit 0
+SH
+  chmod +x "$java_home/bin/java"
+
+  cat >"$stub_dir/firewalled-adb" <<'SH'
+#!/bin/sh
+exit 0
+SH
+  chmod +x "$stub_dir/firewalled-adb"
+
+  run_cmd env PATH="$stub_dir:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" XDG_DATA_HOME="$data_home" JAVA_ARGS_LOG="$tmpdir/java-args.log" \
+    "$ROOT_DIR/spells/wards/firewalled-maestro" -- --version
+
+  assert_success || return 1
+  assert_file_contains "$tmpdir/java-args.log" "-classpath"
+  assert_file_contains "$tmpdir/java-args.log" "$maestro_root/lib/*"
+  assert_file_contains "$tmpdir/java-args.log" "maestro.cli.AppKt"
+  assert_file_contains "$tmpdir/java-args.log" "--version"
+}
+
+run_test_case "firewalled-maestro uses direct Java entrypoint for managed installs" uses_direct_java_entrypoint_for_managed_install
 
 finish_tests

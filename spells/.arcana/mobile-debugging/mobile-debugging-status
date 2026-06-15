@@ -28,8 +28,14 @@ script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 . "$script_dir/mobile-debugging-common"
 set -eu
 
-if mobile_debugging_platform_tools_installed && mobile_debugging_maestro_installed; then
+if mobile_debugging_java_ready && mobile_debugging_platform_tools_installed && mobile_debugging_maestro_installed; then
   printf '%sinstalled%s\n' "$THEME_SUCCESS" "$RESET"
+elif mobile_debugging_platform_tools_installed && mobile_debugging_maestro_installed; then
+  printf '%sadb + Maestro (Java missing)%s\n' "$THEME_SUCCESS" "$RESET"
+elif mobile_debugging_java_ready && mobile_debugging_maestro_installed; then
+  printf '%sJava + Maestro%s\n' "$THEME_SUCCESS" "$RESET"
+elif mobile_debugging_java_ready; then
+  printf '%sJava only%s\n' "$THEME_SUCCESS" "$RESET"
 elif mobile_debugging_platform_tools_installed; then
   printf '%sadb only%s\n' "$THEME_SUCCESS" "$RESET"
 elif mobile_debugging_maestro_installed; then

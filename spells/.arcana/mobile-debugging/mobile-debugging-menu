@@ -28,6 +28,12 @@ trap 'exit 130' INT
 trap 'exit 0' TERM
 
 while :; do
+  if mobile_debugging_java_installed; then
+    java_toggle="[X] Temurin JDK 17%$script_dir/uninstall-temurin-jdk"
+  else
+    java_toggle="[ ] Temurin JDK 17%$script_dir/install-temurin-jdk"
+  fi
+
   if mobile_debugging_platform_tools_installed; then
     platform_tools_toggle="[X] Android platform tools (adb)%$script_dir/uninstall-android-platform-tools"
   else
@@ -47,6 +53,7 @@ while :; do
   exit_label=$(exit-label)
   menu_status=0
   menu "Mobile Debugging" \
+    "$java_toggle" \
     "$platform_tools_toggle" \
     "$maestro_toggle" \
     "firewalled-adb help%firewalled-adb --help" \

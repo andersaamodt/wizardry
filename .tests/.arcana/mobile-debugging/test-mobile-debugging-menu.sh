@@ -28,6 +28,7 @@ SH
     "$ROOT_DIR/spells/.arcana/mobile-debugging/mobile-debugging-menu"
 
   assert_success || return 1
+  assert_file_contains "$tmpdir/menu.log" "Temurin JDK 17"
   assert_file_contains "$tmpdir/menu.log" "Android platform tools (adb)"
   assert_file_contains "$tmpdir/menu.log" "Maestro CLI"
   assert_file_contains "$tmpdir/menu.log" "firewalled-adb help"
