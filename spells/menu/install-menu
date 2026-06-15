@@ -46,7 +46,7 @@ list_entries() {
     fi
 
     preferred_entries="
-      core mud web-wizardry wizardry-projects voice ai-dev
+      core mud web-wizardry mobile-debugging wizardry-projects voice ai-dev
       crossposting openstreetmaps wizardry-apps docker yt-dlp webcam
       tor syncthing simplex-chat nostr bitcoin lightning btcpay
     "
@@ -149,6 +149,7 @@ while :; do
             core) label="core wizardry" ;;
             mud) label="wizardry MUD" ;;
             web-wizardry) label="web wizardry" ;;
+            mobile-debugging) label="mobile debugging" ;;
             openstreetmaps) label="OpenStreetMap" ;;
             wizardry-projects) label="wizardry projects" ;;
             wizardry-apps) label="wizardry apps" ;;

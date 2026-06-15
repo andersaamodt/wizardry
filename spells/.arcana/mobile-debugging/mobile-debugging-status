@@ -1,0 +1,35 @@
+#!/bin/sh
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: mobile-debugging-status
+
+Reports installation status for mobile debugging tools.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+if command -v colors >/dev/null 2>&1; then
+  . colors
+else
+  RESET=""
+  THEME_SUCCESS=""
+  GREY=""
+fi
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+. "$script_dir/mobile-debugging-common"
+set -eu
+
+if mobile_debugging_platform_tools_installed; then
+  printf '%sinstalled%s\n' "$THEME_SUCCESS" "$RESET"
+else
+  printf '%snot installed%s\n' "$GREY" "$RESET"
+fi

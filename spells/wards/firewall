@@ -1,0 +1,72 @@
+#!/bin/sh
+
+# Run one command inside a verifiable network cage.
+# OS-specific firewall backends are delegated through Theurgy.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: firewall [--allow-localhost] [--allow IPV4[:PORT]]... -- COMMAND [ARGS...]
+
+Runs one command inside a network cage. On supported hosts, the backend denies
+network access by default, then re-allows only the explicitly listed endpoints.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+case "$(uname -s 2>/dev/null || printf unknown)" in
+  Darwin) backend=firewall-darwin ;;
+  Linux) backend=firewall-linux ;;
+  *)
+    die "firewall: unsupported host platform"
+    ;;
+esac
+
+user_bin_dir() {
+  if [ -n "${XDG_BIN_HOME:-}" ]; then
+    printf '%s\n' "$XDG_BIN_HOME"
+    return 0
+  fi
+
+  printf '%s\n' "$HOME/.local/bin"
+}
+
+resolve_backend_exec() {
+  backend_wrapper=$(user_bin_dir)/$backend
+  theurgy_home=${THEURGY_HOME:-${HOME:?}/theurgy}
+  backend_spell=$theurgy_home/spells/$backend
+
+  if command -v "$backend" >/dev/null 2>&1; then
+    command -v "$backend"
+    return 0
+  fi
+
+  if [ -x "$backend_wrapper" ]; then
+    printf '%s\n' "$backend_wrapper"
+    return 0
+  fi
+
+  if [ -x "$backend_spell" ]; then
+    printf '%s\n' "$backend_spell"
+    return 0
+  fi
+
+  return 1
+}
+
+backend_exec=$(resolve_backend_exec || true)
+if [ -z "$backend_exec" ]; then
+  theurgy_invoker="$HOME/.wizardry/spells/.arcana/theurgy/invoke-theurgy"
+  if [ -x "$theurgy_invoker" ]; then
+    "$theurgy_invoker" --yes >/dev/null 2>&1 || true
+  fi
+fi
+
+backend_exec=$(resolve_backend_exec || true)
+[ -n "$backend_exec" ] || die "firewall: backend not available ($backend)"
+
+exec "$backend_exec" "$@"

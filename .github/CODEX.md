@@ -10,6 +10,7 @@ wizardry is a collection of POSIX shell scripts themed as magical spells for the
 
 - **Language**: POSIX sh only (`#!/bin/sh`)
 - **Authorization boundary**: Wizardry is POSIX sh-first; Python or Rust may exist in the broader ecosystem, but they are never implicitly authorized for a Wizardry project and require explicit user permission before introduction or retention.
+- **Privacy boundary**: Prefer source-verifiable binaries, explicit network cages, and formally documented exceptions over opaque trust assumptions.
 - **Style checker**: `lint-magic` and `checkbashisms`
 - **Testing**: `.tests/` directory with `spells/.imps/test/test-bootstrap`
 
@@ -53,6 +54,7 @@ When you find a new bug class, update `.github/adversarial-testing.md` and add a
 - Add focused adversarial regression coverage for risky inputs, imported metadata, and failure states
 - Use pact markers from `.github/PACT_LANGUAGE.md` around high-risk boundaries when they clarify the contract
 - Use wards, sigils, hexagrams, promises, taboos, and enthrall/disenthrall vocabulary according to `.github/PACT_LANGUAGE.md`; do not add pact ceremony to harmless linear code or hot loops
+- Document trust and privacy exceptions in AI-facing docs when a workflow depends on a less-verifiable upstream binary or broader host privilege than Wizardry would ideally permit
 
 ### Never
 - Bash-isms: arrays, `local`, `source`, `[[ ]]`, `$RANDOM`

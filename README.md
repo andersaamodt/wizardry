@@ -217,6 +217,7 @@ These values express why the project exists and what principles guide its develo
 | File-first         | All state is stored in files, ideally human-readable text. No databases that enclose data in opaque blobs.       |
 | POSIX sh-first     | POSIX `sh` is the lingua franca. Other languages are only used when there is a strong reason.                    |
 | FOSS missing link  | Wizardry supplies the “glue” that integrates standard UNIX tools into coherent workflows.                        |
+| Verifiable privacy | Prefer source-verifiable binaries, explicit network boundaries, and documented exceptions over opaque trust.      |
 | Semantic synthesis | Scripts evolve toward higher-order grammars that encapsulate platform details behind concise, composable syntax. |
 | Fun                | Magic and MUD flavor text are first-class: they make the terminal more playful without hiding what is going on.  |
 
@@ -232,6 +233,7 @@ These policies describe Wizardry’s stance toward software freedom, tooling, an
 | Hand-finished AI code | AI may help draft POSIX shell, but final scripts are hand-reviewed, commented, and tested.                                      |
 | No AI integration     | Wizardry spells themselves do not call out to AI tools or services.                                                             |
 | No fallback forks     | When debugging, fix the primary execution path instead of adding alternate fallback implementations that duplicate behavior.    |
+| Explicit trust bounds | When privacy or system access matters, use verifiable artifacts and narrow, inspectable runtime permissions.                   |
 
 ## **Design Tenets**
 

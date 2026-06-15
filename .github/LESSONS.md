@@ -136,6 +136,7 @@
 - Toggleable features in configuration files allow users to selectively disable functionality for isolating and debugging complex issues (PR #626).
 - HTTP responses use CRLF (`\r\n`) line endings not LF (`\n`); strip carriage returns with `tr -d '\r'` before parsing headers or sed pattern `/^$/` won't match blank lines.
 - CGI subprocess environment isolation: fcgiwrap spawns scripts without inheriting shell PATH; explicitly pass wizardry PATH via `env PATH="$FCGI_PATH" fcgiwrap` at server startup.
+- Cross-repo backend wrappers must be verified through the installed command path under restricted PATH; a source-tree backend alone does not prove the live dependency boundary works.
 - Async promise completion must be awaited before dependent operations; SSE setup reading log file before avatar creation completes causes race conditions and missed events.
 - Filesystem directory mtime has 1-second granularity AND count-based change detection misses simultaneous join/leave; use sorted member name signature for robust change detection.
 - CGI script stdout pollution: commands like `enchant` that output success messages must redirect stdout (`>/dev/null 2>&1`) to prevent corrupting JSON responses.

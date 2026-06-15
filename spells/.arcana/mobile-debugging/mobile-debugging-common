@@ -1,0 +1,125 @@
+#!/bin/sh
+
+# Shared helpers for mobile-debugging arcana and firewalled adb.
+
+case "${1-}" in
+--help|--usage|-h)
+  case "$0" in
+    */mobile-debugging-common)
+      cat <<'USAGE'
+Usage: mobile-debugging-common
+
+Shared helper library for mobile debugging installers and wrappers.
+USAGE
+      exit 0
+      ;;
+  esac
+  ;;
+esac
+
+set +eu
+
+mobile_debugging_data_root() {
+  if [ -n "${XDG_DATA_HOME:-}" ]; then
+    printf '%s\n' "$XDG_DATA_HOME/wizardry/mobile-debugging"
+  else
+    printf '%s\n' "$HOME/.local/share/wizardry/mobile-debugging"
+  fi
+}
+
+mobile_debugging_sdk_root() {
+  printf '%s\n' "$(mobile_debugging_data_root)/android-sdk"
+}
+
+mobile_debugging_platform_tools_dir() {
+  printf '%s\n' "$(mobile_debugging_sdk_root)/platform-tools"
+}
+
+mobile_debugging_adb_path() {
+  printf '%s\n' "$(mobile_debugging_platform_tools_dir)/adb"
+}
+
+mobile_debugging_sdkmanager_exec() {
+  if command -v sdkmanager >/dev/null 2>&1; then
+    command -v sdkmanager
+    return 0
+  fi
+  return 1
+}
+
+mobile_debugging_adb_exec() {
+  mobile_debugging_installed_adb=$(mobile_debugging_adb_path)
+  if [ -x "$mobile_debugging_installed_adb" ]; then
+    printf '%s\n' "$mobile_debugging_installed_adb"
+    return 0
+  fi
+  if command -v adb >/dev/null 2>&1; then
+    command -v adb
+    return 0
+  fi
+  return 1
+}
+
+mobile_debugging_platform_tools_installed() {
+  [ -x "$(mobile_debugging_adb_path)" ]
+}
+
+install_android_platform_tools_main() {
+  if mobile_debugging_platform_tools_installed; then
+    success "Android platform tools already installed at $(mobile_debugging_platform_tools_dir)"
+    return 0
+  fi
+
+  sdk_root=$(mobile_debugging_sdk_root)
+  mkdir -p "$sdk_root"
+
+  case "$(uname -s 2>/dev/null || printf unknown)" in
+    Darwin)
+      archive_url=https://dl.google.com/android/repository/platform-tools-latest-darwin.zip
+      ;;
+    Linux)
+      archive_url=https://dl.google.com/android/repository/platform-tools-latest-linux.zip
+      ;;
+    *)
+      die "install-android-platform-tools: unsupported host platform"
+      ;;
+  esac
+
+  if command -v curl >/dev/null 2>&1; then
+    download_cmd='curl -fsSL'
+  elif command -v wget >/dev/null 2>&1; then
+    download_cmd='wget -qO-'
+  else
+    die "install-android-platform-tools: curl or wget is required"
+  fi
+
+  command -v unzip >/dev/null 2>&1 || die "install-android-platform-tools: unzip is required"
+
+  archive_file=$(temp-file)
+  archive_dir=$(temp-dir)
+  on-exit cleanup-file "$archive_file"
+  on-exit cleanup-dir "$archive_dir"
+
+  step "Downloading Android platform tools into $sdk_root..."
+  # shellcheck disable=SC2086
+  $download_cmd "$archive_url" >"$archive_file" || die "install-android-platform-tools: download failed"
+
+  rm -rf "$(mobile_debugging_platform_tools_dir)"
+  unzip -q "$archive_file" -d "$archive_dir" || die "install-android-platform-tools: unzip failed"
+  [ -d "$archive_dir/platform-tools" ] || die "install-android-platform-tools: archive did not contain platform-tools"
+  mv "$archive_dir/platform-tools" "$sdk_root/platform-tools" || die "install-android-platform-tools: failed to stage platform-tools"
+
+  mobile_debugging_platform_tools_installed || die "install-android-platform-tools: adb was not installed"
+  success "Installed Android platform tools at $(mobile_debugging_platform_tools_dir)"
+}
+
+uninstall_android_platform_tools_main() {
+  sdk_root=$(mobile_debugging_sdk_root)
+  if [ ! -d "$sdk_root" ]; then
+    info "Android platform tools are not installed"
+    return 0
+  fi
+
+  rm -rf "$sdk_root"
+  success "Removed Android platform tools from $sdk_root"
+}

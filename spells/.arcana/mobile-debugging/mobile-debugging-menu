@@ -1,0 +1,48 @@
+#!/bin/sh
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: mobile-debugging-menu
+
+Shows install and helper actions for mobile debugging.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+if ! require menu "mobile-debugging-menu needs the 'menu' command to present options."; then
+  exit 1
+fi
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+. "$script_dir/mobile-debugging-common"
+set -eu
+
+trap 'exit 130' INT
+trap 'exit 0' TERM
+
+while :; do
+  if mobile_debugging_platform_tools_installed; then
+    platform_tools_toggle="[X] Android platform tools (adb)%$script_dir/uninstall-android-platform-tools"
+  else
+    platform_tools_toggle="[ ] Android platform tools (adb)%$script_dir/install-android-platform-tools"
+  fi
+
+  exit_label=$(exit-label)
+  menu_status=0
+  menu "Mobile Debugging" \
+    "$platform_tools_toggle" \
+    "firewalled-adb help%firewalled-adb --help" \
+    "$exit_label%kill -TERM \$PPID" || menu_status=$?
+
+  if [ "$menu_status" -eq 130 ]; then
+    printf 'ESC\n' >&2
+    exit 0
+  fi
+done
