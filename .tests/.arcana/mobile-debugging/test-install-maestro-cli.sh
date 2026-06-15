@@ -16,7 +16,7 @@ shows_help() {
 
 installs_maestro_into_xdg_root() {
   tmpdir=$(make_tempdir)
-  maestro_root="$tmpdir/data/wizardry/mobile-debugging/maestro-cli/current"
+  maestro_root="$tmpdir/data/theurgy/mobile-debugging/maestro-cli/current"
   stub_dir="$tmpdir/bin"
   mkdir -p "$stub_dir"
 

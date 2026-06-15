@@ -5,7 +5,7 @@ case "${1-}" in
   cat <<'USAGE'
 Usage: uninstall-temurin-jdk
 
-Removes the Wizardry-managed Eclipse Temurin JDK 17 install.
+Removes the Theurgy-quarantined Eclipse Temurin JDK 17 install.
 USAGE
   exit 0
   ;;

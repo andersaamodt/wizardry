@@ -16,7 +16,7 @@ shows_help() {
 
 installs_temurin_into_xdg_root() {
   tmpdir=$(make_tempdir)
-  java_root="$tmpdir/data/wizardry/mobile-debugging/java/current"
+  java_root="$tmpdir/data/theurgy/mobile-debugging/java/current"
   stub_dir="$tmpdir/bin"
   mkdir -p "$stub_dir"
 

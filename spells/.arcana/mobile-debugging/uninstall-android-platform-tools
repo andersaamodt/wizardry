@@ -5,7 +5,7 @@ case "${1-}" in
   cat <<'USAGE'
 Usage: uninstall-android-platform-tools
 
-Removes Android platform tools from Wizardry's dedicated mobile debugging root.
+Removes Android platform tools from Theurgy's mobile debugging quarantine roots.
 USAGE
   exit 0
   ;;

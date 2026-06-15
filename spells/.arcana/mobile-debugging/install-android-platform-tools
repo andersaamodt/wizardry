@@ -5,7 +5,7 @@ case "${1-}" in
   cat <<'USAGE'
 Usage: install-android-platform-tools
 
-Installs Android platform tools into Wizardry's dedicated mobile debugging root.
+Installs Android platform tools into Theurgy's mobile debugging quarantine root.
 USAGE
   exit 0
   ;;

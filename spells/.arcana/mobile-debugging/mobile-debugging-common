@@ -1,6 +1,9 @@
 #!/bin/sh
 
 # Shared helpers for mobile-debugging arcana and firewalled adb.
+# Downloaded Android tooling is staged under a Theurgy-flavored XDG root so
+# Google-facing or closed-source dependencies stay quarantined from core shell
+# state while Wizardry keeps stable wrapper entrypoints.
 
 case "${1-}" in
 --help|--usage|-h)
@@ -21,26 +24,58 @@ set +eu
 
 mobile_debugging_data_root() {
   if [ -n "${XDG_DATA_HOME:-}" ]; then
+    printf '%s\n' "$XDG_DATA_HOME/theurgy/mobile-debugging"
+  else
+    printf '%s\n' "$HOME/.local/share/theurgy/mobile-debugging"
+  fi
+}
+
+mobile_debugging_legacy_data_root() {
+  if [ -n "${XDG_DATA_HOME:-}" ]; then
     printf '%s\n' "$XDG_DATA_HOME/wizardry/mobile-debugging"
   else
     printf '%s\n' "$HOME/.local/share/wizardry/mobile-debugging"
   fi
 }
 
+mobile_debugging_legacy_sdk_root() {
+  printf '%s\n' "$(mobile_debugging_legacy_data_root)/android-sdk"
+}
+
 mobile_debugging_sdk_root() {
   printf '%s\n' "$(mobile_debugging_data_root)/android-sdk"
+}
+
+mobile_debugging_legacy_java_root() {
+  printf '%s\n' "$(mobile_debugging_legacy_data_root)/java"
 }
 
 mobile_debugging_java_root() {
   printf '%s\n' "$(mobile_debugging_data_root)/java"
 }
 
+mobile_debugging_legacy_java_install_dir() {
+  printf '%s\n' "$(mobile_debugging_legacy_java_root)/current"
+}
+
 mobile_debugging_java_install_dir() {
   printf '%s\n' "$(mobile_debugging_java_root)/current"
 }
 
+mobile_debugging_resolved_java_install_dir() {
+  preferred_dir=$(mobile_debugging_java_install_dir)
+  legacy_dir=$(mobile_debugging_legacy_java_install_dir)
+  if [ -d "$preferred_dir" ]; then
+    printf '%s\n' "$preferred_dir"
+  elif [ -d "$legacy_dir" ]; then
+    printf '%s\n' "$legacy_dir"
+  else
+    printf '%s\n' "$preferred_dir"
+  fi
+}
+
 mobile_debugging_java_home_dir() {
-  install_dir=$(mobile_debugging_java_install_dir)
+  install_dir=$(mobile_debugging_resolved_java_install_dir)
   if [ -d "$install_dir/Contents/Home" ]; then
     printf '%s\n' "$install_dir/Contents/Home"
   else
@@ -61,19 +96,47 @@ mobile_debugging_platform_tools_dir() {
 }
 
 mobile_debugging_adb_path() {
-  printf '%s\n' "$(mobile_debugging_platform_tools_dir)/adb"
+  preferred_path="$(mobile_debugging_platform_tools_dir)/adb"
+  legacy_path="$(mobile_debugging_legacy_sdk_root)/platform-tools/adb"
+  if [ -x "$preferred_path" ]; then
+    printf '%s\n' "$preferred_path"
+  elif [ -x "$legacy_path" ]; then
+    printf '%s\n' "$legacy_path"
+  else
+    printf '%s\n' "$preferred_path"
+  fi
+}
+
+mobile_debugging_legacy_maestro_root() {
+  printf '%s\n' "$(mobile_debugging_legacy_data_root)/maestro-cli"
 }
 
 mobile_debugging_maestro_root() {
   printf '%s\n' "$(mobile_debugging_data_root)/maestro-cli"
 }
 
+mobile_debugging_legacy_maestro_install_dir() {
+  printf '%s\n' "$(mobile_debugging_legacy_maestro_root)/current"
+}
+
 mobile_debugging_maestro_install_dir() {
   printf '%s\n' "$(mobile_debugging_maestro_root)/current"
 }
 
+mobile_debugging_resolved_maestro_install_dir() {
+  preferred_dir=$(mobile_debugging_maestro_install_dir)
+  legacy_dir=$(mobile_debugging_legacy_maestro_install_dir)
+  if [ -d "$preferred_dir" ]; then
+    printf '%s\n' "$preferred_dir"
+  elif [ -d "$legacy_dir" ]; then
+    printf '%s\n' "$legacy_dir"
+  else
+    printf '%s\n' "$preferred_dir"
+  fi
+}
+
 mobile_debugging_maestro_bin_dir() {
-  printf '%s\n' "$(mobile_debugging_maestro_install_dir)/bin"
+  printf '%s\n' "$(mobile_debugging_resolved_maestro_install_dir)/bin"
 }
 
 mobile_debugging_maestro_path() {
@@ -517,33 +580,69 @@ install_temurin_jdk_main() {
 
 uninstall_android_platform_tools_main() {
   sdk_root=$(mobile_debugging_sdk_root)
-  if [ ! -d "$sdk_root" ]; then
+  legacy_sdk_root=$(mobile_debugging_legacy_sdk_root)
+  removed=0
+
+  if [ -d "$sdk_root" ]; then
+    rm -rf "$sdk_root"
+    removed=1
+  fi
+
+  if [ "$legacy_sdk_root" != "$sdk_root" ] && [ -d "$legacy_sdk_root" ]; then
+    rm -rf "$legacy_sdk_root"
+    removed=1
+  fi
+
+  if [ "$removed" -eq 0 ]; then
     info "Android platform tools are not installed"
     return 0
   fi
 
-  rm -rf "$sdk_root"
-  success "Removed Android platform tools from $sdk_root"
+  success "Removed Android platform tools from Theurgy quarantine roots"
 }
 
 uninstall_maestro_cli_main() {
   maestro_root=$(mobile_debugging_maestro_root)
-  if [ ! -d "$maestro_root" ]; then
+  legacy_maestro_root=$(mobile_debugging_legacy_maestro_root)
+  removed=0
+
+  if [ -d "$maestro_root" ]; then
+    rm -rf "$maestro_root"
+    removed=1
+  fi
+
+  if [ "$legacy_maestro_root" != "$maestro_root" ] && [ -d "$legacy_maestro_root" ]; then
+    rm -rf "$legacy_maestro_root"
+    removed=1
+  fi
+
+  if [ "$removed" -eq 0 ]; then
     info "Maestro CLI is not installed"
     return 0
   fi
 
-  rm -rf "$maestro_root"
-  success "Removed Maestro CLI from $maestro_root"
+  success "Removed Maestro CLI from Theurgy quarantine roots"
 }
 
 uninstall_temurin_jdk_main() {
   java_root=$(mobile_debugging_java_root)
-  if [ ! -d "$java_root" ]; then
+  legacy_java_root=$(mobile_debugging_legacy_java_root)
+  removed=0
+
+  if [ -d "$java_root" ]; then
+    rm -rf "$java_root"
+    removed=1
+  fi
+
+  if [ "$legacy_java_root" != "$java_root" ] && [ -d "$legacy_java_root" ]; then
+    rm -rf "$legacy_java_root"
+    removed=1
+  fi
+
+  if [ "$removed" -eq 0 ]; then
     info "Temurin JDK is not installed"
     return 0
   fi
 
-  rm -rf "$java_root"
-  success "Removed Temurin JDK from $java_root"
+  success "Removed Temurin JDK from Theurgy quarantine roots"
 }

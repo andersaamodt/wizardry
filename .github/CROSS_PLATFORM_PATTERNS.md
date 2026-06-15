@@ -124,6 +124,10 @@ fi
 - For macOS Wizardry desktop builds, Swift Package Manager and the Xcode Command Line Tools cover Swift, Clang, framework headers, `codesign`, `sips`, and `iconutil` on normal developer machines.
 - When installing `appimagetool` as a downloaded `.AppImage`, install a small wrapper named `appimagetool` that sets `APPIMAGE_EXTRACT_AND_RUN=1` and then executes the downloaded AppImage. This avoids a hard dependency on FUSE support on target Linux machines.
 
+## Sandbox Feature Detection
+
+- Treat `pocket-dimension` availability as a capability probe, not just a command lookup. On Linux-class hosts such as Android/Termux, `test-magic` should run `pocket-dimension --strict --check` and fall back with a warning when `bwrap` is missing or unusable.
+
 ## Package Management
 
 ```sh

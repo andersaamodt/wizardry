@@ -16,7 +16,7 @@ shows_help() {
 
 installs_platform_tools_into_xdg_root() {
   tmpdir=$(make_tempdir)
-  sdk_root="$tmpdir/data/wizardry/mobile-debugging/android-sdk"
+  sdk_root="$tmpdir/data/theurgy/mobile-debugging/android-sdk"
   stub_dir="$tmpdir/bin"
   mkdir -p "$stub_dir"
 

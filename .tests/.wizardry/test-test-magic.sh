@@ -166,6 +166,72 @@ requires_pocket_dimension() {
   return 0
 }
 
+falls_back_when_pocket_dimension_check_fails() {
+  tmpdir=$(make_tempdir)
+  stub_dir="$tmpdir/bin"
+  fixture_root="$tmpdir/fixture-root"
+  fixture_sys_dir="$fixture_root/spells/.imps/sys"
+  fixture_wizardry_dir="$fixture_root/spells/.wizardry"
+  fixture_test_dir="$fixture_root/.tests/fixture"
+  mkdir -p "$stub_dir" "$fixture_sys_dir" "$fixture_wizardry_dir" "$fixture_test_dir"
+
+  cat >"$stub_dir/uname" <<'SH'
+#!/bin/sh
+printf '%s\n' Linux
+SH
+  chmod +x "$stub_dir/uname"
+
+  cat >"$stub_dir/pocket-dimension" <<'SH'
+#!/bin/sh
+case " $* " in
+  *" --check "*)
+    exit 1
+    ;;
+esac
+printf '%s\n' "pocket-dimension should not have executed the test body" >&2
+exit 42
+SH
+  chmod +x "$stub_dir/pocket-dimension"
+
+  cat >"$fixture_sys_dir/spell-levels" <<'SH'
+#!/bin/sh
+set -eu
+
+case "${1-}:${2-}" in
+  1:name)
+    printf '%s\n' "Fixture Level"
+    ;;
+  1:spells)
+    printf '%s\n' "dummy:fixture"
+    ;;
+  1:imps)
+    printf '\n'
+    ;;
+  *)
+    exit 1
+    ;;
+esac
+SH
+  chmod +x "$fixture_sys_dir/spell-levels"
+
+  ln -s "$ROOT_DIR/spells/.wizardry/test-spell" "$fixture_wizardry_dir/test-spell"
+
+  cat >"$fixture_test_dir/test-dummy.sh" <<'SH'
+#!/bin/sh
+printf '%s\n' "PASS #1 fixture test passes"
+printf '%s\n' "✓ 1/1 tests passed"
+exit 0
+SH
+  chmod +x "$fixture_test_dir/test-dummy.sh"
+
+  run_cmd env PATH="$stub_dir:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" \
+    WIZARDRY_DIR="$fixture_root" \
+    sh "$ROOT_DIR/spells/.wizardry/test-magic" 1 --only
+
+  assert_success || return 1
+  assert_error_contains "proceeding without sandbox isolation"
+}
+
 # Test that failed subtests cause the parent test to fail
 failed_subtests_fail_parent_test() {
   tmpdir="$(make_tempdir)"
@@ -561,6 +627,7 @@ run_test_case "system/test-magic has no test rerun logic" no_test_reruns
 run_test_case "system/test-magic has pre-flight checks" has_preflight_checks
 run_test_case "system/test-magic has timeout protection" has_timeout_protection
 run_test_case "system/test-magic requires pocket-dimension" requires_pocket_dimension
+run_test_case "system/test-magic falls back when pocket-dimension check fails" falls_back_when_pocket_dimension_check_fails
 run_test_case "system/test-magic uncovered checks only run from level 0" uncovered_checks_only_run_from_level_0
 run_test_case "system/test-magic help clarifies Level 0 = Common Tests" help_clarifies_level_0_is_common_tests
 # Tests below require test-magic to accept specific test file paths as arguments

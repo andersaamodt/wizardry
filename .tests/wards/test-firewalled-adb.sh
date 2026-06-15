@@ -17,14 +17,14 @@ shows_help() {
 outer_wrapper_uses_firewall_and_serial_allowlist() {
   tmpdir=$(make_tempdir)
   sdk_root="$tmpdir/data"
-  mkdir -p "$sdk_root/wizardry/mobile-debugging/android-sdk/platform-tools"
+  mkdir -p "$sdk_root/theurgy/mobile-debugging/android-sdk/platform-tools"
 
-  cat >"$sdk_root/wizardry/mobile-debugging/android-sdk/platform-tools/adb" <<'SH'
+  cat >"$sdk_root/theurgy/mobile-debugging/android-sdk/platform-tools/adb" <<'SH'
 #!/bin/sh
 printf '%s\n' "$@" >>"${ADB_LOG:?}"
 exit 0
 SH
-  chmod +x "$sdk_root/wizardry/mobile-debugging/android-sdk/platform-tools/adb"
+  chmod +x "$sdk_root/theurgy/mobile-debugging/android-sdk/platform-tools/adb"
 
   cat >"$tmpdir/firewall" <<'SH'
 #!/bin/sh
@@ -51,14 +51,14 @@ SH
 version_without_serial_does_not_trip_linebreak_guard() {
   tmpdir=$(make_tempdir)
   sdk_root="$tmpdir/data"
-  mkdir -p "$sdk_root/wizardry/mobile-debugging/android-sdk/platform-tools"
+  mkdir -p "$sdk_root/theurgy/mobile-debugging/android-sdk/platform-tools"
 
-  cat >"$sdk_root/wizardry/mobile-debugging/android-sdk/platform-tools/adb" <<'SH'
+  cat >"$sdk_root/theurgy/mobile-debugging/android-sdk/platform-tools/adb" <<'SH'
 #!/bin/sh
 printf '%s\n' "$@" >>"${ADB_LOG:?}"
 exit 0
 SH
-  chmod +x "$sdk_root/wizardry/mobile-debugging/android-sdk/platform-tools/adb"
+  chmod +x "$sdk_root/theurgy/mobile-debugging/android-sdk/platform-tools/adb"
 
   cat >"$tmpdir/firewall" <<'SH'
 #!/bin/sh

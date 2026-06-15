@@ -241,17 +241,25 @@ if [ "${GITHUB_ACTIONS-}" != "true" ] && [ "${WIZARDRY_TEST_IN_POCKET-0}" -ne 1 
       fi
     fi
   fi
-  if [ "$use_strict_pocket" -eq 1 ] && ! command -v pocket-dimension >/dev/null 2>&1; then
-    printf 'test-magic: pocket-dimension not found\n' >&2
-    exit 1
-  fi
   if [ "$use_strict_pocket" -eq 1 ]; then
-    if [ "$has_tty" -eq 1 ]; then
-      printf '%s\n' "test-magic: entering strict pocket-dimension..." > /dev/tty
+    if ! command -v pocket-dimension >/dev/null 2>&1; then
+      printf '%s\n' \
+        "test-magic: pocket-dimension unavailable; proceeding without sandbox isolation" \
+        >&2
+      use_strict_pocket=0
+    elif ! pocket-dimension --strict --check >/dev/null 2>&1; then
+      printf '%s\n' \
+        "test-magic: pocket-dimension unavailable; proceeding without sandbox isolation" \
+        >&2
+      use_strict_pocket=0
     else
-      printf '%s\n' "test-magic: entering strict pocket-dimension..." >&2
+      if [ "$has_tty" -eq 1 ]; then
+        printf '%s\n' "test-magic: entering strict pocket-dimension..." > /dev/tty
+      else
+        printf '%s\n' "test-magic: entering strict pocket-dimension..." >&2
+      fi
+      exec pocket-dimension --strict --network closed -- test-magic "$@"
     fi
-    exec pocket-dimension --strict --network closed -- test-magic "$@"
   fi
 fi
 
