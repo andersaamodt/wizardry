@@ -158,6 +158,7 @@
 - Debug output showing iteration counts can quickly reveal word-splitting issues: if `all_markers="1 2 3"` iterates once instead of three times, word splitting is disabled (PR #909).
 - When sourcing scripts into zsh shells, unquoted variables in for loops don't split; command substitution output always splits regardless of shell settings (PR #909).
 - Hardcoded menu positions don't account for dynamic entries (like conditionally-shown submenus); use a position counter that increments for each menu item to keep selection stable when menu items appear/disappear.
+- Mobile adb over Tor needs both sides modeled explicitly: the host can firewall a localhost SOCKS/onion forward, but the phone must intentionally publish its wireless adb port as an onion service.
 - Install/uninstall scripts must verify the command is actually installed/removed after calling package manager; package managers can exit 0 even when skipping already-installed packages or refusing to remove system dependencies.
 - macOS package management on "unaugmented" systems requires Homebrew support; check for `brew` before falling back to pkgin when detecting Darwin/macOS platform.
 - htmx's morph extension (idiomorph) prevents flicker by intelligently diffing DOM trees and only updating changed nodes; use `hx-swap="morph" hx-ext="morph"` for smooth updates like poll results.

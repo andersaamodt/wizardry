@@ -57,7 +57,11 @@ while :; do
     "$platform_tools_toggle" \
     "$maestro_toggle" \
     "firewalled-adb help%firewalled-adb --help" \
+    "firewalled-adb-tor help%firewalled-adb-tor --help" \
     "firewalled-maestro help%firewalled-maestro --help" \
+    "firewalled-maestro-tor help%firewalled-maestro-tor --help" \
+    "Setup adb over Tor on phone%$script_dir/setup-mobile-tor-adb --help" \
+    "Tor adb phone setup guide%$script_dir/show-mobile-tor-adb-guide" \
     "$exit_label%kill -TERM \$PPID" || menu_status=$?
 
   if [ "$menu_status" -eq 130 ]; then

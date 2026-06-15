@@ -1,0 +1,61 @@
+#!/bin/sh
+
+# Show the phone-side setup needed for adb over Tor onion services.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: show-mobile-tor-adb-guide [ADB_HOST:PORT]
+
+Prints a Termux-oriented setup guide for publishing a phone wireless-debugging
+adb port as a Tor onion service.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+adb_target=${1:-PHONE_WIFI_IP:ADB_PORT}
+
+case "$adb_target" in
+  *'
+'*)
+    die "show-mobile-tor-adb-guide: adb target must not contain line breaks"
+    ;;
+esac
+
+cat <<GUIDE
+Phone-side Tor adb setup
+
+This desktop can run adb over Tor after the phone publishes its wireless adb
+port as an onion service. The repeatable host commands are:
+
+  firewalled-adb-tor --onion PHONE_ONION.onion:5555 -- devices
+  firewalled-maestro-tor --onion PHONE_ONION.onion:5555 -- test flow.yaml
+
+On the phone, Termux can provide the onion service:
+
+  pkg update
+  pkg install tor
+  mkdir -p "\$HOME/.termux/tor-adb/hidden-service" "\$HOME/.termux/tor-adb/data"
+  cat >"\$HOME/.termux/tor-adb/torrc" <<'EOF'
+DataDirectory __HOME__/.termux/tor-adb/data
+SocksPort 0
+HiddenServiceDir __HOME__/.termux/tor-adb/hidden-service
+HiddenServicePort 5555 $adb_target
+EOF
+  sed -i "s#__HOME__#\$HOME#g" "\$HOME/.termux/tor-adb/torrc"
+  tor -f "\$HOME/.termux/tor-adb/torrc"
+
+Then read this file in Termux for the hostname:
+
+  cat "\$HOME/.termux/tor-adb/hidden-service/hostname"
+
+Keep Android wireless debugging enabled while the onion service is running.
+The target in HiddenServicePort should be the phone's current wireless adb
+endpoint, for example 192.168.1.159:34897.
+GUIDE

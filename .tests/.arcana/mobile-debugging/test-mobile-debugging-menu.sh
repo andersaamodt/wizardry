@@ -32,7 +32,11 @@ SH
   assert_file_contains "$tmpdir/menu.log" "Android platform tools (adb)"
   assert_file_contains "$tmpdir/menu.log" "Maestro CLI"
   assert_file_contains "$tmpdir/menu.log" "firewalled-adb help"
+  assert_file_contains "$tmpdir/menu.log" "firewalled-adb-tor help"
   assert_file_contains "$tmpdir/menu.log" "firewalled-maestro help"
+  assert_file_contains "$tmpdir/menu.log" "firewalled-maestro-tor help"
+  assert_file_contains "$tmpdir/menu.log" "Setup adb over Tor on phone"
+  assert_file_contains "$tmpdir/menu.log" "Tor adb phone setup guide"
 }
 
 run_test_case "mobile-debugging-menu shows help" shows_help
