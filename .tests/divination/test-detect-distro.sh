@@ -94,6 +94,18 @@ detects_mac_via_stubbed_uname() {
   rm -rf "$root"
 }
 
+detects_termux_via_path() {
+  root=$(make_fake_root)
+  DETECT_DISTRO_ROOT="$root" \
+  DETECT_DISTRO_OS_RELEASE="$root/etc/os-release" \
+  DETECT_DISTRO_PATH="/tmp/stubs:/data/data/com.termux/files/usr/bin:/usr/bin" \
+  DETECT_DISTRO_UNAME=Linux \
+  run_spell "spells/divination/detect-distro"
+  assert_success || return 1
+  [ "$OUTPUT" = "termux" ] || { TEST_FAILURE_REASON="expected termux but saw $OUTPUT"; return 1; }
+  rm -rf "$root"
+}
+
 fails_when_no_markers_found() {
   root=$(make_fake_root)
   DETECT_DISTRO_UNAME=Linux run_with_root "$root"
@@ -109,6 +121,7 @@ run_test_case "detect-distro narrates with -v" verbose_mode_narrates
 run_test_case "detect-distro prefers nixos markers over other signatures" prefers_nixos_markers_even_with_other_signatures
 run_test_case "detect-distro detects arch via release marker" detects_arch_release_marker
 run_test_case "detect-distro detects mac via uname fallback" detects_mac_via_stubbed_uname
+run_test_case "detect-distro detects Termux via PATH markers" detects_termux_via_path
 run_test_case "detect-distro fails when no markers are present" fails_when_no_markers_found
 
 

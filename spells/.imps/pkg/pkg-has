@@ -10,6 +10,7 @@ ph_package=${1:-}
 ph_pm=$(pkg-manager) || { printf '%s\n' "pkg-has: no supported package manager" >&2; exit 1; }
 
 case $ph_pm in
+  termux) dpkg -l "$ph_package" 2>/dev/null | grep -q "^ii" ;;
   apt)    dpkg -l "$ph_package" 2>/dev/null | grep -q "^ii" ;;
   pacman) pacman -Q "$ph_package" >/dev/null 2>&1 ;;
   nix)    nix-env -q "$ph_package" >/dev/null 2>&1 ;;

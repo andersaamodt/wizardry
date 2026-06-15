@@ -10,6 +10,7 @@ pu_pm=$(pkg-manager) || {
 }
 
 case $pu_pm in
+  termux) pkg update -y ;;
   apt)    sudo apt-get update ;;
   pacman) sudo pacman -Sy ;;
   nix)    nix-channel --update ;;

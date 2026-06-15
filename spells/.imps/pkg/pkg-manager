@@ -1,8 +1,16 @@
 #!/bin/sh
-# pkg-manager - detect which package manager is available (officially supported platforms)
-# Example: pm=$(pkg-manager) && case $pm in apt) apt-get install ;; esac
+# pkg-manager - detect which package manager is available on supported platforms
+# Example: pm=$(pkg-manager) && case $pm in termux) pkg install ;; apt) apt-get install ;; esac
 set -eu
 
+case ":${PATH:-}:" in
+  *:/data/data/com.termux/files/usr/bin:*|*:/data/user/0/com.termux/files/usr/bin:*)
+    if command -v pkg >/dev/null 2>&1; then
+      printf '%s\n' termux
+      exit 0
+    fi
+    ;;
+esac
 
 if command -v apt-get >/dev/null 2>&1; then echo apt
 elif command -v brew >/dev/null 2>&1; then echo brew

@@ -13,6 +13,7 @@ pr_pm=$(pkg-manager) || {
 }
 
 case $pr_pm in
+  termux) pkg uninstall -y "$pr_package" ;;
   apt)    sudo apt-get -y remove "$pr_package" ;;
   pacman) sudo pacman --noconfirm -R "$pr_package" ;;
   nix)    nix-env -e "$pr_package" ;;
