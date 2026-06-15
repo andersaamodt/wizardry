@@ -112,12 +112,17 @@ done < "$args_file"
 exec "$@"
 SH
 chmod +x "$shim_dir/adb"
+mkdir -p "$shim_dir/platform-tools"
+ln -s ../adb "$shim_dir/platform-tools/adb"
 
 PATH="$shim_dir:$PATH"
+ANDROID_HOME=$shim_dir
+ANDROID_SDK_ROOT=$shim_dir
 FIREWALLED_MAESTRO_FIREWALLED_ADB=$firewalled_adb_exec
 FIREWALLED_MAESTRO_SERIAL=$serial
 FIREWALLED_MAESTRO_ALLOW_FILE=$allow_file
-export PATH FIREWALLED_MAESTRO_FIREWALLED_ADB FIREWALLED_MAESTRO_SERIAL FIREWALLED_MAESTRO_ALLOW_FILE
+export PATH ANDROID_HOME ANDROID_SDK_ROOT
+export FIREWALLED_MAESTRO_FIREWALLED_ADB FIREWALLED_MAESTRO_SERIAL FIREWALLED_MAESTRO_ALLOW_FILE
 
 if [ "$maestro_exec" = "$managed_maestro_exec" ] && [ -x "${JAVA_HOME:-}/bin/java" ] && [ -d "$managed_maestro_root/lib" ]; then
   exec "$JAVA_HOME/bin/java" -classpath "$managed_maestro_root/lib/*" maestro.cli.AppKt "$@"
