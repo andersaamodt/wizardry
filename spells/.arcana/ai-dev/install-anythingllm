@@ -236,11 +236,6 @@ Darwin)
     sudo ditto "$app_bundle" "$target_app" || die "install-anythingllm: failed to copy app to /Applications with sudo"
   fi
 
-  if has spctl; then
-    if ! spctl --assess --type execute "$target_app" >/dev/null 2>&1; then
-      warn "install-anythingllm: Gatekeeper assessment failed"
-    fi
-  fi
   ;;
 Linux)
   installer_file=$(temp-file anythingllm-installer.sh)

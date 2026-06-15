@@ -1095,6 +1095,16 @@ menu/mud-admin/list-players
   return 0
 }
 
+# --- Check: Installer/runtime spells do not preflight Gatekeeper ---
+test_spells_do_not_preflight_gatekeeper() {
+  violations=$(grep -R -n 'spctl --assess' "$ROOT_DIR/spells" 2>/dev/null | grep -v '/tools/release/' || true)
+  if [ -n "$violations" ]; then
+    TEST_FAILURE_REASON="installer/runtime spells must not preflight Gatekeeper assessment: $(printf '%s' "$violations" | head -10 | tr '\n' '; ')"
+    return 1
+  fi
+  return 0
+}
+
 # --- Check: No function name collisions ---
 # When spells are sourced via invoke-wizardry, function names must be unique
 # This prevents one spell from overwriting another's functions
@@ -2125,6 +2135,7 @@ run_test_case "imps have opening comments" test_imps_have_opening_comments
 run_test_case "imps don't have help handlers" test_imps_dont_have_help
 run_test_case "bootstrap spells have identifying comment" test_bootstrap_spells_identified
 run_test_case "spells follow function discipline" test_spells_follow_function_discipline
+run_test_case "spells do not preflight Gatekeeper" test_spells_do_not_preflight_gatekeeper
 run_test_case "no function name collisions" test_no_function_name_collisions
 # --- DEPRECATED: True name function tests ---
 # These tests checked for function wrappers with "true names"
