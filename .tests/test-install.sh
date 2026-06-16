@@ -604,6 +604,31 @@ install_termux_prefers_bashrc_for_shell_integration() {
   fi
 }
 
+install_local_copy_excludes_repo_state() {
+  skip-if-compiled || return $?
+  fixture=$(make_fixture)
+  provide_basic_tools "$fixture"
+  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq mkdir
+
+  install_dir="$fixture/home/.wizardry"
+
+  run_cmd env PATH="$fixture/bin:$initial_path" \
+      WIZARDRY_INSTALL_DIR="$install_dir" \
+      HOME="$fixture/home" \
+      WIZARDRY_INSTALL_ASSUME_YES=1 \
+      "$ROOT_DIR/install" 2>&1
+
+  assert_success || return 1
+  assert_path_missing "$install_dir/.git" || return 1
+  assert_path_missing "$install_dir/.codex" || return 1
+  case "$OUTPUT" in
+    *"is a socket (not copied)."*)
+      TEST_FAILURE_REASON="local install should not emit socket-copy warnings"
+      return 1
+      ;;
+  esac
+}
+
 # === NixOS Shell Code Tests ===
 
 install_nixos_writes_shell_init_properly_to_nix_file() {
@@ -1702,6 +1727,7 @@ run_test_case "install normalizes NixOS config path" install_nixos_normalizes_co
 run_test_case "install does not double home path" install_does_not_double_home_path
 run_test_case "install on Termux prefers bashrc for shell integration" \
   install_termux_prefers_bashrc_for_shell_integration
+run_test_case "install local copy excludes repo state" install_local_copy_excludes_repo_state
 run_test_case "install writes shell init properly to nix file" install_nixos_writes_shell_init_properly_to_nix_file
 run_test_case "install uses explicit helper paths" install_uses_explicit_helper_paths
 run_test_case "learn-spellbook uses explicit helper paths" path_wizard_uses_explicit_helper_paths

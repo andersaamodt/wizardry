@@ -279,7 +279,25 @@ else
         fi
         if [ -n "$LOCAL_SOURCE" ]; then
                 printf '%s\n' "Copying wizardry from '$LOCAL_SOURCE' to '$INSTALL_DIR'..."
-                if ! cp -R "$LOCAL_SOURCE" "$INSTALL_DIR"; then
+                if ! mkdir -p "$INSTALL_DIR"; then
+                        printf '%s\n' "Error: Unable to create install directory '$INSTALL_DIR'." >&2
+                        exit 1
+                fi
+                copy_failed=0
+                for entry in "$LOCAL_SOURCE"/.[!.]* "$LOCAL_SOURCE"/..?* "$LOCAL_SOURCE"/*; do
+                        [ -e "$entry" ] || continue
+                        entry_name=${entry##*/}
+                        case $entry_name in
+                                .|..|.git|.codex|.uninstall)
+                                        continue
+                                        ;;
+                        esac
+                        if ! cp -R "$entry" "$INSTALL_DIR/$entry_name"; then
+                                copy_failed=1
+                                break
+                        fi
+                done
+                if [ "$copy_failed" -ne 0 ]; then
                         printf '%s\n' "Error: Unable to copy wizardry from '$LOCAL_SOURCE'." >&2
                         exit 1
                 fi

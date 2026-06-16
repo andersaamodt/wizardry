@@ -25,6 +25,7 @@ run_with_root() {
   shift
   DETECT_DISTRO_ROOT="$root" \
   DETECT_DISTRO_OS_RELEASE="$root/etc/os-release" \
+  DETECT_DISTRO_PATH="/usr/bin:/bin" \
   run_spell "spells/divination/detect-distro" "$@"
 }
 
