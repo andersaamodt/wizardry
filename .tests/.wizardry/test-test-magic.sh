@@ -1,4 +1,5 @@
 #!/bin/sh
+# COMPILED_UNSUPPORTED: exercises full source-tree test orchestration
 # Test test-magic spell
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
@@ -299,6 +300,73 @@ SH
 
   assert_success || return 1
   assert_error_contains "proceeding without sandbox isolation"
+}
+
+skips_xattr_required_tests_on_reduced_hosts() {
+  tmpdir=$(make_tempdir)
+  stub_dir="$tmpdir/bin"
+  fixture_root="$tmpdir/fixture-root"
+  fixture_sys_dir="$fixture_root/spells/.imps/sys"
+  fixture_wizardry_dir="$fixture_root/spells/.wizardry"
+  fixture_test_dir="$fixture_root/.tests/fixture"
+  mkdir -p "$stub_dir" "$fixture_sys_dir" "$fixture_wizardry_dir" "$fixture_test_dir"
+
+  cat >"$stub_dir/uname" <<'SH'
+#!/bin/sh
+printf '%s\n' Linux
+SH
+  chmod +x "$stub_dir/uname"
+
+  cat >"$stub_dir/detect-xattr-capability" <<'SH'
+#!/bin/sh
+printf '%s\n' filesystem-unsupported
+SH
+  chmod +x "$stub_dir/detect-xattr-capability"
+
+  cat >"$stub_dir/pocket-dimension" <<'SH'
+#!/bin/sh
+exit 1
+SH
+  chmod +x "$stub_dir/pocket-dimension"
+
+  cat >"$fixture_sys_dir/spell-levels" <<'SH'
+#!/bin/sh
+set -eu
+
+case "${1-}:${2-}" in
+  1:name)
+    printf '%s\n' "Fixture Level"
+    ;;
+  1:spells)
+    printf '%s\n' "xattr-fixture:fixture"
+    ;;
+  1:imps)
+    printf '\n'
+    ;;
+  *)
+    exit 1
+    ;;
+esac
+SH
+  chmod +x "$fixture_sys_dir/spell-levels"
+
+  ln -s "$ROOT_DIR/spells/.wizardry/test-spell" "$fixture_wizardry_dir/test-spell"
+
+  cat >"$fixture_test_dir/test-xattr-fixture.sh" <<'SH'
+#!/bin/sh
+# REQUIRES_XATTR: requires filesystem xattrs
+printf '%s\n' "FAIL: xattr-gated fixture should have been skipped" >&2
+exit 1
+SH
+  chmod +x "$fixture_test_dir/test-xattr-fixture.sh"
+
+  run_cmd env PATH="$stub_dir:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" \
+    WIZARDRY_DIR="$fixture_root" \
+    sh "$ROOT_DIR/spells/.wizardry/test-magic" 1 --only
+
+  assert_success || return 1
+  assert_output_contains "SKIP requires filesystem xattrs (filesystem lacks extended attributes on this host)" || return 1
+  assert_output_contains "Total: 0/0 tests passed (1 skipped)" || return 1
 }
 
 # Test that failed subtests cause the parent test to fail
@@ -699,6 +767,8 @@ run_test_case "system/test-magic requires pocket-dimension" requires_pocket_dime
 run_test_case "system/test-magic falls back when pocket-dimension check fails" falls_back_when_pocket_dimension_check_fails
 run_test_case "system/test-magic falls back when only strict pocket-dimension is unavailable" \
   falls_back_when_only_strict_pocket_dimension_is_unavailable
+run_test_case "system/test-magic skips xattr-gated tests on reduced hosts" \
+  skips_xattr_required_tests_on_reduced_hosts
 run_test_case "system/test-magic uncovered checks only run from level 0" uncovered_checks_only_run_from_level_0
 run_test_case "system/test-magic help clarifies Level 0 = Common Tests" help_clarifies_level_0_is_common_tests
 # Tests below require test-magic to accept specific test file paths as arguments

@@ -393,6 +393,38 @@ if command -v stdbuf >/dev/null 2>&1; then
   stdbuf_cmd="stdbuf -oL"
 fi
 
+xattr_capability="unknown"
+xattr_skip_reason=""
+if command -v detect-xattr-capability >/dev/null 2>&1; then
+  xattr_capability=$(detect-xattr-capability 2>/dev/null || printf 'unknown')
+fi
+case "$xattr_capability" in
+  supported)
+    xattr_skip_reason=""
+    ;;
+  filesystem-unsupported)
+    xattr_skip_reason="filesystem lacks extended attributes on this host"
+    ;;
+  helpers-missing)
+    xattr_skip_reason="extended attribute helpers are unavailable on this host"
+    ;;
+  probe-unavailable)
+    xattr_skip_reason="extended attribute capability probe is unavailable on this host"
+    ;;
+  *)
+    xattr_skip_reason=""
+    ;;
+esac
+
+test_file_header_marker_reason() {
+  marker_name=$1
+  marker_file=$2
+
+  head -n 5 "$marker_file" 2>/dev/null \
+    | sed -n "s/^# ${marker_name}: //p" \
+    | sed -n '1p'
+}
+
 run_test_file() {
   test_path=$1
   spell_name=$2
@@ -823,13 +855,20 @@ test_level() {
     printf '  [%d/%d] Running %s...\n' "$global_test_count" "$global_test_total" "$test_name"
 
     if [ "$compiled_mode" = "1" ]; then
-      if head -n 5 "$test_file" 2>/dev/null | grep -q "^# COMPILED_UNSUPPORTED"; then
+      if [ -n "$(test_file_header_marker_reason COMPILED_UNSUPPORTED "$test_file")" ]; then
         level_skip=$((level_skip + 1))
         if [ "$verbose" -eq 1 ]; then
           printf '  - %s (skipped: unsupported in compiled mode)\n' "$spell"
         fi
         continue
       fi
+    fi
+
+    test_xattr_requirement=$(test_file_header_marker_reason REQUIRES_XATTR "$test_file")
+    if [ -n "$test_xattr_requirement" ] && [ -n "$xattr_skip_reason" ]; then
+      level_skip=$((level_skip + 1))
+      printf '    SKIP %s (%s)\n' "$test_xattr_requirement" "$xattr_skip_reason"
+      continue
     fi
 
     case "$spell" in
@@ -881,13 +920,20 @@ test_level() {
     printf '  [%d/%d] Running %s...\n' "$global_test_count" "$global_test_total" "$test_name"
 
     if [ "$compiled_mode" = "1" ]; then
-      if head -n 5 "$test_file" 2>/dev/null | grep -q "^# COMPILED_UNSUPPORTED"; then
+      if [ -n "$(test_file_header_marker_reason COMPILED_UNSUPPORTED "$test_file")" ]; then
         level_skip=$((level_skip + 1))
         if [ "$verbose" -eq 1 ]; then
           printf '  - %s (skipped: unsupported in compiled mode)\n' "$imp"
         fi
         continue
       fi
+    fi
+
+    test_xattr_requirement=$(test_file_header_marker_reason REQUIRES_XATTR "$test_file")
+    if [ -n "$test_xattr_requirement" ] && [ -n "$xattr_skip_reason" ]; then
+      level_skip=$((level_skip + 1))
+      printf '    SKIP %s (%s)\n' "$test_xattr_requirement" "$xattr_skip_reason"
+      continue
     fi
 
     test_timeout="${WIZARDRY_TEST_TIMEOUT:-180}"
@@ -984,7 +1030,7 @@ done
 printf '\n=== Test Summary ===\n'
 total=$((total_pass + total_fail))
 status=0
-if [ "$total" -gt 0 ]; then
+if [ "$total" -gt 0 ] || [ "$total_skip" -gt 0 ]; then
   printf 'Total: %d/%d tests passed' "$total_pass" "$total"
   if [ "$total_skip" -gt 0 ]; then
     printf ' (%d skipped)\n' "$total_skip"

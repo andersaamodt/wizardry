@@ -82,6 +82,27 @@ test_termux_level_zero_uses_detect_distro() {
   assert_output_contains "detect-distro -> termux" || return 1
 }
 
+test_reduced_xattr_hosts_skip_metadata_heavy_levels() {
+  tmpdir=$(make_tempdir)
+  stub_dir="$tmpdir/bin"
+  mkdir -p "$stub_dir"
+
+  for helper in attr xattr setfattr getfattr; do
+    cat >"$stub_dir/$helper" <<'SH'
+#!/bin/sh
+exit 1
+SH
+    chmod +x "$stub_dir/$helper"
+  done
+
+  run_cmd env DEMO_MAGIC_EXACT_LEVEL=1 WIZARDRY_DEMO_NO_SANDBOX=1 \
+    PATH="$stub_dir:$PATH" \
+    "$ROOT_DIR/spells/spellcraft/demo-magic" 20
+  assert_success || return 1
+  assert_output_contains "Level 20: Process & System Info (PSI)" || return 1
+  assert_output_contains "check/uncheck skipped: extended attributes unavailable on this host." || return 1
+}
+
 test_default_runs_all_levels() {
   run_demo_magic
   assert_success || return 1
@@ -139,6 +160,8 @@ run_test_case "demo-magic exact-level hook keeps the run scoped" \
   test_exact_level_hook_limits_output
 run_test_case "demo-magic level zero reflects Termux detection" \
   test_termux_level_zero_uses_detect_distro
+run_test_case "demo-magic skips metadata-heavy casts on reduced xattr hosts" \
+  test_reduced_xattr_hosts_skip_metadata_heavy_levels
 run_test_case "demo-magic full run covers live behaviors across levels" test_default_runs_all_levels
 
 finish_tests

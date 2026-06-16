@@ -1,4 +1,5 @@
 #!/bin/sh
+# REQUIRES_XATTR: requires filesystem xattrs
 # Test coverage for prioritize spell:
 # - Shows usage with --help
 # - Requires file argument
