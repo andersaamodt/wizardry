@@ -14,90 +14,37 @@ shows_help() {
   assert_output_contains "Usage: firewalled-adb"
 }
 
-outer_wrapper_uses_firewall_and_serial_allowlist() {
-  tmpdir=$(make_tempdir)
-  sdk_root="$tmpdir/data"
-  mkdir -p "$sdk_root/theurgy/mobile-debugging/android-sdk/platform-tools"
-
-  cat >"$sdk_root/theurgy/mobile-debugging/android-sdk/platform-tools/adb" <<'SH'
+write_fake_adb() {
+  fake_adb_path=$1
+  fake_log_path=$2
+  cat >"$fake_adb_path.in" <<'SH'
 #!/bin/sh
-printf '%s\n' "$@" >>"${ADB_LOG:?}"
-exit 0
-SH
-  chmod +x "$sdk_root/theurgy/mobile-debugging/android-sdk/platform-tools/adb"
+log_file=__ADB_LOG__
+connect_count_file=${ADB_CONNECT_COUNT:-}
+command_count_file=${ADB_COMMAND_COUNT:-}
 
-  cat >"$tmpdir/firewall" <<'SH'
-#!/bin/sh
-printf '%s\n' "$@" >"${FIREWALL_LOG:?}"
-while [ "$#" -gt 0 ]; do
-  [ "$1" = "--" ] && break
-  shift
-done
-shift
-exec "$@"
-SH
-  chmod +x "$tmpdir/firewall"
+printf '%s\n' "$*" >>"$log_file"
 
-  FIREWALL_LOG="$tmpdir/firewall.log" ADB_LOG="$tmpdir/adb.log" run_cmd env XDG_DATA_HOME="$sdk_root" PATH="$tmpdir:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" FIREWALL_LOG="$tmpdir/firewall.log" ADB_LOG="$tmpdir/adb.log" \
-    "$ROOT_DIR/spells/wards/firewalled-adb" --serial 127.0.0.1:5555 -- shell getprop ro.product.model
+if [ "${1-}" = "-L" ] && [ "${3-}" = "server" ] && [ "${4-}" = "nodaemon" ]; then
+  exit 0
+fi
 
-  assert_success || return 1
-  assert_file_contains "$tmpdir/firewall.log" "--allow-localhost"
-  assert_file_contains "$tmpdir/firewall.log" "127.0.0.1:5555"
-  assert_file_contains "$tmpdir/adb.log" "connect"
-  assert_file_contains "$tmpdir/adb.log" "-s"
-}
-
-version_without_serial_does_not_trip_linebreak_guard() {
-  tmpdir=$(make_tempdir)
-  sdk_root="$tmpdir/data"
-  mkdir -p "$sdk_root/theurgy/mobile-debugging/android-sdk/platform-tools"
-
-  cat >"$sdk_root/theurgy/mobile-debugging/android-sdk/platform-tools/adb" <<'SH'
-#!/bin/sh
-printf '%s\n' "$@" >>"${ADB_LOG:?}"
-exit 0
-SH
-  chmod +x "$sdk_root/theurgy/mobile-debugging/android-sdk/platform-tools/adb"
-
-  cat >"$tmpdir/firewall" <<'SH'
-#!/bin/sh
-while [ "$#" -gt 0 ]; do
-  [ "$1" = "--" ] && break
-  shift
-done
-shift
-exec "$@"
-SH
-  chmod +x "$tmpdir/firewall"
-
-  ADB_LOG="$tmpdir/adb.log" run_cmd env XDG_DATA_HOME="$sdk_root" PATH="$tmpdir:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" ADB_LOG="$tmpdir/adb.log" \
-    "$ROOT_DIR/spells/wards/firewalled-adb" -- version
-
-  assert_success || return 1
-  assert_file_contains "$tmpdir/adb.log" "version"
-}
-
-retries_remote_connect_before_running_command() {
-  tmpdir=$(make_tempdir)
-  sdk_root="$tmpdir/data"
-  mkdir -p "$sdk_root/theurgy/mobile-debugging/android-sdk/platform-tools"
-
-  cat >"$sdk_root/theurgy/mobile-debugging/android-sdk/platform-tools/adb" <<'SH'
-#!/bin/sh
-count_file=${ADB_CONNECT_COUNT:?}
-log_file=${ADB_LOG:?}
+if [ "${1-}" = "-P" ]; then
+  shift 2
+fi
 
 case "${1-}" in
-  kill-server|start-server)
+  kill-server)
     exit 0
     ;;
   connect)
-    count=$(cat "$count_file" 2>/dev/null || printf '0')
-    count=$((count + 1))
-    printf '%s' "$count" >"$count_file"
-    if [ "$count" -lt 2 ]; then
-      exit 1
+    if [ -n "$connect_count_file" ]; then
+      count=$(cat "$connect_count_file" 2>/dev/null || printf '0')
+      count=$((count + 1))
+      printf '%s' "$count" >"$connect_count_file"
+      if [ -n "${ADB_FAIL_CONNECT_UNTIL:-}" ] && [ "$count" -lt "$ADB_FAIL_CONNECT_UNTIL" ]; then
+        exit 1
+      fi
     fi
     printf '%s\n' "connected to ${2-}" >&2
     exit 0
@@ -108,21 +55,90 @@ case "${1-}" in
     shift
     case "${1-}" in
       get-state)
-        count=$(cat "$count_file" 2>/dev/null || printf '0')
-        [ "$count" -ge 2 ] || exit 1
+        if [ -n "$connect_count_file" ] && [ -n "${ADB_FAIL_CONNECT_UNTIL:-}" ]; then
+          count=$(cat "$connect_count_file" 2>/dev/null || printf '0')
+          [ "$count" -ge "$ADB_FAIL_CONNECT_UNTIL" ] || exit 1
+        fi
         printf '%s\n' device
         exit 0
         ;;
+      shell)
+        if [ -n "$command_count_file" ]; then
+          command_count=$(cat "$command_count_file" 2>/dev/null || printf '0')
+          command_count=$((command_count + 1))
+          printf '%s' "$command_count" >"$command_count_file"
+          if [ "${ADB_FAIL_COMMAND_MODE:-}" = "offline-once" ] && [ "$command_count" -lt 2 ]; then
+            printf '%s\n' "error: device offline" >&2
+            exit 1
+          fi
+        fi
+        if [ "${ADB_SHELL_STDOUT:-}" ]; then
+          printf '%s\n' "$ADB_SHELL_STDOUT"
+        fi
+        printf '%s\n' "$serial $*" >>"$log_file"
+        exit 0
+        ;;
+      push)
+        if [ -n "$command_count_file" ]; then
+          command_count=$(cat "$command_count_file" 2>/dev/null || printf '0')
+          command_count=$((command_count + 1))
+          printf '%s' "$command_count" >"$command_count_file"
+          if [ "${ADB_FAIL_COMMAND_MODE:-}" = "copy-eof-once" ] && [ "$command_count" -lt 2 ]; then
+            printf '%s\n' "adb: error: failed to read copy response: EOF" >&2
+            exit 1
+          fi
+        fi
+        printf '%s\n' "$serial $*" >>"$log_file"
+        exit 0
+        ;;
     esac
-    printf '%s\n' "$serial $*" >>"$log_file"
-    exit 0
     ;;
 esac
 
-printf '%s\n' "$*" >>"$log_file"
 exit 0
 SH
-  chmod +x "$sdk_root/theurgy/mobile-debugging/android-sdk/platform-tools/adb"
+  sed "s|__ADB_LOG__|$fake_log_path|g" "$fake_adb_path.in" >"$fake_adb_path"
+  chmod +x "$fake_adb_path"
+}
+
+outer_wrapper_uses_firewall_and_serial_allowlist() {
+  tmpdir=$(make_tempdir)
+  sdk_root="$tmpdir/data"
+  mkdir -p "$sdk_root/theurgy/mobile-debugging/android-sdk/platform-tools"
+
+  write_fake_adb "$sdk_root/theurgy/mobile-debugging/android-sdk/platform-tools/adb" "$tmpdir/adb.log"
+
+  cat >"$tmpdir/firewall.in" <<'SH'
+#!/bin/sh
+printf '%s\n' "$@" >"__FIREWALL_LOG__"
+while [ "$#" -gt 0 ]; do
+  [ "$1" = "--" ] && break
+  shift
+done
+shift
+exec "$@"
+SH
+  sed "s|__FIREWALL_LOG__|$tmpdir/firewall.log|g" "$tmpdir/firewall.in" >"$tmpdir/firewall"
+  chmod +x "$tmpdir/firewall"
+
+  run_cmd env XDG_DATA_HOME="$sdk_root" PATH="$tmpdir:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" \
+    "$ROOT_DIR/spells/wards/firewalled-adb" --serial 127.0.0.1:5555 -- shell getprop ro.product.model
+
+  assert_success || return 1
+  assert_file_contains "$tmpdir/firewall.log" "--allow-localhost"
+  assert_file_contains "$tmpdir/firewall.log" "127.0.0.1:5555"
+  assert_file_contains "$tmpdir/adb.log" "-L tcp:localhost:"
+  assert_file_contains "$tmpdir/adb.log" "connect 127.0.0.1:5555"
+  assert_file_contains "$tmpdir/adb.log" "-P "
+  assert_file_contains "$tmpdir/adb.log" "-s 127.0.0.1:5555 shell getprop ro.product.model"
+}
+
+version_without_serial_does_not_trip_linebreak_guard() {
+  tmpdir=$(make_tempdir)
+  sdk_root="$tmpdir/data"
+  mkdir -p "$sdk_root/theurgy/mobile-debugging/android-sdk/platform-tools"
+
+  write_fake_adb "$sdk_root/theurgy/mobile-debugging/android-sdk/platform-tools/adb" "$tmpdir/adb.log"
 
   cat >"$tmpdir/firewall" <<'SH'
 #!/bin/sh
@@ -135,9 +151,37 @@ exec "$@"
 SH
   chmod +x "$tmpdir/firewall"
 
-  ADB_LOG="$tmpdir/adb.log" ADB_CONNECT_COUNT="$tmpdir/connect.count" run_cmd env \
+  run_cmd env XDG_DATA_HOME="$sdk_root" PATH="$tmpdir:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" \
+    "$ROOT_DIR/spells/wards/firewalled-adb" -- version
+
+  assert_success || return 1
+  assert_file_contains "$tmpdir/adb.log" "-L tcp:localhost:"
+  assert_file_contains "$tmpdir/adb.log" "-P "
+  assert_file_contains "$tmpdir/adb.log" "version"
+}
+
+retries_remote_connect_before_running_command() {
+  tmpdir=$(make_tempdir)
+  sdk_root="$tmpdir/data"
+  mkdir -p "$sdk_root/theurgy/mobile-debugging/android-sdk/platform-tools"
+
+  write_fake_adb "$sdk_root/theurgy/mobile-debugging/android-sdk/platform-tools/adb" "$tmpdir/adb.log"
+
+  cat >"$tmpdir/firewall" <<'SH'
+#!/bin/sh
+while [ "$#" -gt 0 ]; do
+  [ "$1" = "--" ] && break
+  shift
+done
+shift
+exec "$@"
+SH
+  chmod +x "$tmpdir/firewall"
+
+  ADB_CONNECT_COUNT="$tmpdir/connect.count" run_cmd env \
     XDG_DATA_HOME="$sdk_root" PATH="$tmpdir:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" \
-    ADB_LOG="$tmpdir/adb.log" ADB_CONNECT_COUNT="$tmpdir/connect.count" \
+    ADB_CONNECT_COUNT="$tmpdir/connect.count" \
+    ADB_FAIL_CONNECT_UNTIL=2 \
     "$ROOT_DIR/spells/wards/firewalled-adb" --serial 127.0.0.1:5555 -- shell getprop ro.product.model
 
   assert_success || return 1
@@ -154,51 +198,7 @@ retries_remote_command_after_offline_error() {
   sdk_root="$tmpdir/data"
   mkdir -p "$sdk_root/theurgy/mobile-debugging/android-sdk/platform-tools"
 
-  cat >"$sdk_root/theurgy/mobile-debugging/android-sdk/platform-tools/adb" <<'SH'
-#!/bin/sh
-count_file=${ADB_CONNECT_COUNT:?}
-command_count_file=${ADB_COMMAND_COUNT:?}
-log_file=${ADB_LOG:?}
-
-case "${1-}" in
-  kill-server|start-server)
-    exit 0
-    ;;
-  connect)
-    count=$(cat "$count_file" 2>/dev/null || printf '0')
-    count=$((count + 1))
-    printf '%s' "$count" >"$count_file"
-    printf '%s\n' "connected to ${2-}" >&2
-    exit 0
-    ;;
-  -s)
-    shift
-    serial=$1
-    shift
-    case "${1-}" in
-      get-state)
-        printf '%s\n' device
-        exit 0
-        ;;
-      shell)
-        command_count=$(cat "$command_count_file" 2>/dev/null || printf '0')
-        command_count=$((command_count + 1))
-        printf '%s' "$command_count" >"$command_count_file"
-        if [ "$command_count" -lt 2 ]; then
-          printf '%s\n' "error: device offline" >&2
-          exit 1
-        fi
-        printf '%s\n' "$serial $*" >>"$log_file"
-        printf '%s\n' "Pixel 8a"
-        exit 0
-        ;;
-    esac
-    ;;
-esac
-
-exit 0
-SH
-  chmod +x "$sdk_root/theurgy/mobile-debugging/android-sdk/platform-tools/adb"
+  write_fake_adb "$sdk_root/theurgy/mobile-debugging/android-sdk/platform-tools/adb" "$tmpdir/adb.log"
 
   cat >"$tmpdir/firewall" <<'SH'
 #!/bin/sh
@@ -211,11 +211,11 @@ exec "$@"
 SH
   chmod +x "$tmpdir/firewall"
 
-  ADB_LOG="$tmpdir/adb.log" ADB_CONNECT_COUNT="$tmpdir/connect.count" \
-    ADB_COMMAND_COUNT="$tmpdir/command.count" run_cmd env \
+  ADB_CONNECT_COUNT="$tmpdir/connect.count" ADB_COMMAND_COUNT="$tmpdir/command.count" run_cmd env \
     XDG_DATA_HOME="$sdk_root" PATH="$tmpdir:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" \
-    ADB_LOG="$tmpdir/adb.log" ADB_CONNECT_COUNT="$tmpdir/connect.count" \
-    ADB_COMMAND_COUNT="$tmpdir/command.count" \
+    ADB_CONNECT_COUNT="$tmpdir/connect.count" \
+    ADB_COMMAND_COUNT="$tmpdir/command.count" ADB_FAIL_COMMAND_MODE=offline-once \
+    ADB_SHELL_STDOUT="Pixel 8a" \
     "$ROOT_DIR/spells/wards/firewalled-adb" --serial 127.0.0.1:5555 -- shell getprop ro.product.model
 
   assert_success || return 1
@@ -237,50 +237,7 @@ retries_remote_command_after_copy_eof_error() {
   sdk_root="$tmpdir/data"
   mkdir -p "$sdk_root/theurgy/mobile-debugging/android-sdk/platform-tools"
 
-  cat >"$sdk_root/theurgy/mobile-debugging/android-sdk/platform-tools/adb" <<'SH'
-#!/bin/sh
-count_file=${ADB_CONNECT_COUNT:?}
-command_count_file=${ADB_COMMAND_COUNT:?}
-log_file=${ADB_LOG:?}
-
-case "${1-}" in
-  kill-server|start-server)
-    exit 0
-    ;;
-  connect)
-    count=$(cat "$count_file" 2>/dev/null || printf '0')
-    count=$((count + 1))
-    printf '%s' "$count" >"$count_file"
-    printf '%s\n' "connected to ${2-}" >&2
-    exit 0
-    ;;
-  -s)
-    shift
-    serial=$1
-    shift
-    case "${1-}" in
-      get-state)
-        printf '%s\n' device
-        exit 0
-        ;;
-      push)
-        command_count=$(cat "$command_count_file" 2>/dev/null || printf '0')
-        command_count=$((command_count + 1))
-        printf '%s' "$command_count" >"$command_count_file"
-        if [ "$command_count" -lt 2 ]; then
-          printf '%s\n' "adb: error: failed to read copy response: EOF" >&2
-          exit 1
-        fi
-        printf '%s\n' "$serial $*" >>"$log_file"
-        exit 0
-        ;;
-    esac
-    ;;
-esac
-
-exit 0
-SH
-  chmod +x "$sdk_root/theurgy/mobile-debugging/android-sdk/platform-tools/adb"
+  write_fake_adb "$sdk_root/theurgy/mobile-debugging/android-sdk/platform-tools/adb" "$tmpdir/adb.log"
 
   cat >"$tmpdir/firewall" <<'SH'
 #!/bin/sh
@@ -296,11 +253,10 @@ SH
   payload="$tmpdir/payload.txt"
   printf '%s\n' "payload" >"$payload"
 
-  ADB_LOG="$tmpdir/adb.log" ADB_CONNECT_COUNT="$tmpdir/connect.count" \
-    ADB_COMMAND_COUNT="$tmpdir/command.count" run_cmd env \
+  ADB_CONNECT_COUNT="$tmpdir/connect.count" ADB_COMMAND_COUNT="$tmpdir/command.count" run_cmd env \
     XDG_DATA_HOME="$sdk_root" PATH="$tmpdir:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" \
-    ADB_LOG="$tmpdir/adb.log" ADB_CONNECT_COUNT="$tmpdir/connect.count" \
-    ADB_COMMAND_COUNT="$tmpdir/command.count" \
+    ADB_CONNECT_COUNT="$tmpdir/connect.count" \
+    ADB_COMMAND_COUNT="$tmpdir/command.count" ADB_FAIL_COMMAND_MODE=copy-eof-once \
     "$ROOT_DIR/spells/wards/firewalled-adb" --serial 127.0.0.1:5555 -- push "$payload" /data/local/tmp/payload.txt
 
   assert_success || return 1

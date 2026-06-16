@@ -71,6 +71,9 @@ if [ "$internal_mode" -eq 1 ]; then
   serial=${3-}
   serial_mode=${4-}
   args_file=${5-}
+  server_log=$(temp-file)
+  server_pid=
+  on-exit cleanup-file "$server_log"
 
   [ -n "$adb_exec" ] || die "firewalled-adb: internal adb path is required"
   [ -n "$server_port" ] || die "firewalled-adb: internal server port is required"
@@ -83,14 +86,22 @@ if [ "$internal_mode" -eq 1 ]; then
     set -- "$@" "$adb_arg"
   done < "$args_file"
 
-  ADB_SERVER_PORT=$server_port
-  export ADB_SERVER_PORT
+  adb_client() {
+    "$adb_exec" -P "$server_port" "$@"
+  }
 
-  "$adb_exec" kill-server >/dev/null 2>&1 || true
-  "$adb_exec" start-server >/dev/null 2>&1
+  nohup "$adb_exec" -L "tcp:localhost:$server_port" server nodaemon >"$server_log" 2>&1 &
+  server_pid=$!
+  trap 'kill "$server_pid" >/dev/null 2>&1 || true' EXIT HUP INT TERM
+  sleep 1
 
   if [ "$serial_mode" = "remote" ]; then
-    connect_remote_serial "$adb_exec" "$serial" || die "firewalled-adb: could not connect to $serial"
+    connect_remote_serial adb_client "$serial" || {
+      if [ -s "$server_log" ]; then
+        cat "$server_log" >&2
+      fi
+      die "firewalled-adb: could not connect to $serial"
+    }
   fi
 
   if [ -n "$serial" ] && ! is_global_adb_command "${1-}"; then
@@ -99,7 +110,7 @@ if [ "$internal_mode" -eq 1 ]; then
     command_attempt=0
     command_status=1
     while [ "$command_attempt" -lt 3 ]; do
-      if "$adb_exec" -s "$serial" "$@" >"$command_stdout" 2>"$command_stderr"; then
+      if adb_client -s "$serial" "$@" >"$command_stdout" 2>"$command_stderr"; then
         command_status=0
         break
       fi
@@ -107,7 +118,7 @@ if [ "$internal_mode" -eq 1 ]; then
       command_error=$(cat "$command_stderr" 2>/dev/null || printf '')
       case "$command_error" in
         *"device offline"*|*"device not found"*|*"failed to read copy response: EOF"*|*"Connection reset by peer"*|*"closed"*)
-          if [ "$serial_mode" = "remote" ] && connect_remote_serial "$adb_exec" "$serial"; then
+          if [ "$serial_mode" = "remote" ] && connect_remote_serial adb_client "$serial"; then
             command_attempt=$((command_attempt + 1))
             continue
           fi
@@ -121,11 +132,13 @@ if [ "$internal_mode" -eq 1 ]; then
     fi
     rm -f "$command_stdout" "$command_stderr"
   else
-    "$adb_exec" "$@"
+    adb_client "$@"
     command_status=$?
   fi
 
-  "$adb_exec" kill-server >/dev/null 2>&1 || true
+  adb_client kill-server >/dev/null 2>&1 || kill "$server_pid" >/dev/null 2>&1 || true
+  wait "$server_pid" >/dev/null 2>&1 || true
+  trap - EXIT HUP INT TERM
   exit "$command_status"
 fi
 
@@ -203,6 +216,14 @@ for adb_arg in "$@"; do
 done
 
 server_port=$((15000 + ($$ % 10000)))
+if command -v nc >/dev/null 2>&1; then
+  while nc -z 127.0.0.1 "$server_port" >/dev/null 2>&1; do
+    server_port=$((server_port + 1))
+    if [ "$server_port" -gt 24999 ]; then
+      server_port=15000
+    fi
+  done
+fi
 
 set -- firewall --allow-localhost
 old_ifs=${IFS}
