@@ -66,6 +66,20 @@ test_prefers_existing_platform_file() {
   assert_output_contains "format=shell" || return 1
 }
 
+test_termux_prefers_existing_bashrc() {
+  home_dir=$(make_tempdir)
+  run_cmd env DETECT_RC_FILE_PLATFORM=termux HOME="$home_dir" SHELL=/bin/zsh sh -c '
+    touch "$HOME/.bashrc"
+    touch "$HOME/.zshrc"
+    exec spells/divination/detect-rc-file
+  '
+
+  assert_success || return 1
+  assert_output_contains "platform=termux" || return 1
+  assert_output_contains "rc_file=$home_dir/.bashrc" || return 1
+  assert_output_contains "format=shell" || return 1
+}
+
 test_prefers_shell_file_when_platform_unknown() {
   home_dir=$(make_tempdir)
   run_cmd env DETECT_RC_FILE_PLATFORM=unknown HOME="$home_dir" SHELL=/bin/zsh sh -c '
@@ -259,6 +273,7 @@ run_test_case "detect-rc-file validates arguments" test_rejects_bad_arguments
 run_test_case "detect-rc-file picks preferred files for platform" test_picks_known_platform_files
 run_test_case "detect-rc-file emits nix formatting hints" test_emits_nix_format_hint
 run_test_case "detect-rc-file favors existing platform candidates" test_prefers_existing_platform_file
+run_test_case "detect-rc-file prefers bashrc on Termux" test_termux_prefers_existing_bashrc
 run_test_case "detect-rc-file respects shell defaults on unknown platforms" test_prefers_shell_file_when_platform_unknown
 run_test_case "detect-rc-file handles HOME paths with spaces" test_handles_home_path_with_spaces
 run_test_case "detect-rc-file rejects linebreak HOME before key=value output" test_rejects_linebreak_home_before_key_value_output

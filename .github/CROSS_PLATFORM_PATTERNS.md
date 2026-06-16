@@ -202,6 +202,8 @@ if [ -t 1 ] && [ "$TERM" != "dumb" ]; then
 fi
 ```
 
+- Treat Termux as a first-class Linux startup-file target: when selecting an rc file for Wizardry PATH exports, prefer `~/.bashrc` before generic shell fallbacks so Android installs land in the startup file Termux users actually inherit by default.
+
 ## Terminal Size Detection
 
 ```sh

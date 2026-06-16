@@ -158,7 +158,7 @@ nixos)
         add_candidate "$HOME/.bash_profile"
         add_candidate "$HOME/.profile"
         ;;
-debian|arch)
+debian|arch|termux)
         add_candidate "$HOME/.bashrc"
         add_candidate "$HOME/.profile"
         ;;
