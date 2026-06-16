@@ -2206,7 +2206,9 @@ HEREDOC_TEST
       else
         # Check pocket-dimension sandboxing
         platform=$(uname -s 2>/dev/null || printf 'unknown')
+        distro=$(detect_distro)
         pocket_cmd=""
+        strict_sandbox_available=0
         if command -v pocket-dimension >/dev/null 2>&1; then
           pocket_cmd=$(command -v pocket-dimension)
         elif [ -x "${WIZARDRY_DIR}/spells/system/pocket-dimension" ]; then
@@ -2214,8 +2216,11 @@ HEREDOC_TEST
         fi
 
         if [ -n "$pocket_cmd" ]; then
-          if "$pocket_cmd" --check >/dev/null 2>&1; then
+          if "$pocket_cmd" --strict --check >/dev/null 2>&1; then
+            strict_sandbox_available=1
             printf '  %s✓%s Sandbox tool: pocket-dimension available\n' "$green" "$reset"
+          elif [ "$distro" = "termux" ]; then
+            printf '  %s✓%s Sandbox tool: pocket-dimension available with unsandboxed Termux fallback\n' "$green" "$reset"
           else
             printf '  %s✗%s Sandbox tool: pocket-dimension unavailable\n' "$red" "$reset"
             return 1
@@ -2233,8 +2238,10 @@ HEREDOC_TEST
             return 1
           fi
         else
-          if command -v bwrap >/dev/null 2>&1; then
+          if [ "$strict_sandbox_available" -eq 1 ] && command -v bwrap >/dev/null 2>&1; then
             printf '  %s✓%s Sandbox tool: bwrap available\n' "$green" "$reset"
+          elif [ "$distro" = "termux" ]; then
+            printf '  %s✓%s Sandbox tool: bwrap skipped on Termux (unsandboxed fallback supported)\n' "$green" "$reset"
           else
             printf '  %s✗%s Sandbox tool: bwrap not found\n' "$red" "$reset"
             if [ "$skip_heal" -eq 0 ]; then

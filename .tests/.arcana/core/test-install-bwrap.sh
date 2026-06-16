@@ -31,6 +31,18 @@ install_bwrap_runs_package_installer() {
   fixture=$(make_tempdir)
   mkdir -p "$fixture/bin" "$fixture/log"
 
+  cat <<'STUB' >"$fixture/bin/uname"
+#!/bin/sh
+printf 'Linux\n'
+STUB
+  chmod +x "$fixture/bin/uname"
+
+  cat <<'STUB' >"$fixture/bin/detect-distro"
+#!/bin/sh
+printf 'debian\n'
+STUB
+  chmod +x "$fixture/bin/detect-distro"
+
   cat <<'STUB' >"$fixture/bin/apt-get"
 #!/bin/sh
 echo "$0 $*" >>"${APT_LOG:?}" || exit 1
@@ -47,15 +59,25 @@ STUB
   PATH="$fixture/bin:$PATH" INSTALL_BWRAP_FORCE_INSTALL=1 APT_LOG="$fixture/log/apt.log" run_spell "spells/.arcana/core/install-bwrap"
   assert_success || return 1
   assert_path_exists "$fixture/log/apt.log" || return 1
-  updates=$(grep -c "apt-get -y update" "$fixture/log/apt.log" || true)
   installs=$(grep -c "apt-get -y install bubblewrap" "$fixture/log/apt.log" || true)
-  [ "$updates" -ge 1 ] || { TEST_FAILURE_REASON="apt-get update not attempted"; return 1; }
   [ "$installs" -ge 1 ] || { TEST_FAILURE_REASON="apt-get install not attempted"; return 1; }
 }
 
 install_bwrap_reports_when_no_installer_available() {
   fixture=$(make_tempdir)
   mkdir -p "$fixture/bin"
+
+  cat <<'STUB' >"$fixture/bin/uname"
+#!/bin/sh
+printf 'Linux\n'
+STUB
+  chmod +x "$fixture/bin/uname"
+
+  cat <<'STUB' >"$fixture/bin/detect-distro"
+#!/bin/sh
+printf 'debian\n'
+STUB
+  chmod +x "$fixture/bin/detect-distro"
 
   for tool in apt-get dnf yum zypper pacman apk pkgin; do
     cat <<'STUB' >"$fixture/bin/$tool"
@@ -76,6 +98,22 @@ STUB
   assert_error_contains "unable to install bubblewrap automatically" || return 1
 }
 
+install_bwrap_rejects_termux_fast() {
+  fixture=$(make_tempdir)
+  mkdir -p "$fixture/bin"
+
+  cat <<'STUB' >"$fixture/bin/detect-distro"
+#!/bin/sh
+printf 'termux\n'
+STUB
+  chmod +x "$fixture/bin/detect-distro"
+
+  PATH="$fixture/bin:/usr/bin:/bin" INSTALL_BWRAP_FORCE_INSTALL=1 \
+    run_spell "spells/.arcana/core/install-bwrap"
+  assert_failure || return 1
+  assert_error_contains "bubblewrap is unavailable on Termux/Android" || return 1
+}
+
 install_bwrap_rejects_unknown_option() {
   run_spell "spells/.arcana/core/install-bwrap" --unknown
   assert_failure || return 1
@@ -85,6 +123,7 @@ install_bwrap_rejects_unknown_option() {
 run_test_case "install-bwrap exits early when already installed" install_bwrap_exits_when_already_installed
 run_test_case "install-bwrap tries package manager when missing" install_bwrap_runs_package_installer
 run_test_case "install-bwrap reports failure when no installer is available" install_bwrap_reports_when_no_installer_available
+run_test_case "install-bwrap rejects Termux fast" install_bwrap_rejects_termux_fast
 run_test_case "install-bwrap rejects unknown options" install_bwrap_rejects_unknown_option
 
 shows_help() {

@@ -32,9 +32,25 @@ done
 set -eu
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+
+install_bwrap_detect_distro() {
+  if command -v detect-distro >/dev/null 2>&1; then
+    detect-distro 2>/dev/null || printf '%s\n' "unknown"
+    return
+  fi
+
+  printf '%s\n' "unknown"
+}
+
 if [ "$force_install" != "1" ] && command -v bwrap >/dev/null 2>&1; then
   printf '%s\n' "bwrap is already installed."
   exit 0
+fi
+
+if [ "$(install_bwrap_detect_distro)" = "termux" ]; then
+  printf '%s\n' "install-bwrap: bubblewrap is unavailable on Termux/Android." >&2
+  printf '%s\n' "install-bwrap: Wizardry uses unsandboxed fallback there when strict bwrap isolation is unavailable." >&2
+  exit 1
 fi
 
 ASSUME_YES=1
