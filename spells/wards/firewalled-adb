@@ -66,7 +66,24 @@ if [ "$internal_mode" -eq 1 ]; then
   "$adb_exec" start-server >/dev/null 2>&1
 
   if [ "$serial_mode" = "remote" ]; then
-    "$adb_exec" connect "$serial" >/dev/null 2>&1
+    connected=no
+    attempt=0
+    while [ "$attempt" -lt 5 ]; do
+      connect_output=$("$adb_exec" connect "$serial" 2>&1 || true)
+      case "$connect_output" in
+        *"connected to "*|*"already connected to "*)
+          connected=yes
+          break
+          ;;
+      esac
+      if "$adb_exec" -s "$serial" get-state >/dev/null 2>&1; then
+        connected=yes
+        break
+      fi
+      sleep 1
+      attempt=$((attempt + 1))
+    done
+    [ "$connected" = yes ] || die "firewalled-adb: could not connect to $serial"
   fi
 
   if [ -n "$serial" ] && ! is_global_adb_command "${1-}"; then
