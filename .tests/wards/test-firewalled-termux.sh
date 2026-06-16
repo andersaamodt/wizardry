@@ -297,6 +297,64 @@ SH
   assert_error_contains "timed out after 1 seconds" || return 1
 }
 
+times_out_if_pull_reports_success_without_status_artifact() {
+  tmpdir=$(make_tempdir)
+  payload="$tmpdir/payload.sh"
+
+  cat >"$payload" <<'SH'
+#!/bin/sh
+printf '%s\n' "never reached"
+SH
+  chmod +x "$payload"
+
+  cat >"$tmpdir/firewalled-adb" <<'SH'
+#!/bin/sh
+set -eu
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --)
+      shift
+      break
+      ;;
+    --serial|--allow)
+      shift 2
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
+
+case "$1" in
+  push)
+    exit 0
+    ;;
+  pull)
+    exit 0
+    ;;
+  shell)
+    shift
+    case "$1" in
+      am)
+        printf '%s\n' "Starting service: Intent { act=com.termux.RUN_COMMAND }"
+        ;;
+      rm)
+        exit 0
+        ;;
+    esac
+    ;;
+esac
+SH
+  chmod +x "$tmpdir/firewalled-adb"
+
+  run_cmd env PATH="$tmpdir:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" \
+    "$ROOT_DIR/spells/wards/firewalled-termux" --timeout 1 -- "$payload"
+
+  assert_status 1 || return 1
+  assert_error_contains "timed out after 1 seconds" || return 1
+}
+
 falls_back_to_typed_termux_launch_when_intent_is_denied() {
   tmpdir=$(make_tempdir)
   payload="$tmpdir/payload.sh"
@@ -426,6 +484,8 @@ run_test_case "firewalled-termux shows help" shows_help
 run_test_case "firewalled-termux runs payload via Termux intent and pulls artifacts" runs_payload_via_termux_intent_and_pulls_artifacts
 run_test_case "firewalled-termux propagates payload failure status" propagates_payload_failure_status
 run_test_case "firewalled-termux times out if Termux never writes status" times_out_if_termux_never_writes_status
+run_test_case "firewalled-termux ignores empty successful pulls for missing status files" \
+  times_out_if_pull_reports_success_without_status_artifact
 run_test_case "firewalled-termux falls back to typed launch when intent is denied" falls_back_to_typed_termux_launch_when_intent_is_denied
 
 finish_tests
