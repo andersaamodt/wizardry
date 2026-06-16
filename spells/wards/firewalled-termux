@@ -1,0 +1,232 @@
+#!/bin/sh
+
+# Run a local payload script inside Termux over firewalled adb using Termux's
+# official RUN_COMMAND intent and file-based result artifacts.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: firewalled-termux [--serial SERIAL] [--allow IPV4[:PORT]]... [--timeout SECONDS] [--device-root PATH] [--workdir PATH] [--keep-remote] -- LOCAL_SCRIPT [ARGS...]
+
+Pushes a local shell script to Android shared storage, asks Termux to run it
+through the official RUN_COMMAND intent, then pulls back stdout, stderr, and
+the payload exit code as files.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+
+firewalled_adb=$(command -v firewalled-adb || true)
+[ -n "$firewalled_adb" ] || firewalled_adb="$script_dir/firewalled-adb"
+[ -x "$firewalled_adb" ] || die "firewalled-termux: firewalled-adb not found"
+
+termux_runner="$script_dir/../.arcana/mobile-debugging/termux-command-runner"
+[ -f "$termux_runner" ] || die "firewalled-termux: termux-command-runner not found"
+
+serial=
+timeout_seconds=120
+device_root=/sdcard/Download/wizardry-termux-run
+device_workdir=/data/data/com.termux/files/home
+keep_remote=0
+allow_file=$(temp-file)
+local_tmpdir=$(temp-dir)
+on-exit cleanup-file "$allow_file"
+on-exit cleanup-dir "$local_tmpdir"
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --serial)
+      [ "${2-}" ] || die "firewalled-termux: --serial requires a value"
+      serial=$2
+      shift 2
+      ;;
+    --allow)
+      [ "${2-}" ] || die "firewalled-termux: --allow requires a value"
+      case "$2" in
+        *'
+'*)
+          die "firewalled-termux: allow endpoints must not contain line breaks"
+          ;;
+      esac
+      printf '%s\n' "$2" >>"$allow_file"
+      shift 2
+      ;;
+    --timeout)
+      [ "${2-}" ] || die "firewalled-termux: --timeout requires a value"
+      case "$2" in
+        ''|*[!0-9]*)
+          die "firewalled-termux: --timeout must be an integer number of seconds"
+          ;;
+      esac
+      timeout_seconds=$2
+      shift 2
+      ;;
+    --device-root)
+      [ "${2-}" ] || die "firewalled-termux: --device-root requires a value"
+      device_root=$2
+      shift 2
+      ;;
+    --workdir)
+      [ "${2-}" ] || die "firewalled-termux: --workdir requires a value"
+      device_workdir=$2
+      shift 2
+      ;;
+    --keep-remote)
+      keep_remote=1
+      shift
+      ;;
+    --)
+      shift
+      break
+      ;;
+    *)
+      die 2 "firewalled-termux: unknown option '$1'"
+      ;;
+  esac
+done
+
+[ "$#" -gt 0 ] || die 2 "firewalled-termux: LOCAL_SCRIPT is required"
+
+payload_source=$1
+shift
+
+[ -f "$payload_source" ] || die "firewalled-termux: local script not found: $payload_source"
+
+case $payload_source in
+  /*)
+    payload_abs=$payload_source
+    ;;
+  *)
+    payload_abs=$(cd "$(dirname "$payload_source")" && pwd -P)/$(basename "$payload_source")
+    ;;
+esac
+
+payload_copy="$local_tmpdir/payload.sh"
+runner_copy="$local_tmpdir/termux-command-runner.sh"
+args_copy="$local_tmpdir/args.txt"
+launch_copy="$local_tmpdir/launch.sh"
+stdout_copy="$local_tmpdir/stdout.txt"
+stderr_copy="$local_tmpdir/stderr.txt"
+status_copy="$local_tmpdir/exit-code.txt"
+
+cp "$payload_abs" "$payload_copy"
+cp "$termux_runner" "$runner_copy"
+chmod 700 "$payload_copy" "$runner_copy"
+
+for payload_arg in "$@"; do
+  case "$payload_arg" in
+    *'
+'*)
+      die "firewalled-termux: payload arguments must not contain line breaks"
+      ;;
+  esac
+  printf '%s\n' "$payload_arg" >>"$args_copy"
+done
+
+run_id=run-$$
+remote_root=${device_root%/}/$run_id
+remote_payload=$remote_root/payload.sh
+remote_runner=$remote_root/termux-command-runner.sh
+remote_args=$remote_root/args.txt
+remote_launch=$remote_root/launch.sh
+remote_results=$remote_root/results
+remote_status=$remote_results/exit-code.txt
+
+cat >"$launch_copy" <<EOF
+#!/data/data/com.termux/files/usr/bin/sh
+exec /data/data/com.termux/files/usr/bin/sh "$remote_runner" "$remote_payload" "$remote_results" "$remote_args" "$device_workdir"
+EOF
+chmod 700 "$launch_copy"
+
+run_firewalled_adb() {
+  firewalled_termux_args=$(temp-file)
+  on-exit cleanup-file "$firewalled_termux_args"
+  while [ "$#" -gt 0 ]; do
+    printf '%s\n' "$1" >>"$firewalled_termux_args"
+    shift
+  done
+
+  set -- "$firewalled_adb"
+  if [ -n "$serial" ]; then
+    set -- "$@" --serial "$serial"
+  fi
+  if [ -f "$allow_file" ]; then
+    while IFS= read -r firewalled_termux_allow || [ -n "$firewalled_termux_allow" ]; do
+      [ -n "$firewalled_termux_allow" ] || continue
+      set -- "$@" --allow "$firewalled_termux_allow"
+    done < "$allow_file"
+  fi
+  set -- "$@" --
+  while IFS= read -r firewalled_termux_arg || [ -n "$firewalled_termux_arg" ]; do
+    set -- "$@" "$firewalled_termux_arg"
+  done < "$firewalled_termux_args"
+  "$@"
+}
+
+run_firewalled_adb push "$runner_copy" "$remote_runner"
+run_firewalled_adb push "$payload_copy" "$remote_payload"
+run_firewalled_adb push "$args_copy" "$remote_args"
+run_firewalled_adb push "$launch_copy" "$remote_launch"
+
+intent_output=$(
+  run_firewalled_adb shell am startservice --user 0 \
+    -n com.termux/com.termux.app.RunCommandService \
+    -a com.termux.RUN_COMMAND \
+    --es com.termux.RUN_COMMAND_PATH /data/data/com.termux/files/usr/bin/sh \
+    --esa com.termux.RUN_COMMAND_ARGUMENTS "$remote_launch" \
+    --es com.termux.RUN_COMMAND_WORKDIR "$device_workdir" \
+    --ez com.termux.RUN_COMMAND_BACKGROUND true
+)
+
+case $intent_output in
+  *"Error:"*|*"Exception"*|*"Permission Denial"*)
+    die "firewalled-termux: Termux refused RUN_COMMAND intent: $intent_output"
+    ;;
+esac
+
+poll_count=0
+status_ready=0
+while [ "$poll_count" -lt "$timeout_seconds" ]; do
+  if run_firewalled_adb shell test -f "$remote_status"; then
+    status_ready=1
+    break
+  fi
+  poll_count=$((poll_count + 1))
+  sleep 1
+done
+
+if [ "$status_ready" -ne 1 ]; then
+  if [ "$keep_remote" -ne 1 ]; then
+    run_firewalled_adb shell rm -rf "$remote_root" >/dev/null 2>&1 || true
+  fi
+  die "firewalled-termux: timed out after $timeout_seconds seconds waiting for Termux results"
+fi
+
+run_firewalled_adb pull "$remote_results/stdout.txt" "$stdout_copy" >/dev/null
+run_firewalled_adb pull "$remote_results/stderr.txt" "$stderr_copy" >/dev/null
+run_firewalled_adb pull "$remote_status" "$status_copy" >/dev/null
+
+if [ -f "$stdout_copy" ]; then
+  cat "$stdout_copy"
+fi
+if [ -f "$stderr_copy" ] && [ -s "$stderr_copy" ]; then
+  cat "$stderr_copy" >&2
+fi
+
+payload_status=$(tr -d '\r\n' <"$status_copy")
+case $payload_status in
+  ''|*[!0-9]*)
+    die "firewalled-termux: invalid exit code artifact: $payload_status"
+    ;;
+esac
+
+if [ "$keep_remote" -ne 1 ]; then
+  run_firewalled_adb shell rm -rf "$remote_root" >/dev/null 2>&1 || true
+fi
+
+exit "$payload_status"

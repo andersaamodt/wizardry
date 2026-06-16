@@ -58,6 +58,7 @@ while :; do
     "$maestro_toggle" \
     "firewalled-adb help%firewalled-adb --help" \
     "firewalled-adb-tor help%firewalled-adb-tor --help" \
+    "firewalled-termux help%firewalled-termux --help" \
     "firewalled-maestro help%firewalled-maestro --help" \
     "firewalled-maestro-tor help%firewalled-maestro-tor --help" \
     "Setup adb over Tor on phone%$script_dir/setup-mobile-tor-adb --help" \

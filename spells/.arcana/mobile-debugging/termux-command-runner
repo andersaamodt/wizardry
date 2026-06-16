@@ -1,0 +1,40 @@
+#!/data/data/com.termux/files/usr/bin/sh
+
+# Execute a pushed payload script inside Termux and persist stdout/stderr/status
+# to a shared result directory so host-side automation can collect exact
+# artifacts without scraping terminal UI.
+
+set -eu
+
+payload_path=${1-}
+result_dir=${2-}
+args_file=${3-}
+work_dir=${4-}
+
+[ -n "$payload_path" ] || exit 2
+[ -n "$result_dir" ] || exit 2
+[ -n "$args_file" ] || exit 2
+[ -n "$work_dir" ] || exit 2
+
+mkdir -p "$result_dir"
+stdout_file=$result_dir/stdout.txt
+stderr_file=$result_dir/stderr.txt
+status_file=$result_dir/exit-code.txt
+
+rm -f "$stdout_file" "$stderr_file" "$status_file"
+
+cd "$work_dir"
+
+set --
+while IFS= read -r runner_arg || [ -n "$runner_arg" ]; do
+  set -- "$@" "$runner_arg"
+done < "$args_file"
+
+if /data/data/com.termux/files/usr/bin/sh "$payload_path" "$@" >"$stdout_file" 2>"$stderr_file"; then
+  runner_status=0
+else
+  runner_status=$?
+fi
+
+printf '%s\n' "$runner_status" >"$status_file"
+exit 0
