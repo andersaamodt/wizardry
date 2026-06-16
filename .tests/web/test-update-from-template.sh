@@ -283,6 +283,47 @@ EOF
   rm -rf "$test_web_root" "$fake_wizardry_root"
 }
 
+test_update_skips_posts_mount_from_template() {
+  skip-if-compiled || return $?
+
+  test_web_root=$(temp-dir web-wizardry-test)
+  fake_wizardry_root=$(temp-dir wizardry-template-root)
+  template_root="$fake_wizardry_root/web/blog"
+
+  mkdir -p "$template_root/site/pages" "$template_root/site/static"
+  printf '# template index\n' > "$template_root/site/pages/index.md"
+  printf 'body { margin: 0; }\n' > "$template_root/site/static/style.css"
+  ln -s "$fake_wizardry_root/missing-posts" "$template_root/site/pages/posts"
+
+  mkdir -p "$test_web_root/minisite/site/pages" "$test_web_root/minisite/site/static" "$test_web_root/minisite/site/uploads"
+  cat > "$test_web_root/minisite/site.conf" <<'EOF'
+site-name=minisite
+site-user=
+template=blog
+port=8080
+domain=localhost
+https=false
+EOF
+
+  WIZARDRY_DIR="$fake_wizardry_root" WEB_WIZARDRY_ROOT="$test_web_root" \
+    run_spell spells/web/update-from-template minisite --force
+  assert_success
+
+  [ -f "$test_web_root/minisite/site/pages/index.md" ] || {
+    TEST_FAILURE_REASON="update-from-template did not copy page content when posts mount was present"
+    rm -rf "$test_web_root" "$fake_wizardry_root"
+    return 1
+  }
+
+  [ ! -e "$test_web_root/minisite/site/pages/posts" ] || {
+    TEST_FAILURE_REASON="update-from-template should skip template-owned posts mount entries"
+    rm -rf "$test_web_root" "$fake_wizardry_root"
+    return 1
+  }
+
+  rm -rf "$test_web_root" "$fake_wizardry_root"
+}
+
 test_update_resolves_external_repo_templates() {
   skip-if-compiled || return $?
 
@@ -337,6 +378,7 @@ run_test_case "update-from-template handles WIZARDRY_DIR paths with spaces" test
 run_test_case "update-from-template rejects path-shaped site names" test_update_rejects_path_shaped_site_name
 run_test_case "update-from-template rejects path-shaped template names" test_update_rejects_path_shaped_template_name
 run_test_case "update-from-template refreshes requirements file" test_update_refreshes_requirements_file
+run_test_case "update-from-template skips template posts mounts" test_update_skips_posts_mount_from_template
 run_test_case "update-from-template resolves external repo templates" test_update_resolves_external_repo_templates
 
 finish_tests
