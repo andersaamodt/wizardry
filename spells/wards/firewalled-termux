@@ -170,6 +170,17 @@ run_firewalled_adb() {
   "$@"
 }
 
+capture_firewalled_adb_output() {
+  capture_stdout=$1
+  capture_stderr=$2
+  shift 2
+
+  if run_firewalled_adb "$@" >"$capture_stdout" 2>"$capture_stderr"; then
+    return 0
+  fi
+  return $?
+}
+
 type_termux_command() {
   firewalled_termux_command=$1
   typed_command=$(printf 'sh%%s%s' "$firewalled_termux_command")
@@ -203,17 +214,25 @@ run_firewalled_adb push "$payload_copy" "$remote_payload"
 run_firewalled_adb push "$args_copy" "$remote_args"
 run_firewalled_adb push "$launch_copy" "$remote_launch"
 
+intent_stdout=$(temp-file)
+intent_stderr=$(temp-file)
+on-exit cleanup-file "$intent_stdout"
+on-exit cleanup-file "$intent_stderr"
+
 intent_started=yes
-intent_output=$(
-  run_firewalled_adb shell am startservice --user 0 \
+if capture_firewalled_adb_output "$intent_stdout" "$intent_stderr" \
+  shell am startservice --user 0 \
     -n com.termux/com.termux.app.RunCommandService \
     -a com.termux.RUN_COMMAND \
     --es com.termux.RUN_COMMAND_PATH /data/data/com.termux/files/usr/bin/sh \
     --esa com.termux.RUN_COMMAND_ARGUMENTS "$remote_launch" \
     --es com.termux.RUN_COMMAND_WORKDIR "$device_workdir" \
-    --ez com.termux.RUN_COMMAND_BACKGROUND true
-  2>&1
-) || intent_started=no
+    --ez com.termux.RUN_COMMAND_BACKGROUND true; then
+  intent_output=$(cat "$intent_stdout" "$intent_stderr" 2>/dev/null || true)
+else
+  intent_started=no
+  intent_output=$(cat "$intent_stdout" "$intent_stderr" 2>/dev/null || true)
+fi
 
 case $intent_output in
   *"Error:"*|*"Exception"*|*"Permission Denial"*)
