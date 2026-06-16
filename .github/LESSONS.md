@@ -166,6 +166,7 @@
 - Termux automation must treat `RUN_COMMAND` as optional at runtime; even with Termux installed, devices can deny the intent or never produce artifacts, so the host needs a typed-launch fallback that preserves the same result-file contract.
 - Phone-side Tor adb publishing must resolve `service.adb.tls.port` on the device and forward `127.0.0.1:$PORT`; freezing a Wi-Fi-discovered adb endpoint into Termux Tor config makes the onion route go stale across network and adbd restarts.
 - Fresh local-source installs must seed the copied Wizardry tree onto `PATH` before they call copied helper spells, or restricted-path environments can lose sourced helpers such as `env-clear` during bootstrap.
+- Termux PATH bootstraps must keep `/data/data/com.termux/files/usr/bin` ahead of generic `/bin` baselines, or Android wrapper commands like `/bin/df` can shadow the real Termux toolchain and make environment probes lie.
 - Install/uninstall scripts must verify the command is actually installed/removed after calling package manager; package managers can exit 0 even when skipping already-installed packages or refusing to remove system dependencies.
 - macOS package management on "unaugmented" systems requires Homebrew support; check for `brew` before falling back to pkgin when detecting Darwin/macOS platform.
 - htmx's morph extension (idiomorph) prevents flicker by intelligently diffing DOM trees and only updating changed nodes; use `hx-swap="morph" hx-ext="morph"` for smooth updates like poll results.

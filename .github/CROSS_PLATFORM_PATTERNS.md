@@ -215,6 +215,7 @@ fi
 ```
 
 - Treat Termux as a first-class Linux startup-file target: when selecting an rc file for Wizardry PATH exports, prefer `~/.bashrc` before generic shell fallbacks so Android installs land in the startup file Termux users actually inherit by default.
+- When seeding a fallback baseline `PATH` on Termux, append `/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin` after the existing `/data/data/com.termux/files/usr/bin` entry instead of prepending it; Android `/bin/*` wrappers can shadow healthier Termux userland tools such as `df`.
 
 ## Terminal Size Detection
 
