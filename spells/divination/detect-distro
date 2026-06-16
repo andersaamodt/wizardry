@@ -78,28 +78,30 @@ case ":$detect_path:" in
     ;;
 esac
 
-if [ -f "${root_prefix}/etc/NIXOS" ] || [ "${os_id-}" = "nixos" ]; then
-  distro='nixos'
-elif [ -f "${root_prefix}/etc/debian_version" ]; then
-  distro='debian'
-elif [ -f "${root_prefix}/etc/arch-release" ]; then
-  distro='arch'
-elif [ "${os_id-}" = "debian" ] || [ "${os_id-}" = "ubuntu" ] || [ "${os_id-}" = "raspbian" ]; then
-  distro='debian'
-elif [ "${os_id-}" = "arch" ]; then
-  distro='arch'
-else
-  # Inline detect_uname - only used once
-  if [ -n "${DETECT_DISTRO_UNAME-}" ]; then
-    kernel_name=$DETECT_DISTRO_UNAME
-  elif uname >/dev/null 2>&1; then
-    kernel_name=$(uname)
+if [ -z "${distro-}" ]; then
+  if [ -f "${root_prefix}/etc/NIXOS" ] || [ "${os_id-}" = "nixos" ]; then
+    distro='nixos'
+  elif [ -f "${root_prefix}/etc/debian_version" ]; then
+    distro='debian'
+  elif [ -f "${root_prefix}/etc/arch-release" ]; then
+    distro='arch'
+  elif [ "${os_id-}" = "debian" ] || [ "${os_id-}" = "ubuntu" ] || [ "${os_id-}" = "raspbian" ]; then
+    distro='debian'
+  elif [ "${os_id-}" = "arch" ]; then
+    distro='arch'
   else
-    kernel_name=''
-  fi
-  
-  if [ "${kernel_name-}" = "Darwin" ]; then
-    distro='mac'
+    # Inline detect_uname - only used once
+    if [ -n "${DETECT_DISTRO_UNAME-}" ]; then
+      kernel_name=$DETECT_DISTRO_UNAME
+    elif uname >/dev/null 2>&1; then
+      kernel_name=$(uname)
+    else
+      kernel_name=''
+    fi
+    
+    if [ "${kernel_name-}" = "Darwin" ]; then
+      distro='mac'
+    fi
   fi
 fi
 

@@ -74,6 +74,14 @@ test_exact_level_hook_limits_output() {
   assert_output_not_contains "Level 0: POSIX & Platform Foundation" || return 1
 }
 
+test_termux_level_zero_uses_detect_distro() {
+  run_cmd env WIZARDRY_DEMO_NO_SANDBOX=1 \
+    PATH="/data/data/com.termux/files/usr/bin:$PATH" \
+    "$ROOT_DIR/spells/spellcraft/demo-magic" 0
+  assert_success || return 1
+  assert_output_contains "detect-distro -> termux" || return 1
+}
+
 test_default_runs_all_levels() {
   run_demo_magic
   assert_success || return 1
@@ -129,6 +137,8 @@ run_test_case "demo-magic internal pocket flag avoids resandbox loops" \
   test_demo_in_pocket_flag_skips_resandbox
 run_test_case "demo-magic exact-level hook keeps the run scoped" \
   test_exact_level_hook_limits_output
+run_test_case "demo-magic level zero reflects Termux detection" \
+  test_termux_level_zero_uses_detect_distro
 run_test_case "demo-magic full run covers live behaviors across levels" test_default_runs_all_levels
 
 finish_tests

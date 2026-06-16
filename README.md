@@ -20,7 +20,7 @@ The language of magic—a human heirloom—is rich in evocative words for hidden
 - ✅ Arcana installer menus for the free software suite
 - ✅ MUD-style command parsing and magical vocabulary
 - ☐ Terminal theming and MUD game: Patchy
-- ☐ Cross-platform testing: Only macOS tested
+- ☐ Cross-platform testing: macOS is primary; Termux path is under active validation
 
 | OS                        | Shortname | Status                              |
 | ------------------------- | --------- | ----------------------------------- |
@@ -28,7 +28,7 @@ The language of magic—a human heirloom—is rich in evocative words for hidden
 | **NixOS**                 | `nixos`   | 🟡 **untested**                     |
 | **MacOS**                 | `macos`   | 🟢 **working**                      |
 | **Arch**                  | `arch`    | 🟠 **untested**                     |
-| **Android (Linux-based)** | —         | 🟠 **currently unsupported**        |
+| **Android (Termux)**      | `termux`  | 🟡 **supported path under active validation** |
 | **Windows**               | —         | ✘ **no support planned (except WSL)** |
 
 ## Installation
@@ -337,7 +337,7 @@ Principles of the testing suite:
 | Unique behavior focus | Each test covers that spell’s unique behaviors and failure modes, avoiding redundant coverage. |
 | Full mode coverage    | Subtests cover all valid paths and error conditions. |
 | Explicit shims        | Stub imps in `spells/.imps/test/stub-*` provide reusable terminal I/O mocking. Tests link to them via symlinks. Single-use stubs may remain inline in tests. Test real wizardry—stub only the bare minimum (terminal I/O). |
-| Sandboxed execution   | The `test-magic` spell discovers and runs all tests in an isolated bubblewrap environment. |
+| Sandboxed execution   | The `test-magic` spell prefers isolated `pocket-dimension` execution and falls back with a warning when strict sandboxing is unavailable on hosts such as Termux. |
 | Tests required | All tests are required to pass before new code may be merged. |
 
 ## POSIX Compatibility Matrix

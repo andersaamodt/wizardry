@@ -127,6 +127,7 @@
 - Stub system requires strict PATH ordering with stub directory first to successfully override real commands with mocked versions (PR #612).
 - Bubblewrap (bwrap) sandboxing compatibility varies by platform; graceful fallback ensures tests run successfully without sandboxing where unavailable (PR #613).
 - `test-magic` should probe `pocket-dimension --strict --check` and warn before falling back unsandboxed, because Android/Termux and other reduced Linux hosts may have the spell without a usable `bwrap` backend.
+- Shared platform reporting should reuse `detect-distro` instead of open-coding a smaller `/etc/os-release` subset, or Android/Termux support will drift and core diagnostics like `banish` will misreport the host.
 - Boolean logic with && || chains can cause unexpected early returns due to short-circuit evaluation; use explicit if-then-fi for clarity (PR #614).
 - Testing system regressions are prevented by making test infrastructure itself testable with dedicated validation test files (PR #615).
 - Pipe output buffering in pipelines requires explicit stdbuf -oL on all stages, not just the first command, to ensure line-by-line output (PR #616).

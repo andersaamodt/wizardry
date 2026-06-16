@@ -229,7 +229,14 @@ banish_process_level() {
       }
       
       detect_distro() {
-        if [ -f /etc/os-release ]; then
+        detect_distro_spell="${WIZARDRY_DIR}/spells/divination/detect-distro"
+        detect_distro_imp_path="${WIZARDRY_DIR}/spells/.imps/sys"
+        if command -v detect-distro >/dev/null 2>&1; then
+          detect-distro 2>/dev/null || printf 'unknown'
+        elif [ -x "$detect_distro_spell" ]; then
+          PATH="$detect_distro_imp_path:$PATH" \
+            "$detect_distro_spell" 2>/dev/null || printf 'unknown'
+        elif [ -f /etc/os-release ]; then
           # shellcheck disable=SC1091
           . /etc/os-release
           case "${ID-}" in

@@ -579,6 +579,31 @@ install_does_not_double_home_path() {
   return 0
 }
 
+install_termux_prefers_bashrc_for_shell_integration() {
+  skip-if-compiled || return $?
+  fixture=$(make_fixture)
+  provide_basic_tools "$fixture"
+  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+
+  install_dir="$fixture/home/.wizardry"
+  : >"$fixture/home/.bashrc"
+  : >"$fixture/home/.zshrc"
+
+  run_cmd env PATH="$fixture/bin:$initial_path" \
+      WIZARDRY_INSTALL_PLATFORM=termux \
+      WIZARDRY_INSTALL_DIR="$install_dir" \
+      HOME="$fixture/home" \
+      WIZARDRY_INSTALL_ASSUME_YES=1 \
+      "$ROOT_DIR/install" 2>&1
+
+  assert_success || return 1
+  assert_file_contains "$fixture/home/.bashrc" "invoke-wizardry" || return 1
+  if grep -q "invoke-wizardry" "$fixture/home/.zshrc" 2>/dev/null; then
+    TEST_FAILURE_REASON="Termux install should prefer .bashrc over .zshrc"
+    return 1
+  fi
+}
+
 # === NixOS Shell Code Tests ===
 
 install_nixos_writes_shell_init_properly_to_nix_file() {
@@ -1675,6 +1700,8 @@ run_test_case "install NixOS simple input" install_nixos_simple_input
 run_test_case "install normalizes path without leading slash" install_normalizes_path_without_leading_slash
 run_test_case "install normalizes NixOS config path" install_nixos_normalizes_config_path_without_leading_slash
 run_test_case "install does not double home path" install_does_not_double_home_path
+run_test_case "install on Termux prefers bashrc for shell integration" \
+  install_termux_prefers_bashrc_for_shell_integration
 run_test_case "install writes shell init properly to nix file" install_nixos_writes_shell_init_properly_to_nix_file
 run_test_case "install uses explicit helper paths" install_uses_explicit_helper_paths
 run_test_case "learn-spellbook uses explicit helper paths" path_wizard_uses_explicit_helper_paths

@@ -551,6 +551,38 @@ test_terminal_type_self_heals_cleanly() {
   esac
 }
 
+test_environment_facts_report_termux() {
+  tmpdir=$(make_tempdir)
+  install_dir="$tmpdir/wizardry"
+  stub_dir="$tmpdir/stubs"
+
+  copy_wizardry "$install_dir" || return 1
+  mkdir -p "$stub_dir"
+
+  cat >"$stub_dir/uname" <<'SH'
+#!/bin/sh
+case "${1-}" in
+  -s|'')
+    printf '%s\n' "Linux"
+    ;;
+  -m)
+    printf '%s\n' "aarch64"
+    ;;
+  *)
+    printf '%s\n' "Linux"
+    ;;
+esac
+SH
+  chmod +x "$stub_dir/uname"
+
+  run_cmd env PATH="$stub_dir:/data/data/com.termux/files/usr/bin:$PATH" \
+    WIZARDRY_DIR="$install_dir" \
+    "$ROOT_DIR/spells/wards/banish" 0 --no-tests
+
+  assert_success || return 1
+  assert_output_contains "Platform: linux/termux/arm64" || return 1
+}
+
 run_test_case "banish checks shell type" test_shell_type_check
 run_test_case "banish checks IFS" test_ifs_check
 run_test_case "banish checks environment variables" test_environment_vars_check
@@ -564,6 +596,8 @@ run_test_case "banish checks redirections" test_redirections_check
 run_test_case "banish checks signal handling" test_signal_handling_check
 run_test_case "banish checks command substitution" test_command_substitution_check
 run_test_case "banish checks parameter expansion" test_parameter_expansion_check
+run_test_case "banish environment facts report Termux on Android-style hosts" \
+  test_environment_facts_report_termux
 run_test_case "banish repairs minimal terminal types without a failure banner" \
   test_terminal_type_self_heals_cleanly
 
