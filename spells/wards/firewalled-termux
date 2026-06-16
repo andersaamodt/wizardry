@@ -186,7 +186,7 @@ wait_for_termux_status() {
   wait_limit=$1
   poll_count=0
   while [ "$poll_count" -lt "$wait_limit" ]; do
-    if run_firewalled_adb shell test -f "$remote_status"; then
+    if run_firewalled_adb pull "$remote_status" "$status_copy" >/dev/null 2>&1; then
       return 0
     fi
     poll_count=$((poll_count + 1))
@@ -243,7 +243,6 @@ fi
 
 run_firewalled_adb pull "$remote_results/stdout.txt" "$stdout_copy" >/dev/null
 run_firewalled_adb pull "$remote_results/stderr.txt" "$stderr_copy" >/dev/null
-run_firewalled_adb pull "$remote_status" "$status_copy" >/dev/null
 
 if [ -f "$stdout_copy" ]; then
   cat "$stdout_copy"

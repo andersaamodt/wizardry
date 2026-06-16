@@ -41,6 +41,30 @@ is_global_adb_command() {
   esac
 }
 
+connect_remote_serial() {
+  connect_exec=$1
+  connect_serial=$2
+
+  connected=no
+  attempt=0
+  while [ "$attempt" -lt 5 ]; do
+    connect_output=$("$connect_exec" connect "$connect_serial" 2>&1 || true)
+    case "$connect_output" in
+      *"connected to "*|*"already connected to "*)
+        connected=yes
+        break
+        ;;
+    esac
+    if "$connect_exec" -s "$connect_serial" get-state >/dev/null 2>&1; then
+      connected=yes
+      break
+    fi
+    sleep 1
+    attempt=$((attempt + 1))
+  done
+  [ "$connected" = yes ]
+}
+
 if [ "$internal_mode" -eq 1 ]; then
   adb_exec=${1-}
   server_port=${2-}
@@ -66,32 +90,40 @@ if [ "$internal_mode" -eq 1 ]; then
   "$adb_exec" start-server >/dev/null 2>&1
 
   if [ "$serial_mode" = "remote" ]; then
-    connected=no
-    attempt=0
-    while [ "$attempt" -lt 5 ]; do
-      connect_output=$("$adb_exec" connect "$serial" 2>&1 || true)
-      case "$connect_output" in
-        *"connected to "*|*"already connected to "*)
-          connected=yes
-          break
-          ;;
-      esac
-      if "$adb_exec" -s "$serial" get-state >/dev/null 2>&1; then
-        connected=yes
-        break
-      fi
-      sleep 1
-      attempt=$((attempt + 1))
-    done
-    [ "$connected" = yes ] || die "firewalled-adb: could not connect to $serial"
+    connect_remote_serial "$adb_exec" "$serial" || die "firewalled-adb: could not connect to $serial"
   fi
 
   if [ -n "$serial" ] && ! is_global_adb_command "${1-}"; then
-    "$adb_exec" -s "$serial" "$@"
+    command_stdout=$(temp-file)
+    command_stderr=$(temp-file)
+    command_attempt=0
+    command_status=1
+    while [ "$command_attempt" -lt 3 ]; do
+      if "$adb_exec" -s "$serial" "$@" >"$command_stdout" 2>"$command_stderr"; then
+        command_status=0
+        break
+      fi
+      command_status=$?
+      command_error=$(cat "$command_stderr" 2>/dev/null || printf '')
+      case "$command_error" in
+        *"device offline"*|*"device not found"*)
+          if [ "$serial_mode" = "remote" ] && connect_remote_serial "$adb_exec" "$serial"; then
+            command_attempt=$((command_attempt + 1))
+            continue
+          fi
+          ;;
+      esac
+      break
+    done
+    cat "$command_stdout"
+    if [ -s "$command_stderr" ]; then
+      cat "$command_stderr" >&2
+    fi
+    rm -f "$command_stdout" "$command_stderr"
   else
     "$adb_exec" "$@"
+    command_status=$?
   fi
-  command_status=$?
 
   "$adb_exec" kill-server >/dev/null 2>&1 || true
   exit "$command_status"
