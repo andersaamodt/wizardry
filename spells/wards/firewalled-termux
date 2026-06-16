@@ -30,7 +30,7 @@ termux_runner="$script_dir/../.arcana/mobile-debugging/termux-command-runner"
 
 serial=
 timeout_seconds=120
-device_root=/sdcard/Download/wizardry-termux-run
+device_root=/sdcard/wt
 device_workdir=/data/data/com.termux/files/home
 keep_remote=0
 allow_file=$(temp-file)
@@ -130,7 +130,7 @@ for payload_arg in "$@"; do
   printf '%s\n' "$payload_arg" >>"$args_copy"
 done
 
-run_id=run-$$
+run_id=r$$
 remote_root=${device_root%/}/$run_id
 remote_payload=$remote_root/payload.sh
 remote_runner=$remote_root/termux-command-runner.sh
@@ -175,7 +175,8 @@ type_termux_command() {
   typed_command=$(printf 'sh%%s%s' "$firewalled_termux_command")
 
   run_firewalled_adb shell input keyevent KEYCODE_WAKEUP >/dev/null 2>&1 || true
-  run_firewalled_adb shell input keyevent HOME >/dev/null 2>&1 || true
+  sleep 1
+  run_firewalled_adb shell am force-stop com.termux >/dev/null 2>&1 || true
   run_firewalled_adb shell monkey -p com.termux 1 >/dev/null 2>&1 || true
   sleep 2
   run_firewalled_adb shell input text "$typed_command" >/dev/null 2>&1 || true

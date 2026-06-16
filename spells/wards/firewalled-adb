@@ -106,7 +106,7 @@ if [ "$internal_mode" -eq 1 ]; then
       command_status=$?
       command_error=$(cat "$command_stderr" 2>/dev/null || printf '')
       case "$command_error" in
-        *"device offline"*|*"device not found"*)
+        *"device offline"*|*"device not found"*|*"failed to read copy response: EOF"*|*"Connection reset by peer"*|*"closed"*)
           if [ "$serial_mode" = "remote" ] && connect_remote_serial "$adb_exec" "$serial"; then
             command_attempt=$((command_attempt + 1))
             continue

@@ -436,7 +436,7 @@ case "$1" in
         ;;
       input)
         case "${2-} ${3-}" in
-          "text sh%s/sdcard/Download/wizardry-termux-run/run-"*)
+          "text sh%s/sdcard/wt/r"*)
             typed_launch=${3#sh%s}
             printf '%s\n' "$typed_launch" >"$stub_root/typed-launch-path"
             ;;
@@ -476,7 +476,7 @@ SH
 
   assert_success || return 1
   assert_output_contains "typed fallback worked" || return 1
-  assert_file_contains "$tmpdir/adb.log" "sh%s/sdcard/Download/wizardry-termux-run/run-"
+  assert_file_contains "$tmpdir/adb.log" "sh%s/sdcard/wt/r"
   assert_file_contains "$tmpdir/adb.log" "ENTER"
 }
 
