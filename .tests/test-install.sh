@@ -629,6 +629,25 @@ install_local_copy_excludes_repo_state() {
   esac
 }
 
+install_bootstraps_helper_path_from_copied_tree() {
+  skip-if-compiled || return $?
+  fixture=$(make_fixture)
+  provide_basic_tools "$fixture"
+  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq mkdir rm
+
+  install_dir="$fixture/home/.wizardry"
+
+  run_cmd env PATH="$fixture/bin:/bin:/usr/bin" \
+      WIZARDRY_INSTALL_DIR="$install_dir" \
+      HOME="$fixture/home" \
+      WIZARDRY_INSTALL_ASSUME_YES=1 \
+      "$ROOT_DIR/install" 2>&1
+
+  assert_success || return 1
+  assert_output_contains "Installation Plan" || return 1
+  [ -x "$install_dir/spells/.imps/sys/invoke-wizardry" ] || return 1
+}
+
 # === NixOS Shell Code Tests ===
 
 install_nixos_writes_shell_init_properly_to_nix_file() {
@@ -1728,6 +1747,7 @@ run_test_case "install does not double home path" install_does_not_double_home_p
 run_test_case "install on Termux prefers bashrc for shell integration" \
   install_termux_prefers_bashrc_for_shell_integration
 run_test_case "install local copy excludes repo state" install_local_copy_excludes_repo_state
+run_test_case "install bootstraps helper path from copied tree" install_bootstraps_helper_path_from_copied_tree
 run_test_case "install writes shell init properly to nix file" install_nixos_writes_shell_init_properly_to_nix_file
 run_test_case "install uses explicit helper paths" install_uses_explicit_helper_paths
 run_test_case "learn-spellbook uses explicit helper paths" path_wizard_uses_explicit_helper_paths

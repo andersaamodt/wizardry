@@ -378,6 +378,26 @@ INSTALL_CD="$ABS_DIR/spells/.arcana/mud/install-cd"
 TOGGLE_CD="$ABS_DIR/spells/.arcana/mud/toggle-cd"
 TOGGLE_ALL_MUD="$ABS_DIR/spells/.arcana/mud/toggle-all-mud"
 
+# Fresh local-source installs may call copied helper spells before
+# invoke-wizardry has ever prepared PATH. Seed the copied tree onto PATH so
+# sourced helpers such as env-clear and die resolve from the installation being
+# prepared instead of depending on the caller's ambient environment.
+install_saved_path=$PATH
+PATH="$ABS_DIR/spells"
+if [ -d "$ABS_DIR/spells/.imps" ]; then
+        PATH="$PATH:$ABS_DIR/spells/.imps"
+        for impdir in "$ABS_DIR"/spells/.imps/*; do
+                [ -d "$impdir" ] || continue
+                PATH="$PATH:$impdir"
+        done
+fi
+for spell_dir in "$ABS_DIR"/spells/*; do
+        [ -d "$spell_dir" ] || continue
+        PATH="$PATH:$spell_dir"
+done
+PATH="$PATH:$install_saved_path"
+export PATH
+
 # NOTE: Spells no longer need to be pre-installed.
 # Users can still use install() functions in spells for explicit customizations like aliases.
 

@@ -170,11 +170,37 @@ run_firewalled_adb() {
   "$@"
 }
 
+type_termux_command() {
+  firewalled_termux_command=$1
+  typed_command=$(printf 'sh%%s%s' "$firewalled_termux_command")
+
+  run_firewalled_adb shell input keyevent KEYCODE_WAKEUP >/dev/null 2>&1 || true
+  run_firewalled_adb shell input keyevent HOME >/dev/null 2>&1 || true
+  run_firewalled_adb shell monkey -p com.termux 1 >/dev/null 2>&1 || true
+  sleep 2
+  run_firewalled_adb shell input text "$typed_command" >/dev/null 2>&1 || true
+  run_firewalled_adb shell input keyevent ENTER >/dev/null 2>&1 || true
+}
+
+wait_for_termux_status() {
+  wait_limit=$1
+  poll_count=0
+  while [ "$poll_count" -lt "$wait_limit" ]; do
+    if run_firewalled_adb shell test -f "$remote_status"; then
+      return 0
+    fi
+    poll_count=$((poll_count + 1))
+    sleep 1
+  done
+  return 1
+}
+
 run_firewalled_adb push "$runner_copy" "$remote_runner"
 run_firewalled_adb push "$payload_copy" "$remote_payload"
 run_firewalled_adb push "$args_copy" "$remote_args"
 run_firewalled_adb push "$launch_copy" "$remote_launch"
 
+intent_started=yes
 intent_output=$(
   run_firewalled_adb shell am startservice --user 0 \
     -n com.termux/com.termux.app.RunCommandService \
@@ -183,24 +209,30 @@ intent_output=$(
     --esa com.termux.RUN_COMMAND_ARGUMENTS "$remote_launch" \
     --es com.termux.RUN_COMMAND_WORKDIR "$device_workdir" \
     --ez com.termux.RUN_COMMAND_BACKGROUND true
-)
+  2>&1
+) || intent_started=no
 
 case $intent_output in
   *"Error:"*|*"Exception"*|*"Permission Denial"*)
-    die "firewalled-termux: Termux refused RUN_COMMAND intent: $intent_output"
+    intent_started=no
     ;;
 esac
 
-poll_count=0
+if [ "$intent_started" = no ]; then
+  warn "firewalled-termux: Termux RUN_COMMAND did not start cleanly; falling back to UI typing"
+  type_termux_command "$remote_launch"
+fi
+
 status_ready=0
-while [ "$poll_count" -lt "$timeout_seconds" ]; do
-  if run_firewalled_adb shell test -f "$remote_status"; then
+if wait_for_termux_status "$timeout_seconds"; then
+  status_ready=1
+elif [ "$intent_started" = yes ]; then
+  warn "firewalled-termux: Termux RUN_COMMAND produced no results; retrying through UI typing"
+  type_termux_command "$remote_launch"
+  if wait_for_termux_status "$timeout_seconds"; then
     status_ready=1
-    break
   fi
-  poll_count=$((poll_count + 1))
-  sleep 1
-done
+fi
 
 if [ "$status_ready" -ne 1 ]; then
   if [ "$keep_remote" -ne 1 ]; then
