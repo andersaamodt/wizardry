@@ -20,7 +20,7 @@ The language of magic—a human heirloom—is rich in evocative words for hidden
 - ✅ Arcana installer menus for the free software suite
 - ✅ MUD-style command parsing and magical vocabulary
 - ☐ Terminal theming and MUD game: Patchy
-- ☐ Cross-platform testing: macOS is primary; Termux path is under active validation
+- ☐ Cross-platform testing: macOS is primary; Android via Termux is under active validation
 
 | OS                        | Shortname | Status                              |
 | ------------------------- | --------- | ----------------------------------- |
@@ -28,8 +28,10 @@ The language of magic—a human heirloom—is rich in evocative words for hidden
 | **NixOS**                 | `nixos`   | 🟡 **untested**                     |
 | **MacOS**                 | `macos`   | 🟢 **working**                      |
 | **Arch**                  | `arch`    | 🟠 **untested**                     |
-| **Android (Termux)**      | `termux`  | 🟡 **supported path under active validation** |
+| **Android (via Termux)**  | `termux`  | 🟡 **supported path under active validation** |
 | **Windows**               | —         | ✘ **no support planned (except WSL)** |
+
+Current Android boundary: Wizardry's Android story is the Termux userland path, with Android-facing mobile-debugging tooling quarantined under Theurgy-flavored storage roots. As of June 15, 2026, host-side Termux detection, rc-file selection, install-path handling, `banish`, `test-magic` sandbox fallback, and `demo-magic` Termux detection are covered by focused tests and host-side smoke runs, while full on-device Termux walkthroughs remain in progress.
 
 ## Installation
 
