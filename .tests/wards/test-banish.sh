@@ -652,6 +652,58 @@ SH
   esac
 }
 
+test_termux_testing_level_tolerates_missing_xattr_filesystem_support() {
+  tmpdir=$(make_tempdir)
+  install_dir="$tmpdir/wizardry"
+  stub_dir="$tmpdir/stubs"
+
+  copy_wizardry "$install_dir" || return 1
+  mkdir -p "$install_dir/.tests" "$stub_dir"
+
+  cat >"$stub_dir/uname" <<'SH'
+#!/bin/sh
+case "${1-}" in
+  -s|'')
+    printf '%s\n' "Linux"
+    ;;
+  -m)
+    printf '%s\n' "aarch64"
+    ;;
+  *)
+    printf '%s\n' "Linux"
+    ;;
+esac
+SH
+  chmod +x "$stub_dir/uname"
+
+  cat >"$stub_dir/detect-distro" <<'SH'
+#!/bin/sh
+printf '%s\n' "termux"
+SH
+  chmod +x "$stub_dir/detect-distro"
+
+  cat >"$stub_dir/getfattr" <<'SH'
+#!/bin/sh
+exit 1
+SH
+  cat >"$stub_dir/setfattr" <<'SH'
+#!/bin/sh
+exit 1
+SH
+  cat >"$stub_dir/xattr" <<'SH'
+#!/bin/sh
+exit 1
+SH
+  chmod +x "$stub_dir/getfattr" "$stub_dir/setfattr" "$stub_dir/xattr"
+
+  run_cmd env PATH="$stub_dir:/data/data/com.termux/files/usr/bin:$PATH" HOME="$tmpdir" SPELLBOOK_DIR="$tmpdir/.spellbook" \
+    AWAIT_KEYPRESS_DEVICE=/dev/null WIZARDRY_DIR="$install_dir" \
+    "$ROOT_DIR/spells/wards/banish" 8 --no-tests
+
+  assert_success || return 1
+  assert_output_contains "Filesystem lacks xattrs on Termux (reduced feature set)" || return 1
+}
+
 run_test_case "banish checks shell type" test_shell_type_check
 run_test_case "banish checks IFS" test_ifs_check
 run_test_case "banish checks environment variables" test_environment_vars_check
@@ -669,6 +721,8 @@ run_test_case "banish environment facts report Termux on Android-style hosts" \
   test_environment_facts_report_termux
 run_test_case "banish testing level skips bwrap heal on Termux" \
   test_termux_testing_level_skips_bwrap_heal
+run_test_case "banish testing level tolerates missing xattrs on Termux" \
+  test_termux_testing_level_tolerates_missing_xattr_filesystem_support
 run_test_case "banish repairs minimal terminal types without a failure banner" \
   test_terminal_type_self_heals_cleanly
 
