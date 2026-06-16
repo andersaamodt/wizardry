@@ -31,7 +31,7 @@ The language of magic—a human heirloom—is rich in evocative words for hidden
 | **Android (via Termux)**  | `termux`  | 🟡 **supported path under active validation** |
 | **Windows**               | —         | ✘ **no support planned (except WSL)** |
 
-Current Android boundary: Wizardry's Android story is the Termux userland path, with Android-facing mobile-debugging tooling quarantined under Theurgy-flavored storage roots. As of June 15, 2026, host-side Termux detection, rc-file selection, install-path handling, `banish`, `test-magic` sandbox fallback, and `demo-magic` Termux detection are covered by focused tests and host-side smoke runs, while full on-device Termux walkthroughs remain in progress.
+Current Android boundary: Wizardry's Android story is the Termux userland path, with Android-facing mobile-debugging tooling quarantined under Theurgy-flavored storage roots. As of June 16, 2026, host-side Termux detection, rc-file selection, install-path handling, reduced-xattr `banish`/`test-magic`/`demo-magic` behavior, and the private adb / Termux wrapper lanes are covered by focused tests and host-side smoke runs, while the final fully repeatable on-device Termux walkthrough is still being completed.
 
 ## Installation
 
