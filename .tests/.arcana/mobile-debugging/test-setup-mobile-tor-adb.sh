@@ -20,16 +20,32 @@ stages_script_through_firewalled_adb() {
   cat >"$tmpdir/firewalled-adb" <<'SH'
 #!/bin/sh
 printf '%s\n' "$@" >>"${ADB_LOG:?}"
-case " $* " in
-  *"wizardry-tor-adb-hostname.txt"*)
-    printf '%s\n' abcdefghijklmnop.onion
-    ;;
-esac
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    push)
+      shift
+      cp "$1" "${PUSHED_SCRIPT_COPY:?}"
+      exit 0
+      ;;
+    shell)
+      shift
+      case " $* " in
+        *"wizardry-tor-adb-hostname.txt"*)
+          printf '%s\n' abcdefghijklmnop.onion
+          ;;
+      esac
+      exit 0
+      ;;
+  esac
+  shift
+done
 exit 0
 SH
   chmod +x "$tmpdir/firewalled-adb"
 
-  ADB_LOG="$tmpdir/adb.log" run_cmd env PATH="$tmpdir:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" ADB_LOG="$tmpdir/adb.log" \
+  ADB_LOG="$tmpdir/adb.log" PUSHED_SCRIPT_COPY="$tmpdir/pushed-script.sh" \
+    run_cmd env PATH="$tmpdir:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" \
+    ADB_LOG="$tmpdir/adb.log" PUSHED_SCRIPT_COPY="$tmpdir/pushed-script.sh" \
     "$ROOT_DIR/spells/.arcana/mobile-debugging/setup-mobile-tor-adb" \
     --serial 192.168.1.159:34897 \
     --no-type-command
@@ -38,6 +54,9 @@ SH
   assert_file_contains "$tmpdir/adb.log" "push"
   assert_file_contains "$tmpdir/adb.log" "/sdcard/Download/wizardry-tor-adb-setup.sh"
   assert_file_contains "$tmpdir/adb.log" "RunCommandService"
+  assert_file_contains "$tmpdir/pushed-script.sh" "getprop service.adb.tls.port"
+  assert_file_contains "$tmpdir/pushed-script.sh" 'resolved_adb_target="127.0.0.1:$adb_tls_port"'
+  assert_file_contains "$tmpdir/pushed-script.sh" 'HiddenServicePort 5555 $resolved_adb_target'
   assert_output_contains "firewalled-adb-tor --onion abcdefghijklmnop.onion:5555 -- devices"
 }
 

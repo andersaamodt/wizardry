@@ -132,6 +132,7 @@ fi
 
 - Prefer Termux's official `RUN_COMMAND` intent plus pushed scripts and pulled result artifacts over synthesized terminal keystrokes; use `adb`/Maestro UI input only for wake, unlock, app recovery, or other device-state normalization.
 - For host-driven Termux runs, push a stable runner script and a generated payload script to shared storage, execute them in background Termux context, and wait on explicit `stdout.txt`, `stderr.txt`, and `exit-code.txt` artifacts instead of scraping screenshots or terminal transcripts.
+- When a Termux-side Tor onion service is publishing Android wireless debugging, resolve the adb TLS port on the phone itself with `getprop service.adb.tls.port` and forward `127.0.0.1:$PORT`; do not freeze a host-discovered Wi-Fi endpoint into the phone's Tor config.
 - Keep Android transport validation (`firewalled-adb`, `firewalled-maestro`, Tor forwarding, private adb server setup) separate from workflow validation so Wizardry behavior tests can assume a working lane once the transport layer has passed.
 - Planned improvement: add a single recovery flow that wakes the phone, unlocks it, dismisses stray UI state, and returns to a known-ready automation state before any higher-level Android smoke run.
 - Planned improvement: standardize a prepared Android fixture with Termux, `allow-external-apps=true`, storage permission, and any recurring helper packages or scripts already installed so repeated validation does not rebuild baseline state.

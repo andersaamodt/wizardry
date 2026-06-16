@@ -5,7 +5,7 @@
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: show-mobile-tor-adb-guide [ADB_HOST:PORT]
+Usage: show-mobile-tor-adb-guide [ADB_TARGET_OVERRIDE]
 
 Prints a Termux-oriented setup guide for publishing a phone wireless-debugging
 adb port as a Tor onion service.
@@ -19,14 +19,20 @@ require-wizardry || exit 1
 set -eu
 . env-clear
 
-adb_target=${1:-PHONE_WIFI_IP:ADB_PORT}
+adb_target_override=${1-}
 
-case "$adb_target" in
+case "$adb_target_override" in
   *'
 '*)
-    die "show-mobile-tor-adb-guide: adb target must not contain line breaks"
+    die "show-mobile-tor-adb-guide: adb target override must not contain line breaks"
     ;;
 esac
+
+if [ -n "$adb_target_override" ]; then
+  target_line="HiddenServicePort 5555 $adb_target_override"
+else
+  target_line='HiddenServicePort 5555 127.0.0.1:$(getprop service.adb.tls.port)'
+fi
 
 cat <<GUIDE
 Phone-side Tor adb setup
@@ -46,7 +52,7 @@ On the phone, Termux can provide the onion service:
 DataDirectory __HOME__/.termux/tor-adb/data
 SocksPort 0
 HiddenServiceDir __HOME__/.termux/tor-adb/hidden-service
-HiddenServicePort 5555 $adb_target
+$target_line
 EOF
   sed -i "s#__HOME__#\$HOME#g" "\$HOME/.termux/tor-adb/torrc"
   tor -f "\$HOME/.termux/tor-adb/torrc"
@@ -56,6 +62,7 @@ Then read this file in Termux for the hostname:
   cat "\$HOME/.termux/tor-adb/hidden-service/hostname"
 
 Keep Android wireless debugging enabled while the onion service is running.
-The target in HiddenServicePort should be the phone's current wireless adb
-endpoint, for example 192.168.1.159:34897.
+Prefer the phone's on-device TLS port property with loopback so the onion
+service survives Wi-Fi address changes and follows adb TLS port rotation
+after wireless-debugging restarts.
 GUIDE

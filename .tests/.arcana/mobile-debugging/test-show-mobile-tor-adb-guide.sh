@@ -15,15 +15,23 @@ shows_help() {
 }
 
 prints_termux_and_host_commands() {
-  run_cmd "$ROOT_DIR/spells/.arcana/mobile-debugging/show-mobile-tor-adb-guide" 192.168.1.159:34897
+  run_cmd "$ROOT_DIR/spells/.arcana/mobile-debugging/show-mobile-tor-adb-guide"
   assert_success || return 1
   assert_output_contains "pkg install tor"
-  assert_output_contains "HiddenServicePort 5555 192.168.1.159:34897"
+  assert_output_contains 'HiddenServicePort 5555 127.0.0.1:$(getprop service.adb.tls.port)'
   assert_output_contains "firewalled-adb-tor --onion"
   assert_output_contains "firewalled-maestro-tor --onion"
+  assert_output_contains "survives Wi-Fi address changes"
+}
+
+prints_explicit_override() {
+  run_cmd "$ROOT_DIR/spells/.arcana/mobile-debugging/show-mobile-tor-adb-guide" 127.0.0.1:47000
+  assert_success || return 1
+  assert_output_contains "HiddenServicePort 5555 127.0.0.1:47000"
 }
 
 run_test_case "show-mobile-tor-adb-guide shows help" shows_help
 run_test_case "show-mobile-tor-adb-guide prints commands" prints_termux_and_host_commands
+run_test_case "show-mobile-tor-adb-guide prints override target" prints_explicit_override
 
 finish_tests
