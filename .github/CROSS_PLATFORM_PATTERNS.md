@@ -128,6 +128,16 @@ fi
 
 - Treat `pocket-dimension` availability as a capability probe, not just a command lookup. On Linux-class hosts such as Android/Termux, `test-magic` should run `pocket-dimension --strict --check` and fall back with a warning when `bwrap` is missing or unusable.
 
+## Android Automation
+
+- Prefer Termux's official `RUN_COMMAND` intent plus pushed scripts and pulled result artifacts over synthesized terminal keystrokes; use `adb`/Maestro UI input only for wake, unlock, app recovery, or other device-state normalization.
+- For host-driven Termux runs, push a stable runner script and a generated payload script to shared storage, execute them in background Termux context, and wait on explicit `stdout.txt`, `stderr.txt`, and `exit-code.txt` artifacts instead of scraping screenshots or terminal transcripts.
+- Keep Android transport validation (`firewalled-adb`, `firewalled-maestro`, Tor forwarding, private adb server setup) separate from workflow validation so Wizardry behavior tests can assume a working lane once the transport layer has passed.
+- Planned improvement: add a single recovery flow that wakes the phone, unlocks it, dismisses stray UI state, and returns to a known-ready automation state before any higher-level Android smoke run.
+- Planned improvement: standardize a prepared Android fixture with Termux, `allow-external-apps=true`, storage permission, and any recurring helper packages or scripts already installed so repeated validation does not rebuild baseline state.
+- Planned improvement: add a first-class on-device smoke spell that composes transport checks, Termux script push/run/pull, and cleanup into one repeatable Android support gate.
+- Planned improvement: prefer a Termux companion API or other explicit bridge only when the official `RUN_COMMAND` path cannot cover the needed workflow without UI typing.
+
 ## Package Management
 
 ```sh

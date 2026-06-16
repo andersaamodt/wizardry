@@ -24,11 +24,11 @@ printf 'termux payload:%s\n' "$1"
 SH
   chmod +x "$payload"
 
-  cat >"$tmpdir/firewalled-adb" <<'SH'
+  cat >"$tmpdir/firewalled-adb.in" <<'SH'
 #!/bin/sh
 set -eu
 
-printf '%s\n' "$@" >>"${ADB_LOG:?}"
+printf '%s\n' "$@" >>"__ADB_LOG__"
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -45,7 +45,7 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
-stub_root=${ADB_STUB_ROOT:?}
+stub_root=__STUB_ROOT__
 mkdir -p "$stub_root"
 
 map_remote_path() {
@@ -122,9 +122,10 @@ case "$1" in
     ;;
 esac
 SH
+  sed "s|__ADB_LOG__|$tmpdir/adb.log|g; s|__STUB_ROOT__|$tmpdir/device|g" "$tmpdir/firewalled-adb.in" >"$tmpdir/firewalled-adb"
   chmod +x "$tmpdir/firewalled-adb"
 
-  ADB_STUB_ROOT="$tmpdir/device" ADB_LOG="$tmpdir/adb.log" run_cmd env PATH="$tmpdir:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" ADB_STUB_ROOT="$tmpdir/device" ADB_LOG="$tmpdir/adb.log" \
+  run_cmd env PATH="$tmpdir:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" \
     "$ROOT_DIR/spells/wards/firewalled-termux" --serial 127.0.0.1:5555 --allow 127.0.0.1:5555 -- "$payload" sample-arg
 
   assert_success || return 1
@@ -148,7 +149,7 @@ exit 7
 SH
   chmod +x "$payload"
 
-  cat >"$tmpdir/firewalled-adb" <<'SH'
+  cat >"$tmpdir/firewalled-adb.in" <<'SH'
 #!/bin/sh
 set -eu
 
@@ -167,7 +168,7 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
-stub_root=${ADB_STUB_ROOT:?}
+stub_root=__STUB_ROOT__
 map_remote_path() {
   printf '%s%s\n' "$stub_root" "$1"
 }
@@ -224,14 +225,15 @@ case "$1" in
     ;;
 esac
 SH
+  sed "s|__STUB_ROOT__|$tmpdir/device|g" "$tmpdir/firewalled-adb.in" >"$tmpdir/firewalled-adb"
   chmod +x "$tmpdir/firewalled-adb"
 
-  ADB_STUB_ROOT="$tmpdir/device" run_cmd env PATH="$tmpdir:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" ADB_STUB_ROOT="$tmpdir/device" \
+  run_cmd env PATH="$tmpdir:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" \
     "$ROOT_DIR/spells/wards/firewalled-termux" -- "$payload"
 
   assert_status 7 || return 1
   assert_output_contains "payload stdout" || return 1
-  assert_output_contains "payload stderr" || return 1
+  assert_error_contains "payload stderr" || return 1
 }
 
 times_out_if_termux_never_writes_status() {
@@ -292,7 +294,7 @@ SH
     "$ROOT_DIR/spells/wards/firewalled-termux" --timeout 1 -- "$payload"
 
   assert_status 1 || return 1
-  assert_output_contains "timed out after 1 seconds" || return 1
+  assert_error_contains "timed out after 1 seconds" || return 1
 }
 
 run_test_case "firewalled-termux shows help" shows_help

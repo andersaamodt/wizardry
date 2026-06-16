@@ -37,6 +37,7 @@ allow_file=$(temp-file)
 local_tmpdir=$(temp-dir)
 on-exit cleanup-file "$allow_file"
 on-exit cleanup-dir "$local_tmpdir"
+mkdir -p "$local_tmpdir"
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -117,6 +118,7 @@ status_copy="$local_tmpdir/exit-code.txt"
 cp "$payload_abs" "$payload_copy"
 cp "$termux_runner" "$runner_copy"
 chmod 700 "$payload_copy" "$runner_copy"
+: >"$args_copy"
 
 for payload_arg in "$@"; do
   case "$payload_arg" in
