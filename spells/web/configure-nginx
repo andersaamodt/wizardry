@@ -268,6 +268,28 @@ fi
 nginx_conf_dir=$("${WIZARDRY_DIR:-$HOME/.wizardry}/spells/.imps/web/site-runtime-dir" "$site_dir" nginx)
 mkdir -p "$nginx_conf_dir"
 
+wizardry_fastcgi_socket_path() {
+  socket_site_dir=$1
+  socket_site_name=$2
+  socket_default="$nginx_conf_dir/fcgiwrap.sock"
+  if [ "${#socket_default}" -le 90 ]; then
+    printf '%s\n' "$socket_default"
+    return 0
+  fi
+  socket_root=${WIZARDRY_FCGI_SOCKET_DIR:-/tmp/wizardry-fcgiwrap}
+  mkdir -p "$socket_root"
+  if command -v shasum >/dev/null 2>&1; then
+    socket_key=$(printf '%s' "$socket_site_dir" | shasum -a 256 | awk '{print $1}')
+  elif command -v sha256sum >/dev/null 2>&1; then
+    socket_key=$(printf '%s' "$socket_site_dir" | sha256sum | awk '{print $1}')
+  else
+    socket_key=$(printf '%s' "$socket_site_dir" | cksum | awk '{print $1}')
+  fi
+  socket_key=$(printf '%s' "$socket_key" | cut -c1-16)
+  [ -n "$socket_key" ] || socket_key=runtime
+  printf '%s/%s-%s.sock\n' "$socket_root" "$socket_site_name" "$socket_key"
+}
+
 # Ensure nginx temp directories exist with proper permissions
 # nginx/ is owned by actual user, but may have stale permissions from old sites
 # Call fix-site-security to fix ownership/permissions before creating
@@ -300,6 +322,10 @@ if ! valid_nginx_quoted_path "$site_cgi_dir"; then
 fi
 if ! valid_nginx_quoted_path "$cgi_dir"; then
   die 2 "configure-nginx: invalid wizardry cgi path"
+fi
+fcgi_sock=$(wizardry_fastcgi_socket_path "$site_dir" "$site_name")
+if ! valid_nginx_quoted_path "$fcgi_sock"; then
+  die 2 "configure-nginx: invalid fcgi socket path"
 fi
 
 site_build_dir() {
@@ -509,7 +535,7 @@ $desk_host_path_rewrite
             fastcgi_send_timeout 300s;
             
             # FastCGI configuration
-            fastcgi_pass unix:$nginx_conf_dir/fcgiwrap.sock;
+            fastcgi_pass unix:$fcgi_sock;
             fastcgi_param SCRIPT_FILENAME \$cgi_path;
             fastcgi_param QUERY_STRING \$query_string;
             fastcgi_param REQUEST_METHOD \$request_method;
@@ -547,7 +573,7 @@ $desk_host_path_rewrite
             fastcgi_read_timeout 900s;
             
             # FastCGI configuration
-            fastcgi_pass unix:$nginx_conf_dir/fcgiwrap.sock;
+            fastcgi_pass unix:$fcgi_sock;
             fastcgi_param SCRIPT_FILENAME \$cgi_path;
             fastcgi_param QUERY_STRING \$query_string;
             fastcgi_param REQUEST_METHOD \$request_method;

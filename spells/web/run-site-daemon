@@ -80,6 +80,30 @@ site_build_dir() {
 build_dir=$(site_build_dir "$site_dir")
 nginx_dir=$("$wizardry_dir/spells/.imps/web/site-runtime-dir" "$site_dir" nginx)
 
+wizardry_fastcgi_socket_path() {
+  socket_site_dir=$1
+  socket_site_name=$2
+  socket_default="$nginx_dir/fcgiwrap.sock"
+  if [ "${#socket_default}" -le 90 ]; then
+    printf '%s\n' "$socket_default"
+    return 0
+  fi
+  socket_root=${WIZARDRY_FCGI_SOCKET_DIR:-/tmp/wizardry-fcgiwrap}
+  mkdir -p "$socket_root"
+  if command -v shasum >/dev/null 2>&1; then
+    socket_key=$(printf '%s' "$socket_site_dir" | shasum -a 256 | awk '{print $1}')
+  elif command -v sha256sum >/dev/null 2>&1; then
+    socket_key=$(printf '%s' "$socket_site_dir" | sha256sum | awk '{print $1}')
+  else
+    socket_key=$(printf '%s' "$socket_site_dir" | cksum | awk '{print $1}')
+  fi
+  socket_key=$(printf '%s' "$socket_key" | cut -c1-16)
+  [ -n "$socket_key" ] || socket_key=runtime
+  printf '%s/%s-%s.sock\n' "$socket_root" "$socket_site_name" "$socket_key"
+}
+
+fcgi_sock=$(wizardry_fastcgi_socket_path "$site_dir" "$site_name")
+
 find_nginx_bin() {
   if command -v nginx >/dev/null 2>&1; then
     command -v nginx
@@ -129,8 +153,8 @@ cleanup_fcgiwrap() {
   if [ -n "${fcgi_pid-}" ] && kill -0 "$fcgi_pid" 2>/dev/null; then
     kill "$fcgi_pid" 2>/dev/null || true
   fi
-  if [ -f "$nginx_dir/fcgiwrap.sock" ]; then
-    rm -f "$nginx_dir/fcgiwrap.sock"
+  if [ -f "$fcgi_sock" ]; then
+    rm -f "$fcgi_sock"
   fi
 }
 
@@ -138,7 +162,6 @@ trap 'cleanup_fcgiwrap' INT TERM EXIT
 
 # Start fcgiwrap if available (for CGI support)
 if command -v fcgiwrap >/dev/null 2>&1; then
-  fcgi_sock="$nginx_dir/fcgiwrap.sock"
   if [ -S "$fcgi_sock" ] && [ -f "$nginx_dir/fcgiwrap.pid" ]; then
     stale_pid=$(cat "$nginx_dir/fcgiwrap.pid" 2>/dev/null || echo "")
     if [ -n "$stale_pid" ] && kill -0 "$stale_pid" 2>/dev/null; then

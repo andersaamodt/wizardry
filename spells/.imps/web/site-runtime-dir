@@ -10,6 +10,10 @@ if [ -z "$site_dir" ]; then
   exit 2
 fi
 
+while [ "${site_dir%/}" != "$site_dir" ] && [ "$site_dir" != "/" ]; do
+  site_dir=${site_dir%/}
+done
+
 case "$site_dir" in
   /*) ;;
   *)
