@@ -32,6 +32,7 @@ SH
   assert_file_contains "$tmpdir/menu.log" "Android platform tools (adb)"
   assert_file_contains "$tmpdir/menu.log" "Maestro CLI"
   assert_file_contains "$tmpdir/menu.log" "firewalled-adb help"
+  assert_file_contains "$tmpdir/menu.log" "Reconnect wireless adb from mDNS"
   assert_file_contains "$tmpdir/menu.log" "Enable classic adb tcpip on phone"
   assert_file_contains "$tmpdir/menu.log" "firewalled-adb-tor help"
   assert_file_contains "$tmpdir/menu.log" "firewalled-maestro help"
