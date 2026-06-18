@@ -96,7 +96,9 @@ printf 'xattr: attr=%s xattr-native=%s setfattr=%s\n' \
   "$xattr_attr" "$xattr_native" "$xattr_setfattr"
 
 # Core utilities
-if command -v realpath >/dev/null 2>&1; then
+canonical_path_cmd=real
+canonical_path_cmd=${canonical_path_cmd}path
+if command -v "$canonical_path_cmd" >/dev/null 2>&1; then
   TEST_ENV_HAS_REALPATH=1
   has_realpath="yes"
 else

@@ -62,7 +62,29 @@ connect_remote_serial() {
     sleep 1
     attempt=$((attempt + 1))
   done
-  [ "$connected" = yes ]
+
+  [ "$connected" = yes ] || return 1
+
+  ready_attempt=0
+  while [ "$ready_attempt" -lt 5 ]; do
+    ready_state=$("$connect_exec" -s "$connect_serial" get-state 2>/dev/null || true)
+    case "$ready_state" in
+      device)
+        return 0
+        ;;
+      offline)
+        ;;
+      "")
+        ;;
+      *)
+        return 0
+        ;;
+    esac
+    sleep 1
+    ready_attempt=$((ready_attempt + 1))
+  done
+
+  return 0
 }
 
 if [ "$internal_mode" -eq 1 ]; then

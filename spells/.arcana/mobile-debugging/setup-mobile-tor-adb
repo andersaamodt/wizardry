@@ -110,10 +110,15 @@ torrc="\$state_dir/torrc"
 log_file="\$state_dir/tor.log"
 hostname_file='$hostname_file'
 launcher_script="\$HOME/.termux/wizardry-tor-adb-start.sh"
+developer_options_script="\$HOME/.termux/wizardry-open-developer-options.sh"
+wireless_settings_script="\$HOME/.termux/wizardry-open-wireless-settings.sh"
+shortcuts_dir="\$HOME/.shortcuts"
+shortcut_developer_options="\$shortcuts_dir/wizardry-open-developer-options"
+shortcut_wireless_settings="\$shortcuts_dir/wizardry-open-wireless-settings"
 boot_dir="\$HOME/.termux/boot"
 boot_script="\$boot_dir/99-wizardry-tor-adb"
 
-mkdir -p "\$hidden_dir" "\$data_dir" "\$boot_dir" "\$(dirname "\$hostname_file")"
+mkdir -p "\$hidden_dir" "\$data_dir" "\$boot_dir" "\$shortcuts_dir" "\$(dirname "\$hostname_file")"
 rm -f "\$hostname_file"
 
 cat >"\$launcher_script" <<'EOF'
@@ -282,6 +287,25 @@ sed \
   "\$launcher_script" >"\$launcher_script.tmp"
 mv "\$launcher_script.tmp" "\$launcher_script"
 chmod 700 "\$launcher_script"
+
+cat >"\$developer_options_script" <<'EOF'
+#!/data/data/com.termux/files/usr/bin/sh
+set -eu
+am start -a android.settings.APPLICATION_DEVELOPMENT_SETTINGS >/dev/null 2>&1 || \
+  am start -n com.android.settings/.Settings\$DevelopmentSettingsActivity >/dev/null 2>&1
+EOF
+chmod 700 "\$developer_options_script"
+
+cat >"\$wireless_settings_script" <<'EOF'
+#!/data/data/com.termux/files/usr/bin/sh
+set -eu
+am start -a android.settings.WIRELESS_SETTINGS >/dev/null 2>&1
+EOF
+chmod 700 "\$wireless_settings_script"
+
+cp "\$developer_options_script" "\$shortcut_developer_options"
+cp "\$wireless_settings_script" "\$shortcut_wireless_settings"
+chmod 700 "\$shortcut_developer_options" "\$shortcut_wireless_settings"
 
 cat >"\$boot_script" <<'EOF'
 #!/data/data/com.termux/files/usr/bin/sh

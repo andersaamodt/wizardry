@@ -198,6 +198,7 @@ Before considering a feature or fix complete, scan this checklist and test every
 - Remote API response fields should be revalidated after structured parsing before they are reused in URLs or status rows.
 - Remote API tokens should be revalidated after structured parsing before they are used in HTTP headers.
 - Remote API download URLs should be revalidated for scheme/source before any downloader receives them.
+- Remote transport wrappers should test endpoints that accept a connection before they are ready for the first command; a successful `connect` can still yield a transient `offline` state on the next probe.
 - Installer tests that harden `PATH` should inject the downloader explicitly so fake-network regressions cannot silently hit the host `curl`.
 - Installer scripts that add default system paths should append them after the caller `PATH`, preserving fake tools and user overrides.
 - Installer tests for hostile remote metadata should pass downloader and install-target overrides through the sandbox so the test cannot fall back to host tools.

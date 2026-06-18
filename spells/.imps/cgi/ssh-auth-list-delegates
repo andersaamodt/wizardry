@@ -53,8 +53,8 @@ if [ -d "$delegates_dir" ]; then
     first=0
     
     delegate_id=$(basename "$delegate_file")
-    credential_id=$(grep -o '"credential_id":"[^"]*"' "$delegate_file" | cut -d'"' -f4)
-    created_at=$(grep -o '"created_at":"[^"]*"' "$delegate_file" | cut -d'"' -f4)
+    credential_id=$(json-extract-string credential_id "$delegate_file")
+    created_at=$(json-extract-string created_at "$delegate_file")
     
     printf '{"delegate_id":"%s","credential_id":"%s","created_at":"%s"}' \
       "$delegate_id" "$credential_id" "$created_at"

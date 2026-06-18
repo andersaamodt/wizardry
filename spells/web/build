@@ -219,9 +219,9 @@ append_local_static_cache_bust() {
   [ -n "$cache_token" ] || return 0
 
   tmp_html=$(temp-file html-cache-busted)
-  sed -E \
-    -e "s#(href|src)=\"(/static/[^\"]+\\.(css|js))(\\?v=[^\"]*)?\"#\1=\"\2?v=$cache_token\"#g" \
-    -e "s#(href|src)='(/static/[^']+\\.(css|js))(\\?v=[^']*)?'#\1='\2?v=$cache_token'#g" \
+  sed \
+    -e "s#\\(href\\|src\\)=\"\\(/static/[^\"]*\\.\\(css\\|js\\)\\)\\(\\?v=[^\"]*\\)\\{0,1\\}\"#\\1=\"\\2?v=$cache_token\"#g" \
+    -e "s#\\(href\\|src\\)='\\(/static/[^']*\\.\\(css\\|js\\)\\)\\(\\?v=[^']*\\)\\{0,1\\}'#\\1='\\2?v=$cache_token'#g" \
     "$html_file" > "$tmp_html"
   if files_equal "$html_file" "$tmp_html"; then
     rm -f "$tmp_html"
@@ -367,9 +367,48 @@ iso_to_rfc822() {
     return 0
   fi
 
-  if date -u -d "$iso" '+%a, %d %b %Y %H:%M:%S +0000' >/dev/null 2>&1; then
-    date -u -d "$iso" '+%a, %d %b %Y %H:%M:%S +0000'
-    return 0
+  if command -v python3 >/dev/null 2>&1; then
+    rfc822=$(python3 - "$iso" 2>/dev/null <<'PY'
+from datetime import datetime, timezone
+import sys
+
+iso = sys.argv[1]
+for fmt in ("%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%d %H:%M:%S"):
+    try:
+        dt = datetime.strptime(iso, fmt).replace(tzinfo=timezone.utc)
+        print(dt.strftime("%a, %d %b %Y %H:%M:%S +0000"))
+        sys.exit(0)
+    except ValueError:
+        pass
+sys.exit(1)
+PY
+ || printf '')
+    if [ -n "$rfc822" ]; then
+      printf '%s\n' "$rfc822"
+      return 0
+    fi
+  fi
+
+  if command -v python >/dev/null 2>&1; then
+    rfc822=$(python - "$iso" 2>/dev/null <<'PY'
+from datetime import datetime, timezone
+import sys
+
+iso = sys.argv[1]
+for fmt in ("%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%d %H:%M:%S"):
+    try:
+        dt = datetime.strptime(iso, fmt).replace(tzinfo=timezone.utc)
+        print(dt.strftime("%a, %d %b %Y %H:%M:%S +0000"))
+        sys.exit(0)
+    except ValueError:
+        pass
+sys.exit(1)
+PY
+ || printf '')
+    if [ -n "$rfc822" ]; then
+      printf '%s\n' "$rfc822"
+      return 0
+    fi
   fi
 
   if date -j -u -f "%Y-%m-%dT%H:%M:%SZ" "$iso" '+%a, %d %b %Y %H:%M:%S +0000' >/dev/null 2>&1; then

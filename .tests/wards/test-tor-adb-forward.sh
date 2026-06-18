@@ -52,8 +52,47 @@ SH
   assert_file_contains "$tmpdir/socat.log" "SOCKS4A:127.0.0.1:abcdefghijklmnop.onion:5555,socksport=19050"
 }
 
+adds_pkgin_paths_before_requiring_socat() {
+  tmpdir=$(make_tempdir)
+  pkg_root="$tmpdir/pkg"
+  mkdir -p "$pkg_root/bin"
+
+  cat >"$tmpdir/firewall" <<'SH'
+#!/bin/sh
+while [ "$#" -gt 0 ]; do
+  [ "$1" = "--" ] && break
+  shift
+done
+shift
+exec "$@"
+SH
+  chmod +x "$tmpdir/firewall"
+
+  cat >"$pkg_root/bin/socat" <<'SH'
+#!/bin/sh
+printf '%s\n' "$@" >"${SOCAT_LOG:?}"
+exit 0
+SH
+  chmod +x "$pkg_root/bin/socat"
+
+  cat >"$tmpdir/add-pkgin-to-path" <<SH
+#!/bin/sh
+set -eu
+PATH="$pkg_root/bin:\$PATH"
+export PATH
+SH
+  chmod +x "$tmpdir/add-pkgin-to-path"
+
+  SOCAT_LOG="$tmpdir/socat.log" run_cmd env PATH="$tmpdir:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" SOCAT_LOG="$tmpdir/socat.log" \
+    "$ROOT_DIR/spells/wards/tor-adb-forward" --onion abcdefghijklmnop.onion:5555 --local-port 17778
+
+  assert_success || return 1
+  assert_file_contains "$tmpdir/socat.log" "TCP-LISTEN:17778,bind=127.0.0.1,reuseaddr,fork"
+}
+
 run_test_case "tor-adb-forward shows help" shows_help
 run_test_case "tor-adb-forward rejects non-onion endpoint" rejects_non_onion_endpoint
 run_test_case "tor-adb-forward uses firewall and socat" uses_firewall_and_socat_socks_forward
+run_test_case "tor-adb-forward adds pkgin paths before requiring socat" adds_pkgin_paths_before_requiring_socat
 
 finish_tests

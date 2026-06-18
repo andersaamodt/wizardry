@@ -18,6 +18,19 @@ inactive_threshold=300
 
 LOG_FILE="$room_dir/.log"
 
+dir_mtime() {
+  target_dir=$1
+  if command -v python3 >/dev/null 2>&1; then
+    python3 -c 'import os, sys; print(int(os.stat(sys.argv[1]).st_mtime))' "$target_dir" 2>/dev/null
+    return $?
+  fi
+  if command -v python >/dev/null 2>&1; then
+    python -c 'import os, sys; print(int(os.stat(sys.argv[1]).st_mtime))' "$target_dir" 2>/dev/null
+    return $?
+  fi
+  stat -f %m "$target_dir" 2>/dev/null
+}
+
 for avatar_dir in "$room_dir"/.*; do
   [ -d "$avatar_dir" ] || continue
   avatar_name=$(basename "$avatar_dir")
@@ -51,10 +64,7 @@ for avatar_dir in "$room_dir"/.*; do
     
     # If no timestamp, use directory mtime as fallback
     if [ "$last_activity" = "0" ] || [ -z "$last_activity" ]; then
-      last_activity=$(stat -c %Y "$avatar_dir" 2>/dev/null || echo "")
-      if [ -z "$last_activity" ]; then
-        last_activity=$(stat -f %m "$avatar_dir" 2>/dev/null || echo "0")
-      fi
+      last_activity=$(dir_mtime "$avatar_dir" 2>/dev/null || echo "0")
       last_activity=${last_activity:-0}
     fi
     

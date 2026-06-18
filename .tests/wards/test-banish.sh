@@ -400,6 +400,35 @@ test_environment_vars_check() {
   fi
 }
 
+test_environment_vars_derive_user_from_id() {
+  tmpdir=$(make_tempdir)
+  install_dir="$tmpdir/wizardry"
+  stub_dir="$tmpdir/stubs"
+
+  copy_wizardry "$install_dir" || return 1
+  mkdir -p "$stub_dir"
+
+  cat >"$stub_dir/id" <<'SH'
+#!/bin/sh
+case "${1-}" in
+  -un)
+    printf '%s\n' "termux-user"
+    ;;
+  *)
+    command id "$@"
+    ;;
+esac
+SH
+  chmod +x "$stub_dir/id"
+
+  run_cmd env PATH="$stub_dir:$PATH" USER= LOGNAME= WIZARDRY_DIR="$install_dir" \
+    "$ROOT_DIR/spells/wards/banish" 0
+
+  assert_success || return 1
+  assert_output_contains "Environment: HOME set; USER derived from id" || return 1
+  assert_output_contains "USER set to termux-user" || return 1
+}
+
 test_umask_check() {
   tmpdir=$(make_tempdir)
   install_dir="$tmpdir/wizardry"
@@ -707,6 +736,7 @@ SH
 run_test_case "banish checks shell type" test_shell_type_check
 run_test_case "banish checks IFS" test_ifs_check
 run_test_case "banish checks environment variables" test_environment_vars_check
+run_test_case "banish derives USER from id when login vars are absent" test_environment_vars_derive_user_from_id
 run_test_case "banish checks umask" test_umask_check
 run_test_case "banish checks filesystem write" test_filesystem_write_check
 run_test_case "banish checks symbolic links" test_symbolic_links_check

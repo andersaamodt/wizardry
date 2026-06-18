@@ -18,6 +18,15 @@ esac
 set -eu
 . env-clear
 
+if ! command -v socat >/dev/null 2>&1; then
+  add_pkgin_to_path_script=$(command -v add-pkgin-to-path 2>/dev/null || printf '')
+  if [ -n "$add_pkgin_to_path_script" ] && [ -f "$add_pkgin_to_path_script" ]; then
+    # Source the helper so pkgin-managed bin/sbin paths persist in this shell.
+    # shellcheck source=/dev/null
+    . "$add_pkgin_to_path_script"
+  fi
+fi
+
 onion_endpoint=
 local_port=15555
 socks_endpoint=127.0.0.1:9050

@@ -22,6 +22,7 @@ write_fake_adb() {
 log_file=__ADB_LOG__
 connect_count_file=${ADB_CONNECT_COUNT:-}
 command_count_file=${ADB_COMMAND_COUNT:-}
+state_count_file=${ADB_STATE_COUNT:-}
 
 printf '%s\n' "$*" >>"$log_file"
 
@@ -55,6 +56,15 @@ case "${1-}" in
     shift
     case "${1-}" in
       get-state)
+        if [ -n "$state_count_file" ]; then
+          state_count=$(cat "$state_count_file" 2>/dev/null || printf '0')
+          state_count=$((state_count + 1))
+          printf '%s' "$state_count" >"$state_count_file"
+          if [ -n "${ADB_OFFLINE_STATE_UNTIL:-}" ] && [ "$state_count" -lt "$ADB_OFFLINE_STATE_UNTIL" ]; then
+            printf '%s\n' offline
+            exit 1
+          fi
+        fi
         if [ -n "$connect_count_file" ] && [ -n "${ADB_FAIL_CONNECT_UNTIL:-}" ]; then
           count=$(cat "$connect_count_file" 2>/dev/null || printf '0')
           [ "$count" -ge "$ADB_FAIL_CONNECT_UNTIL" ] || exit 1
@@ -193,6 +203,41 @@ SH
   }
 }
 
+waits_for_remote_transport_to_leave_offline_state() {
+  tmpdir=$(make_tempdir)
+  sdk_root="$tmpdir/data"
+  mkdir -p "$sdk_root/theurgy/mobile-debugging/android-sdk/platform-tools"
+
+  write_fake_adb "$sdk_root/theurgy/mobile-debugging/android-sdk/platform-tools/adb" "$tmpdir/adb.log"
+
+  cat >"$tmpdir/firewall" <<'SH'
+#!/bin/sh
+while [ "$#" -gt 0 ]; do
+  [ "$1" = "--" ] && break
+  shift
+done
+shift
+exec "$@"
+SH
+  chmod +x "$tmpdir/firewall"
+
+  ADB_CONNECT_COUNT="$tmpdir/connect.count" ADB_STATE_COUNT="$tmpdir/state.count" run_cmd env \
+    XDG_DATA_HOME="$sdk_root" PATH="$tmpdir:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" \
+    ADB_CONNECT_COUNT="$tmpdir/connect.count" \
+    ADB_STATE_COUNT="$tmpdir/state.count" \
+    ADB_OFFLINE_STATE_UNTIL=3 \
+    ADB_SHELL_STDOUT="Pixel 8a" \
+    "$ROOT_DIR/spells/wards/firewalled-adb" --serial 127.0.0.1:5555 -- shell getprop ro.product.model
+
+  assert_success || return 1
+  assert_output_contains "Pixel 8a" || return 1
+  state_attempts=$(cat "$tmpdir/state.count" 2>/dev/null || printf '0')
+  [ "$state_attempts" = "3" ] || {
+    TEST_FAILURE_REASON="expected 3 state checks before ready, got $state_attempts"
+    return 1
+  }
+}
+
 retries_remote_command_after_offline_error() {
   tmpdir=$(make_tempdir)
   sdk_root="$tmpdir/data"
@@ -276,6 +321,7 @@ run_test_case "firewalled-adb shows help" shows_help
 run_test_case "firewalled-adb uses firewall and serial allowlist" outer_wrapper_uses_firewall_and_serial_allowlist
 run_test_case "firewalled-adb version works without serial" version_without_serial_does_not_trip_linebreak_guard
 run_test_case "firewalled-adb retries transient remote connect failures" retries_remote_connect_before_running_command
+run_test_case "firewalled-adb waits for remote transports to leave offline state" waits_for_remote_transport_to_leave_offline_state
 run_test_case "firewalled-adb reconnects after remote offline errors" retries_remote_command_after_offline_error
 run_test_case "firewalled-adb reconnects after copy EOF errors" retries_remote_command_after_copy_eof_error
 

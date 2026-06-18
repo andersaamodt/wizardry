@@ -55,6 +55,10 @@ SH
   assert_file_contains "$tmpdir/adb.log" "/sdcard/Download/wizardry-tor-adb-setup.sh"
   assert_file_contains "$tmpdir/adb.log" "RunCommandService"
   assert_file_contains "$tmpdir/pushed-script.sh" 'launcher_script="$HOME/.termux/wizardry-tor-adb-start.sh"'
+  assert_file_contains "$tmpdir/pushed-script.sh" 'developer_options_script="$HOME/.termux/wizardry-open-developer-options.sh"'
+  assert_file_contains "$tmpdir/pushed-script.sh" 'wireless_settings_script="$HOME/.termux/wizardry-open-wireless-settings.sh"'
+  assert_file_contains "$tmpdir/pushed-script.sh" 'shortcut_developer_options="$shortcuts_dir/wizardry-open-developer-options"'
+  assert_file_contains "$tmpdir/pushed-script.sh" 'shortcut_wireless_settings="$shortcuts_dir/wizardry-open-wireless-settings"'
   assert_file_contains "$tmpdir/pushed-script.sh" 'rm -f "$hostname_file"'
   assert_file_contains "$tmpdir/pushed-script.sh" 'PATH=/data/data/com.termux/files/usr/bin:/system/bin:/system/xbin:\$PATH'
   assert_file_contains "$tmpdir/pushed-script.sh" "wireless_host='192.168.1.159'"
@@ -71,6 +75,10 @@ SH
   assert_file_contains "$tmpdir/pushed-script.sh" 's|__WIRELESS_PORT__|$wireless_port|g'
   assert_file_contains "$tmpdir/pushed-script.sh" 'termux-wake-lock >/dev/null 2>&1 || true'
   assert_file_contains "$tmpdir/pushed-script.sh" 'tor --RunAsDaemon 1 -f "$torrc" >"$log_file" 2>&1'
+  assert_file_contains "$tmpdir/pushed-script.sh" 'am start -a android.settings.APPLICATION_DEVELOPMENT_SETTINGS'
+  assert_file_contains "$tmpdir/pushed-script.sh" 'am start -a android.settings.WIRELESS_SETTINGS'
+  assert_file_contains "$tmpdir/pushed-script.sh" 'cp "$developer_options_script" "$shortcut_developer_options"'
+  assert_file_contains "$tmpdir/pushed-script.sh" 'cp "$wireless_settings_script" "$shortcut_wireless_settings"'
   assert_file_contains "$tmpdir/pushed-script.sh" 'HiddenServicePort 5555 $resolved_adb_target'
   assert_file_contains "$tmpdir/pushed-script.sh" '/data/data/com.termux/files/home/.termux/wizardry-tor-adb-start.sh'
   assert_output_contains "firewalled-adb-tor --onion abcdefghijklmnop.onion:5555 -- devices"

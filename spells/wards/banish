@@ -298,7 +298,8 @@ banish_process_level() {
       elif [ -n "${LOGNAME-}" ]; then
         env_user="$LOGNAME"
       else
-        env_user="none"
+        env_user=$(id -un 2>/dev/null || printf '')
+        [ -n "$env_user" ] || env_user="none"
       fi
       printf 'environment: user=%s\n' "$env_user"
       
@@ -515,17 +516,33 @@ banish_process_level() {
       # HOME and USER are used throughout wizardry for default paths and
       # configuration. Self-heal by querying system or using fallbacks.
       env_vars_ok=1
+      env_user_derived=no
       if [ -z "${HOME-}" ]; then
         printf '  %s✗%s Environment: HOME not set\n' "$red" "$reset"
         env_vars_ok=0
       fi
       if [ -z "${USER-}" ] && [ -z "${LOGNAME-}" ]; then
-        printf '  %s✗%s Environment: USER/LOGNAME not set\n' "$red" "$reset"
-        env_vars_ok=0
+        derived_user=$(id -un 2>/dev/null || printf '')
+        if [ -n "$derived_user" ]; then
+          env_user_derived=yes
+          if [ "$skip_heal" -eq 0 ]; then
+            USER=$derived_user
+            export USER
+            printf '  %s✓%s Environment: HOME set; USER derived from id\n' "$green" "$reset"
+            printf '    %s✓%s USER set to %s\n' "$green" "$reset" "$USER"
+          else
+            printf '  %s✓%s Environment: HOME set; USER derivable from id\n' "$green" "$reset"
+          fi
+        else
+          printf '  %s✗%s Environment: USER/LOGNAME not set\n' "$red" "$reset"
+          env_vars_ok=0
+        fi
       fi
       if [ "$env_vars_ok" -eq 1 ]; then
         # Report which variables are actually set
-        if [ -n "${USER-}" ]; then
+        if [ "$env_user_derived" = yes ]; then
+          :
+        elif [ -n "${USER-}" ] && [ -z "${LOGNAME-}" ]; then
           printf '  %s✓%s Environment: HOME and USER set\n' "$green" "$reset"
         else
           printf '  %s✓%s Environment: HOME and LOGNAME set\n' "$green" "$reset"

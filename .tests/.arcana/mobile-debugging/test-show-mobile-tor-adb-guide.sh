@@ -19,6 +19,9 @@ prints_termux_and_host_commands() {
   assert_success || return 1
   assert_output_contains "pkg install tor"
   assert_output_contains 'wizardry-tor-adb-start.sh'
+  assert_output_contains 'wizardry-open-developer-options.sh'
+  assert_output_contains 'wizardry-open-wireless-settings.sh'
+  assert_output_contains '.shortcuts/wizardry-open-developer-options'
   assert_output_contains 'adb_port=$(getprop service.adb.tcp.port'
   assert_output_contains 'adb_port=$(getprop service.adb.tls.port'
   assert_output_contains "wireless_host='PHONE_WIFI_IP'"
@@ -31,6 +34,8 @@ prints_termux_and_host_commands() {
   assert_output_contains 'HiddenServicePort 5555 __ADB_TARGET__'
   assert_output_contains "firewalled-adb-tor --onion"
   assert_output_contains "firewalled-maestro-tor --onion"
+  assert_output_contains 'am start -a android.settings.APPLICATION_DEVELOPMENT_SETTINGS'
+  assert_output_contains 'am start -a android.settings.WIRELESS_SETTINGS'
   assert_output_contains "boot hook lets Termux re-resolve the"
 }
 

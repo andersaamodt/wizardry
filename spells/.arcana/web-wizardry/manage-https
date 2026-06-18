@@ -102,7 +102,7 @@ while true; do
   remove_option="${remove_option}printf '%s\n' \"\$output\"; "
   remove_option="${remove_option}if printf '%s' \"\$output\" | grep -q 'has been removed'; then "
   remove_option="${remove_option}cert_dir=\$(printf '%s' \"\$output\" | "
-  remove_option="${remove_option}grep -o '/[^ ]*' | head -1); "
+  remove_option="${remove_option}awk '{ for (i = 1; i <= NF; i++) if (\$i ~ /^\\//) { print \$i; exit } }'); "
   remove_option="${remove_option}if [ -n \"\$cert_dir\" ] && [ -d \"\$cert_dir\" ]; then "
   remove_option="${remove_option}answer=\$(read-line "
   remove_option="${remove_option}'Delete certificate files in '\"\$cert_dir\"'? (y/n): '); "

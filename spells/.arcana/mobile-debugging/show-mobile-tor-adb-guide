@@ -159,6 +159,23 @@ done
 exit 1
 EOF
   chmod 700 "\$HOME/.termux/wizardry-tor-adb-start.sh"
+  cat >"\$HOME/.termux/wizardry-open-developer-options.sh" <<'EOF'
+#!/data/data/com.termux/files/usr/bin/sh
+set -eu
+am start -a android.settings.APPLICATION_DEVELOPMENT_SETTINGS >/dev/null 2>&1 || \
+  am start -n com.android.settings/.Settings\$DevelopmentSettingsActivity >/dev/null 2>&1
+EOF
+  chmod 700 "\$HOME/.termux/wizardry-open-developer-options.sh"
+  cat >"\$HOME/.termux/wizardry-open-wireless-settings.sh" <<'EOF'
+#!/data/data/com.termux/files/usr/bin/sh
+set -eu
+am start -a android.settings.WIRELESS_SETTINGS >/dev/null 2>&1
+EOF
+  chmod 700 "\$HOME/.termux/wizardry-open-wireless-settings.sh"
+  mkdir -p "\$HOME/.shortcuts"
+  cp "\$HOME/.termux/wizardry-open-developer-options.sh" "\$HOME/.shortcuts/wizardry-open-developer-options"
+  cp "\$HOME/.termux/wizardry-open-wireless-settings.sh" "\$HOME/.shortcuts/wizardry-open-wireless-settings"
+  chmod 700 "\$HOME/.shortcuts/wizardry-open-developer-options" "\$HOME/.shortcuts/wizardry-open-wireless-settings"
   cat >"\$HOME/.termux/boot/99-wizardry-tor-adb" <<'EOF'
 #!/data/data/com.termux/files/usr/bin/sh
 /data/data/com.termux/files/home/.termux/wizardry-tor-adb-start.sh
@@ -175,5 +192,7 @@ Prefer the phone's on-device TLS port property and probe reachable local/Wi-Fi
 addresses so the onion service follows adb TLS port rotation and still works
 when adbd only listens on the current WLAN address instead of loopback. The
 boot hook lets Termux re-resolve the active adb target each time the publisher
-starts.
+starts. The helper scripts above let Termux jump straight into Developer
+Options or general Wireless Settings, and if Termux:Widget is installed they
+also appear through the .shortcuts launcher surface.
 GUIDE

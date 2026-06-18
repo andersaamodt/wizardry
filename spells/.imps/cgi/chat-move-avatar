@@ -10,19 +10,13 @@ http-ok-json
 read -r input || true
 
 # Extract room name from JSON
-room_pattern='"room":"[^"]*"'
-room_name=$(printf '%s' "$input" | grep -o "$room_pattern" | \
-  sed 's/"room":"//' | sed 's/"$//' || printf '')
+room_name=$(printf '%s\n' "$input" | json-extract-string room || printf '')
 
 # Extract username from JSON
-user_pattern='"username":"[^"]*"'
-user_name=$(printf '%s' "$input" | grep -o "$user_pattern" | \
-  sed 's/"username":"//' | sed 's/"$//' || printf '')
+user_name=$(printf '%s\n' "$input" | json-extract-string username || printf '')
 
 # Extract old room from JSON
-old_pattern='"oldRoom":"[^"]*"'
-old_room=$(printf '%s' "$input" | grep -o "$old_pattern" | \
-  sed 's/"oldRoom":"//' | sed 's/"$//' || printf '')
+old_room=$(printf '%s\n' "$input" | json-extract-string oldRoom || printf '')
 
 # Validate input - return JSON errors instead of HTTP errors
 if [ -z "$room_name" ] || [ -z "$user_name" ] || [ -z "$old_room" ]; then

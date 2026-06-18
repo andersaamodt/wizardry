@@ -42,7 +42,7 @@ if [ -d "$data_dir/users" ]; then
       fi
       
       # Check if this delegate has the matching credential_id
-      stored_credential_id=$(grep -o '"credential_id":"[^"]*"' "$delegate_file" | cut -d'"' -f4)
+      stored_credential_id=$(json-extract-string credential_id "$delegate_file")
       if [ "$stored_credential_id" = "$credential_id" ]; then
         username=$(basename "$user_dir")
         if ! validate-username "$username"; then
