@@ -44,7 +44,7 @@ SH
   assert_file_contains "$tmpdir/adb.log" "tcpip"
   assert_file_contains "$tmpdir/adb.log" "5555"
   assert_output_contains "Android adb TCP/IP is now listening on 192.168.1.164:5555"
-  assert_output_contains "setup-mobile-tor-adb --serial 192.168.1.164:35149 --adb-target 127.0.0.1:5555"
+  assert_output_contains "setup-mobile-tor-adb --serial 192.168.1.164:35149"
 }
 
 rejects_bad_port() {

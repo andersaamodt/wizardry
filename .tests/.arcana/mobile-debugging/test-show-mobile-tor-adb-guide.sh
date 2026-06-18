@@ -21,6 +21,11 @@ prints_termux_and_host_commands() {
   assert_output_contains 'wizardry-tor-adb-start.sh'
   assert_output_contains 'adb_port=$(getprop service.adb.tcp.port'
   assert_output_contains 'adb_port=$(getprop service.adb.tls.port'
+  assert_output_contains "wireless_host='PHONE_WIFI_IP'"
+  assert_output_contains 'candidate_hosts_file="$state_dir/adb-host-candidates.txt"'
+  assert_output_contains 'append_candidate_host "$wireless_host"'
+  assert_output_contains 'ip route get 1.1.1.1'
+  assert_output_contains 'nc -z "$candidate_host" "$adb_port"'
   assert_output_contains 'HiddenServicePort 5555 __ADB_TARGET__'
   assert_output_contains "firewalled-adb-tor --onion"
   assert_output_contains "firewalled-maestro-tor --onion"

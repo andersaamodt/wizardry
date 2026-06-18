@@ -30,8 +30,10 @@ esac
 
 if [ -n "$adb_target_override" ]; then
   target_line="adb_target='$adb_target_override'"
+  wireless_host_line="wireless_host=''"
 else
   target_line="adb_target=''"
+  wireless_host_line="wireless_host='PHONE_WIFI_IP'"
 fi
 
 cat <<GUIDE
@@ -53,6 +55,7 @@ On the phone, Termux can provide the onion service:
 set -eu
 PATH=/data/data/com.termux/files/usr/bin:/system/bin:/system/xbin:\$PATH
 $target_line
+$wireless_host_line
 state_dir="\$HOME/.termux/tor-adb"
 hidden_dir="\$state_dir/hidden-service"
 data_dir="\$state_dir/data"
@@ -60,6 +63,19 @@ torrc="\$state_dir/torrc"
 log_file="\$state_dir/tor.log"
 hostname_file='/sdcard/Download/wizardry-tor-adb-hostname.txt'
 mkdir -p "\$hidden_dir" "\$data_dir" "\$(dirname "\$hostname_file")"
+append_candidate_host() {
+  candidate_host=\$1
+  [ -n "\$candidate_host" ] || return 0
+  if [ ! -f "\$candidate_hosts_file" ]; then
+    : >"\$candidate_hosts_file"
+  fi
+  if grep -Fx "\$candidate_host" "\$candidate_hosts_file" >/dev/null 2>&1; then
+    return 0
+  fi
+  printf '%s\n' "\$candidate_host" >>"\$candidate_hosts_file"
+}
+candidate_hosts_file="\$state_dir/adb-host-candidates.txt"
+rm -f "\$candidate_hosts_file"
 resolved_adb_target=
 waited=0
 while [ "\$waited" -lt 60 ]; do
@@ -78,8 +94,37 @@ while [ "\$waited" -lt 60 ]; do
     esac
   fi
   if [ -n "\$adb_port" ]; then
-    resolved_adb_target="127.0.0.1:\$adb_port"
-    break
+    append_candidate_host "\$wireless_host"
+    route_host=\$(ip route get 1.1.1.1 2>/dev/null | awk '
+      {
+        for (i = 1; i <= NF; i++) {
+          if (\$i == "src" && (i + 1) <= NF) {
+            print \$(i + 1)
+            exit
+          }
+        }
+      }'
+    )
+    append_candidate_host "\$route_host"
+    ip -o -4 addr show up scope global 2>/dev/null | awk '{print \$4}' | while IFS= read -r cidr; do
+      case "\$cidr" in
+        */*) append_candidate_host "\${cidr%%/*}" ;;
+      esac
+    done
+    append_candidate_host 127.0.0.1
+    while IFS= read -r candidate_host || [ -n "\$candidate_host" ]; do
+      [ -n "\$candidate_host" ] || continue
+      if command -v nc >/dev/null 2>&1; then
+        if ! nc -z "\$candidate_host" "\$adb_port" >/dev/null 2>&1; then
+          continue
+        fi
+      fi
+      resolved_adb_target="\$candidate_host:\$adb_port"
+      break
+    done <"\$candidate_hosts_file"
+    if [ -n "\$resolved_adb_target" ]; then
+      break
+    fi
   fi
   sleep 1
   waited=\$((waited + 1))
@@ -123,8 +168,9 @@ Then read this file in Termux for the hostname:
   cat "/sdcard/Download/wizardry-tor-adb-hostname.txt"
 
 Keep Android wireless debugging enabled while the onion service is running.
-Prefer the phone's on-device TLS port property with loopback so the onion
-service survives Wi-Fi address changes and follows adb TLS port rotation
-after wireless-debugging restarts. The boot hook lets Termux re-resolve the
-active adb port each time the phone-side publisher starts.
+Prefer the phone's on-device TLS port property and probe reachable local/Wi-Fi
+addresses so the onion service follows adb TLS port rotation and still works
+when adbd only listens on the current WLAN address instead of loopback. The
+boot hook lets Termux re-resolve the active adb target each time the publisher
+starts.
 GUIDE

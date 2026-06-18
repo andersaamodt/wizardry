@@ -77,6 +77,15 @@ if [ -n "$adb_target" ]; then
   esac
 fi
 
+case "$serial" in
+  [0-9]*.[0-9]*.[0-9]*.[0-9]*:*)
+    serial_host=${serial%:*}
+    ;;
+  *)
+    serial_host=
+    ;;
+esac
+
 firewalled_adb=$(command -v firewalled-adb || true)
 [ -n "$firewalled_adb" ] || firewalled_adb="$script_dir/../../wards/firewalled-adb"
 [ -x "$firewalled_adb" ] || die "setup-mobile-tor-adb: firewalled-adb not found"
@@ -90,6 +99,7 @@ set -eu
 PATH=/data/data/com.termux/files/usr/bin:/system/bin:/system/xbin:\$PATH
 
 adb_target='$adb_target'
+wireless_host='$serial_host'
 state_dir="\$HOME/.termux/tor-adb"
 hidden_dir="\$state_dir/hidden-service"
 data_dir="\$state_dir/data"
@@ -108,6 +118,7 @@ set -eu
 PATH=/data/data/com.termux/files/usr/bin:/system/bin:/system/xbin:$PATH
 
 adb_target='__ADB_TARGET__'
+wireless_host='__WIRELESS_HOST__'
 state_dir="\$HOME/.termux/tor-adb"
 hidden_dir="\$state_dir/hidden-service"
 data_dir="\$state_dir/data"
@@ -121,6 +132,21 @@ if ! command -v tor >/dev/null 2>&1; then
   pkg update -y
   pkg install -y tor
 fi
+
+append_candidate_host() {
+  candidate_host=\$1
+  [ -n "\$candidate_host" ] || return 0
+  if [ ! -f "\$candidate_hosts_file" ]; then
+    : >"\$candidate_hosts_file"
+  fi
+  if grep -Fx "\$candidate_host" "\$candidate_hosts_file" >/dev/null 2>&1; then
+    return 0
+  fi
+  printf '%s\n' "\$candidate_host" >>"\$candidate_hosts_file"
+}
+
+candidate_hosts_file=\$state_dir/adb-host-candidates.txt
+rm -f "\$candidate_hosts_file"
 
 resolved_adb_target=
 waited=0
@@ -147,8 +173,44 @@ while [ "\$waited" -lt 60 ]; do
   fi
 
   if [ -n "\$adb_port" ]; then
-    resolved_adb_target="127.0.0.1:\$adb_port"
-    break
+    append_candidate_host "\$wireless_host"
+
+    route_host=\$(ip route get 1.1.1.1 2>/dev/null | awk '
+      {
+        for (i = 1; i <= NF; i++) {
+          if (\$i == "src" && (i + 1) <= NF) {
+            print \$(i + 1)
+            exit
+          }
+        }
+      }'
+    )
+    append_candidate_host "\$route_host"
+
+    ip -o -4 addr show up scope global 2>/dev/null | awk '{print \$4}' | while IFS= read -r cidr; do
+      case "\$cidr" in
+        */*)
+          append_candidate_host "\${cidr%%/*}"
+          ;;
+      esac
+    done
+
+    append_candidate_host 127.0.0.1
+
+    while IFS= read -r candidate_host || [ -n "\$candidate_host" ]; do
+      [ -n "\$candidate_host" ] || continue
+      if command -v nc >/dev/null 2>&1; then
+        if ! nc -z "\$candidate_host" "\$adb_port" >/dev/null 2>&1; then
+          continue
+        fi
+      fi
+      resolved_adb_target="\$candidate_host:\$adb_port"
+      break
+    done <"\$candidate_hosts_file"
+
+    if [ -n "\$resolved_adb_target" ]; then
+      break
+    fi
   fi
 
   sleep 1
@@ -194,6 +256,7 @@ EOF
 
 sed \
   -e "s|__ADB_TARGET__|\$adb_target|g" \
+  -e "s|__WIRELESS_HOST__|\$serial_host|g" \
   -e "s|__HOSTNAME_FILE__|\$hostname_file|g" \
   "\$launcher_script" >"\$launcher_script.tmp"
 mv "\$launcher_script.tmp" "\$launcher_script"

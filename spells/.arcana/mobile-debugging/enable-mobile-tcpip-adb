@@ -86,4 +86,4 @@ esac
 printf 'Android adb TCP/IP is now listening on %s:%s\n' "$serial_host" "$tcp_port"
 printf 'Next steps:\n'
 printf '  firewalled-adb --serial %s:%s -- get-state\n' "$serial_host" "$tcp_port"
-printf '  setup-mobile-tor-adb --serial %s --adb-target 127.0.0.1:%s\n' "$serial" "$tcp_port"
+printf '  setup-mobile-tor-adb --serial %s\n' "$serial"
