@@ -67,18 +67,13 @@ on-exit cleanup-file "$discover_file"
 matched_count=0
 matched_endpoint=
 while IFS= read -r discover_line || [ -n "$discover_line" ]; do
-  case "$discover_line" in
-    adb-*"_adb-tls-connect._tcp "*:* )
-      :
-      ;;
-    *)
-      continue
-      ;;
-  esac
-
   discover_instance=$(printf '%s\n' "$discover_line" | awk '{print $1}')
   discover_service=$(printf '%s\n' "$discover_line" | awk '{print $2}')
   discover_endpoint=$(printf '%s\n' "$discover_line" | awk '{print $3}')
+
+  [ -n "$discover_instance" ] || continue
+  [ -n "$discover_service" ] || continue
+  [ -n "$discover_endpoint" ] || continue
 
   case "$discover_service" in
     _adb-tls-connect._tcp) ;;

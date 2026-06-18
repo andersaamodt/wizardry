@@ -22,7 +22,7 @@ connects_unique_discovered_endpoint() {
   cat >"$adb_dir/adb" <<'SH'
 #!/bin/sh
 if [ "${1-}" = "mdns" ] && [ "${2-}" = "services" ]; then
-  printf '%s\n' "adb-44041JEKB09055-AY981N _adb-tls-connect._tcp 192.168.1.164:35149"
+  printf 'adb-44041JEKB09055-AY981N\t_adb-tls-connect._tcp\t192.168.1.164:35149\n'
   exit 0
 fi
 exit 1
@@ -55,8 +55,8 @@ rejects_ambiguous_results_without_filter() {
   cat >"$adb_dir/adb" <<'SH'
 #!/bin/sh
 if [ "${1-}" = "mdns" ] && [ "${2-}" = "services" ]; then
-  printf '%s\n' "adb-ONE _adb-tls-connect._tcp 192.168.1.164:35149"
-  printf '%s\n' "adb-TWO _adb-tls-connect._tcp 192.168.1.165:33333"
+  printf 'adb-ONE\t_adb-tls-connect._tcp\t192.168.1.164:35149\n'
+  printf 'adb-TWO\t_adb-tls-connect._tcp\t192.168.1.165:33333\n'
   exit 0
 fi
 exit 1
@@ -84,8 +84,8 @@ filters_by_ip() {
   cat >"$adb_dir/adb" <<'SH'
 #!/bin/sh
 if [ "${1-}" = "mdns" ] && [ "${2-}" = "services" ]; then
-  printf '%s\n' "adb-ONE _adb-tls-connect._tcp 192.168.1.164:35149"
-  printf '%s\n' "adb-TWO _adb-tls-connect._tcp 192.168.1.165:33333"
+  printf 'adb-ONE\t_adb-tls-connect._tcp\t192.168.1.164:35149\n'
+  printf 'adb-TWO\t_adb-tls-connect._tcp\t192.168.1.165:33333\n'
   exit 0
 fi
 exit 1
