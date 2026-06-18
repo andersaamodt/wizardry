@@ -872,6 +872,31 @@ install_fresh_does_not_show_menu() {
   assert_output_contains "Installation Complete" || return 1
 }
 
+install_assume_yes_defaults_to_repair_when_already_installed() {
+  skip-if-compiled || return $?
+  fixture=$(make_fixture)
+  provide_basic_tools "$fixture"
+  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+
+  install_dir="$fixture/home/.wizardry"
+
+  run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
+      HOME="$fixture/home" \
+      WIZARDRY_INSTALL_ASSUME_YES=1 \
+      "$ROOT_DIR/install"
+
+  assert_success || return 1
+
+  run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
+      HOME="$fixture/home" \
+      WIZARDRY_INSTALL_ASSUME_YES=1 \
+      "$ROOT_DIR/install"
+
+  assert_success || return 1
+  assert_output_contains "Non-interactive mode: defaulting to repair (option 1)" || return 1
+  assert_output_contains "Repairing wizardry installation..." || return 1
+}
+
 # === Output Message Tests ===
 
 install_nixos_shows_shell_config_updated() {
@@ -1755,6 +1780,8 @@ run_test_case "learn-spellbook accepts helper overrides" path_wizard_accepts_hel
 run_test_case "install uses only bootstrappable spells" install_uses_only_bootstrappable_spells
 run_test_case "install shows menu when already installed" install_shows_menu_when_already_installed
 run_test_case "install fresh does not show menu" install_fresh_does_not_show_menu
+run_test_case "install assume-yes repairs existing installs without prompting" \
+  install_assume_yes_defaults_to_repair_when_already_installed
 run_test_case "install shows help" shows_help
 run_test_case "install NixOS shows shell config updated" install_nixos_shows_shell_config_updated
 run_test_case "install does not show spell installation" install_does_not_show_spell_installation
