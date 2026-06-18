@@ -18,16 +18,19 @@ prints_termux_and_host_commands() {
   run_cmd "$ROOT_DIR/spells/.arcana/mobile-debugging/show-mobile-tor-adb-guide"
   assert_success || return 1
   assert_output_contains "pkg install tor"
-  assert_output_contains 'HiddenServicePort 5555 127.0.0.1:$(getprop service.adb.tls.port)'
+  assert_output_contains 'wizardry-tor-adb-start.sh'
+  assert_output_contains 'adb_port=$(getprop service.adb.tcp.port'
+  assert_output_contains 'adb_port=$(getprop service.adb.tls.port'
+  assert_output_contains 'HiddenServicePort 5555 __ADB_TARGET__'
   assert_output_contains "firewalled-adb-tor --onion"
   assert_output_contains "firewalled-maestro-tor --onion"
-  assert_output_contains "survives Wi-Fi address changes"
+  assert_output_contains "boot hook lets Termux re-resolve the"
 }
 
 prints_explicit_override() {
   run_cmd "$ROOT_DIR/spells/.arcana/mobile-debugging/show-mobile-tor-adb-guide" 127.0.0.1:47000
   assert_success || return 1
-  assert_output_contains "HiddenServicePort 5555 127.0.0.1:47000"
+  assert_output_contains "adb_target='127.0.0.1:47000'"
 }
 
 run_test_case "show-mobile-tor-adb-guide shows help" shows_help

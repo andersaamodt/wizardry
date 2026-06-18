@@ -54,9 +54,12 @@ SH
   assert_file_contains "$tmpdir/adb.log" "push"
   assert_file_contains "$tmpdir/adb.log" "/sdcard/Download/wizardry-tor-adb-setup.sh"
   assert_file_contains "$tmpdir/adb.log" "RunCommandService"
+  assert_file_contains "$tmpdir/pushed-script.sh" 'launcher_script="$HOME/.termux/wizardry-tor-adb-start.sh"'
+  assert_file_contains "$tmpdir/pushed-script.sh" "getprop service.adb.tcp.port"
   assert_file_contains "$tmpdir/pushed-script.sh" "getprop service.adb.tls.port"
-  assert_file_contains "$tmpdir/pushed-script.sh" 'resolved_adb_target="127.0.0.1:$adb_tls_port"'
+  assert_file_contains "$tmpdir/pushed-script.sh" 'resolved_adb_target="127.0.0.1:$adb_port"'
   assert_file_contains "$tmpdir/pushed-script.sh" 'HiddenServicePort 5555 $resolved_adb_target'
+  assert_file_contains "$tmpdir/pushed-script.sh" '/data/data/com.termux/files/home/.termux/wizardry-tor-adb-start.sh'
   assert_output_contains "firewalled-adb-tor --onion abcdefghijklmnop.onion:5555 -- devices"
 }
 

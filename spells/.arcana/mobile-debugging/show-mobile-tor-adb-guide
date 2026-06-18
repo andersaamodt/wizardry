@@ -29,9 +29,9 @@ case "$adb_target_override" in
 esac
 
 if [ -n "$adb_target_override" ]; then
-  target_line="HiddenServicePort 5555 $adb_target_override"
+  target_line="adb_target='$adb_target_override'"
 else
-  target_line='HiddenServicePort 5555 127.0.0.1:$(getprop service.adb.tls.port)'
+  target_line="adb_target=''"
 fi
 
 cat <<GUIDE
@@ -47,22 +47,84 @@ On the phone, Termux can provide the onion service:
 
   pkg update
   pkg install tor
-  mkdir -p "\$HOME/.termux/tor-adb/hidden-service" "\$HOME/.termux/tor-adb/data"
-  cat >"\$HOME/.termux/tor-adb/torrc" <<'EOF'
+  mkdir -p "\$HOME/.termux/tor-adb/hidden-service" "\$HOME/.termux/tor-adb/data" "\$HOME/.termux/boot" "\$HOME/Download"
+  cat >"\$HOME/.termux/wizardry-tor-adb-start.sh" <<'EOF'
+#!/data/data/com.termux/files/usr/bin/sh
+set -eu
+PATH=/data/data/com.termux/files/usr/bin:/system/bin:/system/xbin:\$PATH
+$target_line
+state_dir="\$HOME/.termux/tor-adb"
+hidden_dir="\$state_dir/hidden-service"
+data_dir="\$state_dir/data"
+torrc="\$state_dir/torrc"
+log_file="\$state_dir/tor.log"
+hostname_file='/sdcard/Download/wizardry-tor-adb-hostname.txt'
+mkdir -p "\$hidden_dir" "\$data_dir" "\$(dirname "\$hostname_file")"
+resolved_adb_target=
+waited=0
+while [ "\$waited" -lt 60 ]; do
+  if [ -n "\$adb_target" ]; then
+    resolved_adb_target=\$adb_target
+    break
+  fi
+  adb_port=\$(getprop service.adb.tcp.port 2>/dev/null || printf '')
+  case "\$adb_port" in
+    ''|0|*[!0-9]*) adb_port= ;;
+  esac
+  if [ -z "\$adb_port" ]; then
+    adb_port=\$(getprop service.adb.tls.port 2>/dev/null || printf '')
+    case "\$adb_port" in
+      ''|0|*[!0-9]*) adb_port= ;;
+    esac
+  fi
+  if [ -n "\$adb_port" ]; then
+    resolved_adb_target="127.0.0.1:\$adb_port"
+    break
+  fi
+  sleep 1
+  waited=\$((waited + 1))
+done
+tmp_torrc="\$torrc.tmp"
+cat >"\$tmp_torrc" <<'EOT'
 DataDirectory __HOME__/.termux/tor-adb/data
 SocksPort 0
 HiddenServiceDir __HOME__/.termux/tor-adb/hidden-service
-$target_line
+HiddenServicePort 5555 __ADB_TARGET__
+EOT
+sed -i "s#__HOME__#\$HOME#g; s#__ADB_TARGET__#\$resolved_adb_target#g" "\$tmp_torrc"
+mv "\$tmp_torrc" "\$torrc"
+if command -v pkill >/dev/null 2>&1; then
+  pkill -f "\$torrc" >/dev/null 2>&1 || true
+fi
+nohup tor -f "\$torrc" >"\$log_file" 2>&1 &
+waited=0
+while [ "\$waited" -lt 60 ]; do
+  if [ -s "\$hidden_dir/hostname" ]; then
+    cat "\$hidden_dir/hostname" > "\$hostname_file"
+    printf '\n' >> "\$hostname_file"
+    cat "\$hostname_file"
+    exit 0
+  fi
+  sleep 1
+  waited=\$((waited + 1))
+done
+exit 1
 EOF
-  sed -i "s#__HOME__#\$HOME#g" "\$HOME/.termux/tor-adb/torrc"
-  tor -f "\$HOME/.termux/tor-adb/torrc"
+  chmod 700 "\$HOME/.termux/wizardry-tor-adb-start.sh"
+  cat >"\$HOME/.termux/boot/99-wizardry-tor-adb" <<'EOF'
+#!/data/data/com.termux/files/usr/bin/sh
+/data/data/com.termux/files/home/.termux/wizardry-tor-adb-start.sh
+EOF
+  chmod 700 "\$HOME/.termux/boot/99-wizardry-tor-adb"
+  "\$HOME/.termux/wizardry-tor-adb-start.sh"
 
 Then read this file in Termux for the hostname:
 
-  cat "\$HOME/.termux/tor-adb/hidden-service/hostname"
+  cat "/sdcard/Download/wizardry-tor-adb-hostname.txt"
 
 Keep Android wireless debugging enabled while the onion service is running.
 Prefer the phone's on-device TLS port property with loopback so the onion
 service survives Wi-Fi address changes and follows adb TLS port rotation
-after wireless-debugging restarts.
+after wireless-debugging restarts. The boot hook lets Termux re-resolve the
+active adb port each time the phone-side publisher starts.
 GUIDE

@@ -8,9 +8,10 @@ case "${1-}" in
 Usage: setup-mobile-tor-adb --serial PHONE_IP:ADB_PORT [--adb-target HOST:PORT] [--no-type-command] [--no-wait]
 
 Stages a Termux setup script over firewalled adb, then starts it on the phone.
-By default the script reads the phone's current wireless-debugging TLS port
-from Android and publishes it over Tor as an onion service. --adb-target can
-override that target for nonstandard routing.
+The staged script installs a reusable Termux launcher and boot hook that
+re-resolve the phone's current wireless-debugging adb port each time Tor adb
+publishing starts. --adb-target can override that target for nonstandard
+routing.
 USAGE
   exit 0
   ;;
@@ -95,8 +96,26 @@ data_dir="\$state_dir/data"
 torrc="\$state_dir/torrc"
 log_file="\$state_dir/tor.log"
 hostname_file='$hostname_file'
+launcher_script="\$HOME/.termux/wizardry-tor-adb-start.sh"
+boot_dir="\$HOME/.termux/boot"
+boot_script="\$boot_dir/99-wizardry-tor-adb"
 
-mkdir -p "\$hidden_dir" "\$data_dir"
+mkdir -p "\$hidden_dir" "\$data_dir" "\$boot_dir" "\$(dirname "\$hostname_file")"
+
+cat >"\$launcher_script" <<'EOF'
+#!/data/data/com.termux/files/usr/bin/sh
+set -eu
+PATH=/data/data/com.termux/files/usr/bin:/system/bin:/system/xbin:$PATH
+
+adb_target='__ADB_TARGET__'
+state_dir="\$HOME/.termux/tor-adb"
+hidden_dir="\$state_dir/hidden-service"
+data_dir="\$state_dir/data"
+torrc="\$state_dir/torrc"
+log_file="\$state_dir/tor.log"
+hostname_file='__HOSTNAME_FILE__'
+
+mkdir -p "\$hidden_dir" "\$data_dir" "\$(dirname "\$hostname_file")"
 
 if ! command -v tor >/dev/null 2>&1; then
   pkg update -y
@@ -111,30 +130,44 @@ while [ "\$waited" -lt 60 ]; do
     break
   fi
 
-  adb_tls_port=\$(getprop service.adb.tls.port 2>/dev/null || printf '')
-  case "\$adb_tls_port" in
+  adb_port=\$(getprop service.adb.tcp.port 2>/dev/null || printf '')
+  case "\$adb_port" in
     ''|0|*[!0-9]*)
-      sleep 1
-      waited=\$((waited + 1))
-      continue
+      adb_port=
       ;;
   esac
 
-  resolved_adb_target="127.0.0.1:\$adb_tls_port"
-  break
+  if [ -z "\$adb_port" ]; then
+    adb_port=\$(getprop service.adb.tls.port 2>/dev/null || printf '')
+    case "\$adb_port" in
+      ''|0|*[!0-9]*)
+        adb_port=
+        ;;
+    esac
+  fi
+
+  if [ -n "\$adb_port" ]; then
+    resolved_adb_target="127.0.0.1:\$adb_port"
+    break
+  fi
+
+  sleep 1
+  waited=\$((waited + 1))
 done
 
 [ -n "\$resolved_adb_target" ] || {
-  printf 'setup-mobile-tor-adb: Android wireless adb TLS port not available\n' >&2
+  printf 'setup-mobile-tor-adb: Android wireless adb port not available\n' >&2
   exit 1
 }
 
-cat >"\$torrc" <<EOF
+tmp_torrc=\$torrc.tmp
+cat >"\$tmp_torrc" <<EOT
 DataDirectory \$data_dir
 SocksPort 0
 HiddenServiceDir \$hidden_dir
 HiddenServicePort 5555 \$resolved_adb_target
-EOF
+EOT
+mv "\$tmp_torrc" "\$torrc"
 
 if command -v pkill >/dev/null 2>&1; then
   pkill -f "\$torrc" >/dev/null 2>&1 || true
@@ -145,8 +178,8 @@ nohup tor -f "\$torrc" >"\$log_file" 2>&1 &
 waited=0
 while [ "\$waited" -lt 60 ]; do
   if [ -s "\$hidden_dir/hostname" ]; then
-    cat "\$hidden_dir/hostname" >"\$hostname_file"
-    printf '\\n' >>"\$hostname_file"
+    cat "\$hidden_dir/hostname" > "\$hostname_file"
+    printf '\n' >> "\$hostname_file"
     printf 'wizardry tor adb onion: '
     cat "\$hostname_file"
     exit 0
@@ -155,8 +188,24 @@ while [ "\$waited" -lt 60 ]; do
   waited=\$((waited + 1))
 done
 
-printf 'setup-mobile-tor-adb: hostname not ready; see %s\\n' "\$log_file" >&2
+printf 'setup-mobile-tor-adb: hostname not ready; see %s\n' "\$log_file" >&2
 exit 1
+EOF
+
+sed \
+  -e "s|__ADB_TARGET__|\$adb_target|g" \
+  -e "s|__HOSTNAME_FILE__|\$hostname_file|g" \
+  "\$launcher_script" >"\$launcher_script.tmp"
+mv "\$launcher_script.tmp" "\$launcher_script"
+chmod 700 "\$launcher_script"
+
+cat >"\$boot_script" <<'EOF'
+#!/data/data/com.termux/files/usr/bin/sh
+/data/data/com.termux/files/home/.termux/wizardry-tor-adb-start.sh
+EOF
+chmod 700 "\$boot_script"
+
+exec "\$launcher_script"
 SCRIPT
 
 "$firewalled_adb" --serial "$serial" --allow "$serial" -- push "$setup_script" "$remote_script" >/dev/null
