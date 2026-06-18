@@ -80,9 +80,11 @@ fi
 case "$serial" in
   [0-9]*.[0-9]*.[0-9]*.[0-9]*:*)
     serial_host=${serial%:*}
+    serial_port=${serial##*:}
     ;;
   *)
     serial_host=
+    serial_port=
     ;;
 esac
 
@@ -100,6 +102,7 @@ PATH=/data/data/com.termux/files/usr/bin:/system/bin:/system/xbin:\$PATH
 
 adb_target='$adb_target'
 wireless_host='$serial_host'
+wireless_port='$serial_port'
 state_dir="\$HOME/.termux/tor-adb"
 hidden_dir="\$state_dir/hidden-service"
 data_dir="\$state_dir/data"
@@ -111,14 +114,16 @@ boot_dir="\$HOME/.termux/boot"
 boot_script="\$boot_dir/99-wizardry-tor-adb"
 
 mkdir -p "\$hidden_dir" "\$data_dir" "\$boot_dir" "\$(dirname "\$hostname_file")"
+rm -f "\$hostname_file"
 
 cat >"\$launcher_script" <<'EOF'
 #!/data/data/com.termux/files/usr/bin/sh
 set -eu
-PATH=/data/data/com.termux/files/usr/bin:/system/bin:/system/xbin:$PATH
+PATH=/data/data/com.termux/files/usr/bin:/system/bin:/system/xbin:\$PATH
 
 adb_target='__ADB_TARGET__'
 wireless_host='__WIRELESS_HOST__'
+wireless_port='__WIRELESS_PORT__'
 state_dir="\$HOME/.termux/tor-adb"
 hidden_dir="\$state_dir/hidden-service"
 data_dir="\$state_dir/data"
@@ -168,6 +173,17 @@ while [ "\$waited" -lt 60 ]; do
     case "\$adb_port" in
       ''|0|*[!0-9]*)
         adb_port=
+        ;;
+    esac
+  fi
+
+  if [ -z "\$adb_port" ]; then
+    case "\$wireless_port" in
+      ''|0|*[!0-9]*)
+        adb_port=
+        ;;
+      *)
+        adb_port=\$wireless_port
         ;;
     esac
   fi
@@ -235,7 +251,11 @@ if command -v pkill >/dev/null 2>&1; then
   pkill -f "\$torrc" >/dev/null 2>&1 || true
 fi
 
-nohup tor -f "\$torrc" >"\$log_file" 2>&1 &
+if command -v termux-wake-lock >/dev/null 2>&1; then
+  termux-wake-lock >/dev/null 2>&1 || true
+fi
+
+tor --RunAsDaemon 1 -f "\$torrc" >"\$log_file" 2>&1
 
 waited=0
 while [ "\$waited" -lt 60 ]; do
@@ -256,7 +276,8 @@ EOF
 
 sed \
   -e "s|__ADB_TARGET__|\$adb_target|g" \
-  -e "s|__WIRELESS_HOST__|\$serial_host|g" \
+  -e "s|__WIRELESS_HOST__|\$wireless_host|g" \
+  -e "s|__WIRELESS_PORT__|\$wireless_port|g" \
   -e "s|__HOSTNAME_FILE__|\$hostname_file|g" \
   "\$launcher_script" >"\$launcher_script.tmp"
 mv "\$launcher_script.tmp" "\$launcher_script"

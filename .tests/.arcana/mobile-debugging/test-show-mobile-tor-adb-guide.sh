@@ -26,6 +26,8 @@ prints_termux_and_host_commands() {
   assert_output_contains 'append_candidate_host "$wireless_host"'
   assert_output_contains 'ip route get 1.1.1.1'
   assert_output_contains 'nc -z "$candidate_host" "$adb_port"'
+  assert_output_contains 'termux-wake-lock >/dev/null 2>&1 || true'
+  assert_output_contains 'tor --RunAsDaemon 1 -f "$torrc" >"$log_file" 2>&1'
   assert_output_contains 'HiddenServicePort 5555 __ADB_TARGET__'
   assert_output_contains "firewalled-adb-tor --onion"
   assert_output_contains "firewalled-maestro-tor --onion"

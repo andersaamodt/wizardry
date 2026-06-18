@@ -141,7 +141,10 @@ mv "\$tmp_torrc" "\$torrc"
 if command -v pkill >/dev/null 2>&1; then
   pkill -f "\$torrc" >/dev/null 2>&1 || true
 fi
-nohup tor -f "\$torrc" >"\$log_file" 2>&1 &
+if command -v termux-wake-lock >/dev/null 2>&1; then
+  termux-wake-lock >/dev/null 2>&1 || true
+fi
+tor --RunAsDaemon 1 -f "\$torrc" >"\$log_file" 2>&1
 waited=0
 while [ "\$waited" -lt 60 ]; do
   if [ -s "\$hidden_dir/hostname" ]; then

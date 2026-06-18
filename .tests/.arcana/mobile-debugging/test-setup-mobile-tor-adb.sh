@@ -55,14 +55,22 @@ SH
   assert_file_contains "$tmpdir/adb.log" "/sdcard/Download/wizardry-tor-adb-setup.sh"
   assert_file_contains "$tmpdir/adb.log" "RunCommandService"
   assert_file_contains "$tmpdir/pushed-script.sh" 'launcher_script="$HOME/.termux/wizardry-tor-adb-start.sh"'
+  assert_file_contains "$tmpdir/pushed-script.sh" 'rm -f "$hostname_file"'
+  assert_file_contains "$tmpdir/pushed-script.sh" 'PATH=/data/data/com.termux/files/usr/bin:/system/bin:/system/xbin:\$PATH'
   assert_file_contains "$tmpdir/pushed-script.sh" "wireless_host='192.168.1.159'"
+  assert_file_contains "$tmpdir/pushed-script.sh" "wireless_port='34897'"
   assert_file_contains "$tmpdir/pushed-script.sh" "getprop service.adb.tcp.port"
   assert_file_contains "$tmpdir/pushed-script.sh" "getprop service.adb.tls.port"
+  assert_file_contains "$tmpdir/pushed-script.sh" 'adb_port=$wireless_port'
   assert_file_contains "$tmpdir/pushed-script.sh" 'candidate_hosts_file=$state_dir/adb-host-candidates.txt'
   assert_file_contains "$tmpdir/pushed-script.sh" 'append_candidate_host "$wireless_host"'
   assert_file_contains "$tmpdir/pushed-script.sh" 'ip route get 1.1.1.1'
   assert_file_contains "$tmpdir/pushed-script.sh" 'nc -z "$candidate_host" "$adb_port"'
   assert_file_contains "$tmpdir/pushed-script.sh" 'resolved_adb_target="$candidate_host:$adb_port"'
+  assert_file_contains "$tmpdir/pushed-script.sh" 's|__WIRELESS_HOST__|$wireless_host|g'
+  assert_file_contains "$tmpdir/pushed-script.sh" 's|__WIRELESS_PORT__|$wireless_port|g'
+  assert_file_contains "$tmpdir/pushed-script.sh" 'termux-wake-lock >/dev/null 2>&1 || true'
+  assert_file_contains "$tmpdir/pushed-script.sh" 'tor --RunAsDaemon 1 -f "$torrc" >"$log_file" 2>&1'
   assert_file_contains "$tmpdir/pushed-script.sh" 'HiddenServicePort 5555 $resolved_adb_target'
   assert_file_contains "$tmpdir/pushed-script.sh" '/data/data/com.termux/files/home/.termux/wizardry-tor-adb-start.sh'
   assert_output_contains "firewalled-adb-tor --onion abcdefghijklmnop.onion:5555 -- devices"
