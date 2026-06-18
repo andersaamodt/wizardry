@@ -57,6 +57,7 @@ while :; do
     "$platform_tools_toggle" \
     "$maestro_toggle" \
     "firewalled-adb help%firewalled-adb --help" \
+    "Enable classic adb tcpip on phone%$script_dir/enable-mobile-tcpip-adb --help" \
     "firewalled-adb-tor help%firewalled-adb-tor --help" \
     "firewalled-termux help%firewalled-termux --help" \
     "firewalled-maestro help%firewalled-maestro --help" \
