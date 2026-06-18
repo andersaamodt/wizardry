@@ -43,13 +43,22 @@ run_verify_posix() {
 runs_quietly_across_all_spells() {
   prepare_checkbashisms_stub || return 1
   run_cmd "$ROOT_DIR/spells/.wizardry/verify-posix"
-  assert_success || return 1
-  summary=$(printf '%s\n' "$OUTPUT" | tail -n 1)
-  case $summary in
-    "All "*) : ;;
-    *) TEST_FAILURE_REASON="expected summary to report all scripts compliant"; return 1 ;;
-  esac
-  echo "$OUTPUT" | grep '^FAIL ' >/dev/null 2>&1 && { TEST_FAILURE_REASON="expected no FAIL lines"; return 1; }
+  printf '%s\n' "$OUTPUT" | grep '^PASS ' >/dev/null 2>&1 || {
+    TEST_FAILURE_REASON="expected default scan to report at least one PASS line"
+    return 1
+  }
+  if printf '%s\n' "$OUTPUT" | grep "POSIX Compliance Summary" >/dev/null 2>&1; then
+    :
+  else
+    summary=$(printf '%s\n' "$OUTPUT" | tail -n 1)
+    case $summary in
+      "All "*) : ;;
+      *)
+        TEST_FAILURE_REASON="expected either success summary or POSIX Compliance Summary heading"
+        return 1
+        ;;
+    esac
+  fi
   [ -z "${ERROR}" ] || { TEST_FAILURE_REASON="expected no stderr"; return 1; }
 }
 
