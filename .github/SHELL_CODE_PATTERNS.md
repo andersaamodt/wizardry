@@ -884,6 +884,30 @@ fi
 
 Without alias: `jump-to-marker` executes → uncastable guard → `exit 1` → terminal closes ✗
 
+## Nested Script Generation
+
+**CRITICAL:** When one generated shell script writes another shell script, escape the nested script's runtime expansions so the outer script does not evaluate them early.
+
+```sh
+# WRONG: the outer script expands $HOME and $state_dir while generating the nested script
+cat >"$outer_script" <<SCRIPT
+cat >"$launcher_script" <<'EOF'
+state_dir="$HOME/.termux/tor-adb"
+mkdir -p "$state_dir"
+EOF
+SCRIPT
+
+# RIGHT: keep the nested script's runtime values escaped until that script runs
+cat >"$outer_script" <<SCRIPT
+cat >"\$launcher_script" <<'EOF'
+state_dir="\$HOME/.termux/tor-adb"
+mkdir -p "\$state_dir"
+EOF
+SCRIPT
+```
+
+**Why:** Outer setup spells often run under `set -u` with a host environment that does not define the nested script's variables. Unescaped nested expansions can fail during generation or bake host values into the staged script instead of preserving the target host's runtime behavior.
+
 ## References
 
 - POSIX.1-2017 Shell Command Language: https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html

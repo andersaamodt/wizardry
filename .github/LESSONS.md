@@ -335,3 +335,4 @@
 - Build post-processors that replace generated public files through restrictive temp files must normalize final modes after the last rewrite, not only after the initial render.
 - Test harnesses should prefer sourced-command status over exported success sentinels; avoid adding shell variables just to prove a helper returned successfully.
 - Filesystem-state regressions that assert real `HOME`/XDG side effects should invoke the spell directly instead of `run_spell`; the harness sandbox rewrites those paths and can hide host-side migration bugs.
+- Generated shell scripts that write another shell script must escape the nested script's `$vars` and command substitutions; otherwise the outer host's `set -u` or current environment can expand them too early and break the staged script before it ever reaches the target host.
