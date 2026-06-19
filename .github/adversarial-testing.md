@@ -54,6 +54,7 @@ Before considering a feature or fix complete, scan this checklist and test every
 - Site-name arguments for maintenance commands need the same path-segment validation as site creation before reading or creating per-site metadata.
 - Rename commands need source and destination validation; a dot-allowing character class still needs explicit `.` and `..` rejection.
 - Status, menu, daemon, and HTTPS wrappers need site-name validation too; read-only helpers can still leak outside state, re-exec as an imported user, or mutate daemon/certificate artifacts before downstream validators run.
+- Site migration and publish tests must cover privacy-boundary regressions: if a site is configured as access-restricted, verify the flow cannot silently disable Basic Auth, expose unpublished content, or treat an unauthenticated `200` as success.
 - Destructive site commands must reject path-shaped names before deriving both the site directory and companion data directory.
 - Stop/restart commands must reject path-shaped names before PID-file cleanup, daemon label construction, or service-unit lookup.
 - Scheduler/autorebuild helpers must validate local site labels, managed user labels, and relative content roots before cron entries, lock paths, release paths, or ownership changes are formed.

@@ -304,6 +304,7 @@
 - Template update commands must share creation-time site-name validation and newline-safe template root resolution before deleting template-owned subtrees.
 - Newline-delimited internal lists must reject CR/LF at insertion time, or machine-readable output guards can run after a hostile value has already been split into benign-looking rows.
 - Site allowlist paths that feed recursive permission repair must be validated both when written and when read; reject broad managed roots, managed site data, non-directories, and control characters before chown/chmod.
+- HTTP Basic Auth and similar site access restrictions are privacy boundaries; deployment migration, debugging, and publish flows must preserve them by default and prove unauthenticated access still fails before calling the site safe.
 - Menu action strings built from allowlist/config paths must shell-quote quote-bearing paths, because the menu eval boundary is separate from downstream command validation.
 - Imported `site-user` values must reject option-like and uid-like names such as `#0` before sudo re-exec or service rendering; quoting the value does not make it a safe account selector.
 - CGI upload handlers must sanitize decoded filenames before filesystem writes and HTML-escape every reflected filename/path; query decoding turns `%3C...%3E` into active markup.
