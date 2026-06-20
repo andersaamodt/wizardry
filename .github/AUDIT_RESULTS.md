@@ -167,7 +167,7 @@ This table shows all files in the repository with their audit results. Files are
 | spells/priorities/get-priority | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/priorities/prioritize | 2026-02-06 17:54 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - sophisticated echelon/priority system, batch xattr reads for performance, interactive mode, light theming appropriate | - |
 | spells/priorities/upvote | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/psi/list-contacts | 🔍 Perused | 2026-02-06 20:15 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | vCard parser with awk. Uses FPAT (GNU awk). Good fallback chain FN→ORG→TEL→filename. |
+| spells/psi/list-contacts | 2026-06-20 00:00 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | POSIX awk vCard parser with FN→ORG→TEL→filename fallback; vCard parsing regression coverage present in `.tests/psi/test-list-contacts.sh`. | 🔧 removed stale GNU FPAT note during rolling-audit fix-it |
 | spells/psi/read-contact | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/spellcraft/add-synonym | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/spellcraft/bind-tome | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
