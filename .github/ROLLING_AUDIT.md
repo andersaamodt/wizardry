@@ -22,19 +22,18 @@
 
 ## Findings
 
-### 1. AI-facing standards docs currently contradict each other on the `builtin` plus `eval` guidance
-- Severity: high
+### 1. AI-facing shell override guidance normalized during fix-it
+- Severity: resolved
 - Why it matters:
   - Wizardry relies on `.github/` as the canonical place where humans and agents learn safe shell patterns.
   - Contradictory guidance in that surface directly weakens consistency and can cause agents to reintroduce a known bad pattern.
 - Evidence:
-  - `LESSONS.md` says never wrap `builtin` in `eval`: `.github/LESSONS.md:223`
-  - `EXEMPTIONS.md` reinforces the same rule and says the `eval` is only for the version check: `.github/EXEMPTIONS.md:52-77`
-  - `SHELL_CODE_PATTERNS.md` first marks eval-wrapped `builtin` as an antipattern: `.github/SHELL_CODE_PATTERNS.md:270-278`
-  - the same file later recommends eval-wrapping `builtin` to bypass `checkbashisms`: `.github/SHELL_CODE_PATTERNS.md:284-306`
+  - `LESSONS.md` says never wrap `builtin` in `eval`: `.github/LESSONS.md`
+  - `EXEMPTIONS.md` reinforces the same rule and says the `eval` is only for the version check: `.github/EXEMPTIONS.md`
+  - `SHELL_CODE_PATTERNS.md` now teaches the same pattern and does not recommend eval-wrapping `builtin`: `.github/SHELL_CODE_PATTERNS.md`
+  - `SHELL_CODE_PATTERNS.md` also now matches `LESSONS.md` by refusing sourced-script completion setup through `complete`, `compdef`, or `bind`: `.github/SHELL_CODE_PATTERNS.md`
 - Assessment:
-  - This is a real standards conflict, not a stylistic quibble.
-  - The repo currently teaches both the fix and the bug.
+  - This finding is closed for current source.
 
 ### 2. The existing audit results table is stale and currently inaccurate
 - Severity: medium
@@ -63,9 +62,8 @@
   - This is therefore both a portability problem and a test-gap problem.
 
 ## Suggested Next Moves
-1. Resolve the `builtin` plus `eval` contradiction so `.github/` teaches exactly one approved pattern.
-2. Refresh or replace `AUDIT_RESULTS.md` so it no longer presents stale failures as current facts.
-3. Rewrite `spells/psi/list-contacts` to avoid GNU-awk-only parsing features, then add a test that exercises real vCard parsing rather than only the empty-directory path.
+1. Refresh or replace `AUDIT_RESULTS.md` so it no longer presents stale failures as current facts.
+2. Rewrite `spells/psi/list-contacts` to avoid GNU-awk-only parsing features, then add a test that exercises real vCard parsing rather than only the empty-directory path.
 
 ## Validation Notes
 - `sh .tests/psi/test-list-contacts.sh` passed in this audit.
