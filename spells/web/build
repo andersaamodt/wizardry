@@ -152,6 +152,52 @@ extract_markdown_body() {
   ' "$file"
 }
 
+markdown_body_is_raw_html() {
+  file=$1
+  awk '
+    BEGIN { d = 0 }
+    /^---$/ { d++; next }
+    d == 1 { next }
+    /^[[:space:]]*$/ { next }
+    /^[[:space:]]*<!--/ { print "yes"; exit }
+    /^[[:space:]]*</ { print "yes"; exit }
+    { print "no"; exit }
+    END {
+      if (NR == 0) {
+        print "no"
+      }
+    }
+  ' "$file"
+}
+
+render_raw_html_markdown_page() {
+  md_file=$1
+  html_file=$2
+  htmx_header=$3
+  head_file=$4
+  page_title=$(extract_front_matter_value "$md_file" title 2>/dev/null || printf '')
+  [ -n "$page_title" ] || page_title=$site_name
+  {
+    printf '%s\n' '<!DOCTYPE html>'
+    printf '%s\n' '<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">'
+    printf '%s\n' '<head>'
+    printf '%s\n' '  <meta charset="utf-8" />'
+    printf '  <meta name="generator" content="wizardry" />\n'
+    printf '  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />\n'
+    printf '  <title>%s</title>\n' "$(xml_escape "$page_title")"
+    printf '  <link rel="stylesheet" href="/static/style.css" />\n'
+    cat "$htmx_header"
+    if [ -n "$head_file" ] && [ -f "$head_file" ]; then
+      cat "$head_file"
+    fi
+    printf '%s\n' '</head>'
+    printf '%s\n' '<body>'
+    extract_markdown_body "$md_file"
+    printf '%s\n' '</body>'
+    printf '%s\n' '</html>'
+  } > "$html_file"
+}
+
 strip_dynamic_title_block() {
   file=$1
   [ -f "$file" ] || return 0
@@ -368,7 +414,7 @@ iso_to_rfc822() {
   fi
 
   if command -v python3 >/dev/null 2>&1; then
-    rfc822=$(python3 - "$iso" 2>/dev/null <<'PY'
+    rfc822=$(python3 - "$iso" 2>/dev/null <<'PY' || true
 from datetime import datetime, timezone
 import sys
 
@@ -382,7 +428,7 @@ for fmt in ("%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%d %H:%M:%S"):
         pass
 sys.exit(1)
 PY
- || printf '')
+)
     if [ -n "$rfc822" ]; then
       printf '%s\n' "$rfc822"
       return 0
@@ -390,7 +436,7 @@ PY
   fi
 
   if command -v python >/dev/null 2>&1; then
-    rfc822=$(python - "$iso" 2>/dev/null <<'PY'
+    rfc822=$(python - "$iso" 2>/dev/null <<'PY' || true
 from datetime import datetime, timezone
 import sys
 
@@ -404,7 +450,7 @@ for fmt in ("%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%d %H:%M:%S"):
         pass
 sys.exit(1)
 PY
- || printf '')
+)
     if [ -n "$rfc822" ]; then
       printf '%s\n' "$rfc822"
       return 0
@@ -1020,15 +1066,24 @@ BLOG_FOOTER
         head_arg="--include-in-header=$head_file"
       fi
 
-      pandoc \
-        --from markdown+yaml_metadata_block+raw_html \
-        --to html5 \
-        --standalone \
-        --css=/static/style.css \
-        --include-in-header="$htmx_header" \
-        $head_arg \
-        --output="$html_file" \
-        "$md_file"
+      md_size=$(wc -c < "$md_file" 2>/dev/null || printf '0')
+      raw_html_threshold=${WIZARDRY_RAW_HTML_MARKDOWN_THRESHOLD_BYTES:-1048576}
+      case "$raw_html_threshold" in ''|*[!0-9]*) raw_html_threshold=1048576 ;; esac
+      if [ "$md_size" -ge "$raw_html_threshold" ] &&
+         [ "$(markdown_body_is_raw_html "$md_file")" = "yes" ]; then
+        info "    Using raw HTML page renderer for large Markdown wrapper"
+        render_raw_html_markdown_page "$md_file" "$html_file" "$htmx_header" "$head_file"
+      else
+        pandoc \
+          --from markdown+yaml_metadata_block+raw_html \
+          --to html5 \
+          --standalone \
+          --css=/static/style.css \
+          --include-in-header="$htmx_header" \
+          $head_arg \
+          --output="$html_file" \
+          "$md_file"
+      fi
 
       if [ "$nav_exists" -eq 1 ]; then
         temp_html=$(temp-file html-with-nav)
