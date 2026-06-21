@@ -84,6 +84,12 @@ spells/.imps/     # Micro-helper scripts (imps)
 - Update docs when behavior changes; delete stale examples instead of preserving contradictory guidance.
 - Add new bug classes to `.github/adversarial-testing.md`; add one-line debugging lessons to `.github/LESSONS.md`.
 
+## Phronesis Stewardship
+
+- For Wizardry-family projects, also check the local phronesis checkout at `~/git/phronesis` for broader AI-facing wisdom and project philosophy.
+- When a lesson, pattern, or design insight generalizes beyond the current repository, update phronesis as well as the local `.github/` documentation.
+- Keep project-specific debugging lessons in `.github/LESSONS.md`; keep cross-project learnings, semantic guidance, and durable working wisdom in phronesis.
+
 ## Spell Template
 
 ```sh
