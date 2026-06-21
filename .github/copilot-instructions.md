@@ -21,7 +21,7 @@
 - `.github/tests.md` - test structure and required testing workflow.
 - `.github/EXEMPTIONS.md` - documented exceptions.
 - `.github/LESSONS.md` - one-line debugging lessons; update after bug fixes.
-- `~/git/phronesis` - broader AI-facing wisdom for Wizardry-family work; check it and update it when lessons or design insights generalize beyond this repo.
+- `~/git/phronesis` - wizardry-family standards, templates, audit methods, decision records, exception schemas, and promoted lessons.
 
 ## Non-Negotiable Rules
 
@@ -37,7 +37,7 @@
 - Add adversarial tests for risky input, imported metadata, path boundaries, shell evaluation, generated code, remote data, GUI/menu bridges, CGI endpoints, installers, releases, and destructive side effects.
 - Update `.github/adversarial-testing.md` when you discover a new bug class or audit technique.
 - Add a one-sentence `.github/LESSONS.md` entry after every bug fix or debugging session unless already captured.
-- Update `~/git/phronesis` when a new learning is cross-project wisdom rather than only a local Wizardry debugging lesson.
+- Update `~/git/phronesis` only when a local finding should be promoted into reusable wizardry-family policy, a decision record, an exception shape, an audit method, a template, or a durable cross-project lesson.
 - Do not use environment variables to coordinate behavior between spells; use arguments, return codes, files, or `builtin`/`command` patterns documented in `SHELL_CODE_PATTERNS.md`.
 - Document new POSIX shell patterns in `.github/SHELL_CODE_PATTERNS.md`.
 - Document new cross-platform discoveries in `.github/CROSS_PLATFORM_PATTERNS.md`.
