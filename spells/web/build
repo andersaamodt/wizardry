@@ -949,6 +949,9 @@ build_site() {
   fi
 
   if [ ! -f "$js_lib_dir/htmx.min.js" ] || [ ! -f "$js_lib_dir/idiomorph-ext.min.js" ]; then
+    if [ "${WIZARDRY_WEB_REQUIRE_CACHED_LIBS:-0}" = "1" ]; then
+      die "build: web libraries are missing at $js_lib_dir; run install-htmx before deployment builds"
+    fi
     info "Web libraries not found, installing..."
     WIZARDRY_WEB_JS_DIR="$js_lib_dir"
     export WIZARDRY_WEB_JS_DIR
