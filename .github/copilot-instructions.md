@@ -21,7 +21,7 @@
 - `.github/tests.md` - test structure and required testing workflow.
 - `.github/EXEMPTIONS.md` - documented exceptions.
 - `.github/LESSONS.md` - one-line debugging lessons; update after bug fixes.
-- `~/git/phronesis` - wizardry-family standards, templates, audit methods, decision records, exception schemas, and promoted lessons.
+- `~/git/phronesis` - read early to prime work with wizardry-family standards, templates, audit methods, decision records, exception schemas, and promoted lessons.
 
 ## Non-Negotiable Rules
 

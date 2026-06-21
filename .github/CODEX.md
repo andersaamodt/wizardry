@@ -86,7 +86,7 @@ spells/.imps/     # Micro-helper scripts (imps)
 
 ## Phronesis Stewardship
 
-- For Wizardry-family projects, also check the local phronesis checkout at `~/git/phronesis` for cross-project standards, templates, audit methods, decision records, exception schemas, and promoted lessons.
+- For Wizardry-family projects, also read the local phronesis checkout at `~/git/phronesis` early enough to prime your work with cross-project standards, templates, audit methods, decision records, exception schemas, and promoted lessons.
 - Update phronesis only when a local finding deserves promotion into reusable wizardry-family policy, a decision record, an exception shape, an audit method, a template, or a durable cross-project lesson.
 - Keep repo-specific debugging history in `.github/LESSONS.md`; promote only lessons that generalize across the wizardry family and are important enough to preserve centrally.
 
