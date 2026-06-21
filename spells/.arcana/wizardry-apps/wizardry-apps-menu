@@ -40,10 +40,12 @@ script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 while :; do
   web_templates_installed=0
   apps_installed=0
+  xcodegen_installed=0
 
   "$script_dir/is-wizardry-apps-component-installed" web-templates \
     >/dev/null 2>&1 && web_templates_installed=1
   "$script_dir/is-wizardry-apps-component-installed" apps >/dev/null 2>&1 && apps_installed=1
+  "$script_dir/is-xcodegen-installed" >/dev/null 2>&1 && xcodegen_installed=1
 
   if [ "$web_templates_installed" -eq 1 ]; then
     web_templates_toggle="[X] web templates%$script_dir/uninstall-web-templates"
@@ -55,6 +57,12 @@ while :; do
     apps_toggle="[X] desktop apps%$script_dir/uninstall-wizardry-desktop-apps"
   else
     apps_toggle="[ ] desktop apps%$script_dir/install-wizardry-desktop-apps"
+  fi
+
+  if [ "$xcodegen_installed" -eq 1 ]; then
+    xcodegen_toggle="[X] xcodegen%$script_dir/uninstall-xcodegen"
+  else
+    xcodegen_toggle="[ ] xcodegen%$script_dir/install-xcodegen"
   fi
 
   if [ "$web_templates_installed" -eq 1 ] && [ "$apps_installed" -eq 1 ]; then
@@ -77,6 +85,7 @@ while :; do
     set -- "$@" \
       "$web_templates_toggle" \
       "$apps_toggle" \
+      "$xcodegen_toggle" \
       "$toggle_all" \
       "$exit_item"
     title="Install wizardry-apps:"

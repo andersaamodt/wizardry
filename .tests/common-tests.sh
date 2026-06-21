@@ -1013,8 +1013,6 @@ web/serve-site
 web/disable-site-daemon
 web/toggle-site-tor-hosting
 web/enable-site-daemon
-web/install-supercollider
-web/uninstall-supercollider
 web/web-wizardry
 web/run-site-daemon
 web/stop-site
@@ -1756,7 +1754,7 @@ test_spells_source_env_clear_after_set_eu() {
       wards/banish|spellcraft/compile-spell|spellcraft/doppelganger) return ;;
       # Installer/daemon spells intentionally capture supported env overrides
       # or locate env-clear before sourcing it.
-      web/install-nostril|web/install-syncthing|web/install-supercollider|web/uninstall-supercollider|web/install-pandoc|web/run-site-daemon|divination/eye|divination/eyed) return ;;
+      web/install-nostril|web/install-syncthing|web/install-pandoc|web/run-site-daemon|divination/eye|divination/eyed) return ;;
       # Scripts that need PATH setup before env-clear to find it
       system/test-magic|.wizardry/test-magic|system/test-spell|.wizardry/test-spell|system/verify-posix|.wizardry/verify-posix|spellcraft/lint-magic|enchant/enchant|.wizardry/generate-glosses) return ;;
       # System maintenance spells (standalone, no env-clear needed)

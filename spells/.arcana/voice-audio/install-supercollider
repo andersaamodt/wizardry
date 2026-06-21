@@ -12,7 +12,10 @@ USAGE
   ;;
 esac
 
+require-wizardry || exit 1
+
 set -eu
+. env-clear
 
 supercollider_curl=${CURL:-curl}
 supercollider_sclang=${SCLANG:-sclang}
@@ -259,10 +262,6 @@ install_supercollider_unix_pkg() {
     supercollider_run_privileged pkg_add supercollider >/dev/null
     return 0
   fi
-  if supercollider_has_cmd brew; then
-    brew install --cask supercollider >/dev/null
-    return 0
-  fi
   return 1
 }
 
@@ -278,12 +277,8 @@ case "$(uname -s 2>/dev/null || printf '')" in
       supercollider_say "Installed SuperCollider"
       exit 0
     fi
-    if supercollider_has_cmd brew; then
-      brew install --cask supercollider >/dev/null
-    else
-      supercollider_say "install-supercollider: automatic macOS install failed." >&2
-      exit 1
-    fi
+    supercollider_say "install-supercollider: automatic macOS install failed." >&2
+    exit 1
     ;;
   Linux|FreeBSD|OpenBSD)
     if ! install_supercollider_unix_pkg; then

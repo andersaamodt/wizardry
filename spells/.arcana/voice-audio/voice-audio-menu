@@ -49,6 +49,12 @@ while :; do
     fi
   fi
 
+  if "$script_dir/is-supercollider-installed"; then
+    set -- "$@" "[X] SuperCollider%$script_dir/uninstall-supercollider"
+  else
+    set -- "$@" "[ ] SuperCollider%$script_dir/install-supercollider"
+  fi
+
   if [ "$#" -eq 0 ]; then
     set -- "$@" "No supported voice audio adapter for this platform%printf 'No supported voice audio adapter for this platform.\\n'"
   fi

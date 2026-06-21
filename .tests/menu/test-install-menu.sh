@@ -229,6 +229,7 @@ test_install_menu_prefers_expected_core_order() {
     "$install_root/crossposting" \
     "$install_root/openstreetmaps" \
     "$install_root/wizardry-apps" \
+    "$install_root/game-dev" \
     "$install_root/theurgy" \
     "$install_root/docker" \
     "$install_root/yt-dlp" \
@@ -246,7 +247,7 @@ test_install_menu_prefers_expected_core_order() {
 
   for name in \
     core mud web-wizardry openstreetmaps wizardry-projects \
-    wizardry-apps theurgy voice ai-dev docker yt-dlp webcam \
+    wizardry-apps game-dev theurgy voice ai-dev docker yt-dlp webcam \
     voice-recognition voice-audio tor syncthing simplex-chat \
     nostr crossposting bitcoin lightning btcpay gazeta
   do
@@ -299,6 +300,7 @@ AI dev
 crossposting
 OpenStreetMap
 wizardry apps
+game development
 Docker
 yt-dlp
 webcam

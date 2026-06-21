@@ -1,0 +1,47 @@
+#!/bin/sh
+
+# Present game development install toggles.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: game-dev-menu
+
+Displays install and uninstall options for game development tools.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+. colors
+
+if ! require menu "The game-dev-menu needs the 'menu' command to present options."; then
+  exit 1
+fi
+
+trap 'exit 130' INT
+trap 'exit 0' TERM
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+
+while :; do
+  if "$script_dir/is-godot-installed"; then
+    godot_toggle="[X] Godot%$script_dir/uninstall-godot"
+  else
+    godot_toggle="[ ] Godot%$script_dir/install-godot"
+  fi
+
+  exit_label=$(exit-label)
+  menu "Game Development: $($script_dir/game-dev-status)" \
+    "$godot_toggle" \
+    "$exit_label%kill -TERM \$PPID" || menu_status=$?
+  menu_status=${menu_status:-0}
+  if [ "$menu_status" -eq 130 ]; then
+    printf 'ESC\n' >&2
+    exit 0
+  fi
+done

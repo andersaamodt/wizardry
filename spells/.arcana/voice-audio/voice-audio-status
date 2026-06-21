@@ -28,8 +28,10 @@ else
   GREY=""
 fi
 
-if voice_audio_render_reference_available; then
+if voice_audio_render_reference_available && "$script_dir/is-supercollider-installed"; then
   printf '%s%s%s\n' "$THEME_SUCCESS" "installed" "$RESET"
+elif voice_audio_render_reference_available || "$script_dir/is-supercollider-installed"; then
+  printf '%s%s%s\n' "$THEME_WARNING" "partial install" "$RESET"
 elif voice_audio_is_macos || voice_audio_is_linux; then
   printf '%s%s%s\n' "$THEME_WARNING" "partial install" "$RESET"
 else

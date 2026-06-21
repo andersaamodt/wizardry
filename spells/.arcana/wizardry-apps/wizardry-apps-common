@@ -77,7 +77,8 @@ wizardry_apps_ensure_repo() {
 
   if [ -d "$wizardry_apps_dir/.git" ]; then
     step "Updating wizardry-apps repository..."
-    git -C "$wizardry_apps_dir" fetch --depth 1 origin || die "wizardry-apps: failed to fetch updates"
+    git -C "$wizardry_apps_dir" fetch --depth 1 origin || \
+      die "wizardry-apps: failed to fetch updates"
     origin_head_ref=refs/remotes/origin/HEAD
     default_branch=$(
       git -C "$wizardry_apps_dir" \
@@ -98,7 +99,8 @@ wizardry_apps_ensure_repo() {
   fi
 
   step "Cloning wizardry-apps repository..."
-  git clone --depth 1 "$wizardry_apps_repo_url" "$wizardry_apps_dir" || die "wizardry-apps: failed to clone repository"
+  git clone --depth 1 "$wizardry_apps_repo_url" "$wizardry_apps_dir" || \
+    die "wizardry-apps: failed to clone repository"
 }
 
 wizardry_apps_install_component() {
@@ -144,4 +146,144 @@ wizardry_apps_repo_installed() {
 
 wizardry_apps_forge_available() {
   [ -x "$wizardry_apps_dir/install-forge" ] && [ -x "$wizardry_apps_dir/run-forge" ]
+}
+
+wizardry_apps_toolchains_root() {
+  if [ -n "${XDG_DATA_HOME:-}" ]; then
+    printf '%s\n' "$XDG_DATA_HOME/wizardry-apps/toolchains"
+  else
+    printf '%s\n' "$HOME/.local/share/wizardry-apps/toolchains"
+  fi
+}
+
+wizardry_apps_bin_dir() {
+  printf '%s\n' "${XDG_BIN_HOME:-$HOME/.local/bin}"
+}
+
+wizardry_apps_xcodegen_root() {
+  printf '%s\n' "$(wizardry_apps_toolchains_root)/xcodegen"
+}
+
+wizardry_apps_xcodegen_install_dir() {
+  printf '%s\n' "$(wizardry_apps_xcodegen_root)/current"
+}
+
+wizardry_apps_xcodegen_path() {
+  printf '%s\n' "$(wizardry_apps_xcodegen_install_dir)/xcodegen"
+}
+
+wizardry_apps_xcodegen_installed() {
+  [ -x "$(wizardry_apps_xcodegen_path)" ] || command -v xcodegen >/dev/null 2>&1
+}
+
+wizardry_apps_download_to_file() {
+  url=$1
+  destination=$2
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL -o "$destination" -- "$url"
+    return $?
+  fi
+  if command -v wget >/dev/null 2>&1; then
+    wget -qO "$destination" -- "$url"
+    return $?
+  fi
+  return 1
+}
+
+wizardry_apps_release_asset_url() {
+  metadata_file=$1
+  asset_name=$2
+  awk -v asset_name="$asset_name" -F'"' '
+    /"browser_download_url"[[:space:]]*:/ {
+      for (i = 1; i <= NF; i++) {
+        if ($i ~ /^https:/ && $i ~ "/" asset_name "$") {
+          print $i
+          exit
+        }
+      }
+    }
+  ' "$metadata_file"
+}
+
+wizardry_apps_install_xcodegen() {
+  if wizardry_apps_xcodegen_installed; then
+    success "xcodegen is already installed"
+    return 0
+  fi
+
+  command -v unzip >/dev/null 2>&1 || die "install-xcodegen: unzip is required"
+
+  if ! command -v curl >/dev/null 2>&1 && ! command -v wget >/dev/null 2>&1; then
+    die "install-xcodegen: curl or wget is required"
+  fi
+
+  metadata_file=$(temp-file)
+  archive_file=$(temp-file)
+  archive_dir=$(temp-dir)
+  on-exit cleanup-file "$metadata_file"
+  on-exit cleanup-file "$archive_file"
+  on-exit cleanup-dir "$archive_dir"
+
+  step "Fetching XcodeGen release metadata..."
+  wizardry_apps_download_to_file \
+    https://api.github.com/repos/yonaskolb/XcodeGen/releases/latest \
+    "$metadata_file" || die "install-xcodegen: failed to fetch release metadata"
+
+  archive_url=$(wizardry_apps_release_asset_url "$metadata_file" "xcodegen.zip")
+  [ -n "$archive_url" ] || die "install-xcodegen: release metadata did not include xcodegen.zip"
+
+  step "Downloading XcodeGen..."
+  wizardry_apps_download_to_file "$archive_url" "$archive_file" || \
+    die "install-xcodegen: failed to download release asset"
+  unzip -q "$archive_file" -d "$archive_dir" || \
+    die "install-xcodegen: failed to extract release asset"
+
+  extracted_xcodegen=$(find "$archive_dir" -type f -name xcodegen -perm -111 | head -n 1)
+  [ -n "$extracted_xcodegen" ] || die "install-xcodegen: release asset did not contain xcodegen"
+
+  install_root=$(wizardry_apps_xcodegen_root)
+  staging_dir="$install_root/current.new"
+  rm -rf "$staging_dir"
+  mkdir -p "$install_root" "$staging_dir"
+  cp "$extracted_xcodegen" "$staging_dir/xcodegen" || \
+    die "install-xcodegen: failed to stage xcodegen"
+  chmod 755 "$staging_dir/xcodegen"
+  rm -rf "$(wizardry_apps_xcodegen_install_dir)"
+  xcodegen_install_dir=$(wizardry_apps_xcodegen_install_dir)
+  mv "$staging_dir" "$xcodegen_install_dir" || \
+    die "install-xcodegen: failed to activate install"
+
+  bin_dir=$(wizardry_apps_bin_dir)
+  mkdir -p "$bin_dir"
+  ln -sf "$(wizardry_apps_xcodegen_path)" "$bin_dir/xcodegen"
+  [ -x "$(wizardry_apps_xcodegen_path)" ] || die "install-xcodegen: xcodegen was not installed"
+  success "Installed xcodegen at $(wizardry_apps_xcodegen_path)"
+}
+
+wizardry_apps_uninstall_xcodegen() {
+  removed=0
+  xcodegen_root=$(wizardry_apps_xcodegen_root)
+  bin_path="$(wizardry_apps_bin_dir)/xcodegen"
+
+  if [ -d "$xcodegen_root" ]; then
+    rm -rf "$xcodegen_root"
+    removed=1
+  fi
+
+  if [ -L "$bin_path" ]; then
+    link_target=$(readlink "$bin_path" 2>/dev/null || printf '')
+    case "$link_target" in
+      "$xcodegen_root"/*)
+        rm -f "$bin_path"
+        removed=1
+        ;;
+    esac
+  fi
+
+  if [ "$removed" -eq 0 ]; then
+    info "xcodegen is not installed by Wizardry"
+    return 0
+  fi
+
+  success "Removed Wizardry-managed xcodegen"
 }

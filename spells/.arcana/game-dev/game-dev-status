@@ -1,0 +1,32 @@
+#!/bin/sh
+
+# Report game development tool installation status.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: game-dev-status
+
+Reports whether game development tools are available.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+if command -v colors >/dev/null 2>&1; then
+  . colors
+else
+  RESET=""
+  THEME_SUCCESS=""
+  GREY=""
+fi
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+
+if "$script_dir/is-godot-installed"; then
+  printf '%sinstalled%s\n' "$THEME_SUCCESS" "$RESET"
+else
+  printf '%snot installed%s\n' "$GREY" "$RESET"
+fi

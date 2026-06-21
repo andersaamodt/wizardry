@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# Present mobile debugging install and helper actions.
+
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
@@ -40,6 +42,12 @@ while :; do
     platform_tools_toggle="[ ] Android platform tools (adb)%$script_dir/install-android-platform-tools"
   fi
 
+  if mobile_debugging_commandline_tools_installed; then
+    commandline_tools_toggle="[X] Android command-line tools (sdkmanager)%$script_dir/uninstall-android-commandline-tools"
+  else
+    commandline_tools_toggle="[ ] Android command-line tools (sdkmanager)%$script_dir/install-android-commandline-tools"
+  fi
+
   if mobile_debugging_maestro_installed; then
     if mobile_debugging_java_ready; then
       maestro_toggle="[X] Maestro CLI%$script_dir/uninstall-maestro-cli"
@@ -55,6 +63,7 @@ while :; do
   menu "Mobile Debugging" \
     "$java_toggle" \
     "$platform_tools_toggle" \
+    "$commandline_tools_toggle" \
     "$maestro_toggle" \
     "firewalled-adb help%firewalled-adb --help" \
     "Reconnect wireless adb from mDNS%$script_dir/connect-mobile-wifi-adb --help" \

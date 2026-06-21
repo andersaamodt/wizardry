@@ -1,0 +1,22 @@
+#!/bin/sh
+
+# Report whether SuperCollider is available.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: is-supercollider-installed
+
+Exits successfully when SuperCollider is available.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+if command -v sclang >/dev/null 2>&1; then
+  exit 0
+fi
+
+[ -d /Applications/SuperCollider.app ] || [ -d "$HOME/Applications/SuperCollider.app" ]

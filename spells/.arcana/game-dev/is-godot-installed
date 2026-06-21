@@ -1,0 +1,22 @@
+#!/bin/sh
+
+# Report whether Godot is available for Wizardry game development workflows.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: is-godot-installed
+
+Exits successfully when Godot is available.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+. "$script_dir/game-dev-common"
+set -eu
+
+game_dev_godot_installed
