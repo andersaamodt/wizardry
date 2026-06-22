@@ -28,6 +28,8 @@ Commands:
   check-nostril    Check Nostr server tooling
   install-nostril Ensure nostril is installed
   uninstall-nostril Remove nostril
+  install-citrine [PROJECT_ROOT]
+                  Refresh Citrine browser helper in a web project
   btcpay-status   Show BTCPay install status text
   check-btcpay    Check BTCPay Server tooling/runtime
   install-btcpay Ensure BTCPay Server is installed
@@ -205,6 +207,15 @@ case "$cmd" in
     ;;
   uninstall-nostril)
     uninstall-nostril
+    exit 0
+    ;;
+  install-citrine)
+    project_root=${2-}
+    if [ -n "$project_root" ]; then
+      install-citrine-web-helper "$project_root"
+    else
+      install-citrine-web-helper
+    fi
     exit 0
     ;;
   btcpay-status)

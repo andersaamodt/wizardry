@@ -434,6 +434,7 @@ test_build_adds_cache_bust_for_local_static_assets() {
 
 <script src="/static/app.js"></script>
 <script src="/static/already.js?v=keep"></script>
+<script src="/static/vendor/citrine-nostr-web.js?v=keep"></script>
 <link rel="stylesheet" href="/static/style.css" />
 EOF
 
@@ -462,6 +463,12 @@ EOF
 
   if ! grep -Eq 'src="/static/already\.js\?v=[0-9]+"' "$html_file"; then
     TEST_FAILURE_REASON="build should normalize existing static cache tokens"
+    rm -rf "$test_web_root" "$stub_dir"
+    return 1
+  fi
+
+  if ! grep -Eq 'src="/static/vendor/citrine-nostr-web\.js\?v=[0-9]+"' "$html_file"; then
+    TEST_FAILURE_REASON="build should normalize nested static vendor cache tokens"
     rm -rf "$test_web_root" "$stub_dir"
     return 1
   fi

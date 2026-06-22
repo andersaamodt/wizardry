@@ -1,0 +1,54 @@
+#!/bin/sh
+
+# Refresh the tracked Citrine browser helper in a web project.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-citrine-web-helper [PROJECT_ROOT]
+
+Copies Citrine's browser Nostr helper into a project's tracked static vendor
+directory. If PROJECT_ROOT is omitted, the current directory is used.
+
+Recognized layouts:
+  app/assets/vendor/citrine-nostr-web.js   Pieplate-style static app
+  site/static/vendor/citrine-nostr-web.js  Wizardry/Gazeta-style website
+
+Set CITRINE_NOSTR_WEB_SOURCE to override the source file.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+project_root=${1:-$(pwd)}
+source_file=${CITRINE_NOSTR_WEB_SOURCE:-$HOME/git/citrine/src/citrine-nostr-web.js}
+
+if [ ! -f "$source_file" ]; then
+  printf '%s\n' "install-citrine-web-helper: missing source file: $source_file" >&2
+  exit 1
+fi
+
+if [ ! -d "$project_root" ]; then
+  printf '%s\n' "install-citrine-web-helper: project root is not a directory: $project_root" >&2
+  exit 1
+fi
+
+project_root=$(CDPATH= cd -- "$project_root" && pwd -P)
+
+if [ -f "$project_root/app/script.js" ] || [ -d "$project_root/app/assets" ]; then
+  dest_dir=$project_root/app/assets/vendor
+elif [ -d "$project_root/site/static" ] || [ -d "$project_root/site" ]; then
+  dest_dir=$project_root/site/static/vendor
+else
+  printf '%s\n' "install-citrine-web-helper: could not detect a supported web project layout under $project_root" >&2
+  exit 1
+fi
+
+mkdir -p "$dest_dir"
+dest_file=$dest_dir/citrine-nostr-web.js
+cp "$source_file" "$dest_file"
+
+printf '%s\n' "Installed Citrine web helper: $dest_file"

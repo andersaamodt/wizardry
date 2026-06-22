@@ -265,10 +265,35 @@ append_local_static_cache_bust() {
   [ -n "$cache_token" ] || return 0
 
   tmp_html=$(temp-file html-cache-busted)
-  sed \
-    -e "s#\\(href\\|src\\)=\"\\(/static/[^\"]*\\.\\(css\\|js\\)\\)\\(\\?v=[^\"]*\\)\\{0,1\\}\"#\\1=\"\\2?v=$cache_token\"#g" \
-    -e "s#\\(href\\|src\\)='\\(/static/[^']*\\.\\(css\\|js\\)\\)\\(\\?v=[^']*\\)\\{0,1\\}'#\\1='\\2?v=$cache_token'#g" \
-    "$html_file" > "$tmp_html"
+  awk -v cache_token="$cache_token" '
+    function rewrite_double(line,    out, segment) {
+      out = ""
+      while (match(line, /(href|src)="\/static\/[^"?]*\.(css|js)(\?v=[^"]*)?"/)) {
+        out = out substr(line, 1, RSTART - 1)
+        segment = substr(line, RSTART, RLENGTH)
+        line = substr(line, RSTART + RLENGTH)
+        sub(/\?v=[^"]*/, "", segment)
+        sub(/"$/, "?v=" cache_token "\"", segment)
+        out = out segment
+      }
+      return out line
+    }
+    function rewrite_single(line,    out, segment) {
+      out = ""
+      while (match(line, /(href|src)='\''\/static\/[^'\''?]*\.(css|js)(\?v=[^'\'']*)?'\''/)) {
+        out = out substr(line, 1, RSTART - 1)
+        segment = substr(line, RSTART, RLENGTH)
+        line = substr(line, RSTART + RLENGTH)
+        sub(/\?v=[^'\'']*/, "", segment)
+        sub(/'\''$/, "?v=" cache_token "'\''", segment)
+        out = out segment
+      }
+      return out line
+    }
+    {
+      print rewrite_single(rewrite_double($0))
+    }
+  ' "$html_file" > "$tmp_html"
   if files_equal "$html_file" "$tmp_html"; then
     rm -f "$tmp_html"
     return 0
