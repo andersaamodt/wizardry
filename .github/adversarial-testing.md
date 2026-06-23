@@ -44,6 +44,7 @@ Before considering a feature or fix complete, scan this checklist and test every
 - Install/release/update flows: fake network tools, hostile remote metadata, package-manager absence, replacement rollback, PATH precedence, artifacts outside repo.
 - Platform variance: BSD/GNU tools, macOS launchd, Linux systemd, missing optional helpers, restricted PATH, spaces in install roots.
 - Test harness integrity: executable bits, stale helper names, skipped tests that pass accidentally, environment overrides that do not reach subprocesses.
+- Static scanners must boundary-check shell keywords instead of substring-matching quoted prose; hyphenated words like `fixture-local` can otherwise trip false bashism reports.
 - Cross-repo dependency boundaries: source checkouts are not proof of installed command availability; test the installed wrapper path under restricted PATH as well as the source tree.
 
 ## High-Value Bug Classes

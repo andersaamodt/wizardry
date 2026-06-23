@@ -185,6 +185,21 @@ SCRIPT
   [ -z "${ERROR}" ] || { TEST_FAILURE_REASON="expected no stderr"; return 1; }
 }
 
+accepts_hyphenated_prose_in_quoted_strings() {
+  prepare_checkbashisms_stub || return 1
+  workdir=$(make_tempdir)
+  cat <<'SCRIPT' >"$workdir/prose"
+#!/bin/sh
+printf '%s\n' 'Only fixture-local lookup runs live here.'
+SCRIPT
+
+  run_verify_posix "$workdir/prose"
+  assert_success || return 1
+  printf '%s\n' "$OUTPUT" | grep '^PASS ' >/dev/null 2>&1 || { TEST_FAILURE_REASON="expected PASS line"; return 1; }
+  echo "$OUTPUT" | grep '^FAIL ' >/dev/null 2>&1 && { TEST_FAILURE_REASON="expected no FAIL lines"; return 1; }
+  [ -z "${ERROR}" ] || { TEST_FAILURE_REASON="expected no stderr"; return 1; }
+}
+
 accepts_space_before_sh() {
   prepare_checkbashisms_stub || return 1
   workdir=$(make_tempdir)
@@ -246,6 +261,8 @@ run_test_case "verify-posix warns about bash shebangs" warns_for_bash_shebangs
 run_test_case "verify-posix warns on empty shebang" warns_for_empty_shebang
 run_test_case "verify-posix warns on env args" warns_for_env_arguments
 run_test_case "verify-posix warns on direct bash path" warns_for_direct_bash_path
+run_test_case "verify-posix accepts hyphenated prose in quoted strings" \
+  accepts_hyphenated_prose_in_quoted_strings
 run_test_case "verify-posix accepts spaced sh shebang" accepts_space_before_sh
 run_test_case "verify-posix reports missing targets" reports_missing_targets
 run_test_case "verify-posix flags bashisms and counts failures" flags_bashisms_and_counts_failures

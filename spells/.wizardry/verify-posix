@@ -90,7 +90,7 @@ check_bashisms() {
         printf "possible bashism: function keyword (line %d)\n", NR
         found = 1
       }
-      if (probe ~ /[^[:alnum:]_](local|declare|typeset)[ \t]+/) {
+      if (probe ~ /(^|[[:space:];|&({])(local|declare|typeset)[ \t]+/) {
         printf "possible bashism: non-POSIX variable declaration (line %d)\n", NR
         found = 1
       }

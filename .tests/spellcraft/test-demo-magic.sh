@@ -80,6 +80,7 @@ test_termux_level_zero_uses_detect_distro() {
     "$ROOT_DIR/spells/spellcraft/demo-magic" 0
   assert_success || return 1
   assert_output_contains "detect-distro -> termux" || return 1
+  assert_output_not_contains "FAIL " || return 1
 }
 
 test_reduced_xattr_hosts_skip_metadata_heavy_levels() {
