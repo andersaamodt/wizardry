@@ -106,6 +106,14 @@ test_loops_until_complete_and_passes_model() {
     TEST_FAILURE_REASON="model option was not passed to OpenCode"
     return 1
   }
+  grep -F 'largest coherent batch' "$log" >/dev/null || {
+    TEST_FAILURE_REASON="prompt did not request productive checklist batching"
+    return 1
+  }
+  grep -F 'Continue after completing the first checkbox' "$log" >/dev/null || {
+    TEST_FAILURE_REASON="prompt did not discourage stopping after one small item"
+    return 1
+  }
 }
 
 test_direction_phrase_stops_loop() {

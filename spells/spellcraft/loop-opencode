@@ -80,16 +80,21 @@ while grep -F '[ ]' "$checklist_path" >/dev/null 2>&1; do
 Work autonomously on the repository checklist at:
 $checklist_path
 
-Choose the next unchecked item or coherent bounded group of items that can be
-completed in this round, then complete that work correctly and generally. You
-are not required to finish the entire checklist in one round; later rounds will
+Choose the largest coherent batch of unchecked items that can be completed
+safely within this round, then complete that batch correctly and generally.
+Continue after completing the first checkbox while useful context, time, and
+tool budget remain. Stop after one item only when that item was itself
+substantial, the next executable items are blocked, or continuing would reduce
+correctness. Prefer completing related sibling items together, but never chase
+checkbox count by grouping unrelated work or weakening verification. You are
+not required to finish the entire checklist in one round; later rounds will
 continue it. Prefer concrete implementation over discussing the size of the
 remaining roadmap. Make ordinary architectural and staging decisions yourself
 from repository evidence. Read and follow all repository instructions.
 Implement, test, and verify the work; mark a checkbox complete only after its
 obligation is genuinely satisfied. Preserve unrelated work and do not use
-superficial workarounds. If one item currently needs unavailable runtime evidence,
-leave it unchecked and advance another executable item when possible.
+superficial workarounds. If one item currently needs unavailable runtime
+evidence, leave it unchecked and advance another executable item when possible.
 
 The checklist file is authoritative. If every item is verified complete, end
 your response with exactly WIZARDRY_CHECKLIST_COMPLETE. Use
