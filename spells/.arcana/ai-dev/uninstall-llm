@@ -56,10 +56,11 @@ case "$runtime" in
     AI_DEV_MLX_MODEL="$model" "$ai_llm_mlx_python" - <<'PY' >/dev/null 2>&1 || true
 import os
 import subprocess
+import sys
 
 model = os.environ["AI_DEV_MLX_MODEL"]
 subprocess.run([
-    "python",
+    sys.executable,
     "-m",
     "mlx_lm",
     "manage",
