@@ -57,6 +57,11 @@ has tee || die 127 "loop-opencode: tee is required"
 checklist_dir=$(CDPATH= cd -- "$(dirname "$checklist")" && pwd -P)
 checklist_name=${checklist##*/}
 checklist_path=$checklist_dir/$checklist_name
+checklist_display=$checklist_path
+case "$checklist_display" in
+"$HOME") checklist_display="~" ;;
+"$HOME"/*) checklist_display="~${checklist_display#"$HOME"}" ;;
+esac
 
 if ! grep -F '[ ]' "$checklist_path" >/dev/null 2>&1; then
   success "Checklist is already complete: $checklist_path"
@@ -73,7 +78,8 @@ while grep -F '[ ]' "$checklist_path" >/dev/null 2>&1; do
 
   unchecked_before=$(awk 'index($0, "[ ]") { count += 1 } END { print count + 0 }' "$checklist_path")
   printf '\n%s\n' '════════════════════════════════════════════════════════════════'
-  printf 'OpenCode round %s — %s unchecked item(s)\n' "$round" "$unchecked_before"
+  printf 'OpenCode round %s — %s unchecked item(s) (%s)\n' \
+    "$round" "$unchecked_before" "$checklist_display"
   printf '%s\n\n' '════════════════════════════════════════════════════════════════'
 
   prompt=$(cat <<EOF
@@ -128,7 +134,8 @@ EOF
 
   unchecked_after=$(awk 'index($0, "[ ]") { count += 1 } END { print count + 0 }' "$checklist_path")
   printf '\n%s\n' '────────────────────────────────────────────────────────────────'
-  printf 'Wizardry round %s — %s unchecked item(s) remain\n' "$round" "$unchecked_after"
+  printf 'Wizardry round %s — %s unchecked item(s) remain (%s)\n' \
+    "$round" "$unchecked_after" "$checklist_display"
   printf '%s\n' '────────────────────────────────────────────────────────────────'
 
   if [ "$opencode_status" -ne 0 ]; then

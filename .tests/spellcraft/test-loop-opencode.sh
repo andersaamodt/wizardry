@@ -86,6 +86,7 @@ test_loops_until_complete_and_passes_model() {
   count="$tmp/count"
 
   run_cmd env \
+    HOME="$tmp" \
     PATH="$stub_dir:$PATH" \
     OPENCODE_TEST_LOG="$log" \
     OPENCODE_TEST_COUNT="$count" \
@@ -97,6 +98,7 @@ test_loops_until_complete_and_passes_model() {
   assert_output_contains "OpenCode round 1" || return 1
   assert_output_contains "OpenCode round 2" || return 1
   assert_output_contains "Wizardry round 1" || return 1
+  assert_output_contains "(~/${checklist##*/})" || return 1
   assert_output_contains "Checklist complete" || return 1
   [ "$(cat "$count")" = "2" ] || {
     TEST_FAILURE_REASON="expected two OpenCode rounds"
