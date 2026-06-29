@@ -36,7 +36,7 @@ if ! has python3; then
   die 127 "install-mlx: python3 is required"
 fi
 
-step "Installing MLX..."
+printf '%s\n' "Installing MLX..."
 
 mkdir -p "$ai_llm_mlx_root"
 
@@ -52,7 +52,12 @@ python3 -m venv "$ai_llm_mlx_venv" || die "install-mlx: could not create virtual
 "$ai_llm_mlx_python" -m pip install --upgrade pip >/dev/null 2>&1 || die "install-mlx: pip upgrade failed"
 
 step "Installing MLX packages"
-"$ai_llm_mlx_python" -m pip install --upgrade mlx-lm huggingface-hub >/dev/null 2>&1 || \
+mlx_lm_version=${AI_DEV_MLX_LM_VERSION:-0.29.1}
+huggingface_hub_version=${AI_DEV_HUGGINGFACE_HUB_VERSION:-0.36.2}
+"$ai_llm_mlx_python" -m pip install --upgrade \
+  "mlx-lm==$mlx_lm_version" \
+  "huggingface-hub==$huggingface_hub_version" \
+  "urllib3<2" >/dev/null 2>&1 || \
   die "install-mlx: failed to install mlx packages"
 
 if ! ai_llm_mlx_runtime_ready; then

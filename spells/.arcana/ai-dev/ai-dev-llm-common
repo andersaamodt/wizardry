@@ -362,7 +362,7 @@ ai_llm_sync_opencode_runtime() {
   model=$(ai_llm_get_selected_model "$runtime")
   ai_llm_write_opencode_runtime_config "$runtime" "$model" || return 1
   if [ "$runtime" = "mlx" ] && ai_llm_component_installed "mlx"; then
-    if ai_llm_mlx_model_registered "$model"; then
+    if [ "${AI_DEV_SKIP_MLX_SERVER_START:-0}" != "1" ] && ai_llm_mlx_model_registered "$model"; then
       ai_llm_start_mlx_server "$model" || return 1
     fi
   fi

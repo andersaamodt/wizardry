@@ -88,30 +88,27 @@ case "$runtime" in
     if ! ai_llm_mlx_runtime_ready; then
       die "install-llm: mlx runtime is not ready. Re-run install-mlx to repair it."
     fi
-    AI_DEV_MLX_MODEL="$pull_target" "$ai_llm_mlx_python" - <<'PY' >/dev/null 2>&1 || \
+    "$ai_llm_mlx_python" -m pip install --upgrade "urllib3<2" >/dev/null 2>&1 || true
+    if ! AI_DEV_MLX_MODEL="$pull_target" "$ai_llm_mlx_python" -c 'import os; from huggingface_hub import snapshot_download; snapshot_download(repo_id=os.environ["AI_DEV_MLX_MODEL"], max_workers=1)'; then
       die "install-llm: failed to install $pull_target"
-import os
-from huggingface_hub import snapshot_download
-
-model = os.environ["AI_DEV_MLX_MODEL"]
-snapshot_download(repo_id=model)
-PY
+    fi
     ai_llm_register_mlx_model "$pull_target" || die "install-llm: failed to register installed model"
     ;;
 esac
 
 ai_llm_set_selected_model "$runtime" "$pull_target" || true
 
-if [ "$runtime" = "mlx" ]; then
-  ai_llm_start_mlx_server "$pull_target" || warn "install-llm: mlx server did not become ready"
-fi
-
-if ! ai_llm_sync_opencode_runtime; then
+if ! AI_DEV_SKIP_MLX_SERVER_START=1 ai_llm_sync_opencode_runtime; then
   warn "install-llm: OpenCode runtime sync failed"
 fi
 
 if [ "$pull_target" != "$model" ]; then
   warn "install-llm: '$model' was redirected to '$pull_target'"
+fi
+
+if [ "$runtime" = "mlx" ] && [ "${AI_DEV_SKIP_MLX_SERVER_START:-0}" != "1" ]; then
+  step "Starting MLX server for $pull_target"
+  ai_llm_start_mlx_server "$pull_target" || warn "install-llm: mlx server did not become ready"
 fi
 
 success "LLM model installed: $pull_target"
