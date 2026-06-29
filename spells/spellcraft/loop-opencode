@@ -6,7 +6,7 @@
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: complete-opencode-checklist CHECKLIST [--model PROVIDER/MODEL]
+Usage: loop-opencode CHECKLIST [--model PROVIDER/MODEL]
 
 Runs OpenCode in the checklist's directory until CHECKLIST contains no literal
 "[ ]" markers. OpenCode output is streamed for every round. Use --model to
@@ -26,7 +26,7 @@ set -eu
 . env-clear
 
 checklist=${1-}
-[ -n "$checklist" ] || die 2 "complete-opencode-checklist: checklist file is required"
+[ -n "$checklist" ] || die 2 "loop-opencode: checklist file is required"
 shift
 
 model=""
@@ -34,24 +34,24 @@ while [ "$#" -gt 0 ]; do
   case "$1" in
   --model)
     shift
-    [ "$#" -gt 0 ] || die 2 "complete-opencode-checklist: --model requires a value"
+    [ "$#" -gt 0 ] || die 2 "loop-opencode: --model requires a value"
     model=$1
     ;;
   --*)
-    die 2 "complete-opencode-checklist: unknown option '$1'"
+    die 2 "loop-opencode: unknown option '$1'"
     ;;
   *)
-    die 2 "complete-opencode-checklist: unexpected argument '$1'"
+    die 2 "loop-opencode: unexpected argument '$1'"
     ;;
   esac
   shift
 done
 
-[ -f "$checklist" ] || die "complete-opencode-checklist: checklist is not a regular file: $checklist"
-[ -r "$checklist" ] || die "complete-opencode-checklist: checklist is not readable: $checklist"
-[ -w "$checklist" ] || die "complete-opencode-checklist: checklist is not writable: $checklist"
-has opencode || die 127 "complete-opencode-checklist: opencode is not installed"
-has tee || die 127 "complete-opencode-checklist: tee is required"
+[ -f "$checklist" ] || die "loop-opencode: checklist is not a regular file: $checklist"
+[ -r "$checklist" ] || die "loop-opencode: checklist is not readable: $checklist"
+[ -w "$checklist" ] || die "loop-opencode: checklist is not writable: $checklist"
+has opencode || die 127 "loop-opencode: opencode is not installed"
+has tee || die 127 "loop-opencode: tee is required"
 
 checklist_dir=$(CDPATH= cd -- "$(dirname "$checklist")" && pwd -P)
 checklist_name=${checklist##*/}
@@ -118,7 +118,7 @@ EOF
   printf '%s\n' '────────────────────────────────────────────────────────────────'
 
   if [ "$opencode_status" -ne 0 ]; then
-    die "complete-opencode-checklist: OpenCode round $round failed with status $opencode_status"
+    die "loop-opencode: OpenCode round $round failed with status $opencode_status"
   fi
 
   if [ "$unchecked_after" -eq 0 ]; then
@@ -127,12 +127,12 @@ EOF
   fi
 
   if grep -F 'WIZARDRY_CHECKLIST_NEEDS_DIRECTION' "$round_output" >/dev/null 2>&1; then
-    warn "complete-opencode-checklist: OpenCode requested direction with $unchecked_after item(s) remaining"
+    warn "loop-opencode: OpenCode requested direction with $unchecked_after item(s) remaining"
     exit 1
   fi
 
   if grep -F 'WIZARDRY_CHECKLIST_COMPLETE' "$round_output" >/dev/null 2>&1; then
-    warn "complete-opencode-checklist: OpenCode reported completion, but the checklist still has $unchecked_after unchecked item(s); continuing"
+    warn "loop-opencode: OpenCode reported completion, but the checklist still has $unchecked_after unchecked item(s); continuing"
   else
     info "Starting the next OpenCode round"
   fi

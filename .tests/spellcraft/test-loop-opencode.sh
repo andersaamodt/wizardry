@@ -46,14 +46,14 @@ SH
 }
 
 test_help() {
-  run_spell "spells/spellcraft/complete-opencode-checklist" --help
+  run_spell "spells/spellcraft/loop-opencode" --help
   assert_success || return 1
-  assert_output_contains "Usage: complete-opencode-checklist" || return 1
+  assert_output_contains "Usage: loop-opencode" || return 1
   assert_output_contains "--model" || return 1
 }
 
 test_missing_checklist_fails() {
-  run_spell "spells/spellcraft/complete-opencode-checklist"
+  run_spell "spells/spellcraft/loop-opencode"
   assert_failure || return 1
   assert_error_contains "checklist file is required" || return 1
 }
@@ -62,7 +62,7 @@ test_complete_checklist_exits_without_opencode() {
   tmp=$(make_tempdir)
   checklist="$tmp/done checklist.md"
   printf '%s\n' '- [x] already done' >"$checklist"
-  run_spell "spells/spellcraft/complete-opencode-checklist" "$checklist"
+  run_spell "spells/spellcraft/loop-opencode" "$checklist"
   assert_success || return 1
   assert_output_contains "already complete" || return 1
 }
@@ -81,7 +81,7 @@ test_loops_until_complete_and_passes_model() {
     OPENCODE_TEST_LOG="$log" \
     OPENCODE_TEST_COUNT="$count" \
     OPENCODE_TEST_CHECKLIST="$checklist" \
-    "$ROOT_DIR/spells/spellcraft/complete-opencode-checklist" \
+    "$ROOT_DIR/spells/spellcraft/loop-opencode" \
     "$checklist" --model "ollama/qwen coder"
 
   assert_success || return 1
@@ -112,7 +112,7 @@ test_direction_phrase_stops_loop() {
     OPENCODE_TEST_LOG="$tmp/log" \
     OPENCODE_TEST_COUNT="$tmp/count" \
     OPENCODE_TEST_CHECKLIST="$checklist" \
-    "$ROOT_DIR/spells/spellcraft/complete-opencode-checklist" "$checklist"
+    "$ROOT_DIR/spells/spellcraft/loop-opencode" "$checklist"
 
   assert_failure || return 1
   assert_error_contains "requested direction" || return 1
@@ -135,7 +135,7 @@ test_false_completion_claim_continues() {
     OPENCODE_TEST_LOG="$tmp/log" \
     OPENCODE_TEST_COUNT="$tmp/count" \
     OPENCODE_TEST_CHECKLIST="$checklist" \
-    "$ROOT_DIR/spells/spellcraft/complete-opencode-checklist" "$checklist"
+    "$ROOT_DIR/spells/spellcraft/loop-opencode" "$checklist"
 
   assert_success || return 1
   assert_error_contains "reported completion" || return 1
@@ -158,18 +158,18 @@ test_opencode_failure_is_reported() {
     OPENCODE_TEST_LOG="$tmp/log" \
     OPENCODE_TEST_COUNT="$tmp/count" \
     OPENCODE_TEST_CHECKLIST="$checklist" \
-    "$ROOT_DIR/spells/spellcraft/complete-opencode-checklist" "$checklist"
+    "$ROOT_DIR/spells/spellcraft/loop-opencode" "$checklist"
 
   assert_failure || return 1
   assert_error_contains "OpenCode round 1 failed with status 7" || return 1
 }
 
-run_test_case "complete-opencode-checklist shows help" test_help
-run_test_case "complete-opencode-checklist requires a checklist" test_missing_checklist_fails
-run_test_case "complete-opencode-checklist recognizes completion" test_complete_checklist_exits_without_opencode
-run_test_case "complete-opencode-checklist loops and passes model" test_loops_until_complete_and_passes_model
-run_test_case "complete-opencode-checklist honors direction phrase" test_direction_phrase_stops_loop
-run_test_case "complete-opencode-checklist rejects false completion" test_false_completion_claim_continues
-run_test_case "complete-opencode-checklist reports OpenCode failure" test_opencode_failure_is_reported
+run_test_case "loop-opencode shows help" test_help
+run_test_case "loop-opencode requires a checklist" test_missing_checklist_fails
+run_test_case "loop-opencode recognizes completion" test_complete_checklist_exits_without_opencode
+run_test_case "loop-opencode loops and passes model" test_loops_until_complete_and_passes_model
+run_test_case "loop-opencode honors direction phrase" test_direction_phrase_stops_loop
+run_test_case "loop-opencode rejects false completion" test_false_completion_claim_continues
+run_test_case "loop-opencode reports OpenCode failure" test_opencode_failure_is_reported
 
 finish_tests

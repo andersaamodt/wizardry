@@ -8,7 +8,7 @@ case "${1-}" in
 Usage: run-opencode-checklist
 
 Prompts for a checklist file and optional provider/model, then casts
-complete-opencode-checklist until the checklist completes or needs direction.
+loop-opencode until the checklist completes or needs direction.
 USAGE
   exit 0
   ;;
@@ -24,7 +24,7 @@ checklist=$(ask-text "Checklist file:")
 model=$(ask-text "OpenCode provider/model (blank uses its default):" "")
 
 if [ -n "$model" ]; then
-  complete-opencode-checklist "$checklist" --model "$model"
+  loop-opencode "$checklist" --model "$model"
 else
-  complete-opencode-checklist "$checklist"
+  loop-opencode "$checklist"
 fi
