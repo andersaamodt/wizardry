@@ -29,7 +29,6 @@ resolve_model_alias() {
   case "$1" in
     phi3.5:mini) printf '%s\n' "phi3:mini" ;;
     deepseek-coder:33b) printf '%s\n' "deepseek-coder-v2:16b" ;;
-    qwen2.5-coder:32b) printf '%s\n' "qwen2.5-coder:7b" ;;
     codellama:34b) printf '%s\n' "codellama:13b" ;;
     mixtral:8x22b) printf '%s\n' "mistral:7b" ;;
     llama3.1:70b) printf '%s\n' "llama3.1:8b" ;;

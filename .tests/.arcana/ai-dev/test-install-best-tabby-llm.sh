@@ -32,8 +32,16 @@ test_install_best_tabby_llm_help_callable() {
   return 1
 }
 
+test_install_best_tabby_llm_uses_qwen3_coder() {
+  grep -F 'best_model=${TABBY_BEST_LLM_MODEL:-qwen3-coder:30b}' "$target" >/dev/null || {
+    TEST_FAILURE_REASON="default best model is not qwen3-coder:30b"
+    return 1
+  }
+}
+
 run_test_case "install-best-tabby-llm spell exists" test_install_best_tabby_llm_exists
 run_test_case "install-best-tabby-llm spell is executable" test_install_best_tabby_llm_executable
 run_test_case "install-best-tabby-llm spell --help is callable" test_install_best_tabby_llm_help_callable
+run_test_case "install-best-tabby-llm defaults to qwen3-coder:30b" test_install_best_tabby_llm_uses_qwen3_coder
 
 finish_tests
