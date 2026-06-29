@@ -154,9 +154,10 @@ loop-opencode ./TODO.md --model ollama/qwen3-coder
 
 The harness streams each OpenCode round, prints a Wizardry round summary, and
 continues while the plain-text checklist contains an unchecked `[ ]` marker. An
-explicit `WIZARDRY_CHECKLIST_NEEDS_DIRECTION` response stops the loop so blocked
-work cannot spin indefinitely. The checklist file, rather than the agent's
-self-report, remains the completion authority.
+explicit `WIZARDRY_CHECKLIST_NEEDS_DIRECTION` response stops the loop only when
+it contains a concrete user-answerable question ending in `?`; broad-scope
+refusals are ignored so the next bounded slice can proceed. The checklist file,
+rather than the agent's self-report, remains the completion authority.
 
 ### MUD-like Parsing
 

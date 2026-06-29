@@ -35,7 +35,16 @@ case ${OPENCODE_TEST_MODE:-complete-second} in
     fi
     ;;
   direction)
-    printf '%s\n' 'WIZARDRY_CHECKLIST_NEEDS_DIRECTION: missing required credentials'
+    printf '%s\n' 'WIZARDRY_CHECKLIST_NEEDS_DIRECTION: Which production signing identity should be used?'
+    ;;
+  balk)
+    if [ "$count" -eq 1 ]; then
+      printf '%s\n' 'WIZARDRY_CHECKLIST_NEEDS_DIRECTION: Completing all remaining items requires broad architectural decisions and running-app verification'
+    else
+      sed 's/\[ \]/[x]/g' "$OPENCODE_TEST_CHECKLIST" >"$OPENCODE_TEST_CHECKLIST.next"
+      mv "$OPENCODE_TEST_CHECKLIST.next" "$OPENCODE_TEST_CHECKLIST"
+      printf '%s\n' 'WIZARDRY_CHECKLIST_COMPLETE'
+    fi
     ;;
   fail)
     exit 7
@@ -145,6 +154,29 @@ test_false_completion_claim_continues() {
   }
 }
 
+test_vague_direction_refusal_continues() {
+  tmp=$(make_tempdir)
+  stub_dir="$tmp/stubs"
+  make_opencode_stub "$stub_dir"
+  checklist="$tmp/TODO.md"
+  printf '%s\n' '- [ ] large architectural task' >"$checklist"
+
+  run_cmd env \
+    PATH="$stub_dir:$PATH" \
+    OPENCODE_TEST_MODE=balk \
+    OPENCODE_TEST_LOG="$tmp/log" \
+    OPENCODE_TEST_COUNT="$tmp/count" \
+    OPENCODE_TEST_CHECKLIST="$checklist" \
+    "$ROOT_DIR/spells/spellcraft/loop-opencode" "$checklist"
+
+  assert_success || return 1
+  assert_error_contains "ignored a direction request" || return 1
+  [ "$(cat "$tmp/count")" = "2" ] || {
+    TEST_FAILURE_REASON="vague refusal should not stop the loop"
+    return 1
+  }
+}
+
 test_opencode_failure_is_reported() {
   tmp=$(make_tempdir)
   stub_dir="$tmp/stubs"
@@ -170,6 +202,7 @@ run_test_case "loop-opencode recognizes completion" test_complete_checklist_exit
 run_test_case "loop-opencode loops and passes model" test_loops_until_complete_and_passes_model
 run_test_case "loop-opencode honors direction phrase" test_direction_phrase_stops_loop
 run_test_case "loop-opencode rejects false completion" test_false_completion_claim_continues
+run_test_case "loop-opencode ignores vague direction refusal" test_vague_direction_refusal_continues
 run_test_case "loop-opencode reports OpenCode failure" test_opencode_failure_is_reported
 
 finish_tests

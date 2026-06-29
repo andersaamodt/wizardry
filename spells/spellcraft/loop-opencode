@@ -13,8 +13,9 @@ Runs OpenCode in the checklist's directory until CHECKLIST contains no literal
 select an OpenCode provider/model.
 
 OpenCode is instructed to emit WIZARDRY_CHECKLIST_COMPLETE when it verifies the
-whole checklist, or WIZARDRY_CHECKLIST_NEEDS_DIRECTION with a reason when work
-cannot continue safely. The file remains the authority for completion.
+whole checklist. WIZARDRY_CHECKLIST_NEEDS_DIRECTION is honored only when it is
+followed by a concrete user-answerable question ending in "?". The file remains
+the authority for completion.
 USAGE
   exit 0
   ;;
@@ -79,18 +80,26 @@ while grep -F '[ ]' "$checklist_path" >/dev/null 2>&1; do
 Work autonomously on the repository checklist at:
 $checklist_path
 
-Complete every remaining unchecked [ ] item correctly and generally. Read and
-follow all repository instructions. Implement, test, and verify the work; mark a
-checkbox complete only after its obligation is genuinely satisfied. Preserve
-unrelated work and do not use superficial workarounds. Continue through as many
-items as this run safely can.
+Choose the next unchecked item or coherent bounded group of items that can be
+completed in this round, then complete that work correctly and generally. You
+are not required to finish the entire checklist in one round; later rounds will
+continue it. Prefer concrete implementation over discussing the size of the
+remaining roadmap. Make ordinary architectural and staging decisions yourself
+from repository evidence. Read and follow all repository instructions.
+Implement, test, and verify the work; mark a checkbox complete only after its
+obligation is genuinely satisfied. Preserve unrelated work and do not use
+superficial workarounds. If one item currently needs unavailable runtime evidence,
+leave it unchecked and advance another executable item when possible.
 
 The checklist file is authoritative. If every item is verified complete, end
-your response with exactly WIZARDRY_CHECKLIST_COMPLETE. If progress cannot
-continue without missing user authority, unavailable credentials, or a material
-decision that cannot be inferred safely, end with
-WIZARDRY_CHECKLIST_NEEDS_DIRECTION: followed by the concise reason. Do not use
-the direction phrase merely because the work is difficult or lengthy.
+your response with exactly WIZARDRY_CHECKLIST_COMPLETE. Use
+WIZARDRY_CHECKLIST_NEEDS_DIRECTION only when no checklist item can make further
+progress until the user answers one specific question whose answer materially
+changes the implementation or grants missing authority. Put that concrete
+question on the same line after the colon and end it with a question mark. Do
+not use the direction phrase because the checklist is broad, architectural,
+multi-stage, difficult, lengthy, requires later verification, or cannot all fit
+in one run. Those are reasons to complete a bounded slice, not reasons to stop.
 EOF
 )
 
@@ -126,9 +135,20 @@ EOF
     exit 0
   fi
 
-  if grep -F 'WIZARDRY_CHECKLIST_NEEDS_DIRECTION' "$round_output" >/dev/null 2>&1; then
-    warn "loop-opencode: OpenCode requested direction with $unchecked_after item(s) remaining"
-    exit 1
+  direction_line=$(
+    grep -F 'WIZARDRY_CHECKLIST_NEEDS_DIRECTION:' \
+      "$round_output" 2>/dev/null | tail -n 1 || printf ''
+  )
+  if [ -n "$direction_line" ]; then
+    case "$direction_line" in
+    *\?)
+      warn "loop-opencode: OpenCode requested direction with $unchecked_after item(s) remaining"
+      exit 1
+      ;;
+    *)
+      warn "loop-opencode: ignored a direction request without a concrete question; continuing"
+      ;;
+    esac
   fi
 
   if grep -F 'WIZARDRY_CHECKLIST_COMPLETE' "$round_output" >/dev/null 2>&1; then
