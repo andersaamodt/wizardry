@@ -27,7 +27,7 @@ if ! ai_llm_is_mlx_supported; then
   die "install-mlx: MLX is supported only on Apple Silicon macOS"
 fi
 
-if "$script_dir/is-ai-component-installed" mlx 2>/dev/null; then
+if [ -f "$ai_llm_mlx_root/installed" ] && ai_llm_mlx_runtime_ready; then
   success "MLX is already installed"
   exit 0
 fi
@@ -35,6 +35,8 @@ fi
 if ! has python3; then
   die 127 "install-mlx: python3 is required"
 fi
+
+step "Installing MLX..."
 
 mkdir -p "$ai_llm_mlx_root"
 
@@ -50,7 +52,12 @@ python3 -m venv "$ai_llm_mlx_venv" || die "install-mlx: could not create virtual
 "$ai_llm_mlx_python" -m pip install --upgrade pip >/dev/null 2>&1 || die "install-mlx: pip upgrade failed"
 
 step "Installing MLX packages"
-"$ai_llm_mlx_python" -m pip install --upgrade mlx-lm huggingface-hub >/dev/null 2>&1 || die "install-mlx: failed to install mlx packages"
+"$ai_llm_mlx_python" -m pip install --upgrade mlx-lm huggingface-hub >/dev/null 2>&1 || \
+  die "install-mlx: failed to install mlx packages"
+
+if ! ai_llm_mlx_runtime_ready; then
+  die "install-mlx: mlx packages were installed but runtime verification failed"
+fi
 
 touch "$ai_llm_mlx_root/installed"
 

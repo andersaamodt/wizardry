@@ -85,8 +85,17 @@ case "$runtime" in
     ;;
   mlx)
     [ -x "$ai_llm_mlx_python" ] || die "install-llm: mlx runtime is incomplete"
-    "$ai_llm_mlx_python" -m mlx_lm.manage download --model "$pull_target" >/dev/null 2>&1 || \
+    if ! ai_llm_mlx_runtime_ready; then
+      die "install-llm: mlx runtime is not ready. Re-run install-mlx to repair it."
+    fi
+    AI_DEV_MLX_MODEL="$pull_target" "$ai_llm_mlx_python" - <<'PY' >/dev/null 2>&1 || \
       die "install-llm: failed to install $pull_target"
+import os
+from huggingface_hub import snapshot_download
+
+model = os.environ["AI_DEV_MLX_MODEL"]
+snapshot_download(repo_id=model)
+PY
     ai_llm_register_mlx_model "$pull_target" || die "install-llm: failed to register installed model"
     ;;
 esac

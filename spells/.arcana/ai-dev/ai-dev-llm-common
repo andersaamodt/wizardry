@@ -92,6 +92,14 @@ ai_llm_component_installed() {
   return 1
 }
 
+ai_llm_mlx_runtime_ready() {
+  [ -x "$ai_llm_mlx_python" ] || return 1
+  "$ai_llm_mlx_python" - <<'PY' >/dev/null 2>&1
+import mlx_lm  # noqa: F401
+import huggingface_hub  # noqa: F401
+PY
+}
+
 ai_llm_get_active_runtime() {
   runtime=${AI_DEV_LLM_RUNTIME:-}
   if ai_llm_runtime_valid "$runtime"; then
@@ -250,6 +258,12 @@ ai_llm_list_registered_mlx_models() {
   tr -d '\r' <"$ai_llm_mlx_models_file" 2>/dev/null || true
 }
 
+ai_llm_mlx_model_registered() {
+  model=$1
+  [ -f "$ai_llm_mlx_models_file" ] || return 1
+  grep -Fx "$model" "$ai_llm_mlx_models_file" >/dev/null 2>&1
+}
+
 ai_llm_write_opencode_runtime_config() {
   runtime=$1
   model=$2
@@ -258,7 +272,7 @@ ai_llm_write_opencode_runtime_config() {
 
   case "$runtime" in
     mlx)
-      cat >"$temp" <<EOF
+      cat >"$temp" <<'EOF'
 {
   "$schema": "https://opencode.ai/config.json",
   "provider": {
@@ -266,13 +280,15 @@ ai_llm_write_opencode_runtime_config() {
       "npm": "@ai-sdk/openai-compatible",
       "name": "MLX (local)",
       "options": {
-        "baseURL": "http://127.0.0.1:$ai_llm_mlx_port/v1"
+        "baseURL": "http://127.0.0.1:__MLX_PORT__/v1"
       }
     }
   },
-  "model": "mlx/$model"
+  "model": "mlx/__MODEL__"
 }
 EOF
+      sed -e "s|__MLX_PORT__|$ai_llm_mlx_port|g" -e "s|__MODEL__|$model|g" "$temp" >"$temp.out"
+      mv "$temp.out" "$temp"
       ;;
     ollama)
       cat >"$temp" <<'EOF'
@@ -346,7 +362,9 @@ ai_llm_sync_opencode_runtime() {
   model=$(ai_llm_get_selected_model "$runtime")
   ai_llm_write_opencode_runtime_config "$runtime" "$model" || return 1
   if [ "$runtime" = "mlx" ] && ai_llm_component_installed "mlx"; then
-    ai_llm_start_mlx_server "$model" || return 1
+    if ai_llm_mlx_model_registered "$model"; then
+      ai_llm_start_mlx_server "$model" || return 1
+    fi
   fi
   return 0
 }

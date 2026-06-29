@@ -49,8 +49,25 @@ case "$runtime" in
     ;;
   mlx)
     [ -x "$ai_llm_mlx_python" ] || die "uninstall-llm: mlx runtime is incomplete"
-    "$ai_llm_mlx_python" -m mlx_lm.manage remove --model "$model" >/dev/null 2>&1 || \
-      die "uninstall-llm: failed to uninstall $model"
+    if ! ai_llm_mlx_runtime_ready; then
+      die "uninstall-llm: mlx runtime is not ready. Re-run install-mlx to repair it."
+    fi
+    # Best-effort cache deletion by repository pattern if available.
+    AI_DEV_MLX_MODEL="$model" "$ai_llm_mlx_python" - <<'PY' >/dev/null 2>&1 || true
+import os
+import subprocess
+
+model = os.environ["AI_DEV_MLX_MODEL"]
+subprocess.run([
+    "python",
+    "-m",
+    "mlx_lm",
+    "manage",
+    "--delete",
+    "--pattern",
+    model,
+], check=False)
+PY
     ai_llm_unregister_mlx_model "$model" || true
     ;;
 esac

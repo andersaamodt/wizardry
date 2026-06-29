@@ -70,7 +70,7 @@ mlx)
   if ! ai_llm_is_mlx_supported; then
     exit 1
   fi
-  if [ -x "$ai_llm_mlx_python" ] && [ -f "$ai_llm_mlx_root/installed" ]; then
+  if [ -f "$ai_llm_mlx_root/installed" ] && ai_llm_mlx_runtime_ready; then
     exit 0
   fi
   exit 1
