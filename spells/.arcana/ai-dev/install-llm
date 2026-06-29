@@ -89,7 +89,9 @@ case "$runtime" in
       die "install-llm: mlx runtime is not ready. Re-run install-mlx to repair it."
     fi
     "$ai_llm_mlx_python" -m pip install --upgrade "urllib3<2" >/dev/null 2>&1 || true
-    if ! AI_DEV_MLX_MODEL="$pull_target" "$ai_llm_mlx_python" -c 'import os; from huggingface_hub import snapshot_download; snapshot_download(repo_id=os.environ["AI_DEV_MLX_MODEL"], max_workers=1)'; then
+    step "Downloading MLX model files (resumable)"
+    if ! HF_HUB_DISABLE_XET=1 AI_DEV_MLX_MODEL="$pull_target" \
+      "$ai_llm_mlx_python" -c 'import os; from huggingface_hub import snapshot_download; snapshot_download(repo_id=os.environ["AI_DEV_MLX_MODEL"], max_workers=4)'; then
       die "install-llm: failed to install $pull_target"
     fi
     ai_llm_register_mlx_model "$pull_target" || die "install-llm: failed to register installed model"
