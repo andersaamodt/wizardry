@@ -148,8 +148,8 @@ The AI development submenu includes OpenCode as a first-class user-local
 installable. Wizardry also provides a small checklist harness:
 
 ```sh
-loop-opencode ./TODO.md
-loop-opencode ./TODO.md --model ollama/qwen3-coder
+loop-code ./TODO.md
+loop-code ./TODO.md --model ollama/qwen3-coder
 ```
 
 The harness streams each OpenCode round, prints a Wizardry round summary, and
