@@ -151,8 +151,12 @@ EOF
   esac
 
   unchecked_after=$(awk 'index($0, "[ ]") { count += 1 } END { print count + 0 }' "$checklist_path")
-  round_footer_line=$(printf 'Round %s done — %s unchecked item(s) remain (%s)' \
-    "$round" "$unchecked_after" "$checklist_display")
+  round_completed=$((unchecked_before - unchecked_after))
+  if [ "$round_completed" -lt 0 ]; then
+    round_completed=0
+  fi
+  round_footer_line=$(printf 'Round %s done — %s completed — %s unchecked item(s) remain (%s)' \
+    "$round" "$round_completed" "$unchecked_after" "$checklist_display")
   round_footer_width=$(awk -v line="$round_footer_line" 'BEGIN { print length(line) + 2 }')
   if [ "$round_footer_width" -lt "$round_divider_min_width" ]; then
     round_footer_width=$round_divider_min_width
