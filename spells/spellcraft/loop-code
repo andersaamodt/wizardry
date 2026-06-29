@@ -166,12 +166,21 @@ EOF
   printf '%s\n' "$round_footer_line"
   printf '%s\n' "$round_footer_divider"
 
+  opencode_status_499=false
+  if grep -F 'status code 499' "$round_output" >/dev/null 2>&1; then
+    opencode_status_499=true
+  fi
+
   if [ "$opencode_status" -ne 0 ]; then
     if [ "$opencode_status" -eq 130 ]; then
       warn "loop-code: interrupted during OpenCode round $round; rerun loop-code in this directory to resume"
       exit 130
     fi
+    if [ "$opencode_status_499" = true ] && [ "$round_completed" -gt 0 ]; then
+      warn "loop-code: OpenCode round $round ended with status code 499 after completing $round_completed checklist item(s); continuing"
+    else
     die "loop-code: OpenCode round $round failed with status $opencode_status"
+    fi
   fi
 
   if [ "$unchecked_after" -eq 0 ]; then

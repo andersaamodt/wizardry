@@ -46,10 +46,25 @@ case ${OPENCODE_TEST_MODE:-complete-second} in
       printf '%s\n' 'WIZARDRY_CHECKLIST_COMPLETE'
     fi
     ;;
+  cancel-after-progress)
+    if [ "$count" -eq 1 ]; then
+      sed '1s/\[ \]/[x]/' "$OPENCODE_TEST_CHECKLIST" >"$OPENCODE_TEST_CHECKLIST.next"
+      mv "$OPENCODE_TEST_CHECKLIST.next" "$OPENCODE_TEST_CHECKLIST"
+      printf '%s\n' 'Error: status code 499'
+      exit 1
+    fi
+    sed 's/\[ \]/[x]/g' "$OPENCODE_TEST_CHECKLIST" >"$OPENCODE_TEST_CHECKLIST.next"
+    mv "$OPENCODE_TEST_CHECKLIST.next" "$OPENCODE_TEST_CHECKLIST"
+    printf '%s\n' 'WIZARDRY_CHECKLIST_COMPLETE'
+    ;;
+  cancel-without-progress)
+    printf '%s\n' 'Error: status code 499'
+    exit 1
+    ;;
   fail)
     exit 7
     ;;
-esac
+  esac
 SH
   chmod +x "$moc_stub_dir/opencode"
 }
@@ -254,6 +269,48 @@ test_opencode_failure_is_reported() {
   assert_error_contains "OpenCode round 1 failed with status 7" || return 1
 }
 
+test_status_499_with_progress_continues() {
+  tmp=$(make_tempdir)
+  stub_dir="$tmp/stubs"
+  make_opencode_stub "$stub_dir"
+  checklist="$tmp/TODO.md"
+  printf '%s\n' '- [ ] first task' '- [ ] second task' >"$checklist"
+
+  run_cmd env \
+    PATH="$stub_dir:$PATH" \
+    OPENCODE_TEST_MODE=cancel-after-progress \
+    OPENCODE_TEST_LOG="$tmp/log" \
+    OPENCODE_TEST_COUNT="$tmp/count" \
+    OPENCODE_TEST_CHECKLIST="$checklist" \
+    "$ROOT_DIR/spells/spellcraft/loop-code" "$checklist"
+
+  assert_success || return 1
+  assert_error_contains "status code 499 after completing 1 checklist item(s); continuing" || return 1
+  [ "$(cat "$tmp/count")" = "2" ] || {
+    TEST_FAILURE_REASON="status 499 after progress should continue to a second round"
+    return 1
+  }
+}
+
+test_status_499_without_progress_fails() {
+  tmp=$(make_tempdir)
+  stub_dir="$tmp/stubs"
+  make_opencode_stub "$stub_dir"
+  checklist="$tmp/TODO.md"
+  printf '%s\n' '- [ ] task' >"$checklist"
+
+  run_cmd env \
+    PATH="$stub_dir:$PATH" \
+    OPENCODE_TEST_MODE=cancel-without-progress \
+    OPENCODE_TEST_LOG="$tmp/log" \
+    OPENCODE_TEST_COUNT="$tmp/count" \
+    OPENCODE_TEST_CHECKLIST="$checklist" \
+    "$ROOT_DIR/spells/spellcraft/loop-code" "$checklist"
+
+  assert_failure || return 1
+  assert_error_contains "OpenCode round 1 failed with status 1" || return 1
+}
+
 run_test_case "loop-code shows help" test_help
 run_test_case "loop-code requires checklist defaults" test_missing_checklist_fails
 run_test_case "loop-code defaults to CHECKLIST.md" test_default_checklist_uppercase_is_used
@@ -264,5 +321,7 @@ run_test_case "loop-code honors direction phrase" test_direction_phrase_stops_lo
 run_test_case "loop-code rejects false completion" test_false_completion_claim_continues
 run_test_case "loop-code ignores vague direction refusal" test_vague_direction_refusal_continues
 run_test_case "loop-code reports OpenCode failure" test_opencode_failure_is_reported
+run_test_case "loop-code continues after status 499 with progress" test_status_499_with_progress_continues
+run_test_case "loop-code fails on status 499 without progress" test_status_499_without_progress_fails
 
 finish_tests
