@@ -28,6 +28,7 @@ if [ -z "$action" ]; then
   
   if "$script_dir/is-ai-component-installed" tabby 2>/dev/null && \
      "$script_dir/is-ai-component-installed" ollama 2>/dev/null && \
+     "$script_dir/is-ai-component-installed" opencode 2>/dev/null && \
      "$script_dir/is-ai-component-installed" anythingllm 2>/dev/null; then
     action="--disable"
   fi
@@ -45,6 +46,11 @@ case "$action" in
   # Install ollama if not installed
   if ! "$script_dir/is-ai-component-installed" ollama 2>/dev/null; then
     "$script_dir/install-ollama"
+  fi
+
+  # Install OpenCode if not installed
+  if ! "$script_dir/is-ai-component-installed" opencode 2>/dev/null; then
+    "$script_dir/install-opencode"
   fi
   
   # Install AnythingLLM if not installed
@@ -68,6 +74,11 @@ case "$action" in
   # Uninstall ollama if installed
   if "$script_dir/is-ai-component-installed" ollama 2>/dev/null; then
     "$script_dir/uninstall-ollama"
+  fi
+
+  # Uninstall OpenCode if installed
+  if "$script_dir/is-ai-component-installed" opencode 2>/dev/null; then
+    "$script_dir/uninstall-opencode"
   fi
   
   # Uninstall Tabby if installed

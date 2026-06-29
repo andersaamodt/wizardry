@@ -88,6 +88,7 @@ while true; do
   tabby_installed=0
   ollama_installed=0
   anythingllm_installed=0
+  opencode_installed=0
   ollama_daemon_installed=0
   ollama_daemon_enabled=0
   ollama_daemon_running=0
@@ -98,6 +99,7 @@ while true; do
   fast_check "$script_dir/is-ai-component-installed" tabby && tabby_installed=1
   fast_check "$script_dir/is-ai-component-installed" ollama && ollama_installed=1
   fast_check "$script_dir/is-ai-component-installed" anythingllm && anythingllm_installed=1
+  fast_check "$script_dir/is-ai-component-installed" opencode && opencode_installed=1
 
   # Check ollama daemon state (only if ollama is installed)
   if [ "$ollama_installed" -eq 1 ]; then
@@ -283,6 +285,23 @@ while true; do
   ollama_toggle="$ollama_label%$(wrap_cmd "$ollama_label" "$ollama_cmd")"
   set -- "$@" "$ollama_toggle"
 
+  # OpenCode toggle and checklist harness
+  if [ "$opencode_installed" -eq 1 ]; then
+    opencode_label="[X] OpenCode"
+    opencode_cmd="$script_dir/uninstall-opencode"
+  else
+    opencode_label="[ ] OpenCode"
+    opencode_cmd="$script_dir/install-opencode"
+  fi
+  opencode_toggle="$opencode_label%$(wrap_cmd "$opencode_label" "$opencode_cmd")"
+  set -- "$@" "$opencode_toggle"
+
+  if [ "$opencode_installed" -eq 1 ]; then
+    checklist_label="Run OpenCode checklist"
+    checklist_cmd="$script_dir/run-opencode-checklist"
+    set -- "$@" "$checklist_label%$(wrap_cmd "$checklist_label" "$checklist_cmd")"
+  fi
+
   # AnythingLLM toggle
   if [ "$anythingllm_installed" -eq 1 ]; then
     anythingllm_label="[X] AnythingLLM"
@@ -307,6 +326,9 @@ while true; do
     all_installed=0
   fi
   if ! fast_check "$script_dir/is-ai-component-installed" ollama; then
+    all_installed=0
+  fi
+  if ! fast_check "$script_dir/is-ai-component-installed" opencode; then
     all_installed=0
   fi
   if ! fast_check "$script_dir/is-ai-component-installed" anythingllm; then

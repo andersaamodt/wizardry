@@ -18,6 +18,27 @@ Documents all deviations from project standards with justification.
 - **CI**: No exemptions - all checks required
 - **All-Caps Variables**: ✅ **COMPLETED** - All production spells use lowercase (Dec 2025). Only `.arcana/*` bootstrap scripts remain (exempt category)
 - **Shebangs**: ✅ **STANDARDIZED** - All scripts use `#!/bin/sh` (38 files converted, 5 tutorials converted)
+- **Downloaded Binary Verification**: OpenCode publishes official per-platform release archives without detached checksum assets; Wizardry downloads the exact official asset directly and verifies that the installed executable runs, pending upstream checksums.
+
+---
+
+## Downloaded Binary Verification
+
+### OpenCode release archives
+
+**Affected file**: `spells/.arcana/ai-dev/install-opencode`
+
+**Deviation**: OpenCode's release currently publishes platform archives but no
+detached checksum manifest or signature asset.
+
+**Boundary**: Wizardry does not pipe the upstream installer into a shell. It
+selects a fixed platform asset name from the official GitHub release, downloads
+that archive directly over HTTPS, extracts only the expected `opencode` binary,
+installs it in the user's local executable directory, and requires the installed
+binary to answer `--version`. `OPENCODE_VERSION` can pin an exact tagged release.
+
+**Removal condition**: Verify a published checksum or signature before
+installation when OpenCode begins supplying a stable verification artifact.
 
 ---
 

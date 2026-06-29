@@ -1,0 +1,34 @@
+#!/bin/sh
+
+# Uninstall OpenCode from Wizardry and upstream user-local locations.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uninstall-opencode
+
+Removes OpenCode binaries from supported user-local installation locations.
+OpenCode configuration and session data are preserved.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+removed=0
+for path in "$HOME/.local/bin/opencode" "$HOME/.opencode/bin/opencode" "$HOME/bin/opencode"; do
+  if [ -f "$path" ] || [ -L "$path" ]; then
+    rm -f "$path" || die "uninstall-opencode: failed to remove $path"
+    removed=1
+  fi
+done
+
+if [ "$removed" -eq 0 ]; then
+  success "OpenCode is not installed in a supported user-local location"
+else
+  success "OpenCode uninstalled; configuration and session data were preserved"
+fi

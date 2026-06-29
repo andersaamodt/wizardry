@@ -144,6 +144,20 @@ Using the free software suite makes it easy to establish a standardized software
 
 The arcana menu (`install-menu`) loads arcana automatically from files, so you can also author your own modules, to make installing the software you use more convenient and repeatable.
 
+The AI development submenu includes OpenCode as a first-class user-local
+installable. Wizardry also provides a small checklist harness:
+
+```sh
+complete-opencode-checklist ./TODO.md
+complete-opencode-checklist ./TODO.md --model ollama/qwen3-coder
+```
+
+The harness streams each OpenCode round, prints a Wizardry round summary, and
+continues while the plain-text checklist contains an unchecked `[ ]` marker. An
+explicit `WIZARDRY_CHECKLIST_NEEDS_DIRECTION` response stops the loop so blocked
+work cannot spin indefinitely. The checklist file, rather than the agent's
+self-report, remains the completion authority.
+
 ### MUD-like Parsing
 
 Wizardry supports space-separated commands for all wizardry commands (planned: all other commands), so you can also type `main menu` or `main-menu` to reach the same `menu`. Wizardry includes a `thesaurus`, which allows you to add synonyms for commands. Wizardry also includes a recursive parser, which will handle `main menu` as `main` and route it to `main-menu` correctly.

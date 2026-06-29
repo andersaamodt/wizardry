@@ -9,7 +9,7 @@ Usage: is-ai-component-installed COMPONENT
 
 Checks if the specified AI development component is installed.
 
-Supported components: tabby, ollama, anythingllm
+Supported components: tabby, ollama, opencode, anythingllm
 
 Returns: 0 if installed, 1 if not installed
 USAGE
@@ -22,6 +22,10 @@ set -eu
 
 component=${1-}
 if [ -z "$component" ]; then
+  exit 1
+fi
+
+if [ "${AI_DEV_FORCE_NONE:-0}" = "1" ]; then
   exit 1
 fi
 
@@ -51,6 +55,26 @@ ollama)
   fi
   # Check in common install locations
   for path in /usr/local/bin/ollama /usr/bin/ollama "$HOME/.local/bin/ollama"; do
+    if [ -x "$path" ]; then
+      exit 0
+    fi
+  done
+  exit 1
+  ;;
+opencode)
+  if [ "${AI_DEV_OPENCODE_PATH+x}" = "x" ]; then
+    [ -x "$AI_DEV_OPENCODE_PATH" ]
+    exit $?
+  fi
+  if has opencode; then
+    exit 0
+  fi
+  for path in \
+    /usr/local/bin/opencode \
+    /usr/bin/opencode \
+    "$HOME/.local/bin/opencode" \
+    "$HOME/.opencode/bin/opencode" \
+    "$HOME/bin/opencode"; do
     if [ -x "$path" ]; then
       exit 0
     fi

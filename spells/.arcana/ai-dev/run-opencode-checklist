@@ -1,0 +1,30 @@
+#!/bin/sh
+
+# Prompt for a checklist and optional model, then run the OpenCode micro-harness.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: run-opencode-checklist
+
+Prompts for a checklist file and optional provider/model, then casts
+complete-opencode-checklist until the checklist completes or needs direction.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+checklist=$(ask-text "Checklist file:")
+[ -n "$checklist" ] || die 2 "run-opencode-checklist: checklist file is required"
+model=$(ask-text "OpenCode provider/model (blank uses its default):" "")
+
+if [ -n "$model" ]; then
+  complete-opencode-checklist "$checklist" --model "$model"
+else
+  complete-opencode-checklist "$checklist"
+fi
