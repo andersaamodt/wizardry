@@ -20,6 +20,9 @@ set -eu
 . env-clear
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+# shellcheck source=/dev/null
+. "$script_dir/ai-dev-llm-common"
+set -eu
 if "$script_dir/is-ai-component-installed" opencode 2>/dev/null; then
   success "OpenCode is already installed"
   exit 0
@@ -91,18 +94,38 @@ tar.gz)
 esac
 
 [ -f "$extract_dir/opencode" ] || die "install-opencode: release archive did not contain opencode"
-install_dir=$HOME/.local/bin
-mkdir -p "$install_dir"
-mv "$extract_dir/opencode" "$install_dir/opencode"
-chmod 755 "$install_dir/opencode"
+wrapper_dir=$HOME/.local/bin
+real_dir=$HOME/.local/lib/wizardry/opencode
+real_bin=$real_dir/opencode-real
+mkdir -p "$wrapper_dir" "$real_dir"
+mv "$extract_dir/opencode" "$real_bin"
+chmod 755 "$real_bin"
 
-if ! "$install_dir/opencode" --version >/dev/null 2>&1; then
-  rm -f "$install_dir/opencode"
+cat >"$wrapper_dir/opencode" <<EOF
+#!/bin/sh
+
+set -eu
+
+script_dir="$script_dir"
+# shellcheck source=/dev/null
+. "$script_dir/ai-dev-llm-common"
+set -eu
+
+if ai_llm_sync_opencode_runtime; then
+  export OPENCODE_CONFIG="$ai_llm_opencode_runtime_config"
+fi
+
+exec "$real_bin" "\$@"
+EOF
+chmod 755 "$wrapper_dir/opencode"
+
+if ! "$wrapper_dir/opencode" --version >/dev/null 2>&1; then
+  rm -f "$wrapper_dir/opencode" "$real_bin"
   die "install-opencode: installed binary failed verification"
 fi
 
 case ":${PATH-}:" in
-*":$install_dir:"*) ;;
-*) warn "install-opencode: $install_dir is not currently in PATH" ;;
+*":$wrapper_dir:"*) ;;
+*) warn "install-opencode: $wrapper_dir is not currently in PATH" ;;
 esac
-success "OpenCode installed at $install_dir/opencode"
+success "OpenCode installed at $wrapper_dir/opencode"

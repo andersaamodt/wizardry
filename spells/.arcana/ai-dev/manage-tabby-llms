@@ -24,6 +24,11 @@ fi
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 
+runtime=$("$script_dir/get-active-llm-runtime" 2>/dev/null || printf 'ollama')
+if [ "$runtime" != "ollama" ]; then
+  die "manage-tabby-llms: Tabby model management currently requires ollama runtime"
+fi
+
 trap 'exit 130' INT
 trap 'exit 0' TERM
 
@@ -46,4 +51,3 @@ while :; do
     exit 0
   fi
 done
-

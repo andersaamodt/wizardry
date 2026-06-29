@@ -17,6 +17,12 @@ set -eu
 . env-clear
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+
+runtime=$("$script_dir/get-active-llm-runtime" 2>/dev/null || printf 'ollama')
+if [ "$runtime" != "ollama" ]; then
+  die "install-best-tabby-llm: Tabby model management currently requires ollama runtime"
+fi
+
 best_model=${TABBY_BEST_LLM_MODEL:-qwen3-coder:30b}
 
 printf '%s\n' "Installing best Tabby LLM: $best_model"

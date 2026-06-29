@@ -20,7 +20,7 @@ set -eu
 . env-clear
 
 removed=0
-for path in "$HOME/.local/bin/opencode" "$HOME/.opencode/bin/opencode" "$HOME/bin/opencode"; do
+for path in "$HOME/.local/bin/opencode" "$HOME/.local/lib/wizardry/opencode/opencode-real" "$HOME/.opencode/bin/opencode" "$HOME/bin/opencode"; do
   if [ -f "$path" ] || [ -L "$path" ]; then
     rm -f "$path" || die "uninstall-opencode: failed to remove $path"
     removed=1

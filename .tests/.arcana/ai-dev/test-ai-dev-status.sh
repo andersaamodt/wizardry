@@ -18,6 +18,12 @@ test_is_ai_component_installed_ollama() {
   assert_failure
 }
 
+test_is_ai_component_installed_mlx() {
+  # Should fail when mlx not installed
+  AI_DEV_FORCE_NONE=1 AI_DEV_MLX_SUPPORTED=1 run_spell "spells/.arcana/ai-dev/is-ai-component-installed" "mlx"
+  assert_failure
+}
+
 test_is_ai_component_installed_anythingllm() {
   # Should fail when AnythingLLM not installed
   AI_DEV_FORCE_NONE=1 run_spell "spells/.arcana/ai-dev/is-ai-component-installed" "anythingllm"
@@ -50,6 +56,7 @@ test_is_ai_component_installed_no_arg() {
 
 run_test_case "ai-dev-status shows not installed" test_ai_dev_status_not_installed
 run_test_case "is-ai-component-installed ollama fails when not installed" test_is_ai_component_installed_ollama
+run_test_case "is-ai-component-installed mlx fails when not installed" test_is_ai_component_installed_mlx
 run_test_case "is-ai-component-installed anythingllm fails when not installed" test_is_ai_component_installed_anythingllm
 run_test_case "is-ai-component-installed tabby fails when not installed" test_is_ai_component_installed_tabby
 run_test_case "is-ai-component-installed opencode fails when not installed" test_is_ai_component_installed_opencode

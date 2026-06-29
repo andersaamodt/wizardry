@@ -17,6 +17,9 @@ set -eu
 . env-clear
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+# shellcheck source=/dev/null
+. "$script_dir/ai-dev-llm-common"
+set -eu
 
 action=${1-}
 
@@ -29,6 +32,7 @@ if [ -z "$action" ]; then
   if "$script_dir/is-ai-component-installed" tabby 2>/dev/null && \
      "$script_dir/is-ai-component-installed" ollama 2>/dev/null && \
      "$script_dir/is-ai-component-installed" opencode 2>/dev/null && \
+     { ! ai_llm_is_mlx_supported || "$script_dir/is-ai-component-installed" mlx 2>/dev/null; } && \
      "$script_dir/is-ai-component-installed" anythingllm 2>/dev/null; then
     action="--disable"
   fi
@@ -46,6 +50,13 @@ case "$action" in
   # Install ollama if not installed
   if ! "$script_dir/is-ai-component-installed" ollama 2>/dev/null; then
     "$script_dir/install-ollama"
+  fi
+
+  # Install MLX on supported macOS hosts
+  if ai_llm_is_mlx_supported; then
+    if ! "$script_dir/is-ai-component-installed" mlx 2>/dev/null; then
+      "$script_dir/install-mlx"
+    fi
   fi
 
   # Install OpenCode if not installed
@@ -79,6 +90,11 @@ case "$action" in
   # Uninstall OpenCode if installed
   if "$script_dir/is-ai-component-installed" opencode 2>/dev/null; then
     "$script_dir/uninstall-opencode"
+  fi
+
+  # Uninstall MLX if installed
+  if "$script_dir/is-ai-component-installed" mlx 2>/dev/null; then
+    "$script_dir/uninstall-mlx"
   fi
   
   # Uninstall Tabby if installed

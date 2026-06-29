@@ -9,7 +9,7 @@ Usage: is-ai-component-installed COMPONENT
 
 Checks if the specified AI development component is installed.
 
-Supported components: tabby, ollama, opencode, anythingllm
+Supported components: tabby, ollama, mlx, opencode, anythingllm
 
 Returns: 0 if installed, 1 if not installed
 USAGE
@@ -19,6 +19,11 @@ esac
 
 set -eu
 . env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+# shellcheck source=/dev/null
+. "$script_dir/ai-dev-llm-common"
+set -eu
 
 component=${1-}
 if [ -z "$component" ]; then
@@ -59,6 +64,15 @@ ollama)
       exit 0
     fi
   done
+  exit 1
+  ;;
+mlx)
+  if ! ai_llm_is_mlx_supported; then
+    exit 1
+  fi
+  if [ -x "$ai_llm_mlx_python" ] && [ -f "$ai_llm_mlx_root/installed" ]; then
+    exit 0
+  fi
   exit 1
   ;;
 opencode)

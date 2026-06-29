@@ -24,6 +24,11 @@ fi
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 
+runtime=$("$script_dir/get-active-llm-runtime" 2>/dev/null || printf 'ollama')
+if [ "$runtime" != "ollama" ]; then
+  die "select-tabby-llm: Tabby model management currently requires ollama runtime"
+fi
+
 is_embedding_model_name() {
   case "$1" in
     *embed*|*embedding*|nomic-embed-text|nomic-embed-text:*)
@@ -35,7 +40,7 @@ is_embedding_model_name() {
   esac
 }
 
-installed=$("$script_dir/list-installed-llms" 2>/dev/null || printf '')
+installed=$("$script_dir/list-installed-llms" "ollama" 2>/dev/null || printf '')
 if [ -z "$installed" ]; then
   die "select-tabby-llm: no installed models found"
 fi

@@ -17,6 +17,9 @@ set -eu
 . env-clear
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+# shellcheck source=/dev/null
+. "$script_dir/ai-dev-llm-common"
+set -eu
 
 # Check if already installed
 if "$script_dir/is-ai-component-installed" ollama 2>/dev/null; then
@@ -113,6 +116,17 @@ if ! "$script_dir/is-ai-component-installed" ollama 2>/dev/null; then
 fi
 
 success "ollama installed successfully"
+
+if ! "$script_dir/is-ai-component-installed" mlx 2>/dev/null; then
+  ai_llm_set_active_runtime "ollama" || true
+fi
+
+default_model=$(ai_llm_default_model ollama)
+ai_llm_set_selected_model ollama "$default_model" || true
+
+if ! ai_llm_sync_opencode_runtime; then
+  warn "install-ollama: OpenCode runtime sync failed"
+fi
 
 # Check if we should auto-repair link (if AnythingLLM is installed)
 if "$script_dir/is-ai-component-installed" anythingllm 2>/dev/null; then

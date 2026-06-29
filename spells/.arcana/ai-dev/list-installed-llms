@@ -5,9 +5,9 @@
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: list-installed-llms
+Usage: list-installed-llms [RUNTIME]
 
-Lists LLMs currently installed in ollama.
+Lists LLMs currently installed in the active runtime or provided runtime.
 USAGE
   exit 0
   ;;
@@ -17,20 +17,37 @@ set -eu
 . env-clear
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+# shellcheck source=/dev/null
+. "$script_dir/ai-dev-llm-common"
+set -eu
 
-# Check if ollama is installed
-if ! "$script_dir/is-ai-component-installed" ollama 2>/dev/null; then
-  exit 0
+runtime=${1-}
+if [ -z "$runtime" ]; then
+  runtime=$(ai_llm_resolve_runtime)
 fi
 
-# Get ollama binary
-if has ollama; then
-  ollama_bin="ollama"
-elif [ -x "$HOME/.local/bin/ollama" ]; then
-  ollama_bin="$HOME/.local/bin/ollama"
-else
-  exit 0
+if ! ai_llm_runtime_valid "$runtime"; then
+  die 2 "list-installed-llms: invalid runtime '$runtime'"
 fi
 
-# List installed models
-$ollama_bin list 2>/dev/null | tail -n +2 | awk '{print $1}' || exit 0
+case "$runtime" in
+  ollama)
+    if ! "$script_dir/is-ai-component-installed" ollama 2>/dev/null; then
+      exit 0
+    fi
+    if has ollama; then
+      ollama_bin="ollama"
+    elif [ -x "$HOME/.local/bin/ollama" ]; then
+      ollama_bin="$HOME/.local/bin/ollama"
+    else
+      exit 0
+    fi
+    "$ollama_bin" list 2>/dev/null | tail -n +2 | awk '{print $1}' || exit 0
+    ;;
+  mlx)
+    if ! "$script_dir/is-ai-component-installed" mlx 2>/dev/null; then
+      exit 0
+    fi
+    ai_llm_list_registered_mlx_models
+    ;;
+esac

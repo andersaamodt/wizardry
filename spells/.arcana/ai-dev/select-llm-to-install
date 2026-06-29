@@ -24,13 +24,19 @@ if ! require menu "The select-llm-to-install needs the 'menu' command to present
 fi
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+# shellcheck source=/dev/null
+. "$script_dir/ai-dev-llm-common"
+set -eu
 
 # Catch Ctrl-C and TERM signal to exit cleanly
 trap 'exit 130' INT
 trap 'exit 0' TERM
 
+runtime=$(ai_llm_resolve_runtime)
+runtime_label=$(ai_llm_runtime_label "$runtime")
+
 # Get list of available LLMs
-available_llms=$("$script_dir/list-available-llms" 2>/dev/null || echo "")
+available_llms=$("$script_dir/list-available-llms" "$runtime" 2>/dev/null || echo "")
 
 if [ -z "$available_llms" ]; then
   die "select-llm-to-install: no available LLMs found"
@@ -47,7 +53,7 @@ while IFS= read -r llm_entry; do
   # Create menu label with description in parentheses
   label="$model ($description)"
   
-  set -- "$@" "$label%install-llm \"$model\" && kill -TERM \$PPID"
+  set -- "$@" "$label%$script_dir/install-llm \"$model\" && kill -TERM \$PPID"
 done <<EOF
 $available_llms
 EOF
@@ -55,7 +61,7 @@ EOF
 exit_label=$(exit-label)
 set -- "$@" "${exit_label}%kill -TERM \$PPID"
 
-menu "Select LLM to install:" "$@" || menu_status=$?
+menu "Select $runtime_label model to install:" "$@" || menu_status=$?
 menu_status=${menu_status:-0}
 
 if [ "$menu_status" -eq 130 ]; then
