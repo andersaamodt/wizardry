@@ -1,19 +1,25 @@
 #!/bin/sh
 
 # Repeatedly run OpenCode against a checklist until no unchecked items remain.
-# The checklist is authoritative; explicit direction requests stop the loop.
+# The checklist carries the loop state; explicit direction requests stop the loop.
 
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: loop-code [CHECKLIST] [--model PROVIDER/MODEL]
+Usage: loop-code [CHECKLIST] [--model PROVIDER/MODEL] [--local|--remote] [--batch|--no-batch]
 
 Runs OpenCode in the checklist's directory until CHECKLIST contains no literal
 "[ ]" markers. OpenCode output is streamed for every round. Use --model to
-select an OpenCode provider/model.
+select an exact OpenCode provider/model. Use --local to use wizardry's
+preferred local model or --remote to use OpenCode's configured default model.
 
 When CHECKLIST is omitted, loop-code defaults to CHECKLIST.md if present,
 otherwise checklist.md.
+
+--no-batch means complete one checklist item per round unless multiple items
+are obviously inseparable. --batch means complete the largest coherent safe
+batch per round. The default is --no-batch for local models and --batch for
+remote models.
 
 OpenCode is instructed to emit WIZARDRY_CHECKLIST_COMPLETE when it verifies the
 whole checklist. WIZARDRY_CHECKLIST_NEEDS_DIRECTION is honored only when it is
@@ -37,14 +43,149 @@ if [ -f "$ai_dev_helper" ]; then
   set -eu
 fi
 
+loop_code_state_get() {
+  target_key=$1
+  awk -v target_key="$target_key" '
+    /^<!-- LOOP-CODE STATE BEGIN$/ { in_block = 1; next }
+    /^LOOP-CODE STATE END -->$/ { in_block = 0; next }
+    in_block && index($0, target_key "=") == 1 {
+      print substr($0, length(target_key) + 2)
+      exit
+    }
+  ' "$checklist_path"
+}
+
+loop_code_write_state() {
+  state_body=$(mktemp "${TMPDIR:-/tmp}/loop-code-state-body.XXXXXX")
+  state_tmp=$(mktemp "${TMPDIR:-/tmp}/loop-code-state-file.XXXXXX")
+  awk '
+    /^<!-- LOOP-CODE STATE BEGIN$/ { skip = 1; next }
+    /^LOOP-CODE STATE END -->$/ { skip = 0; next }
+    !skip { print }
+  ' "$checklist_path" >"$state_body"
+
+  if [ -n "$state_session_id$state_session_title$state_model$state_active_pid$state_local" ]; then
+    {
+      cat "$state_body"
+      [ ! -s "$state_body" ] || printf '\n'
+      printf '%s\n' '<!-- LOOP-CODE STATE BEGIN'
+      [ -n "$state_session_id" ] && printf 'session_id=%s\n' "$state_session_id"
+      [ -n "$state_session_title" ] && printf 'session_title=%s\n' "$state_session_title"
+      [ -n "$state_model" ] && printf 'model=%s\n' "$state_model"
+      [ -n "$state_local" ] && printf 'local=%s\n' "$state_local"
+      [ -n "$state_active_pid" ] && printf 'active_pid=%s\n' "$state_active_pid"
+      printf '%s\n' 'LOOP-CODE STATE END -->'
+    } >"$state_tmp"
+  else
+    cat "$state_body" >"$state_tmp"
+  fi
+
+  mv "$state_tmp" "$checklist_path"
+  rm -f "$state_body"
+}
+
+loop_code_release_state() {
+  if [ -n "${loop_code_local_server_pid-}" ] && kill -0 "$loop_code_local_server_pid" 2>/dev/null; then
+    kill "$loop_code_local_server_pid" >/dev/null 2>&1 || :
+    wait "$loop_code_local_server_pid" 2>/dev/null || :
+  fi
+
+  if [ "${using_local_model-}" = true ] && [ -n "${global_local_guard_file-}" ] && [ -f "$global_local_guard_file" ]; then
+    guard_pid=$(sed -n 's/^pid=//p' "$global_local_guard_file" 2>/dev/null | sed -n '1p')
+    if [ "$guard_pid" = "$$" ]; then
+      rm -f "$global_local_guard_file"
+    fi
+  fi
+
+  state_active_pid=''
+  if [ "${release_clear_all:-0}" = 1 ]; then
+    state_session_id=''
+    state_session_title=''
+    state_model=''
+    state_local=''
+  fi
+  loop_code_write_state
+}
+
+loop_code_sql_quote() {
+  printf "'%s'" "$(printf '%s' "$1" | sed "s/'/''/g")"
+}
+
+loop_code_lookup_session_id() {
+  lookup_title=$1
+  lookup_dir=$2
+  lookup_title_sql=$(loop_code_sql_quote "$lookup_title")
+  lookup_dir_sql=$(loop_code_sql_quote "$lookup_dir")
+  lookup_query="select id from session where title = $lookup_title_sql and directory = $lookup_dir_sql order by time_created desc limit 1"
+  attempts=0
+  while [ "$attempts" -lt 5 ]; do
+    session_id=$(
+      opencode db "$lookup_query" --format tsv 2>/dev/null | sed -n '1p' || printf ''
+    )
+    if [ -n "$session_id" ]; then
+      printf '%s\n' "$session_id"
+      return 0
+    fi
+    attempts=$((attempts + 1))
+    sleep 1
+  done
+  return 1
+}
+
+loop_code_guard_local_mode() {
+  [ "$using_local_model" = true ] || return 0
+  has ask-yn || die 127 "loop-code: ask-yn is required to confirm a second local run"
+
+  loop_code_state_home=${XDG_STATE_HOME:-$HOME/.local/state}
+  global_local_guard_dir=$loop_code_state_home/wizardry/loop-code
+  global_local_guard_file=$global_local_guard_dir/active-local-run
+  mkdir -p "$global_local_guard_dir"
+
+  if [ -f "$global_local_guard_file" ]; then
+    guard_pid=$(sed -n 's/^pid=//p' "$global_local_guard_file" 2>/dev/null | sed -n '1p')
+    guard_checklist=$(sed -n 's/^checklist=//p' "$global_local_guard_file" 2>/dev/null | sed -n '1p')
+    guard_model=$(sed -n 's/^model=//p' "$global_local_guard_file" 2>/dev/null | sed -n '1p')
+    if [ -n "$guard_pid" ] && [ "$guard_pid" != "$$" ] && kill -0 "$guard_pid" 2>/dev/null; then
+      if ! ask-yn "Another local loop-code run is active (PID $guard_pid — ${guard_model:-local model} — ${guard_checklist:-unknown checklist}). Start another local run anyway?" no; then
+        die "loop-code: refused to start a second local OpenCode run"
+      fi
+    else
+      rm -f "$global_local_guard_file"
+    fi
+  fi
+
+  cat >"$global_local_guard_file" <<EOF
+pid=$$
+checklist=$checklist_path
+model=$model
+EOF
+}
+
 checklist=""
 model=""
+model_source=default
+local_mode=false
+remote_mode=false
+batch_mode=auto
 while [ "$#" -gt 0 ]; do
   case "$1" in
   --model)
     shift
     [ "$#" -gt 0 ] || die 2 "loop-code: --model requires a value"
     model=$1
+    model_source=explicit
+    ;;
+  --local)
+    local_mode=true
+    ;;
+  --remote)
+    remote_mode=true
+    ;;
+  --batch)
+    batch_mode=batch
+    ;;
+  --no-batch)
+    batch_mode=no-batch
     ;;
   --*)
     die 2 "loop-code: unknown option '$1'"
@@ -67,6 +208,9 @@ if [ -z "$checklist" ]; then
   fi
 fi
 
+[ "$local_mode" = false ] || [ "$remote_mode" = false ] || die 2 "loop-code: choose either --local or --remote, not both"
+[ "$model_source" != explicit ] || [ "$local_mode" = false ] && [ "$remote_mode" = false ] || die 2 "loop-code: --model cannot be combined with --local or --remote"
+
 [ -f "$checklist" ] || die "loop-code: checklist is not a regular file: $checklist"
 [ -r "$checklist" ] || die "loop-code: checklist is not readable: $checklist"
 [ -w "$checklist" ] || die "loop-code: checklist is not writable: $checklist"
@@ -83,17 +227,88 @@ case "$checklist_display" in
 "$HOME"/*) checklist_display="~${checklist_display#"$HOME"}" ;;
 esac
 
+state_session_id=$(loop_code_state_get session_id 2>/dev/null || printf '')
+state_session_title=$(loop_code_state_get session_title 2>/dev/null || printf '')
+state_model=$(loop_code_state_get model 2>/dev/null || printf '')
+state_local=$(loop_code_state_get local 2>/dev/null || printf '')
+state_active_pid=$(loop_code_state_get active_pid 2>/dev/null || printf '')
+
 if ! grep -F '[ ]' "$checklist_path" >/dev/null 2>&1; then
   success "Checklist is already complete: $checklist_path"
   exit 0
 fi
 
-if [ -f "$ai_dev_helper" ]; then
-  if ! ai_llm_prepare_opencode_runtime "$model"; then
-    if mlx_model=$(ai_llm_resolve_opencode_mlx_model "$model" 2>/dev/null); then
-      die "loop-code: MLX runtime for OpenCode model '$mlx_model' could not be prepared"
-    fi
+session_id=''
+session_title=''
+if [ "$model_source" = explicit ]; then
+  :
+elif [ "$local_mode" = true ]; then
+  model=$(ai_llm_preferred_local_opencode_model 2>/dev/null || printf '')
+  [ -n "$model" ] || die "loop-code: no preferred local model is configured"
+elif [ "$remote_mode" = true ]; then
+  model=$(ai_llm_opencode_model 2>/dev/null || printf '')
+  [ -n "$model" ] || die "loop-code: no default OpenCode model is configured; pass --model or set opencode.jsonc"
+  if ai_llm_model_is_local "$model"; then
+    die "loop-code: --remote requires a non-local default model in opencode.jsonc"
   fi
+elif [ -n "$state_model" ]; then
+  model=$state_model
+  session_id=$state_session_id
+  session_title=$state_session_title
+else
+  model=$(ai_llm_opencode_model 2>/dev/null || printf '')
+  [ -n "$model" ] || die "loop-code: no default OpenCode model is configured; pass --model or set opencode.jsonc"
+fi
+
+using_local_model=false
+if ai_llm_model_is_local "$model"; then
+  using_local_model=true
+fi
+
+if [ "$batch_mode" = auto ]; then
+  if [ "$using_local_model" = true ]; then
+    batch_mode=no-batch
+  else
+    batch_mode=batch
+  fi
+fi
+
+if [ -z "$session_title" ]; then
+  session_title=loop-code-$(date -u +%Y%m%dT%H%M%SZ)-$$-${checklist_name}
+fi
+if [ -z "$session_id" ] && [ -n "$state_session_title" ] && [ "$session_title" = "$state_session_title" ]; then
+  session_id=$(loop_code_lookup_session_id "$session_title" "$checklist_dir" 2>/dev/null || printf '')
+fi
+
+loop_code_guard_local_mode
+
+state_model=$model
+state_session_id=$session_id
+state_session_title=$session_title
+state_local=$using_local_model
+state_active_pid=$$
+loop_code_local_server_pid=''
+release_clear_all=0
+loop_code_write_state
+trap 'loop_code_release_state' EXIT HUP INT TERM
+
+if [ "$using_local_model" = true ] && [ -f "$ai_dev_helper" ]; then
+  case "$model" in
+    mlx/*)
+      if ! ai_llm_wait_for_mlx_server_timeout 2; then
+        loop_code_local_server_pid=$(ai_llm_spawn_mlx_server_ephemeral "${model#mlx/}" 2>/dev/null || printf '')
+        [ -n "$loop_code_local_server_pid" ] || die "loop-code: local MLX server for model '$model' could not be started"
+        if ! ai_llm_wait_for_mlx_server; then
+          die "loop-code: local MLX server for model '$model' did not become ready"
+        fi
+      fi
+      ;;
+    *)
+      if ! ai_llm_prepare_opencode_runtime "$model"; then
+        die "loop-code: local OpenCode runtime for model '$model' could not be prepared"
+      fi
+      ;;
+  esac
 fi
 
 round=0
@@ -116,21 +331,36 @@ while grep -F '[ ]' "$checklist_path" >/dev/null 2>&1; do
   printf '%s\n' "$round_header_line"
   printf '%s\n\n' "$round_header_divider"
 
-  prompt=$(cat <<EOF
-Work autonomously on the repository checklist at:
-$checklist_path
-
+  if [ "$batch_mode" = batch ]; then
+    round_scope_text=$(cat <<EOF
 Choose the largest coherent batch of unchecked items that can be completed
 safely within this round, then complete that batch correctly and generally.
 Continue after completing the first checkbox while useful context, time, and
 tool budget remain. Stop after one item only when that item was itself
 substantial, the next executable items are blocked, or continuing would reduce
 correctness. Prefer completing related sibling items together, but never chase
-checkbox count by grouping unrelated work or weakening verification. You are
-not required to finish the entire checklist in one round; later rounds will
-continue it. Prefer concrete implementation over discussing the size of the
-remaining roadmap. Make ordinary architectural and staging decisions yourself
-from repository evidence. Read and follow all repository instructions.
+checkbox count by grouping unrelated work or weakening verification.
+EOF
+)
+  else
+    round_scope_text=$(cat <<EOF
+Complete the next unchecked checklist item and then stop this round once that
+item obligation is genuinely satisfied. Only complete more than one checkbox
+when the items are obviously inseparable parts of the same implementation or
+verification step.
+EOF
+)
+  fi
+
+  prompt=$(cat <<EOF
+Work autonomously on the repository checklist at:
+$checklist_path
+
+${round_scope_text}
+You are not required to finish the entire checklist in one round; later rounds
+will continue it. Prefer concrete implementation over discussing the size of
+the remaining roadmap. Make ordinary architectural and staging decisions
+yourself from repository evidence. Read and follow all repository instructions.
 Implement, test, and verify the work; mark a checkbox complete only after its
 obligation is genuinely satisfied. Preserve unrelated work and do not use
 superficial workarounds. If one item currently needs unavailable runtime
@@ -150,11 +380,11 @@ EOF
 
   (
     set +e
-    if [ -n "$model" ]; then
-      opencode run --continue --dir "$checklist_dir" --model "$model" "$prompt"
+    if [ -n "$session_id" ]; then
+      opencode run --session "$session_id" --dir "$checklist_dir" --model "$model" "$prompt"
       opencode_status=$?
     else
-      opencode run --continue --dir "$checklist_dir" "$prompt"
+      opencode run --title "$session_title" --dir "$checklist_dir" --model "$model" "$prompt"
       opencode_status=$?
     fi
     printf '%s\n' "$opencode_status" >"$round_status"
@@ -165,6 +395,14 @@ EOF
   case "$opencode_status" in
   ''|*[!0-9]*) opencode_status=1 ;;
   esac
+
+  if [ -z "$session_id" ]; then
+    session_id=$(loop_code_lookup_session_id "$session_title" "$checklist_dir" 2>/dev/null || printf '')
+    if [ -n "$session_id" ]; then
+      state_session_id=$session_id
+      loop_code_write_state
+    fi
+  fi
 
   unchecked_after=$(awk 'index($0, "[ ]") { count += 1 } END { print count + 0 }' "$checklist_path")
   round_completed=$((unchecked_before - unchecked_after))
@@ -195,11 +433,12 @@ EOF
     if [ "$opencode_status_499" = true ] && [ "$round_completed" -gt 0 ]; then
       warn "loop-code: OpenCode round $round ended with status code 499 after completing $round_completed checklist item(s); continuing"
     else
-    die "loop-code: OpenCode round $round failed with status $opencode_status"
+      die "loop-code: OpenCode round $round failed with status $opencode_status"
     fi
   fi
 
   if [ "$unchecked_after" -eq 0 ]; then
+    release_clear_all=1
     success "Checklist complete after $round OpenCode round(s): $checklist_path"
     exit 0
   fi
@@ -227,4 +466,5 @@ EOF
   fi
 done
 
+release_clear_all=1
 success "Checklist complete: $checklist_path"

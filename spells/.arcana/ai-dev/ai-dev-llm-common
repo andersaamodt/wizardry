@@ -34,6 +34,9 @@ ai_llm_mlx_pid_file=$ai_llm_root_dir/mlx-server.pid
 ai_llm_mlx_log=$ai_llm_root_dir/mlx-server.log
 ai_llm_opencode_config_dir=${XDG_CONFIG_HOME:-$HOME/.config}/opencode
 ai_llm_opencode_runtime_config=$ai_llm_opencode_config_dir/wizardry-runtime.json
+ai_llm_mlx_launchd_label=com.wizardry.ai-dev.mlx.server
+ai_llm_mlx_launch_agent_dir=${HOME}/Library/LaunchAgents
+ai_llm_mlx_launch_agent_plist=$ai_llm_mlx_launch_agent_dir/$ai_llm_mlx_launchd_label.plist
 
 ai_llm_uname_s() {
   uname -s 2>/dev/null || printf 'unknown\n'
@@ -336,6 +339,76 @@ ai_llm_opencode_model() {
   ' "$config_path"
 }
 
+ai_llm_model_provider() {
+  model=${1-}
+  case "$model" in
+    */*) printf '%s\n' "${model%%/*}" ;;
+    *) return 1 ;;
+  esac
+}
+
+ai_llm_model_is_local() {
+  provider=$(ai_llm_model_provider "${1-}" 2>/dev/null || printf '')
+  case "$provider" in
+    mlx|ollama) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+ai_llm_runtime_available() {
+  runtime=$1
+  case "$runtime" in
+    mlx)
+      ai_llm_is_mlx_supported || return 1
+      if ai_llm_component_installed "mlx"; then
+        return 0
+      fi
+      [ -x "$ai_llm_mlx_server_bin" ] || return 1
+      return 0
+      ;;
+    ollama)
+      if ai_llm_component_installed "ollama"; then
+        return 0
+      fi
+      command -v ollama >/dev/null 2>&1
+      return $?
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+ai_llm_preferred_local_opencode_model() {
+  runtime=$(ai_llm_resolve_runtime 2>/dev/null || printf '')
+
+  case "$runtime" in
+    mlx)
+      if ai_llm_runtime_available "mlx" && model=$(ai_llm_get_selected_model mlx 2>/dev/null); then
+        printf '%s\n' "mlx/$model"
+        return 0
+      fi
+      ;;
+    ollama)
+      if ai_llm_runtime_available "ollama" && model=$(ai_llm_get_selected_model ollama 2>/dev/null); then
+        printf '%s\n' "ollama/$model"
+        return 0
+      fi
+      ;;
+  esac
+
+  if ai_llm_runtime_available "mlx" && model=$(ai_llm_get_selected_model mlx 2>/dev/null); then
+    printf '%s\n' "mlx/$model"
+    return 0
+  fi
+  if ai_llm_runtime_available "ollama" && model=$(ai_llm_get_selected_model ollama 2>/dev/null); then
+    printf '%s\n' "ollama/$model"
+    return 0
+  fi
+
+  return 1
+}
+
 ai_llm_resolve_opencode_mlx_model() {
   explicit_model=${1-}
   if [ -n "$explicit_model" ]; then
@@ -428,6 +501,88 @@ ai_llm_wait_for_mlx_server() {
   ai_llm_wait_for_mlx_server_timeout "$ai_llm_mlx_start_timeout"
 }
 
+ai_llm_start_mlx_server_launchd() {
+  resolved_model=$1
+  [ -n "$resolved_model" ] || return 1
+  uid=$(id -u 2>/dev/null || printf '')
+  [ -n "$uid" ] || return 1
+
+  mkdir -p "$ai_llm_mlx_launch_agent_dir"
+  mkdir -p "$ai_llm_root_dir"
+
+  cat >"$ai_llm_mlx_launch_agent_plist" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>$ai_llm_mlx_launchd_label</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>$ai_llm_mlx_server_bin</string>
+    <string>--model</string>
+    <string>$resolved_model</string>
+    <string>--host</string>
+    <string>127.0.0.1</string>
+    <string>--port</string>
+    <string>$ai_llm_mlx_port</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>$HOME</string>
+  <key>ProcessType</key>
+  <string>Interactive</string>
+  <key>StandardOutPath</key>
+  <string>$ai_llm_mlx_log</string>
+  <key>StandardErrorPath</key>
+  <string>$ai_llm_mlx_log</string>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+</dict>
+</plist>
+EOF
+
+  if command -v plutil >/dev/null 2>&1; then
+    plutil -lint "$ai_llm_mlx_launch_agent_plist" >/dev/null 2>&1 || return 1
+  fi
+
+  launchctl bootout "gui/$uid/$ai_llm_mlx_launchd_label" >/dev/null 2>&1 || :
+  launchctl bootstrap "gui/$uid" "$ai_llm_mlx_launch_agent_plist" >/dev/null 2>&1 || return 1
+  launchctl enable "gui/$uid/$ai_llm_mlx_launchd_label" >/dev/null 2>&1 || :
+  launchctl kickstart -k "gui/$uid/$ai_llm_mlx_launchd_label" >/dev/null 2>&1 || :
+}
+
+ai_llm_spawn_mlx_server_ephemeral() {
+  model=$1
+  [ -x "$ai_llm_mlx_python" ] || return 1
+  mkdir -p "$ai_llm_root_dir"
+
+  resolved_model=$(ai_llm_resolve_mlx_model_path "$model") || return 1
+  ai_llm_prepare_mlx_model_compat "$resolved_model" || return 1
+
+  mlx_server_cmd=$ai_llm_mlx_server_bin
+  if [ ! -x "$mlx_server_cmd" ]; then
+    mlx_server_cmd=$ai_llm_mlx_python
+  fi
+
+  : >"$ai_llm_mlx_log"
+  if [ "$mlx_server_cmd" = "$ai_llm_mlx_python" ]; then
+    "$mlx_server_cmd" -m mlx_lm.server \
+      --model "$resolved_model" \
+      --host 127.0.0.1 \
+      --port "$ai_llm_mlx_port" \
+      >"$ai_llm_mlx_log" 2>&1 &
+  else
+    "$mlx_server_cmd" \
+      --model "$resolved_model" \
+      --host 127.0.0.1 \
+      --port "$ai_llm_mlx_port" \
+      >"$ai_llm_mlx_log" 2>&1 &
+  fi
+  printf '%s\n' "$!"
+}
+
 ai_llm_start_mlx_server() {
   model=$1
   [ -x "$ai_llm_mlx_python" ] || return 1
@@ -454,6 +609,20 @@ ai_llm_start_mlx_server() {
   mlx_server_cmd=$ai_llm_mlx_server_bin
   if [ ! -x "$mlx_server_cmd" ]; then
     mlx_server_cmd=$ai_llm_mlx_python
+  fi
+
+  if ai_llm_is_macos && command -v launchctl >/dev/null 2>&1 && [ "$mlx_server_cmd" != "$ai_llm_mlx_python" ]; then
+    if ai_llm_start_mlx_server_launchd "$resolved_model"; then
+      if ai_llm_wait_for_mlx_server_timeout 15; then
+        return 0
+      fi
+      uid=$(id -u 2>/dev/null || printf '')
+      if [ -n "$uid" ]; then
+        launchctl bootout "gui/$uid/$ai_llm_mlx_launchd_label" >/dev/null 2>&1 || :
+      fi
+    fi
+  else
+    :
   fi
 
   if [ "$mlx_server_cmd" = "$ai_llm_mlx_python" ]; then
