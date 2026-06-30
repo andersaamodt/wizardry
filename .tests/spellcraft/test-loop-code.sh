@@ -259,8 +259,8 @@ test_remote_defaults_to_batch() {
     TEST_FAILURE_REASON="remote default should use batch mode"
     return 1
   }
-  if grep -F 'Wizardry Lite For Local Coding Models' "$tmp/log" >/dev/null; then
-    TEST_FAILURE_REASON="remote default should not include local Wizardry-lite context"
+  if grep -F 'Wizardry lite for local coding models' "$tmp/log" >/dev/null; then
+    TEST_FAILURE_REASON="remote default should not include local wizardry-lite context"
     return 1
   fi
 }
@@ -288,8 +288,8 @@ test_local_defaults_to_no_batch() {
     TEST_FAILURE_REASON="local models should default to no-batch mode"
     return 1
   }
-  grep -F 'Wizardry Lite For Local Coding Models' "$tmp/log" >/dev/null || {
-    TEST_FAILURE_REASON="local models should receive compact Wizardry-lite context"
+  grep -F 'Wizardry lite for local coding models' "$tmp/log" >/dev/null || {
+    TEST_FAILURE_REASON="local models should receive compact wizardry-lite context"
     return 1
   }
 }

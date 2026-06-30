@@ -357,7 +357,7 @@ local_instruction_text=''
 if [ "$using_local_model" = true ] && [ -r "$wizardry_lite_path" ]; then
   wizardry_lite_body=$(cat "$wizardry_lite_path")
   local_instruction_text=$(cat <<EOF
-Compact Wizardry instructions for this local LLM round:
+Compact wizardry instructions for this local LLM round:
 
 $wizardry_lite_body
 

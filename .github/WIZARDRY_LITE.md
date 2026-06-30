@@ -1,6 +1,6 @@
-# Wizardry Lite For Local Coding Models
+# Wizardry lite for local coding models
 
-Use this compact guide when a local LLM needs Wizardry context without reading
+Use this compact guide when a local LLM needs wizardry context without reading
 the full `.github/` library every round.
 
 ## Default stance
@@ -15,11 +15,11 @@ the full `.github/` library every round.
   checkouts; use temp or XDG/user-local state paths.
 - Preserve unrelated work. Do not overwrite, delete, reset, or discard changes
   unless the user explicitly asked for that.
-- Use the normal Wizardry vocabulary and structure where it clarifies behavior:
+- Use the normal wizardry vocabulary and structure where it clarifies behavior:
   spells in `spells/`, imps under `spells/.imps/`, mirrored tests under
   `.tests/`, arcana for first-class install/configure flows.
-- Do not use Homebrew for Wizardry-family installs. Make project dependencies
-  first-class Wizardry installables when they belong to the project.
+- Do not use Homebrew for wizardry-family installs. Make project dependencies
+  first-class wizardry installables when they belong to the project.
 
 ## Coding rules that matter most
 
@@ -31,7 +31,7 @@ the full `.github/` library every round.
 - Avoid new functions in simple spells/imps; keep orchestration flat or extract
   reusable behavior into imps when it is genuinely shared.
 - Do not add Python, Rust, generated binaries, dependency caches, or app state
-  to Wizardry unless the user or existing project architecture authorizes it.
+  to wizardry unless the user or existing project architecture authorizes it.
 
 ## Escalate to full docs when
 
@@ -39,7 +39,7 @@ the full `.github/` library every round.
   test harness, release path, desktop/app bridge, or cross-platform behavior.
 - You are unsure about POSIX portability, shell quoting, temp/state storage,
   generated files, git/publish readiness, or whether a dependency belongs in
-  Wizardry.
+  wizardry.
 - A bug touches security, filesystem boundaries, user data, destructive actions,
   package installation, network/device access, or GUI/runtime state.
 - A test fails in a surprising way, a fix feels like an exception, or the code
@@ -55,7 +55,7 @@ Read, as needed:
 - `.github/tests.md` and `.github/adversarial-testing.md` for testing rules.
 - `.github/LESSONS.md` for known bug classes and debugging lessons.
 
-## Neighboring Wizardry-family docs
+## Neighboring wizardry-family docs
 
 - Consult `~/git/wizardry-apps/.github/` when work touches generated apps,
   desktop/web/mobile app templates, GUI standards, hosted-site behavior,
