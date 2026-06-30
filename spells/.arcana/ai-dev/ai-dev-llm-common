@@ -200,8 +200,8 @@ ai_llm_list_available() {
   runtime=$1
   case "$runtime" in
     mlx)
-      printf '%s\n' "mlx-community/Qwen3-Coder-30B-A3B-Instruct-5bit|best coding (required)|18.0|256"
-      printf '%s\n' "mlx-community/Qwen3-Coder-Next-5bit|best coding fast variant (required)|14.0|256"
+      printf '%s\n' "mlx-community/Qwen3-Coder-30B-A3B-Instruct-5bit|best local coding|20.0|256"
+      printf '%s\n' "mlx-community/Qwen3-Coder-Next-5bit|large coding benchmark|51.0|256"
       printf '%s\n' "mlx-community/Qwen2.5-14B-Instruct-4bit|best reasoning|8.2|128"
       printf '%s\n' "mlx-community/Qwen2.5-VL-7B-Instruct-4bit|best vision|4.9|32"
       ;;
@@ -219,11 +219,11 @@ ai_llm_list_available() {
 ai_llm_next_smaller_mlx_model() {
   model=$1
   case "$model" in
-    mlx-community/Qwen3-Coder-30B-A3B-Instruct-5bit)
-      printf '%s\n' "mlx-community/Qwen3-Coder-Next-5bit"
+    mlx-community/Qwen3-Coder-Next-5bit)
+      printf '%s\n' "mlx-community/Qwen3-Coder-30B-A3B-Instruct-5bit"
       return 0
       ;;
-    mlx-community/Qwen3-Coder-Next-5bit)
+    mlx-community/Qwen3-Coder-30B-A3B-Instruct-5bit)
       printf '%s\n' "mlx-community/Qwen2.5-14B-Instruct-4bit"
       return 0
       ;;
@@ -303,6 +303,16 @@ ai_llm_write_opencode_runtime_config() {
       "name": "MLX (local)",
       "options": {
         "baseURL": "http://127.0.0.1:__MLX_PORT__/v1"
+      },
+      "models": {
+        "__MODEL__": {
+          "name": "__MODEL__",
+          "temperature": true,
+          "limit": {
+            "context": 262144,
+            "output": 8192
+          }
+        }
       }
     }
   },
@@ -516,6 +526,75 @@ ai_llm_wait_for_mlx_server_timeout() {
 
 ai_llm_wait_for_mlx_server() {
   ai_llm_wait_for_mlx_server_timeout "$ai_llm_mlx_start_timeout"
+}
+
+ai_llm_json_string() {
+  printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
+}
+
+ai_llm_probe_mlx_model() {
+  model=$1
+  command -v curl >/dev/null 2>&1 || return 1
+  escaped_model=$(ai_llm_json_string "$model")
+  probe_body='{"model":"'"$escaped_model"'",'
+  probe_body=$probe_body'"messages":[{"role":"user","content":"Reply with OK."}],'
+  probe_body=$probe_body'"max_tokens":2,"temperature":0,"stream":false}'
+  curl -fsS --max-time 60 \
+    -H 'Content-Type: application/json' \
+    -X POST "http://127.0.0.1:$ai_llm_mlx_port/v1/chat/completions" \
+    -d "$probe_body" \
+    >/dev/null 2>&1
+}
+
+ai_llm_probe_mlx_tool_model() {
+  model=$1
+  command -v curl >/dev/null 2>&1 || return 1
+  escaped_model=$(ai_llm_json_string "$model")
+  probe_response=$(mktemp "${TMPDIR:-/tmp}/ai-dev-mlx-tool-probe.XXXXXX")
+  probe_compact=$(mktemp "${TMPDIR:-/tmp}/ai-dev-mlx-tool-probe-compact.XXXXXX")
+  probe_body='{"model":"'"$escaped_model"'",'
+  probe_body=$probe_body'"messages":[{"role":"user",'
+  probe_body=$probe_body'"content":"Call read_file for CHECKLIST.md."}],'
+  probe_body=$probe_body'"tools":[{"type":"function","function":{"name":"read_file",'
+  probe_body=$probe_body'"description":"Read a file","parameters":{"type":"object",'
+  probe_body=$probe_body'"properties":{"path":{"type":"string"}},"required":["path"]}}}],'
+  probe_body=$probe_body'"tool_choice":"auto","max_tokens":128,"temperature":0,"stream":false}'
+
+  if ! curl -fsS --max-time 90 \
+    -H 'Content-Type: application/json' \
+    -X POST "http://127.0.0.1:$ai_llm_mlx_port/v1/chat/completions" \
+    -d "$probe_body" \
+    >"$probe_response" 2>/dev/null; then
+    rm -f "$probe_response" "$probe_compact"
+    return 1
+  fi
+
+  tr -d '[:space:]' <"$probe_response" >"$probe_compact"
+  if grep -F '"tool_calls":[' "$probe_compact" >/dev/null 2>&1 \
+    && ! grep -F '"tool_calls":[]' "$probe_compact" >/dev/null 2>&1; then
+    rm -f "$probe_response" "$probe_compact"
+    return 0
+  fi
+
+  rm -f "$probe_response" "$probe_compact"
+  return 1
+}
+
+ai_llm_stop_mlx_server() {
+  if ai_llm_is_macos && command -v launchctl >/dev/null 2>&1; then
+    uid=$(id -u 2>/dev/null || printf '')
+    if [ -n "$uid" ]; then
+      launchctl bootout "gui/$uid/$ai_llm_mlx_launchd_label" >/dev/null 2>&1 || :
+    fi
+  fi
+
+  if [ -f "$ai_llm_mlx_pid_file" ]; then
+    old_pid=$(tr -d '\r' <"$ai_llm_mlx_pid_file" 2>/dev/null || printf '')
+    if [ -n "$old_pid" ] && kill -0 "$old_pid" 2>/dev/null; then
+      kill "$old_pid" >/dev/null 2>&1 || :
+    fi
+    rm -f "$ai_llm_mlx_pid_file"
+  fi
 }
 
 ai_llm_start_mlx_server_launchd() {

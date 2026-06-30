@@ -342,3 +342,4 @@
 - Generated shell scripts that write another shell script must escape the nested script's `$vars` and command substitutions; otherwise the outer host's `set -u` or current environment can expand them too early and break the staged script before it ever reaches the target host.
 - Bashism scanners should match standalone shell keywords, not hyphenated prose inside quoted strings; `fixture-local` should never count as `local`.
 - Large Hugging Face model installers should preserve native terminal progress and benchmark supported transports/concurrency on the real workload instead of assuming Xet or maximum workers is fastest.
+- Local OpenAI-compatible coding models must pass a real tool-call probe, not only a text-completion probe, before a harness treats them as agent-ready.

@@ -181,21 +181,14 @@ loop_code_prepare_local_runtime() {
   case "$model" in
     mlx/*)
       loop_code_mlx_model=${model#mlx/}
+      loop_code_mlx_failure='could not pass local MLX readiness checks'
       while :; do
-        if ai_llm_wait_for_mlx_server_timeout 2; then
-          return 0
-        fi
-
         say "Warming up local MLX model for loop-code: mlx/$loop_code_mlx_model"
         loop_code_local_server_pid=''
-        loop_code_local_server_pid_file=$(temp-file "loop-code-mlx-server.pid")
-        on-exit cleanup-file "$loop_code_local_server_pid_file"
-        if ai_llm_spawn_mlx_server_ephemeral \
-          "$loop_code_mlx_model" "$loop_code_local_server_pid_file"; then
-          loop_code_local_server_pid=$(sed -n '1p' "$loop_code_local_server_pid_file" 2>/dev/null || printf '')
-        fi
 
-        if [ -n "$loop_code_local_server_pid" ] && ai_llm_wait_for_mlx_server; then
+        if ai_llm_start_mlx_server "$loop_code_mlx_model" \
+          && ai_llm_probe_mlx_model "$loop_code_mlx_model" \
+          && ai_llm_probe_mlx_tool_model "$loop_code_mlx_model"; then
           model=mlx/$loop_code_mlx_model
           state_model=$model
           loop_code_write_state
@@ -203,18 +196,20 @@ loop_code_prepare_local_runtime() {
           return 0
         fi
 
-        if [ -n "$loop_code_local_server_pid" ] && kill -0 "$loop_code_local_server_pid" 2>/dev/null; then
-          kill "$loop_code_local_server_pid" >/dev/null 2>&1 || :
-          wait "$loop_code_local_server_pid" 2>/dev/null || :
-        fi
+        loop_code_mlx_failure='could answer text but failed the OpenCode tool-call probe'
+        ai_llm_stop_mlx_server
         loop_code_local_server_pid=''
 
-        next_mlx_model=$(ai_llm_next_smaller_mlx_model "$loop_code_mlx_model" 2>/dev/null || printf '')
+        next_mlx_model=$(
+          ai_llm_next_smaller_mlx_model "$loop_code_mlx_model" 2>/dev/null || printf ''
+        )
         if [ -z "$next_mlx_model" ]; then
-          die "loop-code: local MLX server for model 'mlx/$loop_code_mlx_model' could not be started; no smaller fallback model is configured"
+          die "loop-code: local MLX server for model 'mlx/$loop_code_mlx_model'" \
+            "$loop_code_mlx_failure; no smaller fallback model is configured"
         fi
 
-        warn "loop-code: local MLX startup failed for mlx/$loop_code_mlx_model; retrying with smaller model mlx/$next_mlx_model"
+        warn "loop-code: local MLX readiness failed for mlx/$loop_code_mlx_model;" \
+          "retrying with smaller model mlx/$next_mlx_model"
         loop_code_mlx_model=$next_mlx_model
       done
       ;;
@@ -350,6 +345,14 @@ if [ "$batch_mode" = auto ]; then
   fi
 fi
 
+max_no_progress_rounds=0
+if [ "$using_local_model" = true ]; then
+  max_no_progress_rounds=${LOOP_CODE_MAX_NO_PROGRESS_ROUNDS:-3}
+fi
+case "$max_no_progress_rounds" in
+''|*[!0-9]*) max_no_progress_rounds=3 ;;
+esac
+
 if [ -z "$session_title" ]; then
   session_title=loop-code-$(date -u +%Y%m%dT%H%M%SZ)-$$-${checklist_name}
 fi
@@ -376,6 +379,7 @@ trap 'loop_code_release_state' EXIT HUP INT TERM
 loop_code_prepare_local_runtime
 
 round=0
+no_progress_rounds=0
 while grep -F '[ ]' "$checklist_path" >/dev/null 2>&1; do
   round=$((round + 1))
   round_output=$(temp-file "opencode-checklist-round-$round.out")
@@ -540,6 +544,17 @@ EOF
       "$unchecked_after unchecked item(s); continuing"
   else
     info "Starting the next OpenCode round"
+  fi
+
+  if [ "$round_completed" -gt 0 ]; then
+    no_progress_rounds=0
+  else
+    no_progress_rounds=$((no_progress_rounds + 1))
+    if [ "$max_no_progress_rounds" -gt 0 ] \
+      && [ "$no_progress_rounds" -ge "$max_no_progress_rounds" ]; then
+      die "loop-code: stopped after $no_progress_rounds local OpenCode round(s)" \
+        "with no checklist progress; the local model may not be using tools"
+    fi
   fi
 done
 

@@ -76,6 +76,9 @@ case ${OPENCODE_TEST_MODE:-complete-second} in
     printf '%s\n' 'Error: status code 499'
     exit 1
     ;;
+  no-progress)
+    printf '%s\n' 'I will inspect the checklist next.'
+    ;;
   fail)
     exit 7
     ;;
@@ -436,6 +439,31 @@ test_status_499_without_progress_fails() {
   assert_error_contains "OpenCode round 1 failed with status 1" || return 1
 }
 
+test_local_no_progress_guard_stops_loop() {
+  tmp=$(make_tempdir)
+  stub_dir="$tmp/stubs"
+  make_opencode_stub "$stub_dir"
+  write_remote_config "$tmp/.config"
+  checklist="$tmp/TODO.md"
+  printf '%s\n' '- [ ] task' >"$checklist"
+
+  run_cmd env \
+    HOME="$tmp" \
+    XDG_CONFIG_HOME="$tmp/.config" \
+    XDG_STATE_HOME="$tmp/.state" \
+    PATH="$stub_dir:$PATH" \
+    OPENCODE_TEST_MODE=no-progress \
+    OPENCODE_TEST_LOG="$tmp/log" \
+    OPENCODE_TEST_COUNT="$tmp/count" \
+    OPENCODE_TEST_CHECKLIST="$checklist" \
+    LOOP_CODE_MAX_NO_PROGRESS_ROUNDS=2 \
+    "$ROOT_DIR/spells/spellcraft/loop-code" "$checklist" \
+      --model "ollama/qwen3-coder:30b"
+
+  assert_failure || return 1
+  assert_error_contains "stopped after 2 local OpenCode round(s)" || return 1
+}
+
 run_test_case "loop-code shows help" test_help
 run_test_case "loop-code requires checklist defaults" test_missing_checklist_fails
 run_test_case "loop-code defaults to CHECKLIST.md" test_default_checklist_uppercase_is_used
@@ -451,5 +479,6 @@ run_test_case "loop-code ignores vague direction refusal" test_vague_direction_r
 run_test_case "loop-code reports OpenCode failure" test_opencode_failure_is_reported
 run_test_case "loop-code continues after status 499 with progress" test_status_499_with_progress_continues
 run_test_case "loop-code fails on status 499 without progress" test_status_499_without_progress_fails
+run_test_case "loop-code stops repeated local no-progress rounds" test_local_no_progress_guard_stops_loop
 
 finish_tests

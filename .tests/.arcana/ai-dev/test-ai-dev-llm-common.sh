@@ -160,7 +160,7 @@ test_next_smaller_mlx_model_chain_is_defined() {
     return 1
   }
 
-  [ "$output" = "mlx-community/Qwen3-Coder-Next-5bit,mlx-community/Qwen2.5-14B-Instruct-4bit,none,none" ] || {
+  [ "$output" = "mlx-community/Qwen2.5-14B-Instruct-4bit,mlx-community/Qwen3-Coder-30B-A3B-Instruct-5bit,none,none" ] || {
     TEST_FAILURE_REASON="next-smaller MLX model helper did not return the expected fallback chain"
     return 1
   }
