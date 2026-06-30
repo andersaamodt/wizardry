@@ -216,6 +216,23 @@ ai_llm_list_available() {
   esac
 }
 
+ai_llm_next_smaller_mlx_model() {
+  model=$1
+  case "$model" in
+    mlx-community/Qwen3-Coder-30B-A3B-Instruct-5bit)
+      printf '%s\n' "mlx-community/Qwen3-Coder-Next-5bit"
+      return 0
+      ;;
+    mlx-community/Qwen3-Coder-Next-5bit)
+      printf '%s\n' "mlx-community/Qwen2.5-14B-Instruct-4bit"
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
 ai_llm_is_curated_model() {
   runtime=$1
   candidate=$2

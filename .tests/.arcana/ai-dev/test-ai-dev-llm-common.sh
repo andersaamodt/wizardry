@@ -143,6 +143,29 @@ SH
   }
 }
 
+test_next_smaller_mlx_model_chain_is_defined() {
+  tmp=$(make_tempdir)
+
+  output=$(
+    env HOME="$tmp" sh -c '
+      . "'"$test_root"'/spells/.arcana/ai-dev/ai-dev-llm-common"
+      printf "%s,%s,%s,%s\n" \
+        "$(ai_llm_next_smaller_mlx_model mlx-community/Qwen3-Coder-30B-A3B-Instruct-5bit)" \
+        "$(ai_llm_next_smaller_mlx_model mlx-community/Qwen3-Coder-Next-5bit)" \
+        "$(ai_llm_next_smaller_mlx_model mlx-community/Qwen2.5-14B-Instruct-4bit 2>/dev/null || printf none)" \
+        "$(ai_llm_next_smaller_mlx_model some/unknown-model 2>/dev/null || printf none)"
+    '
+  ) || {
+    TEST_FAILURE_REASON="next-smaller MLX model helper did not execute"
+    return 1
+  }
+
+  [ "$output" = "mlx-community/Qwen3-Coder-Next-5bit,mlx-community/Qwen2.5-14B-Instruct-4bit,none,none" ] || {
+    TEST_FAILURE_REASON="next-smaller MLX model helper did not return the expected fallback chain"
+    return 1
+  }
+}
+
 run_test_case "ai-dev-llm-common resolves MLX models locally" test_mlx_server_uses_local_snapshot_resolution
 run_test_case "ai-dev-llm-common normalizes Qwen tokenizer metadata" test_mlx_server_normalizes_list_extra_special_tokens
 run_test_case "ai-dev-llm-common prefers direct server entrypoint" test_mlx_server_prefers_entrypoint_and_longer_timeout
@@ -150,5 +173,6 @@ run_test_case "ai-dev-llm-common accepts explicit OpenCode MLX models" test_open
 run_test_case "ai-dev-llm-common reads OpenCode JSONC model config" test_opencode_model_resolution_reads_jsonc_config
 run_test_case "ai-dev-llm-common resolves preferred local MLX state" test_preferred_local_model_uses_selected_mlx_state_without_install_marker
 run_test_case "ai-dev-llm-common keeps ephemeral MLX server alive" test_ephemeral_mlx_server_survives_helper_return
+run_test_case "ai-dev-llm-common defines MLX fallback chain" test_next_smaller_mlx_model_chain_is_defined
 
 finish_tests

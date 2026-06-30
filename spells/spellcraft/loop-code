@@ -174,6 +174,58 @@ model=$model
 EOF
 }
 
+loop_code_prepare_local_runtime() {
+  [ "$using_local_model" = true ] || return 0
+  [ -f "$ai_dev_helper" ] || return 0
+
+  case "$model" in
+    mlx/*)
+      loop_code_mlx_model=${model#mlx/}
+      while :; do
+        if ai_llm_wait_for_mlx_server_timeout 2; then
+          return 0
+        fi
+
+        say "Warming up local MLX model for loop-code: mlx/$loop_code_mlx_model"
+        loop_code_local_server_pid=''
+        loop_code_local_server_pid_file=$(temp-file "loop-code-mlx-server.pid")
+        on-exit cleanup-file "$loop_code_local_server_pid_file"
+        if ai_llm_spawn_mlx_server_ephemeral \
+          "$loop_code_mlx_model" "$loop_code_local_server_pid_file"; then
+          loop_code_local_server_pid=$(sed -n '1p' "$loop_code_local_server_pid_file" 2>/dev/null || printf '')
+        fi
+
+        if [ -n "$loop_code_local_server_pid" ] && ai_llm_wait_for_mlx_server; then
+          model=mlx/$loop_code_mlx_model
+          state_model=$model
+          loop_code_write_state
+          say "Local MLX model is ready: $model"
+          return 0
+        fi
+
+        if [ -n "$loop_code_local_server_pid" ] && kill -0 "$loop_code_local_server_pid" 2>/dev/null; then
+          kill "$loop_code_local_server_pid" >/dev/null 2>&1 || :
+          wait "$loop_code_local_server_pid" 2>/dev/null || :
+        fi
+        loop_code_local_server_pid=''
+
+        next_mlx_model=$(ai_llm_next_smaller_mlx_model "$loop_code_mlx_model" 2>/dev/null || printf '')
+        if [ -z "$next_mlx_model" ]; then
+          die "loop-code: local MLX server for model 'mlx/$loop_code_mlx_model' could not be started; no smaller fallback model is configured"
+        fi
+
+        warn "loop-code: local MLX startup failed for mlx/$loop_code_mlx_model; retrying with smaller model mlx/$next_mlx_model"
+        loop_code_mlx_model=$next_mlx_model
+      done
+      ;;
+    *)
+      if ! ai_llm_prepare_opencode_runtime "$model"; then
+        die "loop-code: local OpenCode runtime for model '$model' could not be prepared"
+      fi
+      ;;
+  esac
+}
+
 checklist=""
 model=""
 model_source=default
@@ -321,34 +373,7 @@ release_clear_all=0
 loop_code_write_state
 trap 'loop_code_release_state' EXIT HUP INT TERM
 
-if [ "$using_local_model" = true ] && [ -f "$ai_dev_helper" ]; then
-  case "$model" in
-    mlx/*)
-      if ! ai_llm_wait_for_mlx_server_timeout 2; then
-        say "Warming up local MLX model for loop-code: $model"
-        loop_code_local_server_pid_file=$(temp-file "loop-code-mlx-server.pid")
-        on-exit cleanup-file "$loop_code_local_server_pid_file"
-        if ai_llm_spawn_mlx_server_ephemeral \
-          "${model#mlx/}" "$loop_code_local_server_pid_file"; then
-          loop_code_local_server_pid=$(
-            sed -n '1p' "$loop_code_local_server_pid_file" 2>/dev/null || printf ''
-          )
-        fi
-        [ -n "$loop_code_local_server_pid" ] || die \
-          "loop-code: local MLX server for model '$model' could not be started"
-        if ! ai_llm_wait_for_mlx_server; then
-          die "loop-code: local MLX server for model '$model' did not become ready"
-        fi
-        say "Local MLX model is ready: $model"
-      fi
-      ;;
-    *)
-      if ! ai_llm_prepare_opencode_runtime "$model"; then
-        die "loop-code: local OpenCode runtime for model '$model' could not be prepared"
-      fi
-      ;;
-  esac
-fi
+loop_code_prepare_local_runtime
 
 round=0
 while grep -F '[ ]' "$checklist_path" >/dev/null 2>&1; do
