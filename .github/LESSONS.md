@@ -343,3 +343,4 @@
 - Bashism scanners should match standalone shell keywords, not hyphenated prose inside quoted strings; `fixture-local` should never count as `local`.
 - Large Hugging Face model installers should preserve native terminal progress and benchmark supported transports/concurrency on the real workload instead of assuming Xet or maximum workers is fastest.
 - Local OpenAI-compatible coding models must pass a real tool-call probe, not only a text-completion probe, before a harness treats them as agent-ready.
+- Local OpenAI-compatible servers may need model-template compatibility repair in both directions: parse the model's emitted tool-call format and normalize prior tool-call arguments before replaying them into the chat template.

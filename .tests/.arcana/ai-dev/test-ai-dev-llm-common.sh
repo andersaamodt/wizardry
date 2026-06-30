@@ -27,6 +27,38 @@ test_mlx_server_normalizes_list_extra_special_tokens() {
   }
 }
 
+test_mlx_server_patches_qwen_xml_tool_calls() {
+  helper="$test_root/spells/.arcana/ai-dev/ai-dev-llm-common"
+  grep -F 'WIZARDRY_QWEN_XML_TOOL_CALL_COMPAT' "$helper" >/dev/null 2>&1 || {
+    TEST_FAILURE_REASON="MLX helper does not patch Qwen XML tool-call parsing"
+    return 1
+  }
+  grep -F '<function=([^>\\n]+)>' "$helper" >/dev/null 2>&1 || {
+    TEST_FAILURE_REASON="MLX tool parser patch does not recognize Qwen function tags"
+    return 1
+  }
+  grep -F '<parameter=([^>\\n]+)>' "$helper" >/dev/null 2>&1 || {
+    TEST_FAILURE_REASON="MLX tool parser patch does not recognize Qwen parameter tags"
+    return 1
+  }
+  grep -F 'f"call_{uuid.uuid4().hex}"' "$helper" >/dev/null 2>&1 || {
+    TEST_FAILURE_REASON="MLX tool parser patch does not generate string tool-call ids"
+    return 1
+  }
+  grep -F 'decoded_arguments = json.loads(arguments)' "$helper" >/dev/null 2>&1 || {
+    TEST_FAILURE_REASON="MLX tool parser patch does not normalize argument strings"
+    return 1
+  }
+}
+
+test_opencode_mlx_models_are_tool_call_capable() {
+  helper="$test_root/spells/.arcana/ai-dev/ai-dev-llm-common"
+  grep -F '"tool_call": true' "$helper" >/dev/null 2>&1 || {
+    TEST_FAILURE_REASON="OpenCode MLX model metadata does not enable tool calls"
+    return 1
+  }
+}
+
 test_mlx_server_prefers_entrypoint_and_longer_timeout() {
   helper="$test_root/spells/.arcana/ai-dev/ai-dev-llm-common"
   grep -F 'ai_llm_mlx_server_bin=$ai_llm_mlx_venv/bin/mlx_lm.server' "$helper" >/dev/null 2>&1 || {
@@ -168,6 +200,8 @@ test_next_smaller_mlx_model_chain_is_defined() {
 
 run_test_case "ai-dev-llm-common resolves MLX models locally" test_mlx_server_uses_local_snapshot_resolution
 run_test_case "ai-dev-llm-common normalizes Qwen tokenizer metadata" test_mlx_server_normalizes_list_extra_special_tokens
+run_test_case "ai-dev-llm-common patches Qwen XML tool calls" test_mlx_server_patches_qwen_xml_tool_calls
+run_test_case "ai-dev-llm-common marks MLX tool-call models" test_opencode_mlx_models_are_tool_call_capable
 run_test_case "ai-dev-llm-common prefers direct server entrypoint" test_mlx_server_prefers_entrypoint_and_longer_timeout
 run_test_case "ai-dev-llm-common accepts explicit OpenCode MLX models" test_opencode_model_resolution_prefers_explicit_mlx_model
 run_test_case "ai-dev-llm-common reads OpenCode JSONC model config" test_opencode_model_resolution_reads_jsonc_config
