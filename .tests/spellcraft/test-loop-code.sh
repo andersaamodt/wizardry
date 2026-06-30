@@ -284,12 +284,20 @@ test_local_defaults_to_no_batch() {
     "$ROOT_DIR/spells/spellcraft/loop-code" "$checklist" --model "ollama/qwen3-coder:30b"
 
   assert_success || return 1
-  grep -F 'Complete the next unchecked checklist item' "$tmp/log" >/dev/null || {
+  grep -F 'Complete the next unchecked item, then stop.' "$tmp/log" >/dev/null || {
     TEST_FAILURE_REASON="local models should default to no-batch mode"
     return 1
   }
   grep -F 'Wizardry lite for local coding models' "$tmp/log" >/dev/null || {
     TEST_FAILURE_REASON="local models should receive compact wizardry-lite context"
+    return 1
+  }
+  grep -F "rg --line-number PATTERN PATH" "$tmp/log" >/dev/null || {
+    TEST_FAILURE_REASON="local models should receive targeted search guidance"
+    return 1
+  }
+  grep -F "sed -n 'START,ENDp' FILE" "$tmp/log" >/dev/null || {
+    TEST_FAILURE_REASON="local models should receive bounded large-file read guidance"
     return 1
   }
 }
@@ -442,7 +450,7 @@ test_batch_override_for_local() {
     "$ROOT_DIR/spells/spellcraft/loop-code" "$checklist" --model "ollama/qwen3-coder:30b" --batch
 
   assert_success || return 1
-  grep -F 'largest coherent batch' "$tmp/log" >/dev/null || {
+  grep -F 'Complete the largest safe related batch' "$tmp/log" >/dev/null || {
     TEST_FAILURE_REASON="--batch should override the local no-batch default"
     return 1
   }

@@ -65,6 +65,10 @@ test_opencode_mlx_models_are_tool_call_capable() {
     TEST_FAILURE_REASON="OpenCode MLX model metadata does not enable tool calls"
     return 1
   }
+  grep -F '"output": 4096' "$helper" >/dev/null 2>&1 || {
+    TEST_FAILURE_REASON="OpenCode MLX model metadata does not cap local output for speed"
+    return 1
+  }
 }
 
 test_mlx_server_prefers_entrypoint_and_longer_timeout() {

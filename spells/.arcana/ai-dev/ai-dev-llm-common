@@ -312,7 +312,7 @@ ai_llm_write_opencode_runtime_config() {
           "temperature": true,
           "limit": {
             "context": 262144,
-            "output": 8192
+            "output": 4096
           }
         }
       }

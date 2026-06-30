@@ -465,7 +465,15 @@ while grep -F '[ ]' "$checklist_path" >/dev/null 2>&1; do
   printf '%s\n\n' "$round_header_divider"
 
   if [ "$batch_mode" = batch ]; then
-    round_scope_text=$(cat <<EOF
+    if [ "$using_local_model" = true ]; then
+      round_scope_text=$(cat <<EOF
+Complete the largest safe related batch for this round. Continue after the
+first checkbox only while the next item is clearly connected and verification
+remains cheap. Prefer correctness over count.
+EOF
+)
+    else
+      round_scope_text=$(cat <<EOF
 Choose the largest coherent batch of unchecked items that can be completed
 safely within this round, then complete that batch correctly and generally.
 Continue after completing the first checkbox while useful context, time, and
@@ -475,17 +483,50 @@ correctness. Prefer completing related sibling items together, but never chase
 checkbox count by grouping unrelated work or weakening verification.
 EOF
 )
+    fi
   else
-    round_scope_text=$(cat <<EOF
+    if [ "$using_local_model" = true ]; then
+      round_scope_text=$(cat <<EOF
+Complete the next unchecked item, then stop. Complete multiple checkboxes only
+when they are inseparable parts of the same implementation or verification.
+EOF
+)
+    else
+      round_scope_text=$(cat <<EOF
 Complete the next unchecked checklist item and then stop this round once that
 item obligation is genuinely satisfied. Only complete more than one checkbox
 when the items are obviously inseparable parts of the same implementation or
 verification step.
 EOF
 )
+    fi
   fi
 
-  prompt=$(cat <<EOF
+  if [ "$using_local_model" = true ]; then
+    prompt=$(cat <<EOF
+Work on the checklist at:
+$checklist_path
+
+${round_scope_text}
+${local_instruction_text}
+Local performance rules:
+- Use targeted search first, such as rg --line-number PATTERN PATH.
+- For large files, do not read the whole file. Use sed -n 'START,ENDp' FILE
+  or another bounded shell slice around relevant lines.
+- Prefer small inspect/edit/verify cycles over broad repository scans.
+- Keep responses concise; spend tokens on tool calls and evidence, not prose.
+
+Implement and verify real work. Mark [x] only when the item is genuinely
+done. Preserve unrelated work. If one item needs unavailable runtime evidence,
+leave it unchecked and choose another executable item when possible.
+
+If all checklist items are verified complete, end with exactly
+WIZARDRY_CHECKLIST_COMPLETE. Use WIZARDRY_CHECKLIST_NEEDS_DIRECTION only when
+no item can progress until the user answers one concrete question ending in ?.
+EOF
+)
+  else
+    prompt=$(cat <<EOF
 Work autonomously on the repository checklist at:
 $checklist_path
 
@@ -511,6 +552,7 @@ multi-stage, difficult, lengthy, requires later verification, or cannot all fit
 in one run. Those are reasons to complete a bounded slice, not reasons to stop.
 EOF
 )
+  fi
 
   if [ "$reuse_opencode_session" = true ]; then
     round_opencode_title=$session_title
