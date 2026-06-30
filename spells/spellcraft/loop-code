@@ -6,7 +6,7 @@
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: loop-code [CHECKLIST] [--model PROVIDER/MODEL] [--local|--remote] [--batch|--no-batch]
+Usage: loop-code [CHECKLIST] [--model PROVIDER/MODEL] [--local|--remote] [--batch|--no-batch] [--fresh-session|--reuse-session]
 
 Runs OpenCode in the checklist's directory until CHECKLIST contains no literal
 "[ ]" markers. OpenCode output is streamed for every round. Use --model to
@@ -20,6 +20,11 @@ otherwise checklist.md.
 are obviously inseparable. --batch means complete the largest coherent safe
 batch per round. The default is --no-batch for local models and --batch for
 remote models.
+
+--fresh-session starts a new OpenCode session each round. --reuse-session keeps
+one OpenCode session across rounds. The default is fresh sessions for local
+models, so local LLMs do not re-read an ever-growing OpenCode thread, and
+reused sessions for remote models.
 
 OpenCode is instructed to emit WIZARDRY_CHECKLIST_COMPLETE when it verifies the
 whole checklist. WIZARDRY_CHECKLIST_NEEDS_DIRECTION is honored only when it is
@@ -227,6 +232,7 @@ model_source=default
 local_mode=false
 remote_mode=false
 batch_mode=auto
+session_mode=auto
 while [ "$#" -gt 0 ]; do
   case "$1" in
   --model)
@@ -246,6 +252,12 @@ while [ "$#" -gt 0 ]; do
     ;;
   --no-batch)
     batch_mode=no-batch
+    ;;
+  --fresh-session)
+    session_mode=fresh
+    ;;
+  --reuse-session)
+    session_mode=reuse
     ;;
   --*)
     die 2 "loop-code: unknown option '$1'"
@@ -345,6 +357,23 @@ if [ "$batch_mode" = auto ]; then
   fi
 fi
 
+if [ "$session_mode" = auto ]; then
+  if [ "$using_local_model" = true ]; then
+    reuse_opencode_session=false
+  else
+    reuse_opencode_session=true
+  fi
+elif [ "$session_mode" = reuse ]; then
+  reuse_opencode_session=true
+else
+  reuse_opencode_session=false
+fi
+
+if [ "$reuse_opencode_session" = false ]; then
+  session_id=''
+  session_title=''
+fi
+
 max_no_progress_rounds=0
 if [ "$using_local_model" = true ]; then
   max_no_progress_rounds=${LOOP_CODE_MAX_NO_PROGRESS_ROUNDS:-3}
@@ -366,8 +395,13 @@ fi
 loop_code_guard_local_mode
 
 state_model=$model
-state_session_id=$session_id
-state_session_title=$session_title
+if [ "$reuse_opencode_session" = true ]; then
+  state_session_id=$session_id
+  state_session_title=$session_title
+else
+  state_session_id=''
+  state_session_title=''
+fi
 state_local=$using_local_model
 state_active_pid=$$
 loop_code_local_server_pid=''
@@ -453,11 +487,16 @@ EOF
 
   (
     set +e
-    if [ -n "$session_id" ]; then
+    if [ "$reuse_opencode_session" = true ] && [ -n "$session_id" ]; then
       opencode run --session "$session_id" --dir "$checklist_dir" --model "$model" "$prompt"
       opencode_status=$?
     else
-      opencode run --title "$session_title" --dir "$checklist_dir" --model "$model" "$prompt"
+      if [ "$reuse_opencode_session" = true ]; then
+        opencode_title=$session_title
+      else
+        opencode_title=$session_title-r$round
+      fi
+      opencode run --title "$opencode_title" --dir "$checklist_dir" --model "$model" "$prompt"
       opencode_status=$?
     fi
     printf '%s\n' "$opencode_status" >"$round_status"
@@ -469,7 +508,7 @@ EOF
   ''|*[!0-9]*) opencode_status=1 ;;
   esac
 
-  if [ -z "$session_id" ]; then
+  if [ "$reuse_opencode_session" = true ] && [ -z "$session_id" ]; then
     session_id=$(
       loop_code_lookup_session_id "$session_title" "$checklist_dir" 2>/dev/null || printf ''
     )

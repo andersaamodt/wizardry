@@ -79,6 +79,10 @@ case ${OPENCODE_TEST_MODE:-complete-second} in
   no-progress)
     printf '%s\n' 'I will inspect the checklist next.'
     ;;
+  interrupt)
+    printf '%s\n' 'Interrupted by test harness'
+    exit 130
+    ;;
   fail)
     exit 7
     ;;
@@ -104,6 +108,7 @@ test_help() {
   assert_output_contains "Usage: loop-code" || return 1
   assert_output_contains "--local|--remote" || return 1
   assert_output_contains "--batch|--no-batch" || return 1
+  assert_output_contains "--fresh-session|--reuse-session" || return 1
 }
 
 test_missing_checklist_fails() {
@@ -274,6 +279,127 @@ test_local_defaults_to_no_batch() {
     TEST_FAILURE_REASON="local models should default to no-batch mode"
     return 1
   }
+}
+
+test_local_defaults_to_fresh_sessions() {
+  tmp=$(make_tempdir)
+  stub_dir="$tmp/stubs"
+  make_opencode_stub "$stub_dir"
+  write_remote_config "$tmp/.config"
+  checklist="$tmp/CHECKLIST.md"
+  printf '%s\n' '- [ ] first task' '- [ ] second task' >"$checklist"
+
+  run_cmd env \
+    HOME="$tmp" \
+    XDG_CONFIG_HOME="$tmp/.config" \
+    XDG_STATE_HOME="$tmp/.state" \
+    PATH="$stub_dir:$PATH" \
+    OPENCODE_TEST_LOG="$tmp/log" \
+    OPENCODE_TEST_COUNT="$tmp/count" \
+    OPENCODE_TEST_CHECKLIST="$checklist" \
+    "$ROOT_DIR/spells/spellcraft/loop-code" "$checklist" --model "ollama/qwen3-coder:30b"
+
+  assert_success || return 1
+  title_count=$(grep -F -- '--title loop-code-' "$tmp/log" | wc -l | tr -d ' ')
+  [ "$title_count" = "2" ] || {
+    TEST_FAILURE_REASON="local models should start a fresh OpenCode session each round"
+    return 1
+  }
+  grep -F -- '-r1' "$tmp/log" >/dev/null || {
+    TEST_FAILURE_REASON="local fresh session title should identify round 1"
+    return 1
+  }
+  grep -F -- '-r2' "$tmp/log" >/dev/null || {
+    TEST_FAILURE_REASON="local fresh session title should identify round 2"
+    return 1
+  }
+  if grep -F -- '--session ses_test_loop_code' "$tmp/log" >/dev/null; then
+    TEST_FAILURE_REASON="local default should not resume the prior OpenCode session"
+    return 1
+  fi
+}
+
+test_local_reuse_session_override() {
+  tmp=$(make_tempdir)
+  stub_dir="$tmp/stubs"
+  make_opencode_stub "$stub_dir"
+  write_remote_config "$tmp/.config"
+  checklist="$tmp/CHECKLIST.md"
+  printf '%s\n' '- [ ] first task' '- [ ] second task' >"$checklist"
+
+  run_cmd env \
+    HOME="$tmp" \
+    XDG_CONFIG_HOME="$tmp/.config" \
+    XDG_STATE_HOME="$tmp/.state" \
+    PATH="$stub_dir:$PATH" \
+    OPENCODE_TEST_LOG="$tmp/log" \
+    OPENCODE_TEST_COUNT="$tmp/count" \
+    OPENCODE_TEST_CHECKLIST="$checklist" \
+    "$ROOT_DIR/spells/spellcraft/loop-code" "$checklist" \
+      --model "ollama/qwen3-coder:30b" --reuse-session
+
+  assert_success || return 1
+  grep -F -- '--session ses_test_loop_code' "$tmp/log" >/dev/null || {
+    TEST_FAILURE_REASON="--reuse-session should opt local runs into session reuse"
+    return 1
+  }
+}
+
+test_local_fresh_session_resume_keeps_model_state() {
+  tmp=$(make_tempdir)
+  stub_dir="$tmp/stubs"
+  make_opencode_stub "$stub_dir"
+  write_remote_config "$tmp/.config"
+  checklist="$tmp/CHECKLIST.md"
+  printf '%s\n' '- [ ] first task' '- [ ] second task' >"$checklist"
+
+  run_cmd env \
+    HOME="$tmp" \
+    XDG_CONFIG_HOME="$tmp/.config" \
+    XDG_STATE_HOME="$tmp/.state" \
+    PATH="$stub_dir:$PATH" \
+    OPENCODE_TEST_MODE=interrupt \
+    OPENCODE_TEST_LOG="$tmp/log" \
+    OPENCODE_TEST_COUNT="$tmp/count" \
+    OPENCODE_TEST_CHECKLIST="$checklist" \
+    "$ROOT_DIR/spells/spellcraft/loop-code" "$checklist" --model "ollama/qwen3-coder:30b"
+
+  assert_failure || return 1
+  assert_error_contains "interrupted during OpenCode round 1" || return 1
+  grep -F 'model=ollama/qwen3-coder:30b' "$checklist" >/dev/null || {
+    TEST_FAILURE_REASON="interrupted local runs should preserve the selected model"
+    return 1
+  }
+  grep -F 'local=true' "$checklist" >/dev/null || {
+    TEST_FAILURE_REASON="interrupted local runs should preserve local-mode state"
+    return 1
+  }
+  if grep -F 'session_id=' "$checklist" >/dev/null; then
+    TEST_FAILURE_REASON="fresh local resume should not preserve a growing OpenCode session"
+    return 1
+  fi
+
+  rm -f "$tmp/count"
+  : >"$tmp/log"
+  run_cmd env \
+    HOME="$tmp" \
+    XDG_CONFIG_HOME="$tmp/.config" \
+    XDG_STATE_HOME="$tmp/.state" \
+    PATH="$stub_dir:$PATH" \
+    OPENCODE_TEST_LOG="$tmp/log" \
+    OPENCODE_TEST_COUNT="$tmp/count" \
+    OPENCODE_TEST_CHECKLIST="$checklist" \
+    "$ROOT_DIR/spells/spellcraft/loop-code" "$checklist"
+
+  assert_success || return 1
+  grep -F -- '--model ollama/qwen3-coder:30b' "$tmp/log" >/dev/null || {
+    TEST_FAILURE_REASON="resume should continue with the interrupted local model"
+    return 1
+  }
+  if grep -F -- '--session ses_test_loop_code' "$tmp/log" >/dev/null; then
+    TEST_FAILURE_REASON="resumed fresh local runs should still avoid OpenCode session reuse"
+    return 1
+  fi
 }
 
 test_batch_override_for_local() {
@@ -472,6 +598,9 @@ run_test_case "loop-code recognizes completion" test_complete_checklist_exits_wi
 run_test_case "loop-code pins session and model" test_loops_until_complete_and_pins_session_and_model
 run_test_case "loop-code defaults remote runs to batch" test_remote_defaults_to_batch
 run_test_case "loop-code defaults local runs to no-batch" test_local_defaults_to_no_batch
+run_test_case "loop-code defaults local runs to fresh sessions" test_local_defaults_to_fresh_sessions
+run_test_case "loop-code can reuse local sessions by request" test_local_reuse_session_override
+run_test_case "loop-code resumes interrupted local fresh runs" test_local_fresh_session_resume_keeps_model_state
 run_test_case "loop-code allows local batch override" test_batch_override_for_local
 run_test_case "loop-code honors direction phrase" test_direction_phrase_stops_loop
 run_test_case "loop-code rejects false completion" test_false_completion_claim_continues
