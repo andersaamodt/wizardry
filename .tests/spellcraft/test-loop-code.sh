@@ -178,7 +178,7 @@ test_complete_checklist_exits_without_opencode() {
   assert_output_contains "already complete" || return 1
 }
 
-test_loops_until_complete_and_pins_session_and_model() {
+test_loops_until_complete_and_pins_model_without_session_reuse() {
   tmp=$(make_tempdir)
   stub_dir="$tmp/stubs"
   make_opencode_stub "$stub_dir"
@@ -214,13 +214,18 @@ test_loops_until_complete_and_pins_session_and_model() {
     return 1
   }
   grep -F -- '--title loop-code-' "$log" >/dev/null || {
-    TEST_FAILURE_REASON="initial round did not start a uniquely titled session"
+    TEST_FAILURE_REASON="rounds should start titled OpenCode sessions"
     return 1
   }
-  grep -F -- '--session ses_test_loop_code' "$log" >/dev/null || {
-    TEST_FAILURE_REASON="subsequent rounds were not pinned to the original session"
+  title_count=$(grep -F -- '--title loop-code-' "$log" | wc -l | tr -d ' ')
+  [ "$title_count" = "2" ] || {
+    TEST_FAILURE_REASON="default loop-code should start a fresh OpenCode session each round"
     return 1
   }
+  if grep -F -- '--session ses_test_loop_code' "$log" >/dev/null; then
+    TEST_FAILURE_REASON="default loop-code should not reuse OpenCode session history"
+    return 1
+  fi
   if grep -F -- '--continue' "$log" >/dev/null; then
     TEST_FAILURE_REASON="loop-code should not rely on OpenCode --continue"
     return 1
@@ -345,7 +350,7 @@ test_local_reuse_session_override() {
   }
 }
 
-test_local_fresh_session_resume_keeps_interrupted_session_once() {
+test_fresh_session_resume_keeps_interrupted_session_once() {
   tmp=$(make_tempdir)
   stub_dir="$tmp/stubs"
   make_opencode_stub "$stub_dir"
@@ -362,24 +367,24 @@ test_local_fresh_session_resume_keeps_interrupted_session_once() {
     OPENCODE_TEST_LOG="$tmp/log" \
     OPENCODE_TEST_COUNT="$tmp/count" \
     OPENCODE_TEST_CHECKLIST="$checklist" \
-    "$ROOT_DIR/spells/spellcraft/loop-code" "$checklist" --model "ollama/qwen3-coder:30b"
+    "$ROOT_DIR/spells/spellcraft/loop-code" "$checklist"
 
   assert_failure || return 1
   assert_error_contains "interrupted during OpenCode round 1" || return 1
-  grep -F 'model=ollama/qwen3-coder:30b' "$checklist" >/dev/null || {
-    TEST_FAILURE_REASON="interrupted local runs should preserve the selected model"
+  grep -F 'model=github-copilot/gpt-5.3-codex' "$checklist" >/dev/null || {
+    TEST_FAILURE_REASON="interrupted runs should preserve the selected model"
     return 1
   }
-  grep -F 'local=true' "$checklist" >/dev/null || {
-    TEST_FAILURE_REASON="interrupted local runs should preserve local-mode state"
+  grep -F 'local=false' "$checklist" >/dev/null || {
+    TEST_FAILURE_REASON="interrupted runs should preserve local-mode state"
     return 1
   }
   grep -F 'session_id=ses_test_loop_code' "$checklist" >/dev/null || {
-    TEST_FAILURE_REASON="interrupted local runs should preserve the interrupted OpenCode session"
+    TEST_FAILURE_REASON="interrupted runs should preserve the interrupted OpenCode session"
     return 1
   }
   grep -F 'session_title=loop-code-' "$checklist" >/dev/null || {
-    TEST_FAILURE_REASON="interrupted local runs should preserve the interrupted OpenCode title"
+    TEST_FAILURE_REASON="interrupted runs should preserve the interrupted OpenCode title"
     return 1
   }
 
@@ -396,8 +401,8 @@ test_local_fresh_session_resume_keeps_interrupted_session_once() {
     "$ROOT_DIR/spells/spellcraft/loop-code" "$checklist"
 
   assert_success || return 1
-  grep -F -- '--model ollama/qwen3-coder:30b' "$tmp/log" >/dev/null || {
-    TEST_FAILURE_REASON="resume should continue with the interrupted local model"
+  grep -F -- '--model github-copilot/gpt-5.3-codex' "$tmp/log" >/dev/null || {
+    TEST_FAILURE_REASON="resume should continue with the interrupted model"
     return 1
   }
   grep -F -- '--session ses_test_loop_code' "$tmp/log" >/dev/null || {
@@ -603,12 +608,12 @@ run_test_case "loop-code requires checklist defaults" test_missing_checklist_fai
 run_test_case "loop-code defaults to CHECKLIST.md" test_default_checklist_uppercase_is_used
 run_test_case "loop-code falls back to checklist.md" test_default_checklist_lowercase_fallback
 run_test_case "loop-code recognizes completion" test_complete_checklist_exits_without_opencode
-run_test_case "loop-code pins session and model" test_loops_until_complete_and_pins_session_and_model
+run_test_case "loop-code pins model without session reuse" test_loops_until_complete_and_pins_model_without_session_reuse
 run_test_case "loop-code defaults remote runs to batch" test_remote_defaults_to_batch
 run_test_case "loop-code defaults local runs to no-batch" test_local_defaults_to_no_batch
 run_test_case "loop-code defaults local runs to fresh sessions" test_local_defaults_to_fresh_sessions
 run_test_case "loop-code can reuse local sessions by request" test_local_reuse_session_override
-run_test_case "loop-code resumes interrupted local session once" test_local_fresh_session_resume_keeps_interrupted_session_once
+run_test_case "loop-code resumes interrupted session once" test_fresh_session_resume_keeps_interrupted_session_once
 run_test_case "loop-code allows local batch override" test_batch_override_for_local
 run_test_case "loop-code honors direction phrase" test_direction_phrase_stops_loop
 run_test_case "loop-code rejects false completion" test_false_completion_claim_continues

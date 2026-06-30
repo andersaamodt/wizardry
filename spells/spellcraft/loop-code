@@ -22,11 +22,11 @@ batch per round. The default is --no-batch for local models and --batch for
 remote models.
 
 --fresh-session starts a new OpenCode session each round. --reuse-session keeps
-one OpenCode session across rounds. The default is fresh sessions for local
-models, so local LLMs do not re-read an ever-growing OpenCode thread, and
-reused sessions for remote models. If a local fresh-session round is
-interrupted, loop-code stores only that latest OpenCode session and resumes it
-once on the next run before returning to fresh sessions.
+one OpenCode session across rounds. The default is fresh sessions for all
+models, so each round reads the checklist instead of an ever-growing OpenCode
+thread. If a fresh-session round is interrupted, loop-code stores only that
+latest OpenCode session and resumes it once on the next run before returning to
+fresh sessions.
 
 OpenCode is instructed to emit WIZARDRY_CHECKLIST_COMPLETE when it verifies the
 whole checklist. WIZARDRY_CHECKLIST_NEEDS_DIRECTION is honored only when it is
@@ -351,8 +351,7 @@ if ai_llm_model_is_local "$model"; then
   using_local_model=true
 fi
 
-if [ "$using_local_model" = true ] \
-  && [ "$session_mode" = auto ] \
+if [ "$session_mode" = auto ] \
   && [ "$state_model" = "$model" ] \
   && [ -z "$session_id" ] \
   && [ -n "$state_session_id" ]; then
@@ -369,11 +368,7 @@ if [ "$batch_mode" = auto ]; then
 fi
 
 if [ "$session_mode" = auto ]; then
-  if [ "$using_local_model" = true ]; then
-    reuse_opencode_session=false
-  else
-    reuse_opencode_session=true
-  fi
+  reuse_opencode_session=false
 elif [ "$session_mode" = reuse ]; then
   reuse_opencode_session=true
 else
@@ -382,8 +377,7 @@ fi
 
 resume_interrupted_session=false
 if [ "$reuse_opencode_session" = false ]; then
-  if [ "$using_local_model" = true ] \
-    && [ "$session_mode" = auto ] \
+  if [ "$session_mode" = auto ] \
     && [ -n "$session_id" ]; then
     resume_interrupted_session=true
   else
@@ -565,7 +559,7 @@ EOF
 
   if [ "$opencode_status" -ne 0 ]; then
     if [ "$opencode_status" -eq 130 ]; then
-      if [ "$using_local_model" = true ] && [ "$reuse_opencode_session" = false ]; then
+      if [ "$reuse_opencode_session" = false ]; then
         if [ -z "$session_id" ]; then
           session_id=$(
             loop_code_lookup_session_id "$round_opencode_title" "$checklist_dir" 2>/dev/null \
