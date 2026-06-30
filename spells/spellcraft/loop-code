@@ -562,6 +562,43 @@ EOF
 
   (
     set +e
+    local_heartbeat_pid=''
+    if [ "$using_local_model" = true ]; then
+      local_heartbeat_seconds=${LOOP_CODE_LOCAL_HEARTBEAT_SECONDS:-10}
+      case "$local_heartbeat_seconds" in
+      ''|*[!0-9]*) local_heartbeat_seconds=10 ;;
+      esac
+      if [ "$local_heartbeat_seconds" -gt 0 ]; then
+        (
+          last_mlx_progress=''
+          local_heartbeat_elapsed=0
+          printf '%s\n' \
+            "loop-code: waiting for local MLX/OpenCode output; model is working..."
+          while [ ! -s "$round_status" ]; do
+            sleep 1
+            [ ! -s "$round_status" ] || break
+            local_heartbeat_elapsed=$((local_heartbeat_elapsed + 1))
+            [ "$local_heartbeat_elapsed" -ge "$local_heartbeat_seconds" ] || continue
+            local_heartbeat_elapsed=0
+            mlx_progress=''
+            if [ -f "${ai_llm_mlx_log:-}" ]; then
+              mlx_progress=$(
+                grep -F 'Prompt processing progress:' "$ai_llm_mlx_log" 2>/dev/null \
+                  | tail -n 1 || printf ''
+              )
+            fi
+            if [ -n "$mlx_progress" ] && [ "$mlx_progress" != "$last_mlx_progress" ]; then
+              printf '%s\n' "loop-code: $mlx_progress"
+              last_mlx_progress=$mlx_progress
+            else
+              printf '%s\n' "loop-code: still waiting for local model output..."
+            fi
+          done
+        ) &
+        local_heartbeat_pid=$!
+      fi
+    fi
+
     if [ -n "$session_id" ] \
       && { [ "$reuse_opencode_session" = true ] \
         || [ "$resume_interrupted_session" = true ]; }; then
@@ -570,6 +607,10 @@ EOF
     else
       opencode run --title "$round_opencode_title" --dir "$checklist_dir" --model "$model" "$prompt"
       opencode_status=$?
+    fi
+    if [ -n "$local_heartbeat_pid" ]; then
+      kill "$local_heartbeat_pid" >/dev/null 2>&1 || :
+      wait "$local_heartbeat_pid" 2>/dev/null || :
     fi
     printf '%s\n' "$opencode_status" >"$round_status"
     exit 0

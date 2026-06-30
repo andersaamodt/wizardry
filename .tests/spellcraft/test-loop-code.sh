@@ -79,6 +79,12 @@ case ${OPENCODE_TEST_MODE:-complete-second} in
   no-progress)
     printf '%s\n' 'I will inspect the checklist next.'
     ;;
+  slow-complete)
+    sleep 2
+    sed 's/\[ \]/[x]/g' "$OPENCODE_TEST_CHECKLIST" >"$OPENCODE_TEST_CHECKLIST.next"
+    mv "$OPENCODE_TEST_CHECKLIST.next" "$OPENCODE_TEST_CHECKLIST"
+    printf '%s\n' 'WIZARDRY_CHECKLIST_COMPLETE'
+    ;;
   interrupt)
     printf '%s\n' 'Interrupted by test harness'
     exit 130
@@ -366,6 +372,32 @@ test_local_reuse_session_override() {
   }
 }
 
+test_local_run_shows_waiting_heartbeat() {
+  tmp=$(make_tempdir)
+  stub_dir="$tmp/stubs"
+  make_opencode_stub "$stub_dir"
+  write_remote_config "$tmp/.config"
+  checklist="$tmp/CHECKLIST.md"
+  printf '%s\n' '- [ ] slow task' >"$checklist"
+
+  run_cmd env \
+    HOME="$tmp" \
+    XDG_CONFIG_HOME="$tmp/.config" \
+    XDG_STATE_HOME="$tmp/.state" \
+    PATH="$stub_dir:$PATH" \
+    OPENCODE_TEST_MODE=slow-complete \
+    OPENCODE_TEST_LOG="$tmp/log" \
+    OPENCODE_TEST_COUNT="$tmp/count" \
+    OPENCODE_TEST_CHECKLIST="$checklist" \
+    LOOP_CODE_LOCAL_HEARTBEAT_SECONDS=1 \
+    "$ROOT_DIR/spells/spellcraft/loop-code" "$checklist" \
+      --model "ollama/qwen3-coder:30b"
+
+  assert_success || return 1
+  assert_output_contains "waiting for local MLX/OpenCode output" || return 1
+  assert_output_contains "Checklist complete" || return 1
+}
+
 test_fresh_session_resume_keeps_interrupted_session_once() {
   tmp=$(make_tempdir)
   stub_dir="$tmp/stubs"
@@ -629,6 +661,7 @@ run_test_case "loop-code defaults remote runs to batch" test_remote_defaults_to_
 run_test_case "loop-code defaults local runs to no-batch" test_local_defaults_to_no_batch
 run_test_case "loop-code defaults local runs to fresh sessions" test_local_defaults_to_fresh_sessions
 run_test_case "loop-code can reuse local sessions by request" test_local_reuse_session_override
+run_test_case "loop-code shows local waiting heartbeat" test_local_run_shows_waiting_heartbeat
 run_test_case "loop-code resumes interrupted session once" test_fresh_session_resume_keeps_interrupted_session_once
 run_test_case "loop-code allows local batch override" test_batch_override_for_local
 run_test_case "loop-code honors direction phrase" test_direction_phrase_stops_loop
