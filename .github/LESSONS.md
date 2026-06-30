@@ -178,6 +178,8 @@
 - Auto-scroll preservation in htmx requires tracking scroll position in `htmx:beforeSwap` and restoring in `htmx:afterSwap`; store `wasAtBottom` flag globally to decide whether to auto-scroll after DOM update.
 - Dynamic htmx attributes (setAttribute + htmx.process) don't reliably initialize polling; use static htmx attributes with `hx-vals='js:{param: window.var}'` that evaluate at request time for robust behavior.
 - Read operations should never mutate state; cleanup belongs in write operations.
+- Background services started by a long-running POSIX shell harness must be launched in that harness shell; command substitution creates a short-lived subshell that can terminate the service immediately after returning its PID.
+- Machine-readable CLI table output may still include a header; select and validate the expected identifier shape instead of assuming the first line is data.
 - Time-based bugs make old working commits appear broken when tested later.
 - Cleanup on every read can delete data before read completes.
 - Directory mtime doesn't track file changes inside; use explicit xattr timestamps.

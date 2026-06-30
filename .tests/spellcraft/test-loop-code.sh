@@ -12,7 +12,7 @@ make_opencode_stub() {
   cat >"$moc_stub_dir/opencode" <<'SH'
 #!/bin/sh
 if [ "${1-}" = "db" ]; then
-  printf '%s\n' "${OPENCODE_TEST_SESSION_ID:-ses_test_loop_code}"
+  printf '%s\n' 'id' "${OPENCODE_TEST_SESSION_ID:-ses_test_loop_code}"
   exit 0
 fi
 

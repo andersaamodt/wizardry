@@ -555,7 +555,9 @@ EOF
 
 ai_llm_spawn_mlx_server_ephemeral() {
   model=$1
+  pid_file=$2
   [ -x "$ai_llm_mlx_python" ] || return 1
+  [ -n "$pid_file" ] || return 1
   mkdir -p "$ai_llm_root_dir"
 
   resolved_model=$(ai_llm_resolve_mlx_model_path "$model") || return 1
@@ -580,7 +582,7 @@ ai_llm_spawn_mlx_server_ephemeral() {
       --port "$ai_llm_mlx_port" \
       >"$ai_llm_mlx_log" 2>&1 &
   fi
-  printf '%s\n' "$!"
+  printf '%s\n' "$!" >"$pid_file"
 }
 
 ai_llm_start_mlx_server() {

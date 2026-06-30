@@ -111,11 +111,44 @@ test_preferred_local_model_uses_selected_mlx_state_without_install_marker() {
   }
 }
 
+test_ephemeral_mlx_server_survives_helper_return() {
+  tmp=$(make_tempdir)
+  mkdir -p "$tmp/bin" "$tmp/state"
+  cat >"$tmp/bin/python" <<'SH'
+#!/bin/sh
+exit 0
+SH
+  cat >"$tmp/bin/mlx_lm.server" <<'SH'
+#!/bin/sh
+sleep 30
+SH
+  chmod +x "$tmp/bin/python" "$tmp/bin/mlx_lm.server"
+
+  env TEST_TMP="$tmp" sh -c '
+    . "'"$test_root"'/spells/.arcana/ai-dev/ai-dev-llm-common"
+    ai_llm_mlx_python=$TEST_TMP/bin/python
+    ai_llm_mlx_server_bin=$TEST_TMP/bin/mlx_lm.server
+    ai_llm_root_dir=$TEST_TMP/state
+    ai_llm_mlx_log=$TEST_TMP/state/server.log
+    ai_llm_resolve_mlx_model_path() { printf "%s\n" "$1"; }
+    ai_llm_prepare_mlx_model_compat() { return 0; }
+    ai_llm_spawn_mlx_server_ephemeral test-model "$TEST_TMP/server.pid"
+    server_pid=$(cat "$TEST_TMP/server.pid")
+    kill -0 "$server_pid" 2>/dev/null || exit 1
+    kill "$server_pid"
+    wait "$server_pid" 2>/dev/null || :
+  ' || {
+    TEST_FAILURE_REASON="ephemeral MLX server did not survive helper return"
+    return 1
+  }
+}
+
 run_test_case "ai-dev-llm-common resolves MLX models locally" test_mlx_server_uses_local_snapshot_resolution
 run_test_case "ai-dev-llm-common normalizes Qwen tokenizer metadata" test_mlx_server_normalizes_list_extra_special_tokens
 run_test_case "ai-dev-llm-common prefers direct server entrypoint" test_mlx_server_prefers_entrypoint_and_longer_timeout
 run_test_case "ai-dev-llm-common accepts explicit OpenCode MLX models" test_opencode_model_resolution_prefers_explicit_mlx_model
 run_test_case "ai-dev-llm-common reads OpenCode JSONC model config" test_opencode_model_resolution_reads_jsonc_config
 run_test_case "ai-dev-llm-common resolves preferred local MLX state" test_preferred_local_model_uses_selected_mlx_state_without_install_marker
+run_test_case "ai-dev-llm-common keeps ephemeral MLX server alive" test_ephemeral_mlx_server_survives_helper_return
 
 finish_tests
