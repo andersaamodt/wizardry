@@ -24,7 +24,9 @@ remote models.
 --fresh-session starts a new OpenCode session each round. --reuse-session keeps
 one OpenCode session across rounds. The default is fresh sessions for local
 models, so local LLMs do not re-read an ever-growing OpenCode thread, and
-reused sessions for remote models.
+reused sessions for remote models. If a local fresh-session round is
+interrupted, loop-code stores only that latest OpenCode session and resumes it
+once on the next run before returning to fresh sessions.
 
 OpenCode is instructed to emit WIZARDRY_CHECKLIST_COMPLETE when it verifies the
 whole checklist. WIZARDRY_CHECKLIST_NEEDS_DIRECTION is honored only when it is
@@ -349,6 +351,15 @@ if ai_llm_model_is_local "$model"; then
   using_local_model=true
 fi
 
+if [ "$using_local_model" = true ] \
+  && [ "$session_mode" = auto ] \
+  && [ "$state_model" = "$model" ] \
+  && [ -z "$session_id" ] \
+  && [ -n "$state_session_id" ]; then
+  session_id=$state_session_id
+  session_title=$state_session_title
+fi
+
 if [ "$batch_mode" = auto ]; then
   if [ "$using_local_model" = true ]; then
     batch_mode=no-batch
@@ -369,9 +380,16 @@ else
   reuse_opencode_session=false
 fi
 
+resume_interrupted_session=false
 if [ "$reuse_opencode_session" = false ]; then
-  session_id=''
-  session_title=''
+  if [ "$using_local_model" = true ] \
+    && [ "$session_mode" = auto ] \
+    && [ -n "$session_id" ]; then
+    resume_interrupted_session=true
+  else
+    session_id=''
+    session_title=''
+  fi
 fi
 
 max_no_progress_rounds=0
@@ -395,7 +413,7 @@ fi
 loop_code_guard_local_mode
 
 state_model=$model
-if [ "$reuse_opencode_session" = true ]; then
+if [ "$reuse_opencode_session" = true ] || [ "$resume_interrupted_session" = true ]; then
   state_session_id=$session_id
   state_session_title=$session_title
 else
@@ -485,18 +503,21 @@ in one run. Those are reasons to complete a bounded slice, not reasons to stop.
 EOF
 )
 
+  if [ "$reuse_opencode_session" = true ]; then
+    round_opencode_title=$session_title
+  else
+    round_opencode_title=$session_title-r$round
+  fi
+
   (
     set +e
-    if [ "$reuse_opencode_session" = true ] && [ -n "$session_id" ]; then
+    if [ -n "$session_id" ] \
+      && { [ "$reuse_opencode_session" = true ] \
+        || [ "$resume_interrupted_session" = true ]; }; then
       opencode run --session "$session_id" --dir "$checklist_dir" --model "$model" "$prompt"
       opencode_status=$?
     else
-      if [ "$reuse_opencode_session" = true ]; then
-        opencode_title=$session_title
-      else
-        opencode_title=$session_title-r$round
-      fi
-      opencode run --title "$opencode_title" --dir "$checklist_dir" --model "$model" "$prompt"
+      opencode run --title "$round_opencode_title" --dir "$checklist_dir" --model "$model" "$prompt"
       opencode_status=$?
     fi
     printf '%s\n' "$opencode_status" >"$round_status"
@@ -544,6 +565,19 @@ EOF
 
   if [ "$opencode_status" -ne 0 ]; then
     if [ "$opencode_status" -eq 130 ]; then
+      if [ "$using_local_model" = true ] && [ "$reuse_opencode_session" = false ]; then
+        if [ -z "$session_id" ]; then
+          session_id=$(
+            loop_code_lookup_session_id "$round_opencode_title" "$checklist_dir" 2>/dev/null \
+              || printf ''
+          )
+        fi
+        if [ -n "$session_id" ]; then
+          state_session_id=$session_id
+          state_session_title=$round_opencode_title
+          loop_code_write_state
+        fi
+      fi
       warn "loop-code: interrupted during OpenCode round $round;" \
         "rerun loop-code in this directory to resume"
       exit 130
@@ -560,6 +594,14 @@ EOF
     release_clear_all=1
     success "Checklist complete after $round OpenCode round(s): $checklist_path"
     exit 0
+  fi
+
+  if [ "$resume_interrupted_session" = true ]; then
+    session_id=''
+    state_session_id=''
+    state_session_title=''
+    resume_interrupted_session=false
+    loop_code_write_state
   fi
 
   direction_line=$(

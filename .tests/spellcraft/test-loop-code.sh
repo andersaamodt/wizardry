@@ -345,7 +345,7 @@ test_local_reuse_session_override() {
   }
 }
 
-test_local_fresh_session_resume_keeps_model_state() {
+test_local_fresh_session_resume_keeps_interrupted_session_once() {
   tmp=$(make_tempdir)
   stub_dir="$tmp/stubs"
   make_opencode_stub "$stub_dir"
@@ -374,10 +374,14 @@ test_local_fresh_session_resume_keeps_model_state() {
     TEST_FAILURE_REASON="interrupted local runs should preserve local-mode state"
     return 1
   }
-  if grep -F 'session_id=' "$checklist" >/dev/null; then
-    TEST_FAILURE_REASON="fresh local resume should not preserve a growing OpenCode session"
+  grep -F 'session_id=ses_test_loop_code' "$checklist" >/dev/null || {
+    TEST_FAILURE_REASON="interrupted local runs should preserve the interrupted OpenCode session"
     return 1
-  fi
+  }
+  grep -F 'session_title=loop-code-' "$checklist" >/dev/null || {
+    TEST_FAILURE_REASON="interrupted local runs should preserve the interrupted OpenCode title"
+    return 1
+  }
 
   rm -f "$tmp/count"
   : >"$tmp/log"
@@ -396,10 +400,14 @@ test_local_fresh_session_resume_keeps_model_state() {
     TEST_FAILURE_REASON="resume should continue with the interrupted local model"
     return 1
   }
-  if grep -F -- '--session ses_test_loop_code' "$tmp/log" >/dev/null; then
-    TEST_FAILURE_REASON="resumed fresh local runs should still avoid OpenCode session reuse"
+  grep -F -- '--session ses_test_loop_code' "$tmp/log" >/dev/null || {
+    TEST_FAILURE_REASON="resume should pick up the interrupted OpenCode session"
     return 1
-  fi
+  }
+  grep -F -- '--title loop-code-' "$tmp/log" >/dev/null || {
+    TEST_FAILURE_REASON="after one resumed round, local mode should return to fresh sessions"
+    return 1
+  }
 }
 
 test_batch_override_for_local() {
@@ -600,7 +608,7 @@ run_test_case "loop-code defaults remote runs to batch" test_remote_defaults_to_
 run_test_case "loop-code defaults local runs to no-batch" test_local_defaults_to_no_batch
 run_test_case "loop-code defaults local runs to fresh sessions" test_local_defaults_to_fresh_sessions
 run_test_case "loop-code can reuse local sessions by request" test_local_reuse_session_override
-run_test_case "loop-code resumes interrupted local fresh runs" test_local_fresh_session_resume_keeps_model_state
+run_test_case "loop-code resumes interrupted local session once" test_local_fresh_session_resume_keeps_interrupted_session_once
 run_test_case "loop-code allows local batch override" test_batch_override_for_local
 run_test_case "loop-code honors direction phrase" test_direction_phrase_stops_loop
 run_test_case "loop-code rejects false completion" test_false_completion_claim_continues
