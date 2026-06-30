@@ -183,7 +183,7 @@ loop_code_prepare_local_runtime() {
       loop_code_mlx_model=${model#mlx/}
       loop_code_mlx_failure='could not pass local MLX readiness checks'
       while :; do
-        say "Warming up local MLX model for loop-code: mlx/$loop_code_mlx_model"
+        say "Warming up MLX server for loop-code: mlx/$loop_code_mlx_model"
         loop_code_local_server_pid=''
 
         if ai_llm_start_mlx_server "$loop_code_mlx_model" \
