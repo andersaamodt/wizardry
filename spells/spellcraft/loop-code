@@ -29,6 +29,14 @@ require-wizardry || exit 1
 set -eu
 . env-clear
 
+spell_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+ai_dev_helper=$spell_dir/../.arcana/ai-dev/ai-dev-llm-common
+if [ -f "$ai_dev_helper" ]; then
+  # shellcheck source=/dev/null
+  . "$ai_dev_helper"
+  set -eu
+fi
+
 checklist=""
 model=""
 while [ "$#" -gt 0 ]; do
@@ -78,6 +86,14 @@ esac
 if ! grep -F '[ ]' "$checklist_path" >/dev/null 2>&1; then
   success "Checklist is already complete: $checklist_path"
   exit 0
+fi
+
+if [ -f "$ai_dev_helper" ]; then
+  if ! ai_llm_prepare_opencode_runtime "$model"; then
+    if mlx_model=$(ai_llm_resolve_opencode_mlx_model "$model" 2>/dev/null); then
+      die "loop-code: MLX runtime for OpenCode model '$mlx_model' could not be prepared"
+    fi
+  fi
 fi
 
 round=0

@@ -27,7 +27,9 @@ ai_llm_mlx_models_file=$ai_llm_root_dir/mlx-installed-models
 ai_llm_mlx_root=$ai_llm_root_dir/mlx
 ai_llm_mlx_venv=$ai_llm_mlx_root/venv
 ai_llm_mlx_python=$ai_llm_mlx_venv/bin/python
+ai_llm_mlx_server_bin=$ai_llm_mlx_venv/bin/mlx_lm.server
 ai_llm_mlx_port=${AI_DEV_MLX_PORT:-11435}
+ai_llm_mlx_start_timeout=${AI_DEV_MLX_START_TIMEOUT:-120}
 ai_llm_mlx_pid_file=$ai_llm_root_dir/mlx-server.pid
 ai_llm_mlx_log=$ai_llm_root_dir/mlx-server.log
 ai_llm_opencode_config_dir=${XDG_CONFIG_HOME:-$HOME/.config}/opencode
@@ -317,9 +319,102 @@ EOF
   mv "$temp" "$ai_llm_opencode_runtime_config"
 }
 
-ai_llm_wait_for_mlx_server() {
+ai_llm_opencode_model() {
+  config_path=${1-}
+  if [ -z "$config_path" ]; then
+    config_path=$ai_llm_opencode_config_dir/opencode.jsonc
+  fi
+  [ -f "$config_path" ] || return 1
+  awk '
+    match($0, /"model"[[:space:]]*:[[:space:]]*"[^"]+"/) {
+      line = substr($0, RSTART, RLENGTH)
+      sub(/^[^"]*"model"[[:space:]]*:[[:space:]]*"/, "", line)
+      sub(/"$/, "", line)
+      print line
+      exit
+    }
+  ' "$config_path"
+}
+
+ai_llm_resolve_opencode_mlx_model() {
+  explicit_model=${1-}
+  if [ -n "$explicit_model" ]; then
+    case "$explicit_model" in
+      mlx/*)
+        printf '%s\n' "${explicit_model#mlx/}"
+        return 0
+        ;;
+      *)
+        return 1
+        ;;
+    esac
+  fi
+
+  configured_model=$(ai_llm_opencode_model 2>/dev/null || printf '')
+  case "$configured_model" in
+    mlx/*)
+      printf '%s\n' "${configured_model#mlx/}"
+      return 0
+      ;;
+  esac
+
+  configured_model=$(ai_llm_opencode_model "$ai_llm_opencode_runtime_config" 2>/dev/null || printf '')
+  case "$configured_model" in
+    mlx/*)
+      printf '%s\n' "${configured_model#mlx/}"
+      return 0
+      ;;
+  esac
+
+  return 1
+}
+
+ai_llm_resolve_mlx_model_path() {
+  model=$1
+  if [ -d "$model" ]; then
+    printf '%s\n' "$model"
+    return 0
+  fi
+  [ -x "$ai_llm_mlx_python" ] || return 1
+  AI_DEV_MLX_MODEL="$model" "$ai_llm_mlx_python" - <<'PY'
+import os
+from huggingface_hub import snapshot_download
+
+print(snapshot_download(repo_id=os.environ["AI_DEV_MLX_MODEL"], local_files_only=True))
+PY
+}
+
+ai_llm_prepare_mlx_model_compat() {
+  model_path=$1
+  [ -x "$ai_llm_mlx_python" ] || return 1
+  AI_DEV_MLX_MODEL_PATH="$model_path" "$ai_llm_mlx_python" - <<'PY' >/dev/null 2>&1
+import json
+import os
+from pathlib import Path
+
+config_path = Path(os.environ["AI_DEV_MLX_MODEL_PATH"]) / "tokenizer_config.json"
+if not config_path.exists():
+    raise SystemExit(0)
+
+with config_path.open("r", encoding="utf-8") as handle:
+    config = json.load(handle)
+
+extra_special_tokens = config.get("extra_special_tokens")
+if not isinstance(extra_special_tokens, list):
+    raise SystemExit(0)
+
+config.pop("extra_special_tokens", None)
+with config_path.open("w", encoding="utf-8") as handle:
+    json.dump(config, handle, indent=2)
+    handle.write("\n")
+PY
+}
+
+ai_llm_wait_for_mlx_server_timeout() {
+  timeout=${1-}
+  [ -n "$timeout" ] || timeout=$ai_llm_mlx_start_timeout
   attempts=0
-  while [ "$attempts" -lt 30 ]; do
+  while [ "$attempts" -lt "$timeout" ]; do
     if command -v curl >/dev/null 2>&1 && curl -fsS "http://127.0.0.1:$ai_llm_mlx_port/v1/models" >/dev/null 2>&1; then
       return 0
     fi
@@ -329,12 +424,16 @@ ai_llm_wait_for_mlx_server() {
   return 1
 }
 
+ai_llm_wait_for_mlx_server() {
+  ai_llm_wait_for_mlx_server_timeout "$ai_llm_mlx_start_timeout"
+}
+
 ai_llm_start_mlx_server() {
   model=$1
   [ -x "$ai_llm_mlx_python" ] || return 1
   mkdir -p "$ai_llm_root_dir"
 
-  if ai_llm_wait_for_mlx_server; then
+  if ai_llm_wait_for_mlx_server_timeout 2; then
     return 0
   fi
 
@@ -344,17 +443,42 @@ ai_llm_start_mlx_server() {
       if ai_llm_wait_for_mlx_server; then
         return 0
       fi
+    else
+      rm -f "$ai_llm_mlx_pid_file"
     fi
   fi
 
-  nohup "$ai_llm_mlx_python" -m mlx_lm.server \
-    --model "$model" \
-    --host 127.0.0.1 \
-    --port "$ai_llm_mlx_port" \
-    >"$ai_llm_mlx_log" 2>&1 &
+  resolved_model=$(ai_llm_resolve_mlx_model_path "$model") || return 1
+  ai_llm_prepare_mlx_model_compat "$resolved_model" || return 1
+
+  mlx_server_cmd=$ai_llm_mlx_server_bin
+  if [ ! -x "$mlx_server_cmd" ]; then
+    mlx_server_cmd=$ai_llm_mlx_python
+  fi
+
+  if [ "$mlx_server_cmd" = "$ai_llm_mlx_python" ]; then
+    nohup "$mlx_server_cmd" -m mlx_lm.server \
+      --model "$resolved_model" \
+      --host 127.0.0.1 \
+      --port "$ai_llm_mlx_port" \
+      >"$ai_llm_mlx_log" 2>&1 &
+  else
+    nohup "$mlx_server_cmd" \
+      --model "$resolved_model" \
+      --host 127.0.0.1 \
+      --port "$ai_llm_mlx_port" \
+      >"$ai_llm_mlx_log" 2>&1 &
+  fi
   printf '%s\n' "$!" >"$ai_llm_mlx_pid_file"
 
   ai_llm_wait_for_mlx_server
+}
+
+ai_llm_prepare_opencode_runtime() {
+  explicit_model=${1-}
+  mlx_model=$(ai_llm_resolve_opencode_mlx_model "$explicit_model" 2>/dev/null || printf '')
+  [ -n "$mlx_model" ] || return 0
+  ai_llm_start_mlx_server "$mlx_model"
 }
 
 ai_llm_sync_opencode_runtime() {
