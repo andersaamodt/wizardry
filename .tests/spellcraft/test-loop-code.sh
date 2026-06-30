@@ -115,6 +115,7 @@ test_help() {
   assert_output_contains "--local|--remote" || return 1
   assert_output_contains "--batch|--no-batch" || return 1
   assert_output_contains "--fresh-session|--reuse-session" || return 1
+  assert_output_contains "--use-drafts" || return 1
 }
 
 test_missing_checklist_fails() {
@@ -376,6 +377,32 @@ test_local_reuse_session_override() {
   assert_success || return 1
   grep -F -- '--session ses_test_loop_code' "$tmp/log" >/dev/null || {
     TEST_FAILURE_REASON="--reuse-session should opt local runs into session reuse"
+    return 1
+  }
+}
+
+test_use_drafts_requires_mlx_model() {
+  tmp=$(make_tempdir)
+  stub_dir="$tmp/stubs"
+  make_opencode_stub "$stub_dir"
+  checklist="$tmp/CHECKLIST.md"
+  printf '%s\n' '- [ ] first task' >"$checklist"
+
+  run_cmd env \
+    HOME="$tmp" \
+    XDG_CONFIG_HOME="$tmp/.config" \
+    XDG_STATE_HOME="$tmp/.state" \
+    PATH="$stub_dir:$PATH" \
+    OPENCODE_TEST_LOG="$tmp/log" \
+    OPENCODE_TEST_COUNT="$tmp/count" \
+    OPENCODE_TEST_CHECKLIST="$checklist" \
+    "$ROOT_DIR/spells/spellcraft/loop-code" "$checklist" \
+      --model "ollama/qwen3-coder:30b" --use-drafts
+
+  assert_failure || return 1
+  assert_error_contains "--use-drafts requires a local MLX model" || return 1
+  [ ! -f "$tmp/count" ] || {
+    TEST_FAILURE_REASON="--use-drafts with a non-MLX model should fail before OpenCode runs"
     return 1
   }
 }
@@ -669,6 +696,7 @@ run_test_case "loop-code defaults remote runs to batch" test_remote_defaults_to_
 run_test_case "loop-code defaults local runs to no-batch" test_local_defaults_to_no_batch
 run_test_case "loop-code defaults local runs to fresh sessions" test_local_defaults_to_fresh_sessions
 run_test_case "loop-code can reuse local sessions by request" test_local_reuse_session_override
+run_test_case "loop-code restricts --use-drafts to MLX models" test_use_drafts_requires_mlx_model
 run_test_case "loop-code shows local waiting heartbeat" test_local_run_shows_waiting_heartbeat
 run_test_case "loop-code resumes interrupted session once" test_fresh_session_resume_keeps_interrupted_session_once
 run_test_case "loop-code allows local batch override" test_batch_override_for_local

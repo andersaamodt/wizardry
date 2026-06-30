@@ -47,6 +47,7 @@ pull_target=$model
 if [ "$runtime" = "ollama" ]; then
   pull_target=$(resolve_model_alias "$model")
 fi
+model_role=$(ai_llm_model_role "$runtime" "$pull_target")
 
 if ! ai_llm_is_curated_model "$runtime" "$pull_target"; then
   die "install-llm: unknown model '$model' for runtime '$runtime'. Use select-llm-to-install to choose a curated model."
@@ -98,7 +99,14 @@ case "$runtime" in
     ;;
 esac
 
-ai_llm_set_selected_model "$runtime" "$pull_target" || true
+case "$model_role" in
+  draft)
+    ai_llm_set_selected_draft_model "$runtime" "$pull_target" || true
+    ;;
+  *)
+    ai_llm_set_selected_model "$runtime" "$pull_target" || true
+    ;;
+esac
 
 if ! AI_DEV_SKIP_MLX_SERVER_START=1 ai_llm_sync_opencode_runtime; then
   warn "install-llm: OpenCode runtime sync failed"
@@ -108,7 +116,9 @@ if [ "$pull_target" != "$model" ]; then
   warn "install-llm: '$model' was redirected to '$pull_target'"
 fi
 
-if [ "$runtime" = "mlx" ] && [ "${AI_DEV_SKIP_MLX_SERVER_START:-0}" != "1" ]; then
+if [ "$runtime" = "mlx" ] \
+  && [ "$model_role" != "draft" ] \
+  && [ "${AI_DEV_SKIP_MLX_SERVER_START:-0}" != "1" ]; then
   step "Starting MLX server for $pull_target"
   ai_llm_start_mlx_server "$pull_target" || warn "install-llm: mlx server did not become ready"
 fi

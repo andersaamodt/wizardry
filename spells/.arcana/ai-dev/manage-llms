@@ -65,8 +65,12 @@ while :; do
 
   available=$(ai_llm_list_available "$runtime")
   set -- "$@" "Install best coding model%$script_dir/install-llm \"$(ai_llm_default_model "$runtime")\""
+  draft_model=$(printf '%s\n' "$available" | awk -F'|' '$2 ~ /best speculative draft/ { print $1; exit }')
   reasoning_model=$(printf '%s\n' "$available" | awk -F'|' '$2 ~ /best reasoning/ { print $1; exit }')
   vision_model=$(printf '%s\n' "$available" | awk -F'|' '$2 ~ /best vision/ { print $1; exit }')
+  if [ -n "$draft_model" ]; then
+    set -- "$@" "Install best draft model%$script_dir/install-llm \"$draft_model\""
+  fi
   if [ -n "$reasoning_model" ]; then
     set -- "$@" "Install best reasoning model%$script_dir/install-llm \"$reasoning_model\""
   fi

@@ -71,6 +71,71 @@ test_opencode_mlx_models_are_tool_call_capable() {
   }
 }
 
+test_mlx_catalog_includes_draft_model() {
+  tmp=$(make_tempdir)
+  output=$(
+    env HOME="$tmp" XDG_STATE_HOME="$tmp/.local/state" sh -c '
+      . "'"$test_root"'/spells/.arcana/ai-dev/ai-dev-llm-common"
+      ai_llm_list_available mlx
+    '
+  ) || {
+    TEST_FAILURE_REASON="MLX catalog should be readable"
+    return 1
+  }
+  printf '%s\n' "$output" | grep -F 'mlx-community/Qwen3-0.6B-4bit|best speculative draft' \
+    >/dev/null 2>&1 || {
+    TEST_FAILURE_REASON="MLX catalog does not include the Qwen3 draft model"
+    return 1
+  }
+}
+
+test_mlx_draft_model_is_not_primary_role() {
+  tmp=$(make_tempdir)
+  output=$(
+    env HOME="$tmp" XDG_STATE_HOME="$tmp/.local/state" sh -c '
+      . "'"$test_root"'/spells/.arcana/ai-dev/ai-dev-llm-common"
+      printf "%s,%s\n" \
+        "$(ai_llm_model_role mlx mlx-community/Qwen3-0.6B-4bit)" \
+        "$(ai_llm_model_role mlx mlx-community/Qwen3-Coder-30B-A3B-Instruct-5bit)"
+    '
+  ) || {
+    TEST_FAILURE_REASON="MLX model roles should be readable"
+    return 1
+  }
+  [ "$output" = "draft,primary" ] || {
+    TEST_FAILURE_REASON="draft model should not be treated as a primary coding model"
+    return 1
+  }
+}
+
+test_mlx_server_draft_mode_is_opt_in() {
+  helper="$test_root/spells/.arcana/ai-dev/ai-dev-llm-common"
+  grep -F 'AI_DEV_MLX_ENABLE_DRAFT' "$helper" >/dev/null 2>&1 && {
+    TEST_FAILURE_REASON="MLX draft mode should not be controlled by shell environment"
+    return 1
+  }
+  grep -F 'AI_DEV_MLX_DRAFT_MODEL' "$helper" >/dev/null 2>&1 && {
+    TEST_FAILURE_REASON="MLX draft model should come from wizardry state, not shell environment"
+    return 1
+  }
+  grep -F 'AI_DEV_MLX_NUM_DRAFT_TOKENS' "$helper" >/dev/null 2>&1 && {
+    TEST_FAILURE_REASON="MLX draft token count should not be a hidden shell environment knob"
+    return 1
+  }
+  grep -F 'use-drafts' "$helper" >/dev/null 2>&1 || {
+    TEST_FAILURE_REASON="MLX draft mode should be an explicit helper mode"
+    return 1
+  }
+  grep -F -- '--draft-model' "$helper" >/dev/null 2>&1 || {
+    TEST_FAILURE_REASON="MLX server start does not pass draft model arguments"
+    return 1
+  }
+  grep -F -- '--num-draft-tokens' "$helper" >/dev/null 2>&1 || {
+    TEST_FAILURE_REASON="MLX server start does not configure draft token count"
+    return 1
+  }
+}
+
 test_mlx_server_prefers_entrypoint_and_longer_timeout() {
   helper="$test_root/spells/.arcana/ai-dev/ai-dev-llm-common"
   grep -F 'ai_llm_mlx_server_bin=$ai_llm_mlx_venv/bin/mlx_lm.server' "$helper" >/dev/null 2>&1 || {
@@ -214,6 +279,9 @@ run_test_case "ai-dev-llm-common resolves MLX models locally" test_mlx_server_us
 run_test_case "ai-dev-llm-common normalizes Qwen tokenizer metadata" test_mlx_server_normalizes_list_extra_special_tokens
 run_test_case "ai-dev-llm-common patches Qwen XML tool calls" test_mlx_server_patches_qwen_xml_tool_calls
 run_test_case "ai-dev-llm-common marks MLX tool-call models" test_opencode_mlx_models_are_tool_call_capable
+run_test_case "ai-dev-llm-common catalogs MLX draft model" test_mlx_catalog_includes_draft_model
+run_test_case "ai-dev-llm-common keeps draft model out of primary role" test_mlx_draft_model_is_not_primary_role
+run_test_case "ai-dev-llm-common keeps MLX draft mode opt-in" test_mlx_server_draft_mode_is_opt_in
 run_test_case "ai-dev-llm-common prefers direct server entrypoint" test_mlx_server_prefers_entrypoint_and_longer_timeout
 run_test_case "ai-dev-llm-common accepts explicit OpenCode MLX models" test_opencode_model_resolution_prefers_explicit_mlx_model
 run_test_case "ai-dev-llm-common reads OpenCode JSONC model config" test_opencode_model_resolution_reads_jsonc_config

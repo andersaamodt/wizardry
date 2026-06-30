@@ -6,7 +6,7 @@
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: loop-code [CHECKLIST] [--model PROVIDER/MODEL] [--local|--remote] [--batch|--no-batch] [--fresh-session|--reuse-session]
+Usage: loop-code [CHECKLIST] [--model PROVIDER/MODEL] [--local|--remote] [--batch|--no-batch] [--fresh-session|--reuse-session] [--use-drafts]
 
 Runs OpenCode in the checklist's directory until CHECKLIST contains no literal
 "[ ]" markers. OpenCode output is streamed for every round. Use --model to
@@ -27,6 +27,10 @@ models, so each round reads the checklist instead of an ever-growing OpenCode
 thread. If a fresh-session round is interrupted, loop-code stores only that
 latest OpenCode session and resumes it once on the next run before returning to
 fresh sessions.
+
+--use-drafts starts local MLX with wizardry's selected speculative draft model
+when available. This is opt-in because draft decoding can trade correctness for
+speed on some model/runtime combinations.
 
 OpenCode is instructed to emit WIZARDRY_CHECKLIST_COMPLETE when it verifies the
 whole checklist. WIZARDRY_CHECKLIST_NEEDS_DIRECTION is honored only when it is
@@ -195,8 +199,13 @@ loop_code_prepare_local_runtime() {
       while :; do
         say "Warming up MLX server for loop-code: mlx/$loop_code_mlx_model"
         loop_code_local_server_pid=''
+        loop_code_mlx_start_mode=''
+        if [ "$use_drafts" = true ]; then
+          loop_code_mlx_start_mode=use-drafts
+          say "Starting MLX with speculative draft model enabled"
+        fi
 
-        if ai_llm_start_mlx_server "$loop_code_mlx_model" \
+        if ai_llm_start_mlx_server "$loop_code_mlx_model" "$loop_code_mlx_start_mode" \
           && ai_llm_probe_mlx_model "$loop_code_mlx_model" \
           && ai_llm_probe_mlx_tool_model "$loop_code_mlx_model"; then
           model=mlx/$loop_code_mlx_model
@@ -238,6 +247,7 @@ local_mode=false
 remote_mode=false
 batch_mode=auto
 session_mode=auto
+use_drafts=false
 while [ "$#" -gt 0 ]; do
   case "$1" in
   --model)
@@ -263,6 +273,9 @@ while [ "$#" -gt 0 ]; do
     ;;
   --reuse-session)
     session_mode=reuse
+    ;;
+  --use-drafts)
+    use_drafts=true
     ;;
   --*)
     die 2 "loop-code: unknown option '$1'"
@@ -352,6 +365,12 @@ fi
 using_local_model=false
 if ai_llm_model_is_local "$model"; then
   using_local_model=true
+fi
+if [ "$use_drafts" = true ]; then
+  case "$model" in
+    mlx/*) ;;
+    *) die 2 "loop-code: --use-drafts requires a local MLX model" ;;
+  esac
 fi
 
 local_instruction_text=''
