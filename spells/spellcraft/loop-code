@@ -296,6 +296,7 @@ if [ "$using_local_model" = true ] && [ -f "$ai_dev_helper" ]; then
   case "$model" in
     mlx/*)
       if ! ai_llm_wait_for_mlx_server_timeout 2; then
+        say "Warming up local MLX model for loop-code: $model"
         loop_code_local_server_pid=$(ai_llm_spawn_mlx_server_ephemeral "${model#mlx/}" 2>/dev/null || printf '')
         [ -n "$loop_code_local_server_pid" ] || die "loop-code: local MLX server for model '$model' could not be started"
         if ! ai_llm_wait_for_mlx_server; then
