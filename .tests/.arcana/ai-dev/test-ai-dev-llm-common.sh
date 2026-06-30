@@ -49,6 +49,14 @@ test_mlx_server_patches_qwen_xml_tool_calls() {
     TEST_FAILURE_REASON="MLX tool parser patch does not normalize argument strings"
     return 1
   }
+  grep -F 'numeric_xml_tool_fields = {"limit", "offset"}' "$helper" >/dev/null 2>&1 || {
+    TEST_FAILURE_REASON="MLX tool parser patch does not coerce known numeric XML parameters"
+    return 1
+  }
+  grep -F 'parameter_value = int(parameter_value)' "$helper" >/dev/null 2>&1 || {
+    TEST_FAILURE_REASON="MLX tool parser patch does not emit numeric XML parameter values as numbers"
+    return 1
+  }
 }
 
 test_opencode_mlx_models_are_tool_call_capable() {

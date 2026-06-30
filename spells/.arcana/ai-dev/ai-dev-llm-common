@@ -261,7 +261,8 @@ ai_llm_runtime_supported_on_host() {
 ai_llm_register_mlx_model() {
   model=$1
   mkdir -p "$ai_llm_root_dir"
-  if [ -f "$ai_llm_mlx_models_file" ] && grep -Fx "$model" "$ai_llm_mlx_models_file" >/dev/null 2>&1; then
+  if [ -f "$ai_llm_mlx_models_file" ] \
+    && grep -Fx "$model" "$ai_llm_mlx_models_file" >/dev/null 2>&1; then
     return 0
   fi
   printf '%s\n' "$model" >>"$ai_llm_mlx_models_file"
@@ -418,7 +419,8 @@ ai_llm_preferred_local_opencode_model() {
       fi
       ;;
     ollama)
-      if ai_llm_runtime_available "ollama" && model=$(ai_llm_get_selected_model ollama 2>/dev/null); then
+      if ai_llm_runtime_available "ollama" \
+        && model=$(ai_llm_get_selected_model ollama 2>/dev/null); then
         printf '%s\n' "ollama/$model"
         return 0
       fi
@@ -429,7 +431,8 @@ ai_llm_preferred_local_opencode_model() {
     printf '%s\n' "mlx/$model"
     return 0
   fi
-  if ai_llm_runtime_available "ollama" && model=$(ai_llm_get_selected_model ollama 2>/dev/null); then
+  if ai_llm_runtime_available "ollama" \
+    && model=$(ai_llm_get_selected_model ollama 2>/dev/null); then
     printf '%s\n' "ollama/$model"
     return 0
   fi
@@ -459,7 +462,9 @@ ai_llm_resolve_opencode_mlx_model() {
       ;;
   esac
 
-  configured_model=$(ai_llm_opencode_model "$ai_llm_opencode_runtime_config" 2>/dev/null || printf '')
+  configured_model=$(
+    ai_llm_opencode_model "$ai_llm_opencode_runtime_config" 2>/dev/null || printf ''
+  )
   case "$configured_model" in
     mlx/*)
       printf '%s\n' "${configured_model#mlx/}"
@@ -530,7 +535,8 @@ parser_ready = (
     and 'f"call_{uuid.uuid4().hex}"' in text
 )
 normalizer_ready = "decoded_arguments = json.loads(arguments)" in text
-if parser_ready and normalizer_ready:
+numeric_xml_ready = "numeric_xml_tool_fields = {" in text
+if parser_ready and normalizer_ready and numeric_xml_ready:
     raise SystemExit(0)
 
 if "import re\n" not in text:
@@ -560,6 +566,35 @@ if not normalizer_ready:
     if old_normalizer not in text:
         raise SystemExit(1)
     text = text.replace(old_normalizer, new_normalizer, 1)
+
+if not numeric_xml_ready and "raw_tool_text = tool_text.strip()" in text:
+    old_xml_parameter_parser = '''                for parameter_match in re.finditer(
+                    r"<parameter=([^>\\n]+)>\\s*(.*?)\\s*</parameter>",
+                    function_match.group(2),
+                    re.DOTALL,
+                ):
+                    function_arguments[parameter_match.group(1).strip()] = (
+                        parameter_match.group(2).strip()
+                    )
+'''
+    new_xml_parameter_parser = '''                numeric_xml_tool_fields = {"limit", "offset"}
+                for parameter_match in re.finditer(
+                    r"<parameter=([^>\\n]+)>\\s*(.*?)\\s*</parameter>",
+                    function_match.group(2),
+                    re.DOTALL,
+                ):
+                    parameter_name = parameter_match.group(1).strip()
+                    parameter_value = parameter_match.group(2).strip()
+                    if parameter_name in numeric_xml_tool_fields and re.fullmatch(
+                        r"-?[0-9]+", parameter_value
+                    ):
+                        parameter_value = int(parameter_value)
+                    function_arguments[parameter_name] = parameter_value
+'''
+    if old_xml_parameter_parser not in text:
+        raise SystemExit(1)
+    text = text.replace(old_xml_parameter_parser, new_xml_parameter_parser, 1)
+    numeric_xml_ready = True
 
 if not parser_ready and "raw_tool_text = tool_text.strip()" in text:
     old_id = '''                "id": None,
@@ -606,14 +641,19 @@ new_parser = '''        def parse_function(tool_text):
                     raise
                 function_name = function_match.group(1).strip()
                 function_arguments = {}
+                numeric_xml_tool_fields = {"limit", "offset"}
                 for parameter_match in re.finditer(
                     r"<parameter=([^>\\n]+)>\\s*(.*?)\\s*</parameter>",
                     function_match.group(2),
                     re.DOTALL,
                 ):
-                    function_arguments[parameter_match.group(1).strip()] = (
-                        parameter_match.group(2).strip()
-                    )
+                    parameter_name = parameter_match.group(1).strip()
+                    parameter_value = parameter_match.group(2).strip()
+                    if parameter_name in numeric_xml_tool_fields and re.fullmatch(
+                        r"-?[0-9]+", parameter_value
+                    ):
+                        parameter_value = int(parameter_value)
+                    function_arguments[parameter_name] = parameter_value
             return {
                 "function": {
                     "name": function_name,
@@ -641,7 +681,8 @@ ai_llm_wait_for_mlx_server_timeout() {
   [ -n "$timeout" ] || timeout=$ai_llm_mlx_start_timeout
   attempts=0
   while [ "$attempts" -lt "$timeout" ]; do
-    if command -v curl >/dev/null 2>&1 && curl -fsS "http://127.0.0.1:$ai_llm_mlx_port/v1/models" >/dev/null 2>&1; then
+    if command -v curl >/dev/null 2>&1 \
+      && curl -fsS "http://127.0.0.1:$ai_llm_mlx_port/v1/models" >/dev/null 2>&1; then
       return 0
     fi
     attempts=$((attempts + 1))
@@ -732,9 +773,11 @@ ai_llm_start_mlx_server_launchd() {
   mkdir -p "$ai_llm_mlx_launch_agent_dir"
   mkdir -p "$ai_llm_root_dir"
 
+  plist_doctype='<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"'
+  plist_doctype=$plist_doctype' "http://www.apple.com/DTDs/PropertyList-1.0.dtd">'
   cat >"$ai_llm_mlx_launch_agent_plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+$plist_doctype
 <plist version="1.0">
 <dict>
   <key>Label</key>
@@ -837,7 +880,9 @@ ai_llm_start_mlx_server() {
     mlx_server_cmd=$ai_llm_mlx_python
   fi
 
-  if ai_llm_is_macos && command -v launchctl >/dev/null 2>&1 && [ "$mlx_server_cmd" != "$ai_llm_mlx_python" ]; then
+  if ai_llm_is_macos \
+    && command -v launchctl >/dev/null 2>&1 \
+    && [ "$mlx_server_cmd" != "$ai_llm_mlx_python" ]; then
     if ai_llm_start_mlx_server_launchd "$resolved_model"; then
       if ai_llm_wait_for_mlx_server_timeout 15; then
         return 0
