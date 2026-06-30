@@ -43,6 +43,8 @@ set -eu
 . env-clear
 
 spell_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+wizardry_root=$(CDPATH= cd -- "$spell_dir/../.." && pwd -P)
+wizardry_lite_path=$wizardry_root/.github/WIZARDRY_LITE.md
 ai_dev_helper=$spell_dir/../.arcana/ai-dev/ai-dev-llm-common
 if [ -f "$ai_dev_helper" ]; then
   # shellcheck source=/dev/null
@@ -351,6 +353,18 @@ if ai_llm_model_is_local "$model"; then
   using_local_model=true
 fi
 
+local_instruction_text=''
+if [ "$using_local_model" = true ] && [ -r "$wizardry_lite_path" ]; then
+  wizardry_lite_body=$(cat "$wizardry_lite_path")
+  local_instruction_text=$(cat <<EOF
+Compact Wizardry instructions for this local LLM round:
+
+$wizardry_lite_body
+
+EOF
+)
+fi
+
 if [ "$session_mode" = auto ] \
   && [ "$state_model" = "$model" ] \
   && [ -z "$session_id" ] \
@@ -476,6 +490,7 @@ Work autonomously on the repository checklist at:
 $checklist_path
 
 ${round_scope_text}
+${local_instruction_text}
 You are not required to finish the entire checklist in one round; later rounds
 will continue it. Prefer concrete implementation over discussing the size of
 the remaining roadmap. Make ordinary architectural and staging decisions
