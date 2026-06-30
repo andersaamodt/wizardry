@@ -269,6 +269,10 @@ test_remote_defaults_to_batch() {
     TEST_FAILURE_REASON="remote default should not include local wizardry-lite context"
     return 1
   fi
+  if grep -F 'Wizardry ultralite for local loop-code' "$tmp/log" >/dev/null; then
+    TEST_FAILURE_REASON="remote default should not include local wizardry-ultralite context"
+    return 1
+  fi
 }
 
 test_local_defaults_to_no_batch() {
@@ -294,10 +298,14 @@ test_local_defaults_to_no_batch() {
     TEST_FAILURE_REASON="local models should default to no-batch mode"
     return 1
   }
-  grep -F 'Wizardry lite for local coding models' "$tmp/log" >/dev/null || {
-    TEST_FAILURE_REASON="local models should receive compact wizardry-lite context"
+  grep -F 'Wizardry ultralite for local loop-code' "$tmp/log" >/dev/null || {
+    TEST_FAILURE_REASON="local models should receive compact wizardry-ultralite context"
     return 1
   }
+  if grep -F 'Wizardry lite for local coding models' "$tmp/log" >/dev/null; then
+    TEST_FAILURE_REASON="local models should prefer ultralite over full lite context"
+    return 1
+  fi
   grep -F "rg --line-number PATTERN PATH" "$tmp/log" >/dev/null || {
     TEST_FAILURE_REASON="local models should receive targeted search guidance"
     return 1

@@ -44,6 +44,7 @@ set -eu
 
 spell_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 wizardry_root=$(CDPATH= cd -- "$spell_dir/../.." && pwd -P)
+wizardry_ultralite_path=$wizardry_root/.github/WIZARDRY_ULTRALITE.md
 wizardry_lite_path=$wizardry_root/.github/WIZARDRY_LITE.md
 ai_dev_helper=$spell_dir/../.arcana/ai-dev/ai-dev-llm-common
 if [ -f "$ai_dev_helper" ]; then
@@ -354,7 +355,16 @@ if ai_llm_model_is_local "$model"; then
 fi
 
 local_instruction_text=''
-if [ "$using_local_model" = true ] && [ -r "$wizardry_lite_path" ]; then
+if [ "$using_local_model" = true ] && [ -r "$wizardry_ultralite_path" ]; then
+  wizardry_ultralite_body=$(cat "$wizardry_ultralite_path")
+  local_instruction_text=$(cat <<EOF
+Ultralite wizardry instructions for this local LLM round:
+
+$wizardry_ultralite_body
+
+EOF
+)
+elif [ "$using_local_model" = true ] && [ -r "$wizardry_lite_path" ]; then
   wizardry_lite_body=$(cat "$wizardry_lite_path")
   local_instruction_text=$(cat <<EOF
 Compact wizardry instructions for this local LLM round:
