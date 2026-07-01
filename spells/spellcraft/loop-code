@@ -598,55 +598,102 @@ EOF
   (
     set +e
     local_heartbeat_pid=''
+    local_spinner_visible_file=''
+    local_use_spinner=false
+    round_stream_file=''
     if [ "$using_local_model" = true ]; then
       local_heartbeat_seconds=${LOOP_CODE_LOCAL_HEARTBEAT_SECONDS:-10}
       case "$local_heartbeat_seconds" in
       ''|*[!0-9]*) local_heartbeat_seconds=10 ;;
       esac
       if [ "$local_heartbeat_seconds" -gt 0 ]; then
+        if [ -t 1 ]; then
+          local_use_spinner=true
+          local_spinner_visible_file=$(temp-file "opencode-checklist-round-$round.spinner")
+          : >"$local_spinner_visible_file"
+        fi
         (
-          last_mlx_progress=''
           local_heartbeat_elapsed=0
-          printf '%s\n' \
-            "loop-code: waiting for local MLX/OpenCode output; model is working..."
+          spinner_index=0
+          spinner_frame='|'
+          if [ "$local_use_spinner" != true ]; then
+            printf '%s\n' \
+              "loop-code: waiting for local MLX/OpenCode output; model is working..."
+          fi
           while [ ! -s "$round_status" ]; do
             sleep 1
             [ ! -s "$round_status" ] || break
             local_heartbeat_elapsed=$((local_heartbeat_elapsed + 1))
             [ "$local_heartbeat_elapsed" -ge "$local_heartbeat_seconds" ] || continue
-            local_heartbeat_elapsed=0
-            mlx_progress=''
-            if [ -f "${ai_llm_mlx_log:-}" ]; then
-              mlx_progress=$(
-                grep -F 'Prompt processing progress:' "$ai_llm_mlx_log" 2>/dev/null \
-                  | tail -n 1 || printf ''
-              )
-            fi
-            if [ -n "$mlx_progress" ] && [ "$mlx_progress" != "$last_mlx_progress" ]; then
-              printf '%s\n' "loop-code: $mlx_progress"
-              last_mlx_progress=$mlx_progress
+            if [ "$local_use_spinner" = true ]; then
+              case "$spinner_index" in
+              0) spinner_frame='|' ;;
+              1) spinner_frame='/' ;;
+              2) spinner_frame='-' ;;
+              *) spinner_frame='\\' ;;
+              esac
+              spinner_index=$(((spinner_index + 1) % 4))
+              printf '\r\033[2Kloop-code: Thinking... \033[1;36m%s\033[0m' \
+                "$spinner_frame"
+              printf '1\n' >"$local_spinner_visible_file"
             else
               printf '%s\n' "loop-code: still waiting for local model output..."
             fi
+            local_heartbeat_elapsed=0
           done
         ) &
         local_heartbeat_pid=$!
       fi
     fi
 
+    round_stream_file=$(temp-file "opencode-checklist-round-$round.stream")
+    rm -f "$round_stream_file"
+    mkfifo "$round_stream_file"
+
     if [ -n "$session_id" ] \
       && { [ "$reuse_opencode_session" = true ] \
         || [ "$resume_interrupted_session" = true ]; }; then
-      opencode run --session "$session_id" --dir "$checklist_dir" --model "$model" "$prompt"
-      opencode_status=$?
+      opencode run \
+        --session "$session_id" \
+        --dir "$checklist_dir" \
+        --model "$model" \
+        "$prompt" \
+        >"$round_stream_file" 2>&1 &
     else
-      opencode run --title "$round_opencode_title" --dir "$checklist_dir" --model "$model" "$prompt"
-      opencode_status=$?
+      opencode run \
+        --title "$round_opencode_title" \
+        --dir "$checklist_dir" \
+        --model "$model" \
+        "$prompt" \
+        >"$round_stream_file" 2>&1 &
     fi
+    opencode_pid=$!
+
+    while IFS= read -r line || [ -n "$line" ]; do
+      if [ "$local_use_spinner" = true ] \
+        && [ -n "$local_spinner_visible_file" ] \
+        && [ -s "$local_spinner_visible_file" ]; then
+        printf '\r\033[2K'
+        : >"$local_spinner_visible_file"
+      fi
+      printf '%s\n' "$line"
+    done <"$round_stream_file"
+
+    wait "$opencode_pid"
+    opencode_status=$?
+
     if [ -n "$local_heartbeat_pid" ]; then
       kill "$local_heartbeat_pid" >/dev/null 2>&1 || :
       wait "$local_heartbeat_pid" 2>/dev/null || :
     fi
+    if [ "$local_use_spinner" = true ] \
+      && [ -n "$local_spinner_visible_file" ] \
+      && [ -s "$local_spinner_visible_file" ]; then
+      printf '\r\033[2K'
+      : >"$local_spinner_visible_file"
+    fi
+    [ -z "$local_spinner_visible_file" ] || rm -f "$local_spinner_visible_file"
+    [ -z "$round_stream_file" ] || rm -f "$round_stream_file"
     printf '%s\n' "$opencode_status" >"$round_status"
     exit 0
   ) 2>&1 | tee "$round_output"
