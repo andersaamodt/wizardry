@@ -295,6 +295,7 @@ test_local_defaults_to_no_batch() {
     "$ROOT_DIR/spells/spellcraft/loop-code" "$checklist" --model "ollama/qwen3-coder:30b"
 
   assert_success || return 1
+  assert_output_contains "Preparing local loop-code runtime for ollama/qwen3-coder:30b" || return 1
   grep -F 'Complete the next unchecked item, then stop.' "$tmp/log" >/dev/null || {
     TEST_FAILURE_REASON="local models should default to no-batch mode"
     return 1

@@ -57,6 +57,18 @@ test_mlx_server_patches_qwen_xml_tool_calls() {
     TEST_FAILURE_REASON="MLX tool parser patch does not emit numeric XML parameter values as numbers"
     return 1
   }
+  grep -F 'WIZARDRY_INLINE_QWEN_XML_TOOL_STREAM_COMPAT' "$helper" >/dev/null 2>&1 || {
+    TEST_FAILURE_REASON="MLX tool parser patch does not intercept inline streamed Qwen function XML"
+    return 1
+  }
+  grep -F 'in_inline_qwen_xml_tool_call' "$helper" >/dev/null 2>&1 || {
+    TEST_FAILURE_REASON="MLX tool parser patch does not track inline Qwen XML tool calls"
+    return 1
+  }
+  grep -F 'segment.split("<function=", 1)' "$helper" >/dev/null 2>&1 || {
+    TEST_FAILURE_REASON="MLX tool parser patch does not capture inline Qwen function starts"
+    return 1
+  }
 }
 
 test_opencode_mlx_models_are_tool_call_capable() {
@@ -82,9 +94,16 @@ test_mlx_catalog_includes_draft_model() {
     TEST_FAILURE_REASON="MLX catalog should be readable"
     return 1
   }
-  printf '%s\n' "$output" | grep -F 'mlx-community/Qwen3-0.6B-4bit|best speculative draft' \
+  printf '%s\n' "$output" \
+    | grep -F 'mlx-community/Qwen3-Coder-30B-A3B-Instruct-3bit|best speculative draft' \
     >/dev/null 2>&1 || {
-    TEST_FAILURE_REASON="MLX catalog does not include the Qwen3 draft model"
+    TEST_FAILURE_REASON="MLX catalog does not include the compatible Qwen3-Coder draft model"
+    return 1
+  }
+  printf '%s\n' "$output" \
+    | grep -F 'mlx-community/Qwen3-0.6B-4bit|small experimental speculative draft' \
+    >/dev/null 2>&1 || {
+    TEST_FAILURE_REASON="MLX catalog does not preserve the small experimental Qwen3 draft model"
     return 1
   }
 }
@@ -94,7 +113,8 @@ test_mlx_draft_model_is_not_primary_role() {
   output=$(
     env HOME="$tmp" XDG_STATE_HOME="$tmp/.local/state" sh -c '
       . "'"$test_root"'/spells/.arcana/ai-dev/ai-dev-llm-common"
-      printf "%s,%s\n" \
+      printf "%s,%s,%s\n" \
+        "$(ai_llm_model_role mlx mlx-community/Qwen3-Coder-30B-A3B-Instruct-3bit)" \
         "$(ai_llm_model_role mlx mlx-community/Qwen3-0.6B-4bit)" \
         "$(ai_llm_model_role mlx mlx-community/Qwen3-Coder-30B-A3B-Instruct-5bit)"
     '
@@ -102,8 +122,25 @@ test_mlx_draft_model_is_not_primary_role() {
     TEST_FAILURE_REASON="MLX model roles should be readable"
     return 1
   }
-  [ "$output" = "draft,primary" ] || {
+  [ "$output" = "draft,draft,primary" ] || {
     TEST_FAILURE_REASON="draft model should not be treated as a primary coding model"
+    return 1
+  }
+}
+
+test_mlx_default_draft_model_is_compatible_coder() {
+  tmp=$(make_tempdir)
+  output=$(
+    env HOME="$tmp" XDG_STATE_HOME="$tmp/.local/state" sh -c '
+      . "'"$test_root"'/spells/.arcana/ai-dev/ai-dev-llm-common"
+      ai_llm_get_selected_draft_model mlx
+    '
+  ) || {
+    TEST_FAILURE_REASON="default MLX draft model should resolve"
+    return 1
+  }
+  [ "$output" = "mlx-community/Qwen3-Coder-30B-A3B-Instruct-3bit" ] || {
+    TEST_FAILURE_REASON="default MLX draft should be the compatible Qwen3-Coder 3bit model"
     return 1
   }
 }
@@ -132,6 +169,10 @@ test_mlx_server_draft_mode_is_opt_in() {
   }
   grep -F -- '--num-draft-tokens' "$helper" >/dev/null 2>&1 || {
     TEST_FAILURE_REASON="MLX server start does not configure draft token count"
+    return 1
+  }
+  grep -F 'ai_llm_mlx_draft_tokens=1' "$helper" >/dev/null 2>&1 || {
+    TEST_FAILURE_REASON="MLX draft mode should use conservative one-token speculation"
     return 1
   }
 }
@@ -281,6 +322,7 @@ run_test_case "ai-dev-llm-common patches Qwen XML tool calls" test_mlx_server_pa
 run_test_case "ai-dev-llm-common marks MLX tool-call models" test_opencode_mlx_models_are_tool_call_capable
 run_test_case "ai-dev-llm-common catalogs MLX draft model" test_mlx_catalog_includes_draft_model
 run_test_case "ai-dev-llm-common keeps draft model out of primary role" test_mlx_draft_model_is_not_primary_role
+run_test_case "ai-dev-llm-common defaults to compatible MLX draft model" test_mlx_default_draft_model_is_compatible_coder
 run_test_case "ai-dev-llm-common keeps MLX draft mode opt-in" test_mlx_server_draft_mode_is_opt_in
 run_test_case "ai-dev-llm-common prefers direct server entrypoint" test_mlx_server_prefers_entrypoint_and_longer_timeout
 run_test_case "ai-dev-llm-common accepts explicit OpenCode MLX models" test_opencode_model_resolution_prefers_explicit_mlx_model
