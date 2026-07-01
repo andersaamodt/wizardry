@@ -575,6 +575,8 @@ Round completion discipline:
   round instead of opening a new investigation.
 - Do not report completion until the checklist file reflects the verified
   progress.
+- Do not use the OpenCode internal todo list for loop control; this checklist
+  file is the task state for this run.
 
 If all checklist items are verified complete, end with exactly
 WIZARDRY_CHECKLIST_COMPLETE. Use WIZARDRY_CHECKLIST_NEEDS_DIRECTION only when
@@ -606,6 +608,8 @@ Round completion discipline:
   round instead of opening a new investigation.
 - Do not report completion until the checklist file reflects the verified
   progress.
+- Do not use the OpenCode internal todo list for loop control; this checklist
+  file is the task state for this run.
 
 The checklist file is authoritative. If every item is verified complete, end
 your response with exactly WIZARDRY_CHECKLIST_COMPLETE. Use
