@@ -1,0 +1,150 @@
+#!/bin/sh
+
+# Rewrite broad checklist work into narrow, file-scoped implementation items.
+# This is a planning spell; it must not implement code.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: architect [CHECKLIST] [--model PROVIDER/MODEL] [--local|--remote]
+
+Asks OpenCode to rewrite broad unchecked checklist items into narrow,
+file-scoped, verifiable implementation items. The checklist file is the only
+file OpenCode is instructed to edit. Completed items are preserved.
+
+When CHECKLIST is omitted, architect defaults to CHECKLIST.md if present,
+otherwise checklist.md. By default, architect uses wizardry's preferred local
+model without speculative drafts.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+spell_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+ai_dev_helper=$spell_dir/../.arcana/ai-dev/ai-dev-llm-common
+if [ -f "$ai_dev_helper" ]; then
+  # shellcheck source=/dev/null
+  . "$ai_dev_helper"
+  set -eu
+fi
+
+checklist=''
+model=''
+model_source=default
+local_mode=true
+remote_mode=false
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+  --model)
+    shift
+    [ "$#" -gt 0 ] || die 2 "architect: --model requires a value"
+    model=$1
+    model_source=explicit
+    local_mode=false
+    ;;
+  --local)
+    local_mode=true
+    remote_mode=false
+    ;;
+  --remote)
+    remote_mode=true
+    local_mode=false
+    ;;
+  --*)
+    die 2 "architect: unknown option '$1'"
+    ;;
+  *)
+    [ -z "$checklist" ] || die 2 "architect: unexpected argument '$1'"
+    checklist=$1
+    ;;
+  esac
+  shift
+done
+
+if [ -z "$checklist" ]; then
+  if [ -f CHECKLIST.md ]; then
+    checklist=CHECKLIST.md
+  elif [ -f checklist.md ]; then
+    checklist=checklist.md
+  else
+    die 2 "architect: checklist file is required; expected CHECKLIST.md or checklist.md"
+  fi
+fi
+
+[ -f "$checklist" ] || die "architect: checklist is not a regular file: $checklist"
+[ -r "$checklist" ] || die "architect: checklist is not readable: $checklist"
+[ -w "$checklist" ] || die "architect: checklist is not writable: $checklist"
+has opencode || die 127 "architect: opencode is not installed"
+
+checklist_dir=$(CDPATH= cd -- "$(dirname "$checklist")" && pwd -P)
+checklist_name=${checklist##*/}
+checklist_path=$checklist_dir/$checklist_name
+
+if [ "$model_source" = explicit ]; then
+  :
+elif [ "$remote_mode" = true ]; then
+  model=$(ai_llm_opencode_model 2>/dev/null || printf '')
+  [ -n "$model" ] || die \
+    "architect: no default OpenCode model is configured; pass --model or set opencode.jsonc"
+  if ai_llm_model_is_local "$model"; then
+    die "architect: --remote requires a non-local default model in opencode.jsonc"
+  fi
+elif [ "$local_mode" = true ]; then
+  model=$(ai_llm_preferred_local_opencode_model 2>/dev/null || printf '')
+  [ -n "$model" ] || die "architect: no preferred local model is configured"
+else
+  die 2 "architect: no model mode selected"
+fi
+
+if ai_llm_model_is_local "$model"; then
+  printf '%s\n' "architect: Preparing local planning model $model..."
+  case "$model" in
+  mlx/*)
+    printf '%s\n' "architect: Warming up MLX server for $model..."
+    ai_llm_start_mlx_server "${model#mlx/}" \
+      || die "architect: local MLX model did not become ready: $model"
+    ;;
+  esac
+fi
+
+prompt=$(cat <<EOF
+Rewrite the checklist at:
+$checklist_path
+
+You are acting as an architect, not an implementer.
+
+Edit only this checklist file. Do not edit source code, tests, scripts,
+configuration, generated pages, or documentation other than this checklist.
+Do not mark unchecked items complete. Preserve completed [x] items, headings,
+notes, and project-specific context.
+
+For every broad unchecked item, replace it with narrow unchecked items that are:
+- file-scoped, naming one primary target file;
+- independently implementable by a less capable coding agent;
+- verifiable with a concrete command or explicit manual check;
+- ordered so dependencies appear before dependents;
+- phrased as implementation obligations, not vague research tasks.
+
+Leave already narrow unchecked items alone unless a small wording change would
+make the target file or verification command clear. Prefer ordinary repository
+evidence over speculation. If an architectural decision truly cannot be made
+from repository evidence, leave one narrow checklist item that names the exact
+missing decision.
+
+Do not use the OpenCode internal todo list. The checklist file is the only task
+state for this run.
+EOF
+)
+
+title=architect-$(date -u +%Y%m%dT%H%M%SZ)-$$-${checklist_name}
+opencode run \
+  --title "$title" \
+  --dir "$checklist_dir" \
+  --model "$model" \
+  "$prompt"
