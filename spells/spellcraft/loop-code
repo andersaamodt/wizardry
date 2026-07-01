@@ -453,6 +453,11 @@ if [ -z "$session_id" ] && [ -n "$state_session_title" ] \
   )
 fi
 
+loop_code_stdout_is_tty=false
+if [ -t 1 ]; then
+  loop_code_stdout_is_tty=true
+fi
+
 loop_code_guard_local_mode
 
 state_model=$model
@@ -633,7 +638,7 @@ EOF
       ''|*[!0-9]*) local_heartbeat_seconds=10 ;;
       esac
       if [ "$local_heartbeat_seconds" -gt 0 ]; then
-        if [ -t 1 ]; then
+        if [ "$loop_code_stdout_is_tty" = true ]; then
           local_use_spinner=true
           local_spinner_visible_file=$(temp-file "opencode-checklist-round-$round.spinner")
           : >"$local_spinner_visible_file"
