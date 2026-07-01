@@ -527,8 +527,11 @@ EOF
   else
     if [ "$using_local_model" = true ]; then
       round_scope_text=$(cat <<EOF
-Complete the next unchecked item, then stop. Complete multiple checkboxes only
-when they are inseparable parts of the same implementation or verification.
+Choose the next unchecked item, complete or verify that item, mark it [x], and
+then stop. If the item is already implemented, run its verification command,
+mark it [x], and stop. Do not inspect later checklist items until the chosen
+item is marked or specifically blocked. Complete multiple checkboxes only when
+they are inseparable parts of the same implementation or verification.
 EOF
 )
     else
@@ -567,8 +570,12 @@ done. Preserve unrelated work. If one item needs unavailable runtime evidence,
 leave it unchecked and choose another executable item when possible.
 
 Round completion discipline:
+- Pick one unchecked item first and keep working on that item until it is
+  marked [x] or specifically blocked.
 - After a checklist item is implemented and verified, update this checklist
   file immediately before starting any unrelated work.
+- If repository evidence shows the chosen item is already satisfied, run that
+  item verification command, mark it [x], and stop this round.
 - If verification fails, fix the narrow failure and rerun the narrowest
   relevant check before broad checks.
 - Once the chosen item or coherent batch is verified and marked, stop this

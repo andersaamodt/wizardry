@@ -296,7 +296,7 @@ test_local_defaults_to_no_batch() {
 
   assert_success || return 1
   assert_output_contains "Preparing local loop-code runtime for ollama/qwen3-coder:30b" || return 1
-  grep -F 'Complete the next unchecked item, then stop.' "$tmp/log" >/dev/null || {
+  grep -F 'Choose the next unchecked item, complete or verify that item' "$tmp/log" >/dev/null || {
     TEST_FAILURE_REASON="local models should default to no-batch mode"
     return 1
   }
