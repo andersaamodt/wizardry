@@ -546,14 +546,30 @@ ${round_scope_text}
 ${local_instruction_text}
 Local performance rules:
 - Use targeted search first, such as rg --line-number PATTERN PATH.
+- If a checklist item names a concrete path, read that exact path before
+  globbing for variants of the same name.
 - For large files, do not read the whole file. Use sed -n 'START,ENDp' FILE
   or another bounded shell slice around relevant lines.
+- Do not repeat git status or other repo-wide orientation checks once the
+  current worktree state is already known for this round.
+- If one search returns no matches, pivot to a different concrete signal such
+  as a literal path or exact identifier instead of retrying broader globs.
 - Prefer small inspect/edit/verify cycles over broad repository scans.
 - Keep responses concise; spend tokens on tool calls and evidence, not prose.
 
 Implement and verify real work. Mark [x] only when the item is genuinely
 done. Preserve unrelated work. If one item needs unavailable runtime evidence,
 leave it unchecked and choose another executable item when possible.
+
+Round completion discipline:
+- After a checklist item is implemented and verified, update this checklist
+  file immediately before starting any unrelated work.
+- If verification fails, fix the narrow failure and rerun the narrowest
+  relevant check before broad checks.
+- Once the chosen item or coherent batch is verified and marked, stop this
+  round instead of opening a new investigation.
+- Do not report completion until the checklist file reflects the verified
+  progress.
 
 If all checklist items are verified complete, end with exactly
 WIZARDRY_CHECKLIST_COMPLETE. Use WIZARDRY_CHECKLIST_NEEDS_DIRECTION only when
@@ -575,6 +591,16 @@ Implement, test, and verify the work; mark a checkbox complete only after its
 obligation is genuinely satisfied. Preserve unrelated work and do not use
 superficial workarounds. If one item currently needs unavailable runtime
 evidence, leave it unchecked and advance another executable item when possible.
+
+Round completion discipline:
+- After a checklist item is implemented and verified, update this checklist
+  file immediately before starting any unrelated work.
+- If verification fails, fix the narrow failure and rerun the narrowest
+  relevant check before broad checks.
+- Once the chosen item or coherent batch is verified and marked, stop this
+  round instead of opening a new investigation.
+- Do not report completion until the checklist file reflects the verified
+  progress.
 
 The checklist file is authoritative. If every item is verified complete, end
 your response with exactly WIZARDRY_CHECKLIST_COMPLETE. Use
