@@ -76,9 +76,16 @@ fi
 command -v opencode >/dev/null 2>&1 || die 127 "architect: opencode is not installed"
 
 provider=${model%%/*}
-if ! opencode models "$provider" 2>/dev/null | grep -F -- "$model" >/dev/null 2>&1; then
-  die "architect: local OpenCode model is not configured: $model"
-fi
+provider_model=${model#*/}
+case "$provider" in
+ollama)
+  command -v ollama >/dev/null 2>&1 || die 127 "architect: ollama is not installed"
+  ollama list 2>/dev/null \
+    | awk 'NR > 1 { print $1 }' \
+    | grep -F -x -- "$provider_model" >/dev/null 2>&1 \
+    || die "architect: local Ollama model is not installed: $provider_model"
+  ;;
+esac
 
 checklist_dir=$(CDPATH= cd -- "$(dirname "$checklist")" && pwd -P)
 checklist_name=${checklist##*/}
@@ -91,6 +98,7 @@ unchecked_file=$architect_tmp_dir/unchecked.txt
 paths_file=$architect_tmp_dir/paths.txt
 prompt_file=$architect_tmp_dir/prompt.txt
 tree_file=$architect_tmp_dir/tree.txt
+target_file=$architect_tmp_dir/target.txt
 bt=$(printf '\140')
 
 cleanup_architect_tmp() {
@@ -140,7 +148,8 @@ Rewrite rules:
 - Keep a flat checklist only; no nested checklist items.
 - Do not mark new or rewritten items complete.
 - Each new unchecked item must be one line starting exactly "- [ ] ".
-- Each new unchecked item must name exactly one existing repository file path.
+- Before the verification command, each new unchecked item must name exactly
+  one existing repository file path as the target file.
 - Each new unchecked item must include exactly one single-line verification
   command in backticks.
 - Do not wrap file paths in backticks; reserve backticks only for the one
@@ -224,7 +233,8 @@ while IFS= read -r unchecked_line; do
   [ "$backtick_count" = 2 ] \
     || die "architect: unchecked item must contain exactly one backticked verification command: $unchecked_line"
   : >"$paths_file"
-  for token in $(printf '%s\n' "$unchecked_line" | tr "$bt\"'(),;:" '        '); do
+  printf '%s\n' "$unchecked_line" | awk -F"$bt" '{ print $1 }' >"$target_file"
+  for token in $(tr "$bt\"'(),;:" '        ' <"$target_file"); do
     case "$token" in
     */*|.*|*.*)
       case "$token" in
@@ -237,7 +247,7 @@ while IFS= read -r unchecked_line; do
   done
   path_count=$(wc -l <"$paths_file" | tr -d ' ')
   [ "$path_count" = 1 ] \
-    || die "architect: unchecked item must name exactly one existing file path: $unchecked_line"
+    || die "architect: unchecked item must name exactly one target file path before its verification command: $unchecked_line"
 done <"$unchecked_file"
 
 printf '%s\n' "architect: rewrote $checklist_path with local OpenCode model $model"

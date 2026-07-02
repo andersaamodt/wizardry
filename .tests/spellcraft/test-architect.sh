@@ -12,12 +12,6 @@ make_opencode_stub() {
   mkdir -p "$stub_dir"
   cat >"$stub_dir/opencode" <<'SH'
 #!/bin/sh
-if [ "${1-}" = models ]; then
-  printf '%s\n' 'ollama/qwen3.6:35b-a3b'
-  printf '%s\n' 'mlx/mlx-community/Qwen3-Coder-30B-A3B-Instruct-5bit'
-  exit 0
-fi
-
 [ "${1-}" = run ] || exit 64
 shift
 dir=
@@ -49,6 +43,13 @@ printf '%s\n' "$title" >"$dir/opencode-title-log"
 cp "$dir/model-output" "$dir/CHECKLIST.md"
 SH
   chmod +x "$stub_dir/opencode"
+  cat >"$stub_dir/ollama" <<'SH'
+#!/bin/sh
+[ "${1-}" = list ] || exit 64
+printf '%s\n' 'NAME ID SIZE MODIFIED'
+printf '%s\n' 'qwen3.6:35b-a3b abc 23GB now'
+SH
+  chmod +x "$stub_dir/ollama"
 }
 
 write_fixture_files() {
@@ -191,7 +192,7 @@ test_rejects_missing_file_path() {
 
   run_architect_with_stub "$tmp"
   assert_failure || return 1
-  assert_error_contains "exactly one existing file path" || return 1
+  assert_error_contains "exactly one target file path" || return 1
 }
 
 test_rejects_lost_completed_item() {
