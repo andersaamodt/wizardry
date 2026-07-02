@@ -6,276 +6,246 @@ while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" !
 done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-make_architect_mlx_stub() {
-  state_home=$1
-  stub_dir=$state_home/wizardry/ai-dev/mlx/venv/bin
+make_opencode_stub() {
+  tmp=$1
+  stub_dir=$tmp/bin
   mkdir -p "$stub_dir"
-  cat >"$stub_dir/mlx_lm.generate" <<'SH'
+  cat >"$stub_dir/opencode" <<'SH'
 #!/bin/sh
-prompt_file=$ARCHITECT_TEST_PROMPT
-output_file=$ARCHITECT_TEST_OUTPUT
+if [ "${1-}" = models ]; then
+  printf '%s\n' 'ollama/qwen3.6:35b-a3b'
+  printf '%s\n' 'mlx/mlx-community/Qwen3-Coder-30B-A3B-Instruct-5bit'
+  exit 0
+fi
+
+[ "${1-}" = run ] || exit 64
+shift
+dir=
+model=
+title=
 while [ "$#" -gt 0 ]; do
   case "$1" in
-  --prompt)
+  --dir)
     shift
-    if [ "${1-}" = "-" ]; then
-      cat >"$prompt_file"
-    fi
+    dir=$1
     ;;
   --model)
     shift
-    printf '%s\n' "$1" >"$ARCHITECT_TEST_MODEL_LOG"
+    model=$1
+    ;;
+  --title)
+    shift
+    title=$1
+    ;;
+  *)
+    printf '%s\n' "$1" >"$dir/opencode-prompt-log"
     ;;
   esac
-  [ "$#" -gt 0 ] || break
   shift
 done
-cat "$output_file"
+printf '%s\n' "$dir" >"$dir/opencode-dir-log"
+printf '%s\n' "$model" >"$dir/opencode-model-log"
+printf '%s\n' "$title" >"$dir/opencode-title-log"
+cp "$dir/model-output" "$dir/CHECKLIST.md"
 SH
-  chmod +x "$stub_dir/mlx_lm.generate"
-  cat >"$stub_dir/python" <<'SH'
-#!/bin/sh
-if [ -n "${AI_DEV_MLX_MODEL-}" ]; then
-  printf '%s\n' "/mock/hub/$AI_DEV_MLX_MODEL"
-  exit 0
-fi
-exit 0
-SH
-  chmod +x "$stub_dir/python"
+  chmod +x "$stub_dir/opencode"
 }
 
-write_selected_mlx_model() {
-  state_home=$1
-  model=$2
-  mkdir -p "$state_home/wizardry/ai-dev"
-  printf '%s\n' "$model" >"$state_home/wizardry/ai-dev/selected-model-mlx"
+write_fixture_files() {
+  tmp=$1
+  mkdir -p "$tmp/src" "$tmp/.tests"
+  printf '%s\n' 'export function readAuthCookie() {}' >"$tmp/src/auth.js"
+  printf '%s\n' '#!/bin/sh' 'node --check src/auth.js' >"$tmp/.tests/test-auth.sh"
+  chmod +x "$tmp/.tests/test-auth.sh"
+}
+
+run_architect_with_stub() {
+  tmp=$1
+  RUN_CMD_WORKDIR="$tmp" run_cmd env \
+    PATH="$tmp/bin:$PATH" \
+    "$ROOT_DIR/spells/spellcraft/architect" "$tmp/CHECKLIST.md"
 }
 
 test_help() {
   run_spell "spells/spellcraft/architect" --help
   assert_success || return 1
   assert_output_contains "Usage: architect" || return 1
+  assert_output_contains "OpenCode" || return 1
   assert_output_contains "local-only" || return 1
-  assert_output_contains "does not use remote models" || return 1
 }
 
 test_missing_checklist_fails() {
   tmp=$(make_tempdir)
-  RUN_CMD_WORKDIR="$tmp" run_cmd env \
-    "$ROOT_DIR/spells/spellcraft/architect"
+  RUN_CMD_WORKDIR="$tmp" run_cmd env "$ROOT_DIR/spells/spellcraft/architect"
   assert_failure || return 1
   assert_error_contains "expected CHECKLIST.md or checklist.md" || return 1
 }
 
-test_rejects_remote_mode() {
+test_rejects_remote_model() {
   tmp=$(make_tempdir)
   printf '%s\n' '- [ ] Fix broad thing.' >"$tmp/CHECKLIST.md"
   RUN_CMD_WORKDIR="$tmp" run_cmd env \
-    XDG_STATE_HOME="$tmp/.state" \
-    "$ROOT_DIR/spells/spellcraft/architect" --remote
+    "$ROOT_DIR/spells/spellcraft/architect" --model github-copilot/gpt-5.3-codex
   assert_failure || return 1
-  assert_error_contains "local-only" || return 1
+  assert_error_contains "must name a local OpenCode model" || return 1
 }
 
-test_rejects_non_mlx_explicit_model() {
+test_rewrites_checklist_with_opencode() {
   tmp=$(make_tempdir)
-  state_home=$tmp/.state
-  make_architect_mlx_stub "$state_home"
-  printf '%s\n' '- [ ] Fix broad thing.' >"$tmp/CHECKLIST.md"
-
-  RUN_CMD_WORKDIR="$tmp" run_cmd env \
-    XDG_STATE_HOME="$state_home" \
-    "$ROOT_DIR/spells/spellcraft/architect" --model "github-copilot/gpt-5.3-codex"
-
-  assert_failure || return 1
-  assert_error_contains "only accepts mlx/MODEL" || return 1
-}
-
-test_rewrites_default_checklist_with_local_mlx() {
-  tmp=$(make_tempdir)
-  state_home=$tmp/.state
-  make_architect_mlx_stub "$state_home"
-  write_selected_mlx_model "$state_home" "mlx-community/Qwen3-30B-A3B-Thinking-2507-4bit"
-  checklist="$tmp/CHECKLIST.md"
-  prompt_log="$tmp/prompt"
-  model_log="$tmp/model"
-  output_file="$tmp/model-output"
-  printf '%s\n' '# Checklist' '' '- [x] Keep completed work.' '- [ ] Fix auth architecture.' >"$checklist"
-  cat >"$output_file" <<'EOF'
+  make_opencode_stub "$tmp"
+  write_fixture_files "$tmp"
+  printf '%s\n' '# Checklist' '' '- [x] Keep completed work.' '- [ ] Fix auth architecture.' >"$tmp/CHECKLIST.md"
+  cat >"$tmp/model-output" <<'EOF'
 # Checklist
 
 - [x] Keep completed work.
-- [ ] In `src/auth.js`, move token parsing into `readAuthCookie`; verify with `node --check src/auth.js`.
-- [ ] In `.tests/test-auth.sh`, add a cookie-spoof regression for `readAuthCookie`; verify with `.tests/test-auth.sh`.
+- [ ] Verify src/auth.js rejects unsigned admin cookies: `node --input-type=module -e "import {readAuthCookie} from './src/auth.js'; if(readAuthCookie('admin=true').isAdmin) process.exit(1);"`
+- [ ] Verify .tests/test-auth.sh runs without error: `sh .tests/test-auth.sh`
 EOF
 
-  RUN_CMD_WORKDIR="$tmp" run_cmd env \
-    XDG_STATE_HOME="$state_home" \
-    ARCHITECT_TEST_PROMPT="$prompt_log" \
-    ARCHITECT_TEST_MODEL_LOG="$model_log" \
-    ARCHITECT_TEST_OUTPUT="$output_file" \
-    "$ROOT_DIR/spells/spellcraft/architect"
-
+  run_architect_with_stub "$tmp"
   assert_success || return 1
-  grep -F '/mock/hub/mlx-community/Qwen3-30B-A3B-Thinking-2507-4bit' "$model_log" >/dev/null || {
-    TEST_FAILURE_REASON="architect should pass the resolved local MLX model path"
-    return 1
-  }
-  grep -F 'Output the complete replacement contents' "$prompt_log" >/dev/null || {
-    TEST_FAILURE_REASON="architect prompt should request a full replacement checklist"
-    return 1
-  }
-  grep -F 'Preserve all completed [x] checklist items exactly' "$prompt_log" >/dev/null || {
-    TEST_FAILURE_REASON="architect prompt should require completed item preservation"
-    return 1
-  }
-  grep -F -- '- [x] Keep completed work.' "$checklist" >/dev/null || {
+  grep -F -- '- [x] Keep completed work.' "$tmp/CHECKLIST.md" >/dev/null || {
     TEST_FAILURE_REASON="architect should preserve completed checklist items"
     return 1
   }
-  grep -F 'src/auth.js' "$checklist" >/dev/null || {
-    TEST_FAILURE_REASON="architect should produce a file-scoped checklist item"
+  grep -F 'ollama/qwen3.6:35b-a3b' "$tmp/opencode-model-log" >/dev/null || {
+    TEST_FAILURE_REASON="architect should pass the default local Ollama model"
+    return 1
+  }
+  grep -F "$tmp" "$tmp/opencode-dir-log" >/dev/null || {
+    TEST_FAILURE_REASON="architect should run OpenCode in the checklist directory"
+    return 1
+  }
+  grep -F 'Edit only CHECKLIST.md' "$tmp/opencode-prompt-log" >/dev/null || {
+    TEST_FAILURE_REASON="architect prompt should confine edits to the checklist"
     return 1
   }
 }
 
-test_restores_missing_completed_items() {
+test_accepts_explicit_mlx_local_model() {
   tmp=$(make_tempdir)
-  state_home=$tmp/.state
-  make_architect_mlx_stub "$state_home"
-  write_selected_mlx_model "$state_home" "mlx-community/Qwen3-30B-A3B-Thinking-2507-4bit"
-  checklist="$tmp/CHECKLIST.md"
-  printf '%s\n' '# Checklist' '' '- [x] Keep completed work.' '- [ ] Fix auth architecture.' >"$checklist"
-  printf '%s\n' '# Checklist' '' '- [ ] In `src/auth.js`, fix auth.' >"$tmp/model-output"
-
-  RUN_CMD_WORKDIR="$tmp" run_cmd env \
-    XDG_STATE_HOME="$state_home" \
-    ARCHITECT_TEST_PROMPT="$tmp/prompt" \
-    ARCHITECT_TEST_MODEL_LOG="$tmp/model" \
-    ARCHITECT_TEST_OUTPUT="$tmp/model-output" \
-    "$ROOT_DIR/spells/spellcraft/architect"
-
-  assert_success || return 1
-  grep -F -- '- [x] Keep completed work.' "$checklist" >/dev/null || {
-    TEST_FAILURE_REASON="architect should restore missing completed checklist items"
-    return 1
-  }
-  grep -F 'src/auth.js' "$checklist" >/dev/null || {
-    TEST_FAILURE_REASON="architect should keep the generated unchecked checklist items"
-    return 1
-  }
-}
-
-test_extracts_final_checklist_after_thinking() {
-  tmp=$(make_tempdir)
-  state_home=$tmp/.state
-  make_architect_mlx_stub "$state_home"
-  write_selected_mlx_model "$state_home" "mlx-community/Qwen3-30B-A3B-Thinking-2507-4bit"
-  checklist="$tmp/CHECKLIST.md"
-  printf '%s\n' '# Checklist' '' '- [x] Keep completed work.' '- [ ] Fix auth architecture.' >"$checklist"
+  make_opencode_stub "$tmp"
+  write_fixture_files "$tmp"
+  printf '%s\n' '# Checklist' '' '- [ ] Fix auth architecture.' >"$tmp/CHECKLIST.md"
   cat >"$tmp/model-output" <<'EOF'
-<think>
-I should inspect the broad checklist item and split it carefully.
-</think>
-
 # Checklist
 
-- [x] Keep completed work.
-- [ ] In `src/auth.js`, move token parsing into `readAuthCookie`; verify with `node --check src/auth.js`.
+- [ ] Verify src/auth.js rejects unsigned admin cookies: `node --check src/auth.js`
 EOF
 
   RUN_CMD_WORKDIR="$tmp" run_cmd env \
-    XDG_STATE_HOME="$state_home" \
-    ARCHITECT_TEST_PROMPT="$tmp/prompt" \
-    ARCHITECT_TEST_MODEL_LOG="$tmp/model" \
-    ARCHITECT_TEST_OUTPUT="$tmp/model-output" \
-    "$ROOT_DIR/spells/spellcraft/architect"
+    PATH="$tmp/bin:$PATH" \
+    "$ROOT_DIR/spells/spellcraft/architect" "$tmp/CHECKLIST.md" \
+    --model mlx/mlx-community/Qwen3-Coder-30B-A3B-Instruct-5bit
 
   assert_success || return 1
-  grep -F '<think>' "$checklist" >/dev/null && {
-    TEST_FAILURE_REASON="architect should discard thinking text before writing checklist"
-    return 1
-  }
-  grep -F 'src/auth.js' "$checklist" >/dev/null || {
-    TEST_FAILURE_REASON="architect should write the final checklist after thinking text"
+  grep -F 'mlx/mlx-community/Qwen3-Coder-30B-A3B-Instruct-5bit' "$tmp/opencode-model-log" >/dev/null || {
+    TEST_FAILURE_REASON="architect should allow explicitly selected local MLX OpenCode models"
     return 1
   }
 }
 
-test_normalizes_new_checked_items_to_unchecked() {
+test_rejects_malformed_checkbox() {
   tmp=$(make_tempdir)
-  state_home=$tmp/.state
-  make_architect_mlx_stub "$state_home"
-  write_selected_mlx_model "$state_home" "mlx-community/Qwen3-30B-A3B-Thinking-2507-4bit"
-  checklist="$tmp/CHECKLIST.md"
-  printf '%s\n' '# Checklist' '' '- [x] Keep completed work.' '- [ ] Fix auth architecture.' >"$checklist"
-  cat >"$tmp/model-output" <<'EOF'
-# Checklist
+  make_opencode_stub "$tmp"
+  write_fixture_files "$tmp"
+  printf '%s\n' '# Checklist' '' '- [ ] Fix auth architecture.' >"$tmp/CHECKLIST.md"
+  printf '%s\n' '# Checklist' '' '- [?] Broken src/auth.js: `node --check src/auth.js`' >"$tmp/model-output"
 
-- [x] Keep completed work.
-- [x] In `src/auth.js`, move token parsing into `readAuthCookie`; verify with `node --check src/auth.js`.
-EOF
-
-  RUN_CMD_WORKDIR="$tmp" run_cmd env \
-    XDG_STATE_HOME="$state_home" \
-    ARCHITECT_TEST_PROMPT="$tmp/prompt" \
-    ARCHITECT_TEST_MODEL_LOG="$tmp/model" \
-    ARCHITECT_TEST_OUTPUT="$tmp/model-output" \
-    "$ROOT_DIR/spells/spellcraft/architect"
-
-  assert_success || return 1
-  grep -F -- '- [ ] In `src/auth.js`, move token parsing' "$checklist" >/dev/null || {
-    TEST_FAILURE_REASON="architect should normalize newly checked model items back to unchecked"
-    return 1
-  }
+  run_architect_with_stub "$tmp"
+  assert_failure || return 1
+  assert_error_contains "malformed checkbox" || return 1
 }
 
-test_removes_retained_broad_items_after_split() {
+test_rejects_missing_verification_command() {
   tmp=$(make_tempdir)
-  state_home=$tmp/.state
-  make_architect_mlx_stub "$state_home"
-  write_selected_mlx_model "$state_home" "mlx-community/Qwen3-30B-A3B-Thinking-2507-4bit"
-  checklist="$tmp/CHECKLIST.md"
-  broad='- [ ] Fix auth architecture.'
-  printf '%s\n' '# Checklist' '' '- [x] Keep completed work.' "$broad" >"$checklist"
+  make_opencode_stub "$tmp"
+  write_fixture_files "$tmp"
+  printf '%s\n' '# Checklist' '' '- [ ] Fix auth architecture.' >"$tmp/CHECKLIST.md"
+  printf '%s\n' '# Checklist' '' '- [ ] Verify src/auth.js rejects unsigned admin cookies.' >"$tmp/model-output"
+
+  run_architect_with_stub "$tmp"
+  assert_failure || return 1
+  assert_error_contains "exactly one backticked verification command" || return 1
+}
+
+test_rejects_extra_backticked_path() {
+  tmp=$(make_tempdir)
+  make_opencode_stub "$tmp"
+  write_fixture_files "$tmp"
+  printf '%s\n' '# Checklist' '' '- [ ] Fix auth architecture.' >"$tmp/CHECKLIST.md"
+  printf '%s\n' '# Checklist' '' '- [ ] Verify `src/auth.js` rejects unsigned admin cookies: `node --check src/auth.js`' >"$tmp/model-output"
+
+  run_architect_with_stub "$tmp"
+  assert_failure || return 1
+  assert_error_contains "exactly one backticked verification command" || return 1
+}
+
+test_rejects_missing_file_path() {
+  tmp=$(make_tempdir)
+  make_opencode_stub "$tmp"
+  write_fixture_files "$tmp"
+  printf '%s\n' '# Checklist' '' '- [ ] Fix auth architecture.' >"$tmp/CHECKLIST.md"
+  printf '%s\n' '# Checklist' '' '- [ ] Verify src/missing.js rejects unsigned admin cookies: `node --check src/missing.js`' >"$tmp/model-output"
+
+  run_architect_with_stub "$tmp"
+  assert_failure || return 1
+  assert_error_contains "exactly one existing file path" || return 1
+}
+
+test_rejects_lost_completed_item() {
+  tmp=$(make_tempdir)
+  make_opencode_stub "$tmp"
+  write_fixture_files "$tmp"
+  printf '%s\n' '# Checklist' '' '- [x] Keep completed work.' '- [ ] Fix auth architecture.' >"$tmp/CHECKLIST.md"
+  printf '%s\n' '# Checklist' '' '- [ ] Verify src/auth.js rejects unsigned admin cookies: `node --check src/auth.js`' >"$tmp/model-output"
+
+  run_architect_with_stub "$tmp"
+  assert_failure || return 1
+  assert_error_contains "completed item was not preserved" || return 1
+}
+
+test_rejects_literal_newline_command() {
+  tmp=$(make_tempdir)
+  make_opencode_stub "$tmp"
+  write_fixture_files "$tmp"
+  printf '%s\n' '# Checklist' '' '- [ ] Fix auth architecture.' >"$tmp/CHECKLIST.md"
+  printf '%s\n' '# Checklist' '' '- [ ] Verify src/auth.js rejects unsigned admin cookies: `node --check src/auth.js\\nsh .tests/test-auth.sh`' >"$tmp/model-output"
+
+  run_architect_with_stub "$tmp"
+  assert_failure || return 1
+  assert_error_contains "literal" || return 1
+}
+
+test_rejects_retained_broad_item() {
+  tmp=$(make_tempdir)
+  make_opencode_stub "$tmp"
+  write_fixture_files "$tmp"
+  printf '%s\n' '# Checklist' '' '- [ ] Fix auth architecture.' >"$tmp/CHECKLIST.md"
   cat >"$tmp/model-output" <<'EOF'
 # Checklist
 
-- [x] Keep completed work.
 - [ ] Fix auth architecture.
-- [ ] In `src/auth.js`, move token parsing into `readAuthCookie`; verify with `node --check src/auth.js`.
+- [ ] Verify src/auth.js rejects unsigned admin cookies: `node --check src/auth.js`
 EOF
 
-  RUN_CMD_WORKDIR="$tmp" run_cmd env \
-    XDG_STATE_HOME="$state_home" \
-    ARCHITECT_TEST_PROMPT="$tmp/prompt" \
-    ARCHITECT_TEST_MODEL_LOG="$tmp/model" \
-    ARCHITECT_TEST_OUTPUT="$tmp/model-output" \
-    "$ROOT_DIR/spells/spellcraft/architect"
-
-  assert_success || return 1
-  grep -F -- "$broad" "$checklist" >/dev/null && {
-    TEST_FAILURE_REASON="architect should remove retained broad original items after splitting them"
-    return 1
-  }
-  grep -F 'src/auth.js' "$checklist" >/dev/null || {
-    TEST_FAILURE_REASON="architect should keep the new narrow split item"
-    return 1
-  }
+  run_architect_with_stub "$tmp"
+  assert_failure || return 1
+  assert_error_contains "broad unchecked item remained" || return 1
 }
 
-run_test_case "architect shows local-only help" test_help
+run_test_case "architect shows local-only OpenCode help" test_help
 run_test_case "architect requires checklist defaults" test_missing_checklist_fails
-run_test_case "architect rejects removed remote mode" test_rejects_remote_mode
-run_test_case "architect rejects non-MLX explicit model" test_rejects_non_mlx_explicit_model
-run_test_case "architect rewrites default checklist with local MLX" \
-  test_rewrites_default_checklist_with_local_mlx
-run_test_case "architect restores missing completed items" test_restores_missing_completed_items
-run_test_case "architect extracts final checklist after thinking" \
-  test_extracts_final_checklist_after_thinking
-run_test_case "architect normalizes new checked items" \
-  test_normalizes_new_checked_items_to_unchecked
-run_test_case "architect removes retained broad items after split" \
-  test_removes_retained_broad_items_after_split
+run_test_case "architect rejects remote models" test_rejects_remote_model
+run_test_case "architect rewrites checklist with OpenCode" test_rewrites_checklist_with_opencode
+run_test_case "architect accepts explicit MLX local model" test_accepts_explicit_mlx_local_model
+run_test_case "architect rejects malformed checkboxes" test_rejects_malformed_checkbox
+run_test_case "architect rejects missing verification commands" test_rejects_missing_verification_command
+run_test_case "architect rejects extra backticked paths" test_rejects_extra_backticked_path
+run_test_case "architect rejects missing file paths" test_rejects_missing_file_path
+run_test_case "architect rejects lost completed items" test_rejects_lost_completed_item
+run_test_case "architect rejects literal newline commands" test_rejects_literal_newline_command
+run_test_case "architect rejects retained broad items" test_rejects_retained_broad_item
 
 finish_tests

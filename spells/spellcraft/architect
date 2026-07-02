@@ -1,20 +1,21 @@
 #!/bin/sh
-
-# Rewrite broad checklist work into narrow, file-scoped implementation items.
-# This is a local planning spell; it must not implement code.
+# Rewrite broad checklist work into narrow, file-scoped architecture items.
+# Local-only: delegates intelligence to OpenCode with a local provider.
 
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: architect [CHECKLIST] [--model mlx/MODEL]
+Usage: architect [CHECKLIST] [--model ollama/qwen3.6:35b-a3b]
 
-Rewrites broad unchecked checklist items into narrow, file-scoped, verifiable
-implementation items using wizardry's selected local MLX model. The checklist
-file is the only file architect edits. Completed items are preserved.
+Rewrites broad unchecked checklist items into narrow, file-scoped,
+verifiable architecture items. The checklist file is the only file architect
+edits. Completed [x] items are preserved exactly.
+
+architect is local-only. It delegates to OpenCode, but only with a local model
+provider such as ollama/* or mlx/*; remote providers are rejected.
 
 When CHECKLIST is omitted, architect defaults to CHECKLIST.md if present,
-otherwise checklist.md. Architect is local-only; it does not use remote models
-or OpenCode.
+otherwise checklist.md.
 USAGE
   exit 0
   ;;
@@ -25,312 +26,8 @@ require-wizardry || exit 1
 set -eu
 . env-clear
 
-spell_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
-ai_dev_helper=$spell_dir/../.arcana/ai-dev/ai-dev-llm-common
-if [ -f "$ai_dev_helper" ]; then
-  # shellcheck source=/dev/null
-  . "$ai_dev_helper"
-  set -eu
-fi
-
-architect_tmp_dir=${TMPDIR:-/tmp}/wizardry-architect-$$
-architect_prompt=$architect_tmp_dir/prompt.txt
-architect_raw=$architect_tmp_dir/raw.md
-architect_combined=$architect_tmp_dir/combined.md
-architect_output=$architect_tmp_dir/output.md
-architect_errors=$architect_tmp_dir/errors.log
-architect_completed=$architect_tmp_dir/completed.txt
-architect_broad_unchecked=$architect_tmp_dir/broad-unchecked.txt
-architect_tree=$architect_tmp_dir/tree.txt
-architect_context=$architect_tmp_dir/context.txt
-architect_snippets=$architect_tmp_dir/snippets.txt
-architect_stripped=$architect_tmp_dir/stripped.md
-architect_missing_completed=$architect_tmp_dir/missing-completed.txt
-
-cleanup_architect_tmp() {
-  rm -rf "$architect_tmp_dir"
-}
-trap cleanup_architect_tmp EXIT HUP INT TERM
-
-strip_mlx_noise() {
-  awk '
-    /^=========/ { next }
-    /^Prompt:/ { next }
-    /^Generation:/ { next }
-    /^Tokens:/ { next }
-    /^Prompt processing/ { next }
-    { print }
-  ' "$1"
-}
-
-extract_architect_checklist() {
-  input_file=$1
-  output_file=$2
-
-  awk '
-    /WIZARDRY_ARCHITECT_CHECKLIST_BEGIN/ {
-      marker_started = 1
-      next
-    }
-    /WIZARDRY_ARCHITECT_CHECKLIST_END/ && marker_started {
-      exit
-    }
-    marker_started {
-      print
-      next
-    }
-    /<\/think>/ {
-      seen_think_end = 1
-      next
-    }
-    seen_think_end {
-      print
-      next
-    }
-    !/<think>/ && !in_think {
-      print
-      next
-    }
-    /<think>/ {
-      in_think = 1
-    }
-  ' "$input_file" | awk '
-    /^# / {
-      started = 1
-    }
-    started {
-      print
-    }
-  ' | awk '
-    /<think>/ {
-      in_think = 1
-      next
-    }
-    /<\/think>/ {
-      in_think = 0
-      next
-    }
-    !in_think {
-      print
-    }
-  ' >"$output_file"
-}
-
-write_architect_tree() {
-  root_dir=$1
-  output_file=$2
-
-  (
-    CDPATH= cd -- "$root_dir" || exit 1
-    find . \
-      \( -name .git -o -name node_modules -o -name .cache -o -name .next \
-        -o -name dist -o -name build -o -name target -o -name __pycache__ \
-        -o -name .venv -o -name venv \) -prune \
-      -o -type f -print 2>/dev/null \
-      | sed 's#^\./##' \
-      | LC_ALL=C sort \
-      | awk 'NR <= 350 { print }'
-  ) >"$output_file"
-}
-
-append_doc_if_present() {
-  label=$1
-  path=$2
-  output_file=$3
-
-  [ -f "$path" ] || return 0
-  [ -r "$path" ] || return 0
-  {
-    printf '\n## %s\n\n' "$label"
-    sed -n '1,160p' "$path"
-  } >>"$output_file"
-}
-
-write_architect_snippets() {
-  root_dir=$1
-  checklist_file=$2
-  tree_file=$3
-  output_file=$4
-  terms_file=$architect_tmp_dir/terms.txt
-  count_file=$architect_tmp_dir/snippet-count.txt
-
-  tr -cs '[:alnum:]' '\n' <"$checklist_file" \
-    | awk '
-      length($0) >= 4 {
-        word = tolower($0)
-        if (word ~ /^(checklist|complete|completed|verify|verification|implementation|improve|fix|with|from|that|this|into|file|scope|scoped|command)$/) {
-          next
-        }
-        print substr(word, 1, 6)
-      }
-    ' \
-    | LC_ALL=C sort -u >"$terms_file"
-
-  : >"$output_file"
-  printf '%s\n' 0 >"$count_file"
-  while IFS= read -r relative_path; do
-    [ -n "$relative_path" ] || continue
-    [ -f "$root_dir/$relative_path" ] || continue
-    include=false
-    lower_path=$(printf '%s\n' "$relative_path" | tr '[:upper:]' '[:lower:]')
-    while IFS= read -r term; do
-      [ -n "$term" ] || continue
-      case "$lower_path" in
-        *"$term"*)
-          include=true
-          break
-          ;;
-      esac
-    done <"$terms_file"
-    [ "$include" = true ] || continue
-
-    snippet_count=$(cat "$count_file")
-    [ "$snippet_count" -lt 12 ] || break
-    snippet_count=$((snippet_count + 1))
-    printf '%s\n' "$snippet_count" >"$count_file"
-    {
-      printf '\n### %s\n\n' "$relative_path"
-      sed -n '1,120p' "$root_dir/$relative_path"
-    } >>"$output_file"
-  done <"$tree_file"
-}
-
-validate_architect_output() {
-  output_file=$1
-  completed_file=$2
-
-  [ -s "$output_file" ] || die "architect: local model returned an empty checklist"
-  grep -F '[' "$output_file" >/dev/null 2>&1 \
-    || die "architect: local model output did not look like a checklist"
-  if grep -F '```' "$output_file" >/dev/null 2>&1; then
-    die "architect: local model wrapped the checklist in a code fence; leaving file unchanged"
-  fi
-  if grep -F '<function=' "$output_file" >/dev/null 2>&1 \
-    || grep -F '</tool_call>' "$output_file" >/dev/null 2>&1; then
-    die "architect: local model emitted tool-call markup; leaving file unchanged"
-  fi
-  if grep -E '^[[:space:]]+[-*][[:space:]]+\[[ xX]\]' "$output_file" >/dev/null 2>&1; then
-    die "architect: local model emitted nested checklist items; leaving file unchanged"
-  fi
-  if grep -E 'path/to/file|real/path|TOPIC|make one concrete change|make a specific change' "$output_file" >/dev/null 2>&1; then
-    die "architect: local model copied a checklist template placeholder; leaving file unchanged"
-  fi
-
-  while IFS= read -r completed_line; do
-    [ -n "$completed_line" ] || continue
-    grep -F -x -- "$completed_line" "$output_file" >/dev/null 2>&1 || {
-      die "architect: local model failed to preserve completed item: $completed_line"
-    }
-  done <"$completed_file"
-}
-
-preserve_completed_lines() {
-  output_file=$1
-  completed_file=$2
-  preserved_file=$architect_tmp_dir/preserved.md
-
-  : >"$architect_missing_completed"
-  while IFS= read -r completed_line; do
-    [ -n "$completed_line" ] || continue
-    grep -F -x -- "$completed_line" "$output_file" >/dev/null 2>&1 \
-      || printf '%s\n' "$completed_line" >>"$architect_missing_completed"
-  done <"$completed_file"
-
-  [ -s "$architect_missing_completed" ] || return 0
-
-  awk -v missing_file="$architect_missing_completed" '
-    BEGIN {
-      while ((getline line < missing_file) > 0) {
-        missing_count++
-        missing[missing_count] = line
-      }
-      close(missing_file)
-    }
-    !inserted && /^# / {
-      print
-      for (i = 1; i <= missing_count; i++) {
-        print missing[i]
-      }
-      print ""
-      inserted = 1
-      next
-    }
-    {
-      print
-    }
-    END {
-      if (!inserted) {
-        for (i = 1; i <= missing_count; i++) {
-          print missing[i]
-        }
-        print ""
-      }
-    }
-  ' "$output_file" >"$preserved_file"
-  mv "$preserved_file" "$output_file"
-}
-
-normalize_checked_lines() {
-  output_file=$1
-  completed_file=$2
-  normalized_file=$architect_tmp_dir/normalized.md
-
-  awk -v completed_file="$completed_file" '
-    BEGIN {
-      while ((getline line < completed_file) > 0) {
-        completed[line] = 1
-      }
-      close(completed_file)
-    }
-    /^[[:space:]]*[-*][[:space:]]+\[[xX]\]/ {
-      if (!($0 in completed)) {
-        sub(/\[[xX]\]/, "[ ]")
-      }
-    }
-    {
-      print
-    }
-  ' "$output_file" >"$normalized_file"
-  mv "$normalized_file" "$output_file"
-}
-
-remove_retained_broad_items() {
-  output_file=$1
-  broad_file=$2
-  cleaned_file=$architect_tmp_dir/cleaned.md
-
-  [ -s "$broad_file" ] || return 0
-  awk -v broad_file="$broad_file" '
-    BEGIN {
-      while ((getline line < broad_file) > 0) {
-        broad[line] = 1
-      }
-      close(broad_file)
-    }
-    {
-      lines[++line_count] = $0
-      if ($0 ~ /^[[:space:]]*[-*][[:space:]]+\[[ ]\]/) {
-        unchecked_count++
-        if ($0 in broad) {
-          broad_seen++
-        }
-      }
-    }
-    END {
-      remove_broad = unchecked_count > broad_seen
-      for (i = 1; i <= line_count; i++) {
-        if (remove_broad && (lines[i] in broad)) {
-          continue
-        }
-        print lines[i]
-      }
-    }
-  ' "$output_file" >"$cleaned_file"
-  mv "$cleaned_file" "$output_file"
-}
-
 checklist=''
-model=''
+model='ollama/qwen3.6:35b-a3b'
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -339,8 +36,10 @@ while [ "$#" -gt 0 ]; do
     [ "$#" -gt 0 ] || die 2 "architect: --model requires a value"
     model=$1
     ;;
-  --local|--remote)
-    die 2 "architect: local/remote modes were removed; architect is local-only"
+  --local)
+    ;;
+  --remote)
+    die 2 "architect: remote mode is not supported; architect is local-only"
     ;;
   --*)
     die 2 "architect: unknown option '$1'"
@@ -352,6 +51,14 @@ while [ "$#" -gt 0 ]; do
   esac
   shift
 done
+
+case "$model" in
+ollama/*|mlx/*)
+  ;;
+*)
+  die 2 "architect: --model must name a local OpenCode model such as ollama/qwen3.6:35b-a3b"
+  ;;
+esac
 
 if [ -z "$checklist" ]; then
   if [ -f CHECKLIST.md ]; then
@@ -366,133 +73,162 @@ fi
 [ -f "$checklist" ] || die "architect: checklist is not a regular file: $checklist"
 [ -r "$checklist" ] || die "architect: checklist is not readable: $checklist"
 [ -w "$checklist" ] || die "architect: checklist is not writable: $checklist"
+command -v opencode >/dev/null 2>&1 || die 127 "architect: opencode is not installed"
 
-[ -x "$ai_llm_mlx_generate_bin" ] \
-  || die 127 "architect: MLX generation runtime is not installed"
-
-if [ -z "$model" ]; then
-  model=$(ai_llm_get_selected_model mlx 2>/dev/null || printf '')
-  [ -n "$model" ] || die "architect: no selected local MLX model is configured"
-else
-  case "$model" in
-  mlx/*) model=${model#mlx/} ;;
-  *) die 2 "architect: --model only accepts mlx/MODEL local models" ;;
-  esac
+provider=${model%%/*}
+if ! opencode models "$provider" 2>/dev/null | grep -F -- "$model" >/dev/null 2>&1; then
+  die "architect: local OpenCode model is not configured: $model"
 fi
 
 checklist_dir=$(CDPATH= cd -- "$(dirname "$checklist")" && pwd -P)
 checklist_name=${checklist##*/}
 checklist_path=$checklist_dir/$checklist_name
-resolved_model=$(ai_llm_resolve_mlx_model_path "$model") \
-  || die "architect: local MLX model is not installed: $model"
+architect_tmp_dir=${TMPDIR:-/tmp}/wizardry-architect-$$
+completed_file=$architect_tmp_dir/completed.txt
+broad_file=$architect_tmp_dir/broad-unchecked.txt
+bad_file=$architect_tmp_dir/bad.txt
+unchecked_file=$architect_tmp_dir/unchecked.txt
+paths_file=$architect_tmp_dir/paths.txt
+prompt_file=$architect_tmp_dir/prompt.txt
+tree_file=$architect_tmp_dir/tree.txt
+
+cleanup_architect_tmp() {
+  rm -rf "$architect_tmp_dir"
+}
+trap cleanup_architect_tmp EXIT HUP INT TERM
 
 mkdir -p "$architect_tmp_dir"
-grep -E '^[[:space:]]*[-*][[:space:]]+\[[xX]\]' "$checklist_path" \
-  >"$architect_completed" 2>/dev/null || :
-grep -E '^[[:space:]]*[-*][[:space:]]+\[[ ]\]' "$checklist_path" \
-  | grep -F -v '`' >"$architect_broad_unchecked" 2>/dev/null || :
-write_architect_tree "$checklist_dir" "$architect_tree"
-write_architect_snippets "$checklist_dir" "$checklist_path" "$architect_tree" "$architect_snippets"
+grep -E '^[[:space:]]*[-*][[:space:]]+\[[xX]\][[:space:]]' "$checklist_path" \
+  >"$completed_file" 2>/dev/null || :
+grep -E '^[[:space:]]*[-*][[:space:]]+\[ \][[:space:]]' "$checklist_path" \
+  | grep -F -v '`' >"$broad_file" 2>/dev/null || :
 
-: >"$architect_context"
-append_doc_if_present "Repository instructions" "$checklist_dir/AGENTS.md" "$architect_context"
-append_doc_if_present "Repository Codex instructions" "$checklist_dir/.github/CODEX.md" "$architect_context"
-append_doc_if_present "wizardry ultralite" "$spell_dir/../../.github/WIZARDRY_ULTRALITE.md" "$architect_context"
-append_doc_if_present "wizardry lite" "$spell_dir/../../.github/WIZARDRY_LITE.md" "$architect_context"
+(
+  CDPATH= cd -- "$checklist_dir" || exit 1
+  find . \
+    \( -name .git -o -name node_modules -o -name .cache -o -name .next \
+      -o -name dist -o -name build -o -name target -o -name __pycache__ \
+      -o -name .venv -o -name venv \) -prune \
+    -o -type f -print 2>/dev/null \
+    | sed 's#^\./##' \
+    | LC_ALL=C sort \
+    | awk 'NR <= 500 { print }'
+) >"$tree_file"
 
-cat >"$architect_prompt" <<EOF
-You are the local wizardry architect spell. Rewrite exactly one checklist file
-into a better implementation plan. Do not implement source code.
+cat >"$prompt_file" <<EOF
+You are the local wizardry architect spell. Your only job is to improve one
+checklist plan; do not implement code.
 
-Checklist path:
-$checklist_path
+Repository directory:
+$checklist_dir
 
-Selected local model:
-$model
+Checklist file:
+$checklist_name
 
-Rules:
-- Continue the prefilled final answer. Do not write analysis.
-- Output the complete replacement contents for the checklist file only.
-- End the checklist with WIZARDRY_ARCHITECT_CHECKLIST_END on its own line.
-- Do not use Markdown code fences.
-- Preserve all completed [x] checklist items exactly.
+Read AGENTS.md if present, read $checklist_name, and inspect the repository
+files needed to understand the broad unchecked checklist items.
+
+Edit only $checklist_name. Do not edit source files, tests, docs, config, or
+generated files.
+
+Rewrite rules:
+- Preserve every completed [x] checklist line byte-for-byte.
 - Preserve useful headings and notes.
-- Do not mark unchecked [ ] items complete.
-- Replace broad unchecked work with narrow, file-scoped unchecked items. Do not
-  keep the original broad unchecked line when you split it.
-- Use a flat checklist only: no nested checklist items.
-- Write implementation obligations, not verify-only audit statements, unless
-  the original item is explicitly an audit.
-- Every new unchecked item must be one line that starts with "In \`", names a
-  real repository path, contains one concrete implementation change, and
-  includes "; verify with \`" followed by a real command or explicit manual
-  check.
-- Do not create separate verification-only items; combine the verification with
-  the implementation item it proves.
-- Keep items small enough for a weaker local coding model to complete safely.
-- Order dependency work before dependent work.
-- Do not invent function names, test names, files, or commands. Use names from
-  repository evidence below, or phrase the item as adding the missing behavior.
-- If a decision cannot be made from repository evidence, create one unchecked
-  item in \`CHECKLIST.md\` asking which concrete source file should own the
-  original work; verify by recording the chosen file path in this checklist.
+- Replace broad unchecked [ ] items with narrow unchecked [ ] items.
+- If you split a broad item, remove the original broad unchecked line.
+- Keep a flat checklist only; no nested checklist items.
+- Do not mark new or rewritten items complete.
+- Each new unchecked item must be one line starting exactly "- [ ] ".
+- Each new unchecked item must name exactly one existing repository file path.
+- Each new unchecked item must include exactly one single-line verification
+  command in backticks.
+- Do not wrap file paths in backticks; reserve backticks only for the one
+  verification command.
+- Do not use Markdown code fences.
+- Do not use heredocs, multiline shell, or literal \\n inside commands.
+- Prefer file-scoped architecture or implementation obligations that a weaker
+  local coding model can safely complete in one round.
+- If the correct source file cannot be identified from evidence, make one
+  narrow checklist item in $checklist_name asking for that specific file choice.
 
-Immutable completed lines that must appear byte-for-byte in the final checklist:
-
-$(sed -n '1,120p' "$architect_completed")
-
-Current checklist:
-
-$(sed -n '1,260p' "$checklist_path")
+Before finishing, read $checklist_name and verify the result satisfies all rules.
 
 Repository file tree excerpt:
-
-$(sed -n '1,350p' "$architect_tree")
-
-Relevant file excerpts:
-
-$(sed -n '1,900p' "$architect_snippets")
-
-Compact project instructions:
-
-$(sed -n '1,260p' "$architect_context")
+$(sed -n '1,500p' "$tree_file")
 EOF
 
-architect_prefill=$(
-  {
-    printf '%s\n' 'WIZARDRY_ARCHITECT_CHECKLIST_BEGIN'
-    printf '%s\n' '# Checklist'
-    sed -n '1,120p' "$architect_completed"
-  }
-)
-architect_prefill=$architect_prefill'
-'
-
-printf '%s\n' "architect: Thinking locally with MLX model $model..."
-if ! "$ai_llm_mlx_generate_bin" \
-  --model "$resolved_model" \
-  --prompt - \
-  --prefill-response "$architect_prefill" \
-  --max-tokens 1400 \
-  --temp 0 \
-  --top-p 0.95 \
-  --max-kv-size 8192 \
-  --verbose False \
-  <"$architect_prompt" \
-  >"$architect_raw" 2>"$architect_errors"; then
-  sed -n '1,80p' "$architect_errors" >&2
-  die "architect: local MLX generation failed"
+printf '%s\n' "architect: asking local OpenCode model $model to rewrite $checklist_path"
+title=architect-$(date '+%Y%m%d-%H%M%S')
+prompt=$(cat "$prompt_file")
+if ! opencode run --dir "$checklist_dir" --model "$model" --title "$title" "$prompt"; then
+  die "architect: local OpenCode architecture run failed"
 fi
 
-{
-  printf '%s' "$architect_prefill"
-  cat "$architect_raw"
-} >"$architect_combined"
-strip_mlx_noise "$architect_combined" >"$architect_stripped"
-extract_architect_checklist "$architect_stripped" "$architect_output"
-normalize_checked_lines "$architect_output" "$architect_completed"
-preserve_completed_lines "$architect_output" "$architect_completed"
-remove_retained_broad_items "$architect_output" "$architect_broad_unchecked"
-validate_architect_output "$architect_output" "$architect_completed"
-cp "$architect_output" "$checklist_path"
-printf '%s\n' "architect: rewrote $checklist_path with local MLX model $model"
+[ -f "$checklist_path" ] || die "architect: checklist disappeared: $checklist_path"
+[ -s "$checklist_path" ] || die "architect: checklist is empty after architecture run"
+
+: >"$bad_file"
+awk '
+  /^[[:space:]]*[-*][[:space:]]+\[/ {
+    if ($0 !~ /^[[:space:]]*[-*][[:space:]]+\[( |x)\][[:space:]]/) {
+      print
+    }
+  }
+' "$checklist_path" >"$bad_file"
+[ ! -s "$bad_file" ] || die "architect: checklist has malformed checkbox lines"
+
+if grep -E '^[[:space:]]+[-*][[:space:]]+\[( |x)\][[:space:]]' "$checklist_path" >/dev/null 2>&1; then
+  die "architect: checklist has nested checklist items"
+fi
+if grep -F '```' "$checklist_path" >/dev/null 2>&1; then
+  die "architect: checklist contains Markdown code fences"
+fi
+if grep -F '\n' "$checklist_path" >/dev/null 2>&1; then
+  die "architect: checklist contains literal \\n text"
+fi
+if grep -F '<<' "$checklist_path" >/dev/null 2>&1; then
+  die "architect: checklist contains heredoc syntax"
+fi
+if grep -F '<function=' "$checklist_path" >/dev/null 2>&1 \
+  || grep -F '</tool_call>' "$checklist_path" >/dev/null 2>&1; then
+  die "architect: checklist contains tool-call markup"
+fi
+
+while IFS= read -r completed_line; do
+  [ -n "$completed_line" ] || continue
+  grep -F -x -- "$completed_line" "$checklist_path" >/dev/null 2>&1 \
+    || die "architect: completed item was not preserved: $completed_line"
+done <"$completed_file"
+
+grep -E '^[[:space:]]*[-*][[:space:]]+\[ \][[:space:]]' "$checklist_path" \
+  >"$unchecked_file" 2>/dev/null || :
+
+while IFS= read -r broad_line; do
+  [ -n "$broad_line" ] || continue
+  grep -F -x -- "$broad_line" "$checklist_path" >/dev/null 2>&1 \
+    && die "architect: broad unchecked item remained after architecture split: $broad_line"
+done <"$broad_file"
+
+while IFS= read -r unchecked_line; do
+  [ -n "$unchecked_line" ] || continue
+  backtick_count=$(printf '%s\n' "$unchecked_line" | awk -F'`' '{ print NF - 1 }')
+  [ "$backtick_count" = 2 ] \
+    || die "architect: unchecked item must contain exactly one backticked verification command: $unchecked_line"
+  : >"$paths_file"
+  for token in $(printf '%s\n' "$unchecked_line" | tr '`"'"'"'(),;:' '        '); do
+    case "$token" in
+    */*|.*|*.*)
+      case "$token" in
+      ./*) token=${token#./} ;;
+      esac
+      [ -f "$checklist_dir/$token" ] || continue
+      grep -F -x -- "$token" "$paths_file" >/dev/null 2>&1 || printf '%s\n' "$token" >>"$paths_file"
+      ;;
+    esac
+  done
+  path_count=$(wc -l <"$paths_file" | tr -d ' ')
+  [ "$path_count" = 1 ] \
+    || die "architect: unchecked item must name exactly one existing file path: $unchecked_line"
+done <"$unchecked_file"
+
+printf '%s\n' "architect: rewrote $checklist_path with local OpenCode model $model"
