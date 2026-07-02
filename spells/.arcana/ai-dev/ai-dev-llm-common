@@ -862,6 +862,12 @@ ai_llm_wait_for_mlx_server() {
   ai_llm_wait_for_mlx_server_timeout "$ai_llm_mlx_start_timeout"
 }
 
+ai_llm_mlx_server_serves_model() {
+  model=$1
+  ai_llm_wait_for_mlx_server_timeout 3 || return 1
+  ai_llm_probe_mlx_model "$model"
+}
+
 ai_llm_json_string() {
   printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
 }
@@ -869,11 +875,12 @@ ai_llm_json_string() {
 ai_llm_probe_mlx_model() {
   model=$1
   command -v curl >/dev/null 2>&1 || return 1
+  probe_timeout=${AI_DEV_MLX_PROBE_TIMEOUT:-180}
   escaped_model=$(ai_llm_json_string "$model")
   probe_body='{"model":"'"$escaped_model"'",'
   probe_body=$probe_body'"messages":[{"role":"user","content":"Reply with OK."}],'
   probe_body=$probe_body'"max_tokens":2,"temperature":0,"stream":false}'
-  curl -fsS --max-time 60 \
+  curl -fsS --max-time "$probe_timeout" \
     -H 'Content-Type: application/json' \
     -X POST "http://127.0.0.1:$ai_llm_mlx_port/v1/chat/completions" \
     -d "$probe_body" \
@@ -883,6 +890,7 @@ ai_llm_probe_mlx_model() {
 ai_llm_probe_mlx_tool_model() {
   model=$1
   command -v curl >/dev/null 2>&1 || return 1
+  probe_timeout=${AI_DEV_MLX_TOOL_PROBE_TIMEOUT:-240}
   escaped_model=$(ai_llm_json_string "$model")
   probe_response=$(mktemp "${TMPDIR:-/tmp}/ai-dev-mlx-tool-probe.XXXXXX")
   probe_compact=$(mktemp "${TMPDIR:-/tmp}/ai-dev-mlx-tool-probe-compact.XXXXXX")
@@ -894,7 +902,7 @@ ai_llm_probe_mlx_tool_model() {
   probe_body=$probe_body'"properties":{"path":{"type":"string"}},"required":["path"]}}}],'
   probe_body=$probe_body'"tool_choice":"auto","max_tokens":128,"temperature":0,"stream":false}'
 
-  if ! curl -fsS --max-time 90 \
+  if ! curl -fsS --max-time "$probe_timeout" \
     -H 'Content-Type: application/json' \
     -X POST "http://127.0.0.1:$ai_llm_mlx_port/v1/chat/completions" \
     -d "$probe_body" \
@@ -929,6 +937,19 @@ ai_llm_stop_mlx_server() {
     fi
     rm -f "$ai_llm_mlx_pid_file"
   fi
+
+  stale_pids=$(
+    ps -ax -o pid= -o command= 2>/dev/null \
+      | awk -v port="$ai_llm_mlx_port" '
+        /mlx_lm[.]server/ && index($0, "--port " port) { print $1 }
+      ' || printf ''
+  )
+  for stale_pid in $stale_pids; do
+    case "$stale_pid" in
+      *[!0-9]*|'') continue ;;
+    esac
+    kill "$stale_pid" >/dev/null 2>&1 || :
+  done
 }
 
 ai_llm_start_mlx_server_launchd() {
@@ -1069,20 +1090,19 @@ ai_llm_start_mlx_server() {
   if [ "$draft_mode" = use-drafts ]; then
     ai_llm_stop_mlx_server
   else
-    if ai_llm_wait_for_mlx_server_timeout 2; then
+    if ai_llm_mlx_server_serves_model "$model"; then
       return 0
     fi
 
     if [ -f "$ai_llm_mlx_pid_file" ]; then
       old_pid=$(tr -d '\r' <"$ai_llm_mlx_pid_file" 2>/dev/null || printf '')
       if [ -n "$old_pid" ] && kill -0 "$old_pid" 2>/dev/null; then
-        if ai_llm_wait_for_mlx_server; then
+        if ai_llm_mlx_server_serves_model "$model"; then
           return 0
         fi
-      else
-        rm -f "$ai_llm_mlx_pid_file"
       fi
     fi
+    ai_llm_stop_mlx_server
   fi
 
   resolved_model=$(ai_llm_resolve_mlx_model_path "$model") || return 1
@@ -1101,7 +1121,8 @@ ai_llm_start_mlx_server() {
     && command -v launchctl >/dev/null 2>&1 \
     && [ "$mlx_server_cmd" != "$ai_llm_mlx_python" ]; then
     if ai_llm_start_mlx_server_launchd "$resolved_model" "$resolved_draft_model"; then
-      if ai_llm_wait_for_mlx_server_timeout 15; then
+      if ai_llm_wait_for_mlx_server_timeout 15 \
+        && ai_llm_mlx_server_serves_model "$model"; then
         return 0
       fi
       uid=$(id -u 2>/dev/null || printf '')
@@ -1148,7 +1169,8 @@ ai_llm_start_mlx_server() {
   fi
   printf '%s\n' "$!" >"$ai_llm_mlx_pid_file"
 
-  ai_llm_wait_for_mlx_server
+  ai_llm_wait_for_mlx_server || return 1
+  ai_llm_mlx_server_serves_model "$model"
 }
 
 ai_llm_prepare_opencode_runtime() {
