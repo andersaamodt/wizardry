@@ -434,6 +434,26 @@ test_local_run_shows_waiting_heartbeat() {
   assert_output_contains "Checklist complete" || return 1
 }
 
+test_local_spinner_is_prefixless_and_single_width() {
+  helper="$ROOT_DIR/spells/spellcraft/loop-code"
+  grep -F 'Thinking... ' "$helper" >/dev/null 2>&1 || {
+    TEST_FAILURE_REASON="local spinner should show a Thinking line"
+    return 1
+  }
+  if grep -F 'loop-code: Thinking...' "$helper" >/dev/null 2>&1; then
+    TEST_FAILURE_REASON="local spinner Thinking line should not include loop-code prefix"
+    return 1
+  fi
+  grep -F "spinner_frame=\$(printf '\\\\')" "$helper" >/dev/null 2>&1 || {
+    TEST_FAILURE_REASON="local spinner backslash frame should be one terminal character"
+    return 1
+  }
+  grep -F '>"$local_spinner_target"' "$helper" >/dev/null 2>&1 || {
+    TEST_FAILURE_REASON="local spinner should write directly to the terminal"
+    return 1
+  }
+}
+
 test_fresh_session_resume_keeps_interrupted_session_once() {
   tmp=$(make_tempdir)
   stub_dir="$tmp/stubs"
@@ -699,6 +719,7 @@ run_test_case "loop-code defaults local runs to fresh sessions" test_local_defau
 run_test_case "loop-code can reuse local sessions by request" test_local_reuse_session_override
 run_test_case "loop-code restricts --use-drafts to MLX models" test_use_drafts_requires_mlx_model
 run_test_case "loop-code shows local waiting heartbeat" test_local_run_shows_waiting_heartbeat
+run_test_case "loop-code local spinner is prefixless and single-width" test_local_spinner_is_prefixless_and_single_width
 run_test_case "loop-code resumes interrupted session once" test_fresh_session_resume_keeps_interrupted_session_once
 run_test_case "loop-code allows local batch override" test_batch_override_for_local
 run_test_case "loop-code honors direction phrase" test_direction_phrase_stops_loop

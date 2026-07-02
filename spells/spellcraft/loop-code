@@ -641,6 +641,7 @@ EOF
     set +e
     local_heartbeat_pid=''
     local_spinner_visible_file=''
+    local_spinner_target=''
     local_use_spinner=false
     round_stream_file=''
     if [ "$using_local_model" = true ]; then
@@ -649,8 +650,9 @@ EOF
       ''|*[!0-9]*) local_heartbeat_seconds=10 ;;
       esac
       if [ "$local_heartbeat_seconds" -gt 0 ]; then
-        if [ "$loop_code_stdout_is_tty" = true ]; then
+        if [ "$loop_code_stdout_is_tty" = true ] && [ -w /dev/tty ]; then
           local_use_spinner=true
+          local_spinner_target=/dev/tty
           local_spinner_visible_file=$(temp-file "opencode-checklist-round-$round.spinner")
           : >"$local_spinner_visible_file"
         fi
@@ -672,11 +674,11 @@ EOF
               0) spinner_frame='|' ;;
               1) spinner_frame='/' ;;
               2) spinner_frame='-' ;;
-              *) spinner_frame='\\' ;;
+              *) spinner_frame=$(printf '\\') ;;
               esac
               spinner_index=$(((spinner_index + 1) % 4))
-              printf '\r\033[2Kloop-code: Thinking... \033[1;36m%s\033[0m' \
-                "$spinner_frame"
+              printf '\r\033[2KThinking... \033[1;36m%s\033[0m' \
+                "$spinner_frame" >"$local_spinner_target"
               printf '1\n' >"$local_spinner_visible_file"
             else
               printf '%s\n' "loop-code: still waiting for local model output..."
@@ -715,7 +717,7 @@ EOF
       if [ "$local_use_spinner" = true ] \
         && [ -n "$local_spinner_visible_file" ] \
         && [ -s "$local_spinner_visible_file" ]; then
-        printf '\r\033[2K'
+        printf '\r\033[2K' >"$local_spinner_target"
         : >"$local_spinner_visible_file"
       fi
       printf '%s\n' "$line"
@@ -731,7 +733,7 @@ EOF
     if [ "$local_use_spinner" = true ] \
       && [ -n "$local_spinner_visible_file" ] \
       && [ -s "$local_spinner_visible_file" ]; then
-      printf '\r\033[2K'
+      printf '\r\033[2K' >"$local_spinner_target"
       : >"$local_spinner_visible_file"
     fi
     [ -z "$local_spinner_visible_file" ] || rm -f "$local_spinner_visible_file"
