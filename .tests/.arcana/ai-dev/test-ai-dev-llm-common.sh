@@ -77,7 +77,7 @@ test_opencode_mlx_models_are_tool_call_capable() {
     TEST_FAILURE_REASON="OpenCode MLX model metadata does not enable tool calls"
     return 1
   }
-  grep -F '"output": 4096' "$helper" >/dev/null 2>&1 || {
+  grep -F '"output": 8192' "$helper" >/dev/null 2>&1 || {
     TEST_FAILURE_REASON="OpenCode MLX model metadata does not cap local output for speed"
     return 1
   }
@@ -187,8 +187,12 @@ test_mlx_server_prefers_entrypoint_and_longer_timeout() {
     TEST_FAILURE_REASON="MLX helper does not expose the longer MLX startup timeout"
     return 1
   }
-  grep -F 'if ai_llm_wait_for_mlx_server_timeout 2; then' "$helper" >/dev/null 2>&1 || {
-    TEST_FAILURE_REASON="MLX helper does not use a short preflight probe before starting a fresh server"
+  grep -F 'ai_llm_mlx_server_serves_model "$model"' "$helper" >/dev/null 2>&1 || {
+    TEST_FAILURE_REASON="MLX helper does not prove an existing server serves the requested model"
+    return 1
+  }
+  grep -F 'ai_llm_probe_mlx_model "$model"' "$helper" >/dev/null 2>&1 || {
+    TEST_FAILURE_REASON="MLX helper does not use a model-specific readiness probe"
     return 1
   }
   grep -F '<key>ProcessType</key>' "$helper" >/dev/null 2>&1 || {

@@ -257,6 +257,7 @@ ai_llm_list_available() {
       printf '%s\n' "mlx-community/Qwen3-Coder-30B-A3B-Instruct-3bit|best speculative draft, compatible|13.0|256"
       printf '%s\n' "mlx-community/Qwen3-0.6B-4bit|small experimental speculative draft|0.4|32"
       printf '%s\n' "mlx-community/Qwen3-Coder-Next-5bit|large coding benchmark|51.0|256"
+      printf '%s\n' "mlx-community/Qwen3-30B-A3B-Thinking-2507-4bit|best local architecture reasoning|18.0|256"
       printf '%s\n' "mlx-community/Qwen2.5-14B-Instruct-4bit|best reasoning|8.2|128"
       printf '%s\n' "mlx-community/Qwen2.5-VL-7B-Instruct-4bit|best vision|4.9|32"
       ;;
