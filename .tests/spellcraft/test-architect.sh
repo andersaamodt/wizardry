@@ -127,6 +127,15 @@ test_freeform_args_are_joined_into_brief() {
     TEST_FAILURE_REASON="architect should join freeform args into one brief"
     return 1
   }
+  grep -F "Hidden paths such as .tests, .github, and dotfiles" \
+    "$tmp/opencode-prompt-log" >/dev/null || {
+    TEST_FAILURE_REASON="architect should guide local models to read explicit hidden paths"
+    return 1
+  }
+  grep -F "bad premise" "$tmp/opencode-prompt-log" >/dev/null || {
+    TEST_FAILURE_REASON="architect should tell local models to preserve contracts over bad premises"
+    return 1
+  }
 }
 
 test_stdout_contains_only_final_checklist() {
@@ -316,6 +325,42 @@ EOF
   assert_output_contains "res://scripts/paddle.gd" || return 1
 }
 
+test_accepts_extensionless_slash_target_paths() {
+  tmp=$(make_tempdir)
+  make_opencode_stub "$tmp"
+  write_fixture_files "$tmp"
+  mkdir -p "$tmp/spells/cantrips"
+  printf '%s\n' '#!/bin/sh' 'printf "%s\n" ok' >"$tmp/spells/cantrips/max-length"
+  chmod +x "$tmp/spells/cantrips/max-length"
+  cat >"$tmp/model-output" <<'EOF'
+# Checklist
+
+- [ ] Update spells/cantrips/max-length help text without changing behavior; verify with `sh spells/cantrips/max-length --help`
+EOF
+
+  run_architect_with_stub "$tmp" improve spells/cantrips/max-length
+  assert_success || return 1
+  assert_output_contains "spells/cantrips/max-length" || return 1
+}
+
+test_accepts_hidden_extensionless_slash_target_paths() {
+  tmp=$(make_tempdir)
+  make_opencode_stub "$tmp"
+  write_fixture_files "$tmp"
+  mkdir -p "$tmp/.tests/cantrips"
+  printf '%s\n' '#!/bin/sh' 'exit 0' >"$tmp/.tests/cantrips/test-max-length"
+  chmod +x "$tmp/.tests/cantrips/test-max-length"
+  cat >"$tmp/model-output" <<'EOF'
+# Checklist
+
+- [ ] Update .tests/cantrips/test-max-length coverage for help output; verify with `sh .tests/cantrips/test-max-length`
+EOF
+
+  run_architect_with_stub "$tmp" improve .tests/cantrips/test-max-length
+  assert_success || return 1
+  assert_output_contains ".tests/cantrips/test-max-length" || return 1
+}
+
 test_rejects_res_paths_inside_verification_commands() {
   tmp=$(make_tempdir)
   make_opencode_stub "$tmp"
@@ -428,6 +473,10 @@ run_test_case "architect rejects missing verification commands" test_rejects_mis
 run_test_case "architect rejects extra backticked paths" test_rejects_extra_backticked_path
 run_test_case "architect rejects missing target paths" test_rejects_missing_target_path
 run_test_case "architect accepts Godot res paths" test_accepts_godot_res_paths_and_slashy_prose
+run_test_case "architect accepts extensionless slash target paths" \
+  test_accepts_extensionless_slash_target_paths
+run_test_case "architect accepts hidden extensionless slash target paths" \
+  test_accepts_hidden_extensionless_slash_target_paths
 run_test_case "architect rejects res paths in commands" \
   test_rejects_res_paths_inside_verification_commands
 run_test_case "architect rejects masked verification commands" \

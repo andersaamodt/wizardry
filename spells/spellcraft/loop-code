@@ -6,7 +6,7 @@
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE'
-Usage: loop-code [CHECKLIST] [--model PROVIDER/MODEL] [--local|--remote] [--batch|--no-batch] [--fresh-session|--reuse-session] [--use-drafts]
+Usage: loop-code [CHECKLIST] [--model PROVIDER/MODEL] [--local|--remote] [--batch|--no-batch] [--fresh-session|--reuse-session] [--use-drafts] [--cautious]
 
 Runs OpenCode in the checklist's directory until CHECKLIST contains no literal
 "[ ]" markers. OpenCode output is streamed for every round. Use --model to
@@ -32,6 +32,9 @@ fresh sessions.
 --use-drafts starts local MLX with wizardry's selected speculative draft model
 when available. This is opt-in because draft decoding can trade correctness for
 speed on some model/runtime combinations.
+
+--cautious stops after the first round that makes checklist progress while
+leaving any remaining unchecked items for review or a later loop-code run.
 
 OpenCode is instructed to emit WIZARDRY_CHECKLIST_COMPLETE when it verifies the
 whole checklist. WIZARDRY_CHECKLIST_NEEDS_DIRECTION is honored only when it is
@@ -252,6 +255,7 @@ remote_mode=false
 batch_mode=auto
 session_mode=auto
 use_drafts=false
+cautious_mode=false
 while [ "$#" -gt 0 ]; do
   case "$1" in
   --model)
@@ -280,6 +284,9 @@ while [ "$#" -gt 0 ]; do
     ;;
   --use-drafts)
     use_drafts=true
+    ;;
+  --cautious)
+    cautious_mode=true
     ;;
   --*)
     die 2 "loop-code: unknown option '$1'"
@@ -578,6 +585,8 @@ Local performance rules:
 - Use targeted search first, such as rg --line-number PATTERN PATH.
 - If a checklist item names a concrete path, read that exact path before
   globbing for variants of the same name.
+- Hidden paths such as .tests, .github, and dotfiles may not appear in glob
+  results; read explicit hidden paths directly when the checklist names them.
 - For large files, do not read the whole file. Use sed -n 'START,ENDp' FILE
   or another bounded shell slice around relevant lines.
 - Do not repeat git status or other repo-wide orientation checks once the
@@ -594,16 +603,25 @@ leave it unchecked and choose another executable item when possible.
 Round completion discipline:
 - Pick one unchecked item first and keep working on that item until it is
   marked [x] or specifically blocked.
+- Preserve the existing documented contract and the program's parsimony. If a
+  checklist item or verification command encodes a bad premise, correct the
+  checklist/test direction or request specific user direction instead of
+  complicating the implementation to satisfy the bad premise.
 - After a checklist item is implemented and verified, update this checklist
   file immediately before starting any unrelated work.
 - If repository evidence shows the chosen item is already satisfied, run that
   item verification command, mark it [x], and stop this round.
 - If verification fails, fix the narrow failure and rerun the narrowest
   relevant check before broad checks.
+- Mark [x] only after running the item's verification command or an equally
+  direct, named repository check that proves the same obligation.
 - Once the chosen item or coherent batch is verified and marked, stop this
   round instead of opening a new investigation.
 - Do not report completion until the checklist file reflects the verified
   progress.
+- Before ending the round, briefly sanity-check the diff: changed files,
+  verification evidence, preserved behavior, and whether the implementation
+  stayed simpler rather than more elaborate.
 - Do not use the OpenCode internal todo list for loop control; this checklist
   file is the task state for this run. Never call todowrite or Todos.
 
@@ -629,14 +647,25 @@ superficial workarounds. If one item currently needs unavailable runtime
 evidence, leave it unchecked and advance another executable item when possible.
 
 Round completion discipline:
+- If a checklist item names a concrete path, read that exact path. Hidden paths
+  such as .tests, .github, and dotfiles may not appear in glob results.
+- Preserve the existing documented contract and the program's parsimony. If a
+  checklist item or verification command encodes a bad premise, correct the
+  checklist/test direction or request specific user direction instead of
+  complicating the implementation to satisfy the bad premise.
 - After a checklist item is implemented and verified, update this checklist
   file immediately before starting any unrelated work.
 - If verification fails, fix the narrow failure and rerun the narrowest
   relevant check before broad checks.
+- Mark [x] only after running the item's verification command or an equally
+  direct, named repository check that proves the same obligation.
 - Once the chosen item or coherent batch is verified and marked, stop this
   round instead of opening a new investigation.
 - Do not report completion until the checklist file reflects the verified
   progress.
+- Before ending the round, briefly sanity-check the diff: changed files,
+  verification evidence, preserved behavior, and whether the implementation
+  stayed simpler rather than more elaborate.
 - Do not use the OpenCode internal todo list for loop control; this checklist
   file is the task state for this run. Never call todowrite or Todos.
 
@@ -833,6 +862,12 @@ EOF
   if [ "$unchecked_after" -eq 0 ]; then
     release_clear_all=1
     success "Checklist complete after $round OpenCode round(s): $checklist_path"
+    exit 0
+  fi
+
+  if [ "$cautious_mode" = true ] && [ "$round_completed" -gt 0 ]; then
+    warn "loop-code: cautious mode stopping after round $round with" \
+      "$unchecked_after unchecked item(s) remaining for review"
     exit 0
   fi
 

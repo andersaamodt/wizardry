@@ -76,6 +76,17 @@ case ${OPENCODE_TEST_MODE:-complete-second} in
     printf '%s\n' 'Error: status code 499'
     exit 1
     ;;
+  progress-one)
+    if [ "$count" -eq 1 ]; then
+      sed '1s/\[ \]/[x]/' "$OPENCODE_TEST_CHECKLIST" >"$OPENCODE_TEST_CHECKLIST.next"
+      mv "$OPENCODE_TEST_CHECKLIST.next" "$OPENCODE_TEST_CHECKLIST"
+      printf '%s\n' 'Verified one item.'
+      exit 0
+    fi
+    sed 's/\[ \]/[x]/g' "$OPENCODE_TEST_CHECKLIST" >"$OPENCODE_TEST_CHECKLIST.next"
+    mv "$OPENCODE_TEST_CHECKLIST.next" "$OPENCODE_TEST_CHECKLIST"
+    printf '%s\n' 'WIZARDRY_CHECKLIST_COMPLETE'
+    ;;
   no-progress)
     printf '%s\n' 'I will inspect the checklist next.'
     ;;
@@ -136,6 +147,7 @@ test_help() {
   assert_output_contains "--batch|--no-batch" || return 1
   assert_output_contains "--fresh-session|--reuse-session" || return 1
   assert_output_contains "--use-drafts" || return 1
+  assert_output_contains "--cautious" || return 1
 }
 
 test_missing_checklist_fails() {
@@ -395,6 +407,14 @@ test_local_defaults_to_no_batch() {
     TEST_FAILURE_REASON="local models should receive bounded large-file read guidance"
     return 1
   }
+  grep -F "Hidden paths such as .tests, .github, and dotfiles" "$tmp/log" >/dev/null || {
+    TEST_FAILURE_REASON="local models should receive hidden-path guidance"
+    return 1
+  }
+  grep -F "encodes a bad premise" "$tmp/log" >/dev/null || {
+    TEST_FAILURE_REASON="local models should be told to reject bad checklist premises"
+    return 1
+  }
 }
 
 test_local_defaults_to_fresh_sessions() {
@@ -623,6 +643,41 @@ test_batch_override_for_local() {
   }
 }
 
+test_cautious_stops_after_one_progress_round() {
+  tmp=$(make_tempdir)
+  stub_dir="$tmp/stubs"
+  make_opencode_stub "$stub_dir"
+  write_remote_config "$tmp/.config"
+  checklist="$tmp/CHECKLIST.md"
+  printf '%s\n' '- [ ] first task' '- [ ] second task' >"$checklist"
+
+  run_cmd env \
+    HOME="$tmp" \
+    XDG_CONFIG_HOME="$tmp/.config" \
+    XDG_STATE_HOME="$tmp/.state" \
+    PATH="$stub_dir:$PATH" \
+    OPENCODE_TEST_MODE=progress-one \
+    OPENCODE_TEST_LOG="$tmp/log" \
+    OPENCODE_TEST_COUNT="$tmp/count" \
+    OPENCODE_TEST_CHECKLIST="$checklist" \
+    "$ROOT_DIR/spells/spellcraft/loop-code" "$checklist" --remote --cautious
+
+  assert_success || return 1
+  assert_error_contains "cautious mode stopping after round 1" || return 1
+  [ "$(cat "$tmp/count")" = "1" ] || {
+    TEST_FAILURE_REASON="--cautious should stop after the first progress round"
+    return 1
+  }
+  grep -F -- '- [x] first task' "$checklist" >/dev/null || {
+    TEST_FAILURE_REASON="--cautious should keep completed progress"
+    return 1
+  }
+  grep -F -- '- [ ] second task' "$checklist" >/dev/null || {
+    TEST_FAILURE_REASON="--cautious should leave remaining items for later review"
+    return 1
+  }
+}
+
 test_direction_phrase_stops_loop() {
   tmp=$(make_tempdir)
   stub_dir="$tmp/stubs"
@@ -804,6 +859,8 @@ run_test_case "loop-code shows local waiting heartbeat" test_local_run_shows_wai
 run_test_case "loop-code local spinner is prefixless and single-width" test_local_spinner_is_prefixless_and_single_width
 run_test_case "loop-code resumes interrupted session once" test_fresh_session_resume_keeps_interrupted_session_once
 run_test_case "loop-code allows local batch override" test_batch_override_for_local
+run_test_case "loop-code cautious mode stops after progress" \
+  test_cautious_stops_after_one_progress_round
 run_test_case "loop-code honors direction phrase" test_direction_phrase_stops_loop
 run_test_case "loop-code rejects false completion" test_false_completion_claim_continues
 run_test_case "loop-code ignores vague direction refusal" test_vague_direction_refusal_continues

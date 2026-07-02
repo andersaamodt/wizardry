@@ -261,6 +261,9 @@ $(sed -n '1,260p' "$scratch_dir/CHECKLIST.md")
 
 Read AGENTS.md if present, read CHECKLIST.md, and inspect project files needed
 to make the architecture plan concrete.
+Hidden paths such as .tests, .github, and dotfiles may not appear in glob
+results; read explicit hidden paths directly when the brief or checklist names
+them.
 
 Edit only CHECKLIST.md. Do not edit source files, tests, docs, config, or
 generated files. This is a temporary scratch copy; only CHECKLIST.md will be
@@ -271,6 +274,15 @@ Checklist rules:
 - Preserve useful headings and notes from an existing checklist.
 - Replace broad unchecked [ ] items with narrow unchecked [ ] items.
 - If you split a broad item, remove the original broad unchecked line.
+- Preserve the existing documented contract and the program's parsimony unless
+  the user explicitly asks for a behavior change.
+- If an existing checklist item appears to encode a bad premise, rewrite it
+  into a contract-preserving test or implementation item instead of planning a
+  more complex implementation to satisfy the bad premise.
+- For small shell scripts, prefer simpler tests or message polish over
+  multi-pass parsing, temp files, eval, broad state machines, or new helpers.
+- Distinguish checklist items that preserve existing behavior, add regression
+  coverage, improve help/message polish, or intentionally change semantics.
 - Keep a flat checklist only; no nested checklist items.
 - Do not mark new or rewritten items complete.
 - Each new unchecked item must be one line starting exactly "- [ ] ".
@@ -460,7 +472,7 @@ while IFS= read -r unchecked_line; do
       token=${token#res://}
       grep -F -x -- "$token" "$paths_file" >/dev/null 2>&1 || printf '%s\n' "$token" >>"$paths_file"
       ;;
-    */*.*|.*|*.*)
+    */*|.*|*.*)
       case "$token" in
       ./*) token=${token#./} ;;
       esac
