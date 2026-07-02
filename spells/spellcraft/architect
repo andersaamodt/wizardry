@@ -259,8 +259,9 @@ CHECKLIST.md
 Existing checklist content:
 $(sed -n '1,260p' "$scratch_dir/CHECKLIST.md")
 
-Read AGENTS.md if present, read CHECKLIST.md, and inspect project files needed
-to make the architecture plan concrete.
+Read AGENTS.md or .AGENTS.md if present, read applicable .github/ standards
+when present, read CHECKLIST.md, and inspect project files needed to make the
+architecture plan concrete.
 Hidden paths such as .tests, .github, and dotfiles may not appear in glob
 results; read explicit hidden paths directly when the brief or checklist names
 them.

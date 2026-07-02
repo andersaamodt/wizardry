@@ -411,6 +411,14 @@ test_local_defaults_to_no_batch() {
     TEST_FAILURE_REASON="local models should receive hidden-path guidance"
     return 1
   }
+  grep -F "AGENTS.md or .AGENTS.md" "$tmp/log" >/dev/null || {
+    TEST_FAILURE_REASON="local models should receive both AGENTS filename variants"
+    return 1
+  }
+  grep -F "applicable .github/ standards" "$tmp/log" >/dev/null || {
+    TEST_FAILURE_REASON="local models should be told to consult applicable .github standards"
+    return 1
+  }
   grep -F "encodes a bad premise" "$tmp/log" >/dev/null || {
     TEST_FAILURE_REASON="local models should be told to reject bad checklist premises"
     return 1

@@ -132,6 +132,14 @@ test_freeform_args_are_joined_into_brief() {
     TEST_FAILURE_REASON="architect should guide local models to read explicit hidden paths"
     return 1
   }
+  grep -F "AGENTS.md or .AGENTS.md" "$tmp/opencode-prompt-log" >/dev/null || {
+    TEST_FAILURE_REASON="architect should mention both AGENTS filename variants"
+    return 1
+  }
+  grep -F "applicable .github/ standards" "$tmp/opencode-prompt-log" >/dev/null || {
+    TEST_FAILURE_REASON="architect should tell local models to read applicable .github standards"
+    return 1
+  }
   grep -F "bad premise" "$tmp/opencode-prompt-log" >/dev/null || {
     TEST_FAILURE_REASON="architect should tell local models to preserve contracts over bad premises"
     return 1

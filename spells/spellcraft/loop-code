@@ -585,6 +585,8 @@ Local performance rules:
 - Use targeted search first, such as rg --line-number PATTERN PATH.
 - If a checklist item names a concrete path, read that exact path before
   globbing for variants of the same name.
+- Read repository instructions from AGENTS.md or .AGENTS.md when present, and
+  consult applicable .github/ standards for the touched files.
 - Hidden paths such as .tests, .github, and dotfiles may not appear in glob
   results; read explicit hidden paths directly when the checklist names them.
 - For large files, do not read the whole file. Use sed -n 'START,ENDp' FILE
@@ -649,6 +651,8 @@ evidence, leave it unchecked and advance another executable item when possible.
 Round completion discipline:
 - If a checklist item names a concrete path, read that exact path. Hidden paths
   such as .tests, .github, and dotfiles may not appear in glob results.
+- Read repository instructions from AGENTS.md or .AGENTS.md when present, and
+  consult applicable .github/ standards for the touched files.
 - Preserve the existing documented contract and the program's parsimony. If a
   checklist item or verification command encodes a bad premise, correct the
   checklist/test direction or request specific user direction instead of
