@@ -268,6 +268,12 @@ while true; do
   fi
 
   # Section 4 (final): component toggles and global actions
+  ai_doctor_path=$script_dir/../../spellcraft/ai-doctor
+  if [ -x "$ai_doctor_path" ]; then
+    ai_doctor_label="AI programming doctor"
+    set -- "$@" "$ai_doctor_label%$(wrap_cmd "$ai_doctor_label" "$ai_doctor_path")"
+  fi
+
   # Tabby toggle (first in the list as it's standalone and self-contained)
   if [ "$tabby_installed" -eq 1 ]; then
     tabby_label="[X] Tabby"

@@ -47,7 +47,7 @@ SH
   
   args=$(cat "$tmp/log")
   case "$args" in
-    *"AI Development:"*"[ ] Tabby"*"[ ] ollama"*"[ ] MLX"*"[ ] OpenCode"*"[ ] AnythingLLM"*"Enable all"*'Exit%kill -TERM $PPID'* ) : ;;
+    *"AI Development:"*"AI programming doctor"*"[ ] Tabby"*"[ ] ollama"*"[ ] MLX"*"[ ] OpenCode"*"[ ] AnythingLLM"*"Enable all"*'Exit%kill -TERM $PPID'* ) : ;;
     *) TEST_FAILURE_REASON="menu not invoked with expected options: $args"; return 1 ;;
   esac
 }
@@ -82,7 +82,7 @@ SH
 
   args=$(cat "$tmp/log")
   case "$args" in
-    *"[X] OpenCode"*"Run OpenCode checklist"*"run-opencode-checklist"*) : ;;
+    *"AI programming doctor"*"[X] OpenCode"*"Run OpenCode checklist"*"run-opencode-checklist"*) : ;;
     *) TEST_FAILURE_REASON="installed OpenCode actions missing from menu: $args"; return 1 ;;
   esac
 }
