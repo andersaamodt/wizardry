@@ -17,7 +17,7 @@ done
 max_length_requires_input() {
   run_spell "spells/cantrips/max-length"
   assert_failure || return 1
-  assert_output_contains "No arguments passed to max_length" || return 1
+  [ "$ERROR" = "No arguments passed to max-length" ] || { TEST_FAILURE_REASON="expected error message to go to stderr"; return 1; }
 }
 
 max_length_measures_individual_arguments() {
@@ -70,6 +70,44 @@ shows_help() {
 }
 
 run_test_case "max-length shows help" shows_help
+
+max_length_returns_0_for_empty_strings() {
+  run_spell "spells/cantrips/max-length" "" ""
+  assert_success || return 1
+  [ "$OUTPUT" = "0" ] || { TEST_FAILURE_REASON="expected 0 for empty strings"; return 1; }
+}
+
+max_length_returns_0_for_single_empty_argument() {
+  run_spell "spells/cantrips/max-length" ""
+  assert_success || return 1
+  [ "$OUTPUT" = "0" ] || { TEST_FAILURE_REASON="expected 0 for single empty argument"; return 1; }
+}
+
+max_length_supports_interleaved_verbose_flag() {
+  run_spell "spells/cantrips/max-length" "tiny" -v "hugephrase"
+  assert_success || return 1
+  expected="Maximum length: 10
+10"
+  [ "$OUTPUT" = "$expected" ] || { TEST_FAILURE_REASON="expected interleaved -v to enable verbose output"; return 1; }
+}
+
+max_length_finds_longest_in_middle() {
+  run_spell "spells/cantrips/max-length" a "verylongword" b
+  assert_success || return 1
+  [ "$OUTPUT" = "12" ] || { TEST_FAILURE_REASON="expected longest length 12 for middle word"; return 1; }
+}
+
+max_length_handles_equal_length_words() {
+  run_spell "spells/cantrips/max-length" "hello world"
+  assert_success || return 1
+  [ "$OUTPUT" = "5" ] || { TEST_FAILURE_REASON="expected 5 for equal-length words hello/world"; return 1; }
+}
+
+run_test_case "max-length returns 0 for empty strings" max_length_returns_0_for_empty_strings
+run_test_case "max-length returns 0 for single empty argument" max_length_returns_0_for_single_empty_argument
+run_test_case "max-length supports interleaved verbose flag" max_length_supports_interleaved_verbose_flag
+run_test_case "max-length finds longest in middle" max_length_finds_longest_in_middle
+run_test_case "max-length handles equal-length words" max_length_handles_equal_length_words
 
 # Test via source-then-invoke pattern  
 

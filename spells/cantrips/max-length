@@ -7,8 +7,9 @@ case "${1-}" in
   cat <<'USAGE' >&2
 Usage: max-length <string1> [string2 ...] [-v]
 
-Reports the length of the longest argument, optionally echoing a labeled result when -v is supplied. A single quoted argument w
-ith spaces is split into words for measurement.
+Reports the length of the longest argument, optionally echoing
+a labeled result when -v is supplied. A single quoted argument
+with spaces is split into words for measurement.
 USAGE
   exit 0
   ;;
@@ -32,7 +33,7 @@ while [ "$arg_count" -gt 0 ]; do
 done
 
 if [ "$#" -eq 0 ]; then
-  printf '%s\n' "No arguments passed to max_length"
+  printf '%s\n' "No arguments passed to max-length" >&2
   exit 1
 fi
 
