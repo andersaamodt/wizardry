@@ -144,14 +144,22 @@ Rewrite rules:
   command in backticks.
 - Do not wrap file paths in backticks; reserve backticks only for the one
   verification command.
+- Use this exact shape:
+  - [ ] Add specific change to src/example.js; verify with `node --check src/example.js`
+- Invalid: "- [ ] Add change to src/example.js (verify: node --check src/example.js)"
+- Invalid: "- [ ] Add change to `src/example.js`; verify with `node --check src/example.js`"
 - Do not use Markdown code fences.
 - Do not use heredocs, multiline shell, or literal \\n inside commands.
+- For shell scripts, use sh in verification commands unless the repository
+  explicitly requires another shell.
 - Prefer file-scoped architecture or implementation obligations that a weaker
   local coding model can safely complete in one round.
 - If the correct source file cannot be identified from evidence, make one
   narrow checklist item in $checklist_name asking for that specific file choice.
 
-Before finishing, read $checklist_name and verify the result satisfies all rules.
+Before finishing, read $checklist_name and verify the result satisfies all
+rules. In particular, every "- [ ] " line must contain exactly two literal
+backtick characters total.
 
 Repository file tree excerpt:
 $(sed -n '1,500p' "$tree_file")
