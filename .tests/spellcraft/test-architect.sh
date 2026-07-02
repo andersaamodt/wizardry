@@ -391,7 +391,7 @@ test_rejects_masked_verification_commands() {
   cat >"$tmp/model-output" <<'EOF'
 # Checklist
 
-- [ ] Create paddle script scripts/paddle.gd; verify with `gdcheck scripts/paddle.gd 2>/dev/null || true`
+- [ ] Create paddle script scripts/paddle.gd; verify with `grep -q Paddle scripts/paddle.gd || echo "No paddle script found"`
 EOF
 
   run_architect_with_stub "$tmp" a simple pong game based on Godot

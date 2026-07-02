@@ -311,7 +311,7 @@ Checklist rules:
 - For Godot plans, target paths may use res://, but shell verification commands
   must use filesystem paths such as scripts/paddle.gd, never res:// paths.
 - Verification commands must be meaningful and must not mask failure with
-  constructs such as "|| true".
+  constructs such as "||", "|| true", "|| echo", or "; true".
 - Prefer portable verification commands using test, grep, find, sh, or existing
   repository test scripts. Do not invent validators such as gdscript or gdcheck
   unless the repository already contains those commands in its docs or scripts.
@@ -458,7 +458,7 @@ while IFS= read -r unchecked_line; do
   *res://*)
     die "architect: verification command must use filesystem paths, not res:// paths: $unchecked_line"
     ;;
-  *'|| true'*|*'; true'*)
+  *'||'*|*'; true'*)
     die "architect: verification command must not mask failure: $unchecked_line"
     ;;
   *gdscript*|*gdcheck*)

@@ -1,0 +1,186 @@
+#!/bin/sh
+# Run an Artificer programming task without opening the GUI.
+# Uses the current directory as the Artificer workspace by default.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: program [OPTIONS] [PROMPT...]
+
+Runs PROMPT through Artificer's programming mode without opening the GUI.
+Words are joined into one prompt, so quotes are optional for simple prompts.
+
+Options:
+  --site NAME       Use an installed Artificer site (default: daimon).
+  --workspace DIR  Use DIR as the Artificer workspace (default: current dir).
+  --model MODEL    Select an Artificer model for the new conversation.
+  --budget NAME    Use quick, standard, long, or until-complete (default: long).
+  --iterations N   Set max programming iterations (default: 6).
+  --title TEXT     Set the Artificer conversation title.
+  --json           Print the raw Artificer JSON response instead of assistant text.
+
+This spell does not call loop-code directly. Artificer remains the coordinating
+intelligence; loop-code and architect stay separate skills.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+urlenc() {
+  perl -MURI::Escape -e 'print uri_escape($ARGV[0]);' "$1"
+}
+
+api_post() {
+  api_post_payload=$1
+  api_post_length=$(printf '%s' "$api_post_payload" | wc -c | tr -d ' ')
+  printf '%s' "$api_post_payload" |
+    REQUEST_METHOD=POST CONTENT_LENGTH="$api_post_length" QUERY_STRING="" \
+      WIZARDRY_SITE_NAME="$site_name" WIZARDRY_SITES_DIR="$HOME/sites" \
+      "$cgi_script" |
+    tr -d '\r' |
+    awk 'seen{print} /^$/{seen=1}'
+}
+
+json_get() {
+  json_get_key=$1
+  perl -MJSON::PP -e '
+    use strict;
+    use warnings;
+    my $key = shift @ARGV;
+    local $/;
+    my $raw = <STDIN>;
+    my $j = decode_json($raw);
+    my $value = $j->{$key};
+    if (ref($value)) {
+      print encode_json($value);
+    } elsif (defined $value) {
+      print $value;
+    }
+  ' "$json_get_key"
+}
+
+site_name=daimon
+workspace_path=$(pwd -P)
+model_name=''
+compute_budget=long
+max_iterations=6
+title=''
+json_output=false
+prompt_text=''
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+  --site)
+    shift
+    [ "$#" -gt 0 ] || die 2 "program: --site requires a value"
+    site_name=$1
+    ;;
+  --workspace)
+    shift
+    [ "$#" -gt 0 ] || die 2 "program: --workspace requires a directory"
+    workspace_path=$1
+    ;;
+  --model)
+    shift
+    [ "$#" -gt 0 ] || die 2 "program: --model requires a value"
+    model_name=$1
+    ;;
+  --budget)
+    shift
+    [ "$#" -gt 0 ] || die 2 "program: --budget requires a value"
+    compute_budget=$1
+    ;;
+  --iterations)
+    shift
+    [ "$#" -gt 0 ] || die 2 "program: --iterations requires a value"
+    max_iterations=$1
+    ;;
+  --title)
+    shift
+    [ "$#" -gt 0 ] || die 2 "program: --title requires a value"
+    title=$1
+    ;;
+  --json)
+    json_output=true
+    ;;
+  --*)
+    die 2 "program: unknown option '$1'"
+    ;;
+  *)
+    prompt_text=$(args-to-string "$@")
+    set --
+    continue
+    ;;
+  esac
+  shift
+done
+
+[ -n "$prompt_text" ] || die 2 "program: prompt required"
+
+case "$compute_budget" in
+quick|standard|long|until-complete)
+  ;;
+*)
+  die 2 "program: budget must be quick, standard, long, or until-complete"
+  ;;
+esac
+
+if ! printf '%s\n' "$max_iterations" | grep -Eq '^[0-9][0-9]*$'; then
+  die 2 "program: iterations must be a non-negative integer"
+fi
+
+workspace_path=$(CDPATH= cd -- "$workspace_path" && pwd -P) \
+  || die "program: workspace directory does not exist: $workspace_path"
+
+site_dir="$HOME/sites/$site_name"
+cgi_script="$site_dir/cgi/artificer-api"
+if [ ! -x "$cgi_script" ]; then
+  cgi_script="$HOME/git/artificer/hosted-web/cgi/artificer-api"
+fi
+[ -x "$cgi_script" ] || die "program: Artificer CGI not found for site '$site_name'"
+
+if [ -z "$title" ]; then
+  title="program $(basename "$workspace_path") $(date '+%Y-%m-%d %H:%M:%S')"
+fi
+
+workspace_name=$(basename "$workspace_path")
+add_workspace_json=$(
+  api_post "action=add_workspace&path=$(urlenc "$workspace_path")&name=$(urlenc "$workspace_name")"
+)
+workspace_id=$(printf '%s' "$add_workspace_json" | json_get workspace | json_get id)
+[ -n "$workspace_id" ] || die "program: add_workspace failed"
+
+conversation_payload="action=new_conversation&workspace_id=$(urlenc "$workspace_id")&title=$(urlenc "$title")"
+if [ -n "$model_name" ]; then
+  conversation_payload="$conversation_payload&model=$(urlenc "$model_name")"
+fi
+new_conversation_json=$(api_post "$conversation_payload")
+conversation_id=$(printf '%s' "$new_conversation_json" | json_get conversation | json_get id)
+[ -n "$conversation_id" ] || die "program: new_conversation failed"
+
+stream_session=program-$(date -u '+%Y%m%dT%H%M%SZ')-$$
+run_payload="action=run"
+run_payload="$run_payload&workspace_id=$(urlenc "$workspace_id")"
+run_payload="$run_payload&conversation_id=$(urlenc "$conversation_id")"
+run_payload="$run_payload&prompt=$(urlenc "$prompt_text")"
+run_payload="$run_payload&run_mode=programming"
+run_payload="$run_payload&compute_budget=$(urlenc "$compute_budget")"
+run_payload="$run_payload&advanced_loop=1"
+run_payload="$run_payload&max_iterations=$(urlenc "$max_iterations")"
+run_payload="$run_payload&stream_session=$(urlenc "$stream_session")"
+
+run_json=$(api_post "$run_payload")
+run_success=$(printf '%s' "$run_json" | json_get success)
+[ "$run_success" = "true" ] || die "program: Artificer run failed"
+
+if [ "$json_output" = true ]; then
+  printf '%s\n' "$run_json"
+else
+  printf '%s' "$run_json" | json_get assistant
+  printf '\n'
+fi
