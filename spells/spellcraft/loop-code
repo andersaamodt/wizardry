@@ -10,8 +10,9 @@ Usage: loop-code [CHECKLIST] [--model PROVIDER/MODEL] [--local|--remote] [--batc
 
 Runs OpenCode in the checklist's directory until CHECKLIST contains no literal
 "[ ]" markers. OpenCode output is streamed for every round. Use --model to
-select an exact OpenCode provider/model. Use --local to use wizardry's
-preferred local model or --remote to use OpenCode's configured default model.
+select an exact OpenCode provider/model. Local mode is the default and uses
+wizardry's preferred local model. Use --remote to use OpenCode's configured
+remote default model.
 
 When CHECKLIST is omitted, loop-code defaults to CHECKLIST.md if present,
 otherwise checklist.md.
@@ -304,10 +305,6 @@ fi
 if [ "$local_mode" = true ] && [ "$remote_mode" = true ]; then
   die 2 "loop-code: choose either --local or --remote, not both"
 fi
-if [ "$model_source" = explicit ] \
-  && { [ "$local_mode" = true ] || [ "$remote_mode" = true ]; }; then
-  die 2 "loop-code: --model cannot be combined with --local or --remote"
-fi
 
 [ -f "$checklist" ] || die "loop-code: checklist is not a regular file: $checklist"
 [ -r "$checklist" ] || die "loop-code: checklist is not readable: $checklist"
@@ -329,7 +326,9 @@ state_session_id=$(loop_code_state_get session_id 2>/dev/null || printf '')
 state_session_title=$(loop_code_state_get session_title 2>/dev/null || printf '')
 state_model=$(loop_code_state_get model 2>/dev/null || printf '')
 state_local=$(loop_code_state_get local 2>/dev/null || printf '')
-state_initial_unchecked_count=$(loop_code_state_get initial_unchecked_count 2>/dev/null || printf '')
+state_initial_unchecked_count=$(
+  loop_code_state_get initial_unchecked_count 2>/dev/null || printf ''
+)
 state_active_pid=$(loop_code_state_get active_pid 2>/dev/null || printf '')
 
 case "$state_session_id" in
@@ -349,7 +348,18 @@ fi
 session_id=''
 session_title=''
 if [ "$model_source" = explicit ]; then
-  :
+  if ai_llm_model_is_local "$model"; then
+    if [ "$remote_mode" = true ]; then
+      die 2 "loop-code: --remote requires a non-local model"
+    fi
+  else
+    if [ "$local_mode" = true ]; then
+      die 2 "loop-code: --local requires a local model"
+    fi
+    if [ "$remote_mode" != true ]; then
+      die 2 "loop-code: remote models require --remote"
+    fi
+  fi
 elif [ "$local_mode" = true ]; then
   model=$(ai_llm_preferred_local_opencode_model 2>/dev/null || printf '')
   [ -n "$model" ] || die "loop-code: no preferred local model is configured"
@@ -365,9 +375,8 @@ elif [ -n "$state_model" ]; then
   session_id=$state_session_id
   session_title=$state_session_title
 else
-  model=$(ai_llm_opencode_model 2>/dev/null || printf '')
-  [ -n "$model" ] || die \
-    "loop-code: no default OpenCode model is configured; pass --model or set opencode.jsonc"
+  model=$(ai_llm_preferred_local_opencode_model 2>/dev/null || printf '')
+  [ -n "$model" ] || die "loop-code: no preferred local model is configured"
 fi
 
 using_local_model=false

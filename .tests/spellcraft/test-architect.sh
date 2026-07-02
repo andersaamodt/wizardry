@@ -43,6 +43,9 @@ printf '%s\n' "$model" >"$log_dir/opencode-model-log"
 printf '%s\n' "$title" >"$log_dir/opencode-title-log"
 printf '%s\n' 'OpenCode progress line from stub'
 cp "$log_dir/model-output" "$dir/CHECKLIST.md"
+if [ -n "${ARCHITECT_TEST_CREATE_TARGET:-}" ]; then
+  printf '%s\n' '# Concurrent checklist' >"$log_dir/CHECKLIST.md"
+fi
 SH
   chmod +x "$stub_dir/opencode"
   cat >"$stub_dir/ollama" <<'SH'
@@ -84,7 +87,7 @@ test_help() {
   run_spell "spells/spellcraft/architect" --help
   assert_success || return 1
   assert_output_contains "architect a simple pong game based on Godot" || return 1
-  assert_output_contains "--checklist CHECKLIST.md" || return 1
+  assert_output_contains "--checklist FILE" || return 1
   assert_output_contains "stdout" || return 1
 }
 
@@ -116,6 +119,10 @@ test_freeform_args_are_joined_into_brief() {
   assert_output_contains "# Architecture checklist" || return 1
   assert_output_contains "src/auth.js" || return 1
   assert_error_contains "OpenCode progress line from stub" || return 1
+  grep -F 'src/auth.js' "$tmp/CHECKLIST.md" >/dev/null || {
+    TEST_FAILURE_REASON="architect should write CHECKLIST.md by default"
+    return 1
+  }
   grep -F 'a simple pong game based on Godot' "$tmp/opencode-prompt-log" >/dev/null || {
     TEST_FAILURE_REASON="architect should join freeform args into one brief"
     return 1
@@ -141,7 +148,7 @@ test_stdout_contains_only_final_checklist() {
   assert_error_contains "OpenCode progress line from stub" || return 1
 }
 
-test_default_does_not_overwrite_existing_checklist() {
+test_existing_checklist_fails_noninteractively_without_force() {
   tmp=$(make_tempdir)
   make_opencode_stub "$tmp"
   write_fixture_files "$tmp"
@@ -150,15 +157,15 @@ test_default_does_not_overwrite_existing_checklist() {
 
   run_architect_with_stub "$tmp" CHECKLIST.md
 
-  assert_success || return 1
+  assert_failure || return 1
+  assert_error_contains "exists; use --force" || return 1
   grep -F -- '- [ ] Original broad work.' "$tmp/CHECKLIST.md" >/dev/null || {
     TEST_FAILURE_REASON="architect should not overwrite an existing checklist"
     return 1
   }
-  assert_output_contains "src/auth.js" || return 1
 }
 
-test_checklist_context_preserves_completed_items_in_output() {
+test_print_uses_existing_checklist_without_writing() {
   tmp=$(make_tempdir)
   make_opencode_stub "$tmp"
   write_fixture_files "$tmp"
@@ -171,13 +178,49 @@ test_checklist_context_preserves_completed_items_in_output() {
 - [ ] Add auth regression tests to .tests/test-auth.sh; verify with `sh .tests/test-auth.sh`
 EOF
 
-  run_architect_with_stub "$tmp" --checklist CHECKLIST.md improve auth architecture
+  run_architect_with_stub "$tmp" --print --checklist CHECKLIST.md improve auth architecture
 
   assert_success || return 1
   assert_output_contains "- [x] Keep completed work." || return 1
   assert_output_contains "src/auth.js" || return 1
   grep -F -- '- [ ] Fix auth architecture.' "$tmp/CHECKLIST.md" >/dev/null || {
     TEST_FAILURE_REASON="architect should not modify checklist context directly"
+    return 1
+  }
+}
+
+test_force_replaces_existing_checklist_after_validation() {
+  tmp=$(make_tempdir)
+  make_opencode_stub "$tmp"
+  write_fixture_files "$tmp"
+  printf '%s\n' '# Checklist' '' '- [ ] Original broad work.' >"$tmp/CHECKLIST.md"
+  write_valid_model_output "$tmp/model-output"
+
+  run_architect_with_stub "$tmp" --force improve auth architecture
+
+  assert_success || return 1
+  grep -F 'src/auth.js' "$tmp/CHECKLIST.md" >/dev/null || {
+    TEST_FAILURE_REASON="architect --force should replace an existing checklist"
+    return 1
+  }
+  assert_error_contains "architect: wrote" || return 1
+}
+
+test_concurrent_target_creation_fails_without_force() {
+  tmp=$(make_tempdir)
+  make_opencode_stub "$tmp"
+  write_fixture_files "$tmp"
+  write_valid_model_output "$tmp/model-output"
+
+  RUN_CMD_WORKDIR="$tmp" run_cmd env \
+    PATH="$tmp/bin:$PATH" \
+    ARCHITECT_TEST_CREATE_TARGET=1 \
+    "$ROOT_DIR/spells/spellcraft/architect" improve auth architecture
+
+  assert_failure || return 1
+  assert_error_contains "exists; use --force" || return 1
+  grep -F '# Concurrent checklist' "$tmp/CHECKLIST.md" >/dev/null || {
+    TEST_FAILURE_REASON="architect should not overwrite a checklist created during planning"
     return 1
   }
 }
@@ -329,7 +372,7 @@ test_rejects_lost_completed_item() {
 - [ ] Add auth cookie parsing to src/auth.js; verify with `node --check src/auth.js`
 EOF
 
-  run_architect_with_stub "$tmp" --checklist CHECKLIST.md improve auth
+  run_architect_with_stub "$tmp" --print --checklist CHECKLIST.md improve auth
   assert_failure || return 1
   assert_error_contains "completed item was not preserved" || return 1
 }
@@ -361,7 +404,7 @@ test_rejects_retained_broad_item() {
 - [ ] Add auth cookie parsing to src/auth.js; verify with `node --check src/auth.js`
 EOF
 
-  run_architect_with_stub "$tmp" --checklist CHECKLIST.md improve auth
+  run_architect_with_stub "$tmp" --print --checklist CHECKLIST.md improve auth
   assert_failure || return 1
   assert_error_contains "broad unchecked item remained" || return 1
 }
@@ -371,9 +414,14 @@ run_test_case "architect requires brief or checklist" test_missing_brief_or_chec
 run_test_case "architect rejects remote models" test_rejects_remote_model
 run_test_case "architect joins freeform args into a brief" test_freeform_args_are_joined_into_brief
 run_test_case "architect keeps stdout to final checklist only" test_stdout_contains_only_final_checklist
-run_test_case "architect does not blindly overwrite checklists" test_default_does_not_overwrite_existing_checklist
-run_test_case "architect preserves completed context in output" \
-  test_checklist_context_preserves_completed_items_in_output
+run_test_case "architect refuses existing checklists without force" \
+  test_existing_checklist_fails_noninteractively_without_force
+run_test_case "architect --print preserves context without writing" \
+  test_print_uses_existing_checklist_without_writing
+run_test_case "architect --force replaces existing checklist" \
+  test_force_replaces_existing_checklist_after_validation
+run_test_case "architect detects checklist creation before write" \
+  test_concurrent_target_creation_fails_without_force
 run_test_case "architect accepts explicit MLX local model" test_accepts_explicit_mlx_local_model
 run_test_case "architect rejects malformed checkboxes" test_rejects_malformed_checkbox
 run_test_case "architect rejects missing verification commands" test_rejects_missing_verification_command

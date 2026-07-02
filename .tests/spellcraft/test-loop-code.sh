@@ -95,6 +95,19 @@ case ${OPENCODE_TEST_MODE:-complete-second} in
 esac
 SH
   chmod +x "$moc_stub_dir/opencode"
+  cat >"$moc_stub_dir/ollama" <<'SH'
+#!/bin/sh
+case "${1-}" in
+list)
+  printf '%s\n' 'NAME ID SIZE MODIFIED'
+  printf '%s\n' 'qwen3-coder:30b abc 30GB now'
+  ;;
+*)
+  exit 0
+  ;;
+esac
+SH
+  chmod +x "$moc_stub_dir/ollama"
 }
 
 write_remote_config() {
@@ -106,6 +119,13 @@ write_remote_config() {
   "model": "github-copilot/gpt-5.3-codex"
 }
 EOF
+}
+
+write_local_selection() {
+  state_home=$1
+  mkdir -p "$state_home/wizardry/ai-dev"
+  printf '%s\n' 'ollama' >"$state_home/wizardry/ai-dev/active-runtime"
+  printf '%s\n' 'qwen3-coder:30b' >"$state_home/wizardry/ai-dev/selected-model-ollama"
 }
 
 test_help() {
@@ -131,6 +151,7 @@ test_default_checklist_uppercase_is_used() {
   stub_dir="$tmp/stubs"
   make_opencode_stub "$stub_dir"
   write_remote_config "$tmp/.config"
+  write_local_selection "$tmp/.state"
   checklist="$tmp/CHECKLIST.md"
   printf '%s\n' '- [ ] first task' '- [ ] second task' >"$checklist"
 
@@ -145,6 +166,10 @@ test_default_checklist_uppercase_is_used() {
     "$ROOT_DIR/spells/spellcraft/loop-code"
 
   assert_success || return 1
+  grep -F -- '--model ollama/qwen3-coder:30b' "$tmp/log" >/dev/null || {
+    TEST_FAILURE_REASON="default loop-code should use the preferred local model"
+    return 1
+  }
   [ "$(cat "$tmp/count")" = "2" ] || {
     TEST_FAILURE_REASON="expected two OpenCode rounds"
     return 1
@@ -156,6 +181,7 @@ test_default_checklist_lowercase_fallback() {
   stub_dir="$tmp/stubs"
   make_opencode_stub "$stub_dir"
   write_remote_config "$tmp/.config"
+  write_local_selection "$tmp/.state"
   checklist="$tmp/checklist.md"
   printf '%s\n' '- [ ] first task' '- [ ] second task' >"$checklist"
 
@@ -170,6 +196,10 @@ test_default_checklist_lowercase_fallback() {
     "$ROOT_DIR/spells/spellcraft/loop-code"
 
   assert_success || return 1
+  grep -F -- '--model ollama/qwen3-coder:30b' "$tmp/log" >/dev/null || {
+    TEST_FAILURE_REASON="default loop-code should use the preferred local model"
+    return 1
+  }
   [ "$(cat "$tmp/count")" = "2" ] || {
     TEST_FAILURE_REASON="expected two OpenCode rounds"
     return 1
@@ -205,7 +235,7 @@ test_loops_until_complete_and_pins_model_without_session_reuse() {
     OPENCODE_TEST_CHECKLIST="$checklist" \
     OPENCODE_TEST_REWRITE_CONFIG="$tmp/.config/opencode/opencode.jsonc" \
     "$ROOT_DIR/spells/spellcraft/loop-code" \
-    "$checklist"
+    "$checklist" --remote
 
   assert_success || return 1
   assert_output_contains "OpenCode round 1" || return 1
@@ -259,7 +289,7 @@ test_round_footer_shows_remaining_over_original_unchecked_total() {
     OPENCODE_TEST_LOG="$tmp/log" \
     OPENCODE_TEST_COUNT="$tmp/count" \
     OPENCODE_TEST_CHECKLIST="$checklist" \
-    "$ROOT_DIR/spells/spellcraft/loop-code" "$checklist"
+    "$ROOT_DIR/spells/spellcraft/loop-code" "$checklist" --remote
 
   assert_success || return 1
   assert_output_contains "Round 1 done — 0 completed — 2/2 unchecked item(s) remain" || return 1
@@ -282,7 +312,7 @@ test_remote_defaults_to_batch() {
     OPENCODE_TEST_LOG="$tmp/log" \
     OPENCODE_TEST_COUNT="$tmp/count" \
     OPENCODE_TEST_CHECKLIST="$checklist" \
-    "$ROOT_DIR/spells/spellcraft/loop-code" "$checklist"
+    "$ROOT_DIR/spells/spellcraft/loop-code" "$checklist" --remote
 
   assert_success || return 1
   grep -F 'largest coherent batch' "$tmp/log" >/dev/null || {
@@ -297,6 +327,32 @@ test_remote_defaults_to_batch() {
     TEST_FAILURE_REASON="remote default should not include local wizardry-ultralite context"
     return 1
   fi
+}
+
+test_explicit_remote_model_requires_remote_flag() {
+  tmp=$(make_tempdir)
+  stub_dir="$tmp/stubs"
+  make_opencode_stub "$stub_dir"
+  checklist="$tmp/CHECKLIST.md"
+  printf '%s\n' '- [ ] first task' >"$checklist"
+
+  run_cmd env \
+    HOME="$tmp" \
+    XDG_CONFIG_HOME="$tmp/.config" \
+    XDG_STATE_HOME="$tmp/.state" \
+    PATH="$stub_dir:$PATH" \
+    OPENCODE_TEST_LOG="$tmp/log" \
+    OPENCODE_TEST_COUNT="$tmp/count" \
+    OPENCODE_TEST_CHECKLIST="$checklist" \
+    "$ROOT_DIR/spells/spellcraft/loop-code" "$checklist" \
+      --model github-copilot/gpt-5.3-codex
+
+  assert_failure || return 1
+  assert_error_contains "remote models require --remote" || return 1
+  [ ! -f "$tmp/count" ] || {
+    TEST_FAILURE_REASON="remote model without --remote should fail before OpenCode runs"
+    return 1
+  }
 }
 
 test_local_defaults_to_no_batch() {
@@ -494,7 +550,7 @@ test_fresh_session_resume_keeps_interrupted_session_once() {
     OPENCODE_TEST_LOG="$tmp/log" \
     OPENCODE_TEST_COUNT="$tmp/count" \
     OPENCODE_TEST_CHECKLIST="$checklist" \
-    "$ROOT_DIR/spells/spellcraft/loop-code" "$checklist"
+    "$ROOT_DIR/spells/spellcraft/loop-code" "$checklist" --remote
 
   assert_failure || return 1
   assert_error_contains "interrupted during OpenCode round 1" || return 1
@@ -525,7 +581,7 @@ test_fresh_session_resume_keeps_interrupted_session_once() {
     OPENCODE_TEST_LOG="$tmp/log" \
     OPENCODE_TEST_COUNT="$tmp/count" \
     OPENCODE_TEST_CHECKLIST="$checklist" \
-    "$ROOT_DIR/spells/spellcraft/loop-code" "$checklist"
+    "$ROOT_DIR/spells/spellcraft/loop-code" "$checklist" --remote
 
   assert_success || return 1
   grep -F -- '--model github-copilot/gpt-5.3-codex' "$tmp/log" >/dev/null || {
@@ -584,7 +640,7 @@ test_direction_phrase_stops_loop() {
     OPENCODE_TEST_LOG="$tmp/log" \
     OPENCODE_TEST_COUNT="$tmp/count" \
     OPENCODE_TEST_CHECKLIST="$checklist" \
-    "$ROOT_DIR/spells/spellcraft/loop-code" "$checklist"
+    "$ROOT_DIR/spells/spellcraft/loop-code" "$checklist" --remote
 
   assert_failure || return 1
   assert_error_contains "requested direction" || return 1
@@ -607,7 +663,7 @@ test_false_completion_claim_continues() {
     OPENCODE_TEST_LOG="$tmp/log" \
     OPENCODE_TEST_COUNT="$tmp/count" \
     OPENCODE_TEST_CHECKLIST="$checklist" \
-    "$ROOT_DIR/spells/spellcraft/loop-code" "$checklist"
+    "$ROOT_DIR/spells/spellcraft/loop-code" "$checklist" --remote
 
   assert_success || return 1
   assert_error_contains "reported completion" || return 1
@@ -630,7 +686,7 @@ test_vague_direction_refusal_continues() {
     OPENCODE_TEST_LOG="$tmp/log" \
     OPENCODE_TEST_COUNT="$tmp/count" \
     OPENCODE_TEST_CHECKLIST="$checklist" \
-    "$ROOT_DIR/spells/spellcraft/loop-code" "$checklist"
+    "$ROOT_DIR/spells/spellcraft/loop-code" "$checklist" --remote
 
   assert_success || return 1
   assert_error_contains "ignored a direction request" || return 1
@@ -653,7 +709,7 @@ test_opencode_failure_is_reported() {
     OPENCODE_TEST_LOG="$tmp/log" \
     OPENCODE_TEST_COUNT="$tmp/count" \
     OPENCODE_TEST_CHECKLIST="$checklist" \
-    "$ROOT_DIR/spells/spellcraft/loop-code" "$checklist"
+    "$ROOT_DIR/spells/spellcraft/loop-code" "$checklist" --remote
 
   assert_failure || return 1
   assert_error_contains "OpenCode round 1 failed with status 7" || return 1
@@ -676,7 +732,7 @@ test_status_499_with_progress_continues() {
     OPENCODE_TEST_LOG="$tmp/log" \
     OPENCODE_TEST_COUNT="$tmp/count" \
     OPENCODE_TEST_CHECKLIST="$checklist" \
-    "$ROOT_DIR/spells/spellcraft/loop-code" "$checklist"
+    "$ROOT_DIR/spells/spellcraft/loop-code" "$checklist" --remote
 
   assert_success || return 1
   assert_error_contains "status code 499 after completing 1 checklist item(s); continuing" || return 1
@@ -699,7 +755,7 @@ test_status_499_without_progress_fails() {
     OPENCODE_TEST_LOG="$tmp/log" \
     OPENCODE_TEST_COUNT="$tmp/count" \
     OPENCODE_TEST_CHECKLIST="$checklist" \
-    "$ROOT_DIR/spells/spellcraft/loop-code" "$checklist"
+    "$ROOT_DIR/spells/spellcraft/loop-code" "$checklist" --remote
 
   assert_failure || return 1
   assert_error_contains "OpenCode round 1 failed with status 1" || return 1
@@ -738,6 +794,8 @@ run_test_case "loop-code recognizes completion" test_complete_checklist_exits_wi
 run_test_case "loop-code pins model without session reuse" test_loops_until_complete_and_pins_model_without_session_reuse
 run_test_case "loop-code footer shows original unchecked total" test_round_footer_shows_remaining_over_original_unchecked_total
 run_test_case "loop-code defaults remote runs to batch" test_remote_defaults_to_batch
+run_test_case "loop-code requires --remote for remote models" \
+  test_explicit_remote_model_requires_remote_flag
 run_test_case "loop-code defaults local runs to no-batch" test_local_defaults_to_no_batch
 run_test_case "loop-code defaults local runs to fresh sessions" test_local_defaults_to_fresh_sessions
 run_test_case "loop-code can reuse local sessions by request" test_local_reuse_session_override
