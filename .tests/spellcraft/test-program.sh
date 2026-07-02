@@ -54,6 +54,7 @@ test_program_invokes_artificer_programming_mode() {
     "$ROOT_DIR/spells/spellcraft/program" fix the bug
 
   assert_success || return 1
+  assert_error_contains "program: running Artificer programming mode" || return 1
   assert_output_contains "programmed from Artificer" || return 1
   grep -F 'action=run' "$tmp/artificer.log" >/dev/null || {
     TEST_FAILURE_REASON="program should call the Artificer run action"
@@ -73,6 +74,25 @@ test_program_invokes_artificer_programming_mode() {
   }
   grep -F 'prompt=fix%20the%20bug' "$tmp/artificer.log" >/dev/null || {
     TEST_FAILURE_REASON="program should join freeform args into one prompt"
+    return 1
+  }
+}
+
+test_program_reads_prompt_from_stdin() {
+  tmp=$(make_tempdir)
+  make_artificer_site_stub "$tmp"
+  mkdir -p "$tmp/project"
+
+  RUN_CMD_WORKDIR="$tmp/project" run_cmd env \
+    HOME="$tmp/home" \
+    ARTIFICER_PROGRAM_TEST_LOG="$tmp/artificer.log" \
+    "$ROOT_DIR/spells/spellcraft/program" <<'EOF'
+fix from stdin
+EOF
+
+  assert_success || return 1
+  grep -F 'prompt=fix%20from%20stdin' "$tmp/artificer.log" >/dev/null || {
+    TEST_FAILURE_REASON="program should read a prompt from stdin when no prompt args are given"
     return 1
   }
 }
@@ -124,4 +144,5 @@ run_test_case "program invokes Artificer programming mode" \
   test_program_invokes_artificer_programming_mode
 run_test_case "program honors model budget iterations and json" \
   test_program_honors_model_budget_iterations_and_json
+run_test_case "program reads prompt from stdin" test_program_reads_prompt_from_stdin
 run_test_case "program rejects bad budget" test_program_rejects_bad_budget

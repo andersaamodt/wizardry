@@ -9,6 +9,7 @@ Usage: program [OPTIONS] [PROMPT...]
 
 Runs PROMPT through Artificer's programming mode without opening the GUI.
 Words are joined into one prompt, so quotes are optional for simple prompts.
+If PROMPT is omitted and stdin is piped, the prompt is read from stdin.
 
 Options:
   --site NAME       Use an installed Artificer site (default: daimon).
@@ -120,6 +121,10 @@ while [ "$#" -gt 0 ]; do
   shift
 done
 
+if [ -z "$prompt_text" ] && [ ! -t 0 ]; then
+  prompt_text=$(cat)
+fi
+
 [ -n "$prompt_text" ] || die 2 "program: prompt required"
 
 case "$compute_budget" in
@@ -174,6 +179,7 @@ run_payload="$run_payload&advanced_loop=1"
 run_payload="$run_payload&max_iterations=$(urlenc "$max_iterations")"
 run_payload="$run_payload&stream_session=$(urlenc "$stream_session")"
 
+printf '%s\n' "program: running Artificer programming mode in $workspace_path" >&2
 run_json=$(api_post "$run_payload")
 run_success=$(printf '%s' "$run_json" | json_get success)
 [ "$run_success" = "true" ] || die "program: Artificer run failed"
