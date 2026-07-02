@@ -29,6 +29,7 @@ ai_llm_mlx_root=$ai_llm_root_dir/mlx
 ai_llm_mlx_venv=$ai_llm_mlx_root/venv
 ai_llm_mlx_python=$ai_llm_mlx_venv/bin/python
 ai_llm_mlx_server_bin=$ai_llm_mlx_venv/bin/mlx_lm.server
+ai_llm_mlx_generate_bin=$ai_llm_mlx_venv/bin/mlx_lm.generate
 ai_llm_mlx_port=${AI_DEV_MLX_PORT:-11435}
 ai_llm_mlx_start_timeout=${AI_DEV_MLX_START_TIMEOUT:-120}
 ai_llm_mlx_draft_tokens=1
