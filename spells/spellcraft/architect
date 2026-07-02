@@ -91,6 +91,7 @@ unchecked_file=$architect_tmp_dir/unchecked.txt
 paths_file=$architect_tmp_dir/paths.txt
 prompt_file=$architect_tmp_dir/prompt.txt
 tree_file=$architect_tmp_dir/tree.txt
+bt=$(printf '\140')
 
 cleanup_architect_tmp() {
   rm -rf "$architect_tmp_dir"
@@ -101,7 +102,7 @@ mkdir -p "$architect_tmp_dir"
 grep -E '^[[:space:]]*[-*][[:space:]]+\[[xX]\][[:space:]]' "$checklist_path" \
   >"$completed_file" 2>/dev/null || :
 grep -E '^[[:space:]]*[-*][[:space:]]+\[ \][[:space:]]' "$checklist_path" \
-  | grep -F -v '`' >"$broad_file" 2>/dev/null || :
+  | grep -F -v "$bt" >"$broad_file" 2>/dev/null || :
 
 (
   CDPATH= cd -- "$checklist_dir" || exit 1
@@ -145,9 +146,9 @@ Rewrite rules:
 - Do not wrap file paths in backticks; reserve backticks only for the one
   verification command.
 - Use this exact shape:
-  - [ ] Add specific change to src/example.js; verify with `node --check src/example.js`
+  - [ ] Add specific change to src/example.js; verify with ${bt}node --check src/example.js${bt}
 - Invalid: "- [ ] Add change to src/example.js (verify: node --check src/example.js)"
-- Invalid: "- [ ] Add change to `src/example.js`; verify with `node --check src/example.js`"
+- Invalid: "- [ ] Add change to ${bt}src/example.js${bt}; verify with ${bt}node --check src/example.js${bt}"
 - Do not use Markdown code fences.
 - Do not use heredocs, multiline shell, or literal \\n inside commands.
 - For shell scripts, use sh in verification commands unless the repository
@@ -159,7 +160,7 @@ Rewrite rules:
 
 Before finishing, read $checklist_name and verify the result satisfies all
 rules. In particular, every "- [ ] " line must contain exactly two literal
-backtick characters total.
+${bt} characters total.
 
 Repository file tree excerpt:
 $(sed -n '1,500p' "$tree_file")
@@ -188,7 +189,7 @@ awk '
 if grep -E '^[[:space:]]+[-*][[:space:]]+\[( |x)\][[:space:]]' "$checklist_path" >/dev/null 2>&1; then
   die "architect: checklist has nested checklist items"
 fi
-if grep -F '```' "$checklist_path" >/dev/null 2>&1; then
+if grep -F "$bt$bt$bt" "$checklist_path" >/dev/null 2>&1; then
   die "architect: checklist contains Markdown code fences"
 fi
 if grep -F '\n' "$checklist_path" >/dev/null 2>&1; then
@@ -219,11 +220,11 @@ done <"$broad_file"
 
 while IFS= read -r unchecked_line; do
   [ -n "$unchecked_line" ] || continue
-  backtick_count=$(printf '%s\n' "$unchecked_line" | awk -F'`' '{ print NF - 1 }')
+  backtick_count=$(printf '%s\n' "$unchecked_line" | awk -F"$bt" '{ print NF - 1 }')
   [ "$backtick_count" = 2 ] \
     || die "architect: unchecked item must contain exactly one backticked verification command: $unchecked_line"
   : >"$paths_file"
-  for token in $(printf '%s\n' "$unchecked_line" | tr '`"'"'"'(),;:' '        '); do
+  for token in $(printf '%s\n' "$unchecked_line" | tr "$bt\"'(),;:" '        '); do
     case "$token" in
     */*|.*|*.*)
       case "$token" in
