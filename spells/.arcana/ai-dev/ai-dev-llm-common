@@ -164,7 +164,7 @@ ai_llm_default_model() {
       printf '%s\n' "mlx-community/Qwen3-Coder-30B-A3B-Instruct-5bit"
       ;;
     ollama)
-      printf '%s\n' "qwen3-coder:30b"
+      printf '%s\n' "qwen3.6:35b-a3b"
       ;;
     *)
       return 1
@@ -241,6 +241,9 @@ ai_llm_model_role() {
   runtime=$1
   model=$2
   case "$runtime:$model" in
+    mlx:mlx-community/Qwen3-30B-A3B-Thinking-2507-4bit)
+      printf '%s\n' architecture
+      ;;
     mlx:mlx-community/Qwen3-Coder-30B-A3B-Instruct-3bit|mlx:mlx-community/Qwen3-0.6B-4bit)
       printf '%s\n' draft
       ;;
@@ -263,6 +266,7 @@ ai_llm_list_available() {
       printf '%s\n' "mlx-community/Qwen2.5-VL-7B-Instruct-4bit|best vision|4.9|32"
       ;;
     ollama)
+      printf '%s\n' "qwen3.6:35b-a3b|best local coding, verified with OpenCode|23.0|256"
       printf '%s\n' "qwen3-coder:30b|best coding|19.0|256"
       printf '%s\n' "llama3.1:70b|best reasoning|43.0|128"
       printf '%s\n' "llava:13b|best vision|8.0|8"
@@ -465,6 +469,60 @@ ai_llm_runtime_available() {
   esac
 }
 
+ai_llm_model_installed() {
+  runtime=$1
+  model=$2
+  case "$runtime" in
+    mlx)
+      ai_llm_mlx_model_registered "$model" || [ -d "$model" ]
+      ;;
+    ollama)
+      if ! command -v ollama >/dev/null 2>&1; then
+        return 1
+      fi
+      ollama list 2>/dev/null \
+        | awk 'NR > 1 { print $1 }' \
+        | grep -F -x -- "$model" >/dev/null 2>&1
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+ai_llm_get_selected_coding_model() {
+  runtime=$1
+  selected_model=$(ai_llm_get_selected_model "$runtime" 2>/dev/null || printf '')
+  if [ -n "$selected_model" ] \
+    && [ "$(ai_llm_model_role "$runtime" "$selected_model")" = primary ] \
+    && ai_llm_model_installed "$runtime" "$selected_model"; then
+    printf '%s\n' "$selected_model"
+    return 0
+  fi
+
+  default_coding_model=$(ai_llm_default_model "$runtime" 2>/dev/null || printf '')
+  if [ -n "$default_coding_model" ] \
+    && [ "$(ai_llm_model_role "$runtime" "$default_coding_model")" = primary ] \
+    && ai_llm_model_installed "$runtime" "$default_coding_model"; then
+    printf '%s\n' "$default_coding_model"
+    return 0
+  fi
+
+  available_models=$(ai_llm_list_available "$runtime" 2>/dev/null || printf '')
+  while IFS='|' read -r available_model _available_label _available_size _available_context; do
+    [ -n "$available_model" ] || continue
+    [ "$(ai_llm_model_role "$runtime" "$available_model")" = primary ] || continue
+    if ai_llm_model_installed "$runtime" "$available_model"; then
+      printf '%s\n' "$available_model"
+      return 0
+    fi
+  done <<EOF
+$available_models
+EOF
+
+  return 1
+}
+
 ai_llm_preferred_local_opencode_model() {
   runtime=$(ai_llm_resolve_runtime 2>/dev/null || printf '')
 
@@ -490,6 +548,40 @@ ai_llm_preferred_local_opencode_model() {
   fi
   if ai_llm_runtime_available "ollama" \
     && model=$(ai_llm_get_selected_model ollama 2>/dev/null); then
+    printf '%s\n' "ollama/$model"
+    return 0
+  fi
+
+  return 1
+}
+
+ai_llm_preferred_local_coding_opencode_model() {
+  runtime=$(ai_llm_resolve_runtime 2>/dev/null || printf '')
+
+  case "$runtime" in
+    mlx)
+      if ai_llm_runtime_available "mlx" \
+        && model=$(ai_llm_get_selected_coding_model mlx 2>/dev/null); then
+        printf '%s\n' "mlx/$model"
+        return 0
+      fi
+      ;;
+    ollama)
+      if ai_llm_runtime_available "ollama" \
+        && model=$(ai_llm_get_selected_coding_model ollama 2>/dev/null); then
+        printf '%s\n' "ollama/$model"
+        return 0
+      fi
+      ;;
+  esac
+
+  if ai_llm_runtime_available "mlx" \
+    && model=$(ai_llm_get_selected_coding_model mlx 2>/dev/null); then
+    printf '%s\n' "mlx/$model"
+    return 0
+  fi
+  if ai_llm_runtime_available "ollama" \
+    && model=$(ai_llm_get_selected_coding_model ollama 2>/dev/null); then
     printf '%s\n' "ollama/$model"
     return 0
   fi

@@ -113,17 +113,43 @@ test_mlx_draft_model_is_not_primary_role() {
   output=$(
     env HOME="$tmp" XDG_STATE_HOME="$tmp/.local/state" sh -c '
       . "'"$test_root"'/spells/.arcana/ai-dev/ai-dev-llm-common"
-      printf "%s,%s,%s\n" \
+      printf "%s,%s,%s,%s\n" \
         "$(ai_llm_model_role mlx mlx-community/Qwen3-Coder-30B-A3B-Instruct-3bit)" \
         "$(ai_llm_model_role mlx mlx-community/Qwen3-0.6B-4bit)" \
+        "$(ai_llm_model_role mlx mlx-community/Qwen3-30B-A3B-Thinking-2507-4bit)" \
         "$(ai_llm_model_role mlx mlx-community/Qwen3-Coder-30B-A3B-Instruct-5bit)"
     '
   ) || {
     TEST_FAILURE_REASON="MLX model roles should be readable"
     return 1
   }
-  [ "$output" = "draft,draft,primary" ] || {
-    TEST_FAILURE_REASON="draft model should not be treated as a primary coding model"
+  [ "$output" = "draft,draft,architecture,primary" ] || {
+    TEST_FAILURE_REASON="draft and architecture models should not be treated as primary coding models"
+    return 1
+  }
+}
+
+test_coding_model_skips_mlx_thinking_model() {
+  tmp=$(make_tempdir)
+  mkdir -p "$tmp/.local/state/wizardry/ai-dev"
+  printf '%s\n' mlx >"$tmp/.local/state/wizardry/ai-dev/active-runtime"
+  printf '%s\n' 'mlx-community/Qwen3-30B-A3B-Thinking-2507-4bit' \
+    >"$tmp/.local/state/wizardry/ai-dev/selected-model-mlx"
+  printf '%s\n' 'mlx-community/Qwen3-Coder-30B-A3B-Instruct-5bit' \
+    >"$tmp/.local/state/wizardry/ai-dev/mlx-installed-models"
+
+  output=$(
+    env HOME="$tmp" XDG_STATE_HOME="$tmp/.local/state" AI_DEV_MLX_SUPPORTED=1 sh -c '
+      script_dir="'"$test_root"'/spells/.arcana/ai-dev"
+      . "$script_dir/ai-dev-llm-common"
+      ai_llm_get_selected_coding_model mlx
+    '
+  ) || {
+    TEST_FAILURE_REASON="coding model resolver should fall back from Thinking to Instruct"
+    return 1
+  }
+  [ "$output" = "mlx-community/Qwen3-Coder-30B-A3B-Instruct-5bit" ] || {
+    TEST_FAILURE_REASON="expected MLX Instruct coding model, got '$output'"
     return 1
   }
 }
@@ -326,6 +352,7 @@ run_test_case "ai-dev-llm-common patches Qwen XML tool calls" test_mlx_server_pa
 run_test_case "ai-dev-llm-common marks MLX tool-call models" test_opencode_mlx_models_are_tool_call_capable
 run_test_case "ai-dev-llm-common catalogs MLX draft model" test_mlx_catalog_includes_draft_model
 run_test_case "ai-dev-llm-common keeps draft model out of primary role" test_mlx_draft_model_is_not_primary_role
+run_test_case "ai-dev-llm-common skips architecture models for coding" test_coding_model_skips_mlx_thinking_model
 run_test_case "ai-dev-llm-common defaults to compatible MLX draft model" test_mlx_default_draft_model_is_compatible_coder
 run_test_case "ai-dev-llm-common keeps MLX draft mode opt-in" test_mlx_server_draft_mode_is_opt_in
 run_test_case "ai-dev-llm-common prefers direct server entrypoint" test_mlx_server_prefers_entrypoint_and_longer_timeout

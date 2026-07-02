@@ -368,7 +368,7 @@ if [ "$model_source" = explicit ]; then
     fi
   fi
 elif [ "$local_mode" = true ]; then
-  model=$(ai_llm_preferred_local_opencode_model 2>/dev/null || printf '')
+  model=$(ai_llm_preferred_local_coding_opencode_model 2>/dev/null || printf '')
   [ -n "$model" ] || die "loop-code: no preferred local model is configured"
 elif [ "$remote_mode" = true ]; then
   model=$(ai_llm_opencode_model 2>/dev/null || printf '')
@@ -382,7 +382,7 @@ elif [ -n "$state_model" ]; then
   session_id=$state_session_id
   session_title=$state_session_title
 else
-  model=$(ai_llm_preferred_local_opencode_model 2>/dev/null || printf '')
+  model=$(ai_llm_preferred_local_coding_opencode_model 2>/dev/null || printf '')
   [ -n "$model" ] || die "loop-code: no preferred local model is configured"
 fi
 
