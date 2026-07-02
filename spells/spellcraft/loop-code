@@ -78,7 +78,7 @@ loop_code_write_state() {
     !skip { print }
   ' "$checklist_path" >"$state_body"
 
-  if [ -n "$state_session_id$state_session_title$state_model$state_active_pid$state_local" ]; then
+  if [ -n "$state_session_id$state_session_title$state_model$state_active_pid$state_local$state_initial_unchecked_count" ]; then
     {
       cat "$state_body"
       [ ! -s "$state_body" ] || printf '\n'
@@ -87,6 +87,8 @@ loop_code_write_state() {
       [ -n "$state_session_title" ] && printf 'session_title=%s\n' "$state_session_title"
       [ -n "$state_model" ] && printf 'model=%s\n' "$state_model"
       [ -n "$state_local" ] && printf 'local=%s\n' "$state_local"
+      [ -n "$state_initial_unchecked_count" ] \
+        && printf 'initial_unchecked_count=%s\n' "$state_initial_unchecked_count"
       [ -n "$state_active_pid" ] && printf 'active_pid=%s\n' "$state_active_pid"
       printf '%s\n' 'LOOP-CODE STATE END -->'
     } >"$state_tmp"
@@ -120,6 +122,7 @@ loop_code_release_state() {
     state_session_title=''
     state_model=''
     state_local=''
+    state_initial_unchecked_count=''
   fi
   loop_code_write_state
 }
@@ -326,11 +329,16 @@ state_session_id=$(loop_code_state_get session_id 2>/dev/null || printf '')
 state_session_title=$(loop_code_state_get session_title 2>/dev/null || printf '')
 state_model=$(loop_code_state_get model 2>/dev/null || printf '')
 state_local=$(loop_code_state_get local 2>/dev/null || printf '')
+state_initial_unchecked_count=$(loop_code_state_get initial_unchecked_count 2>/dev/null || printf '')
 state_active_pid=$(loop_code_state_get active_pid 2>/dev/null || printf '')
 
 case "$state_session_id" in
 ''|ses_*) ;;
 *) state_session_id='' ;;
+esac
+
+case "$state_initial_unchecked_count" in
+''|*[!0-9]*) state_initial_unchecked_count='' ;;
 esac
 
 if ! grep -F '[ ]' "$checklist_path" >/dev/null 2>&1; then
@@ -469,6 +477,11 @@ else
   state_session_title=''
 fi
 state_local=$using_local_model
+if [ -z "$state_initial_unchecked_count" ]; then
+  state_initial_unchecked_count=$(
+    awk 'index($0, "[ ]") { count += 1 } END { print count + 0 }' "$checklist_path"
+  )
+fi
 state_active_pid=$$
 loop_code_local_server_pid=''
 loop_code_local_server_pid_file=''
@@ -762,8 +775,8 @@ EOF
   if [ "$round_completed" -lt 0 ]; then
     round_completed=0
   fi
-  round_footer_line=$(printf 'Round %s done — %s completed — %s unchecked item(s) remain (%s)' \
-    "$round" "$round_completed" "$unchecked_after" "$checklist_display")
+  round_footer_line=$(printf 'Round %s done — %s completed — %s/%s unchecked item(s) remain (%s)' \
+    "$round" "$round_completed" "$unchecked_after" "$state_initial_unchecked_count" "$checklist_display")
   round_footer_width=$(awk -v line="$round_footer_line" 'BEGIN { print length(line) + 2 }')
   if [ "$round_footer_width" -lt "$round_divider_min_width" ]; then
     round_footer_width=$round_divider_min_width

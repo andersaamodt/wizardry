@@ -243,6 +243,29 @@ test_loops_until_complete_and_pins_model_without_session_reuse() {
   fi
 }
 
+test_round_footer_shows_remaining_over_original_unchecked_total() {
+  tmp=$(make_tempdir)
+  stub_dir="$tmp/stubs"
+  make_opencode_stub "$stub_dir"
+  write_remote_config "$tmp/.config"
+  checklist="$tmp/CHECKLIST.md"
+  printf '%s\n' '- [ ] first task' '- [ ] second task' >"$checklist"
+
+  run_cmd env \
+    HOME="$tmp" \
+    XDG_CONFIG_HOME="$tmp/.config" \
+    XDG_STATE_HOME="$tmp/.state" \
+    PATH="$stub_dir:$PATH" \
+    OPENCODE_TEST_LOG="$tmp/log" \
+    OPENCODE_TEST_COUNT="$tmp/count" \
+    OPENCODE_TEST_CHECKLIST="$checklist" \
+    "$ROOT_DIR/spells/spellcraft/loop-code" "$checklist"
+
+  assert_success || return 1
+  assert_output_contains "Round 1 done — 0 completed — 2/2 unchecked item(s) remain" || return 1
+  assert_output_contains "Round 2 done — 2 completed — 0/2 unchecked item(s) remain" || return 1
+}
+
 test_remote_defaults_to_batch() {
   tmp=$(make_tempdir)
   stub_dir="$tmp/stubs"
@@ -713,6 +736,7 @@ run_test_case "loop-code defaults to CHECKLIST.md" test_default_checklist_upperc
 run_test_case "loop-code falls back to checklist.md" test_default_checklist_lowercase_fallback
 run_test_case "loop-code recognizes completion" test_complete_checklist_exits_without_opencode
 run_test_case "loop-code pins model without session reuse" test_loops_until_complete_and_pins_model_without_session_reuse
+run_test_case "loop-code footer shows original unchecked total" test_round_footer_shows_remaining_over_original_unchecked_total
 run_test_case "loop-code defaults remote runs to batch" test_remote_defaults_to_batch
 run_test_case "loop-code defaults local runs to no-batch" test_local_defaults_to_no_batch
 run_test_case "loop-code defaults local runs to fresh sessions" test_local_defaults_to_fresh_sessions
