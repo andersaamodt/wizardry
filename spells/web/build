@@ -91,7 +91,11 @@ fi
 
 site_build_dir() {
   site_build_dir_site_dir=$1
-  site_build_dir_config=$(config-get "$site_build_dir_site_dir/site.conf" build-dir 2>/dev/null || printf '')
+  if [ -n "${WIZARDRY_BUILD_DIR:-}" ]; then
+    site_build_dir_config=$WIZARDRY_BUILD_DIR
+  else
+    site_build_dir_config=$(config-get "$site_build_dir_site_dir/site.conf" build-dir 2>/dev/null || printf '')
+  fi
   case "$site_build_dir_config" in
     '')
       printf '%s\n' "$site_build_dir_site_dir/build"
@@ -113,6 +117,49 @@ site_build_dir() {
       printf '%s\n' "$site_build_dir_site_dir/$site_build_dir_config"
       ;;
   esac
+}
+
+site_configured_dir() {
+  site_configured_dir_site_dir=$1
+  site_configured_dir_key=$2
+  site_configured_dir_env_value=$3
+  site_configured_dir_default=$4
+  if [ -n "$site_configured_dir_env_value" ]; then
+    site_configured_dir_config=$site_configured_dir_env_value
+  else
+    site_configured_dir_config=$(config-get "$site_configured_dir_site_dir/site.conf" "$site_configured_dir_key" 2>/dev/null || printf '')
+  fi
+  case "$site_configured_dir_config" in
+    '')
+      printf '%s\n' "$site_configured_dir_default"
+      ;;
+    *"$cr"*|*'
+'*|.|..|../*|*/../*|*/..)
+      die 2 "build: invalid $site_configured_dir_key"
+      ;;
+    \~)
+      printf '%s\n' "$HOME"
+      ;;
+    \~/*)
+      printf '%s\n' "$HOME/${site_configured_dir_config#\~/}"
+      ;;
+    /*)
+      printf '%s\n' "$site_configured_dir_config"
+      ;;
+    *)
+      printf '%s\n' "$site_configured_dir_site_dir/$site_configured_dir_config"
+      ;;
+  esac
+}
+
+site_pages_dir() {
+  site_pages_dir_site_dir=$1
+  site_configured_dir "$site_pages_dir_site_dir" pages-dir "${WIZARDRY_PAGES_DIR:-}" "$site_pages_dir_site_dir/site/pages"
+}
+
+site_static_dir() {
+  site_static_dir_site_dir=$1
+  site_configured_dir "$site_static_dir_site_dir" static-dir "${WIZARDRY_STATIC_DIR:-}" "$site_static_dir_site_dir/site/static"
 }
 
 if ! has pandoc; then
@@ -522,11 +569,15 @@ run_site_pre_build_hook() {
     WIZARDRY_SITE_NAME="$site_name" \
     WIZARDRY_DIR="$WIZARDRY_DIR" \
     WEB_WIZARDRY_ROOT="$web_root" \
+    WIZARDRY_PAGES_DIR="$pages_dir" \
+    WIZARDRY_STATIC_DIR="$static_dir" \
+    WIZARDRY_BUILD_DIR="$build_dir" \
+    WIZARDRY_BUILD_IN_PROGRESS=1 \
     "$hook_path" || die "build: site pre-build hook failed"
 }
 
 generate_blog_feeds_and_sitemap() {
-  posts_dir="$site_dir/site/pages/posts"
+  posts_dir="$pages_dir/posts"
   build_pages_dir="$build_dir/pages"
 
   if [ ! -d "$posts_dir" ]; then
@@ -859,7 +910,7 @@ prerender_blog_dynamic_sections() {
        "$cgi_dir/blog-lib.sh" \
        "$cgi_dir/blog-list-common.sh" \
        "$cgi_dir/blog-nostr-pages-common.sh" \
-       "$site_dir/site/pages/posts"; then
+       "$pages_dir/posts"; then
     post_list_tmp=$(temp-file blog-index-fragment)
     if render_cgi_fragment "$cgi_dir/blog-index" "page=1" "$post_list_tmp"; then
       replace_html_container_by_id \
@@ -879,7 +930,7 @@ prerender_blog_dynamic_sections() {
        "$cgi_dir/blog-lib.sh" \
        "$cgi_dir/blog-list-common.sh" \
        "$cgi_dir/blog-nostr-pages-common.sh" \
-       "$site_dir/site/pages/posts"; then
+       "$pages_dir/posts"; then
     tag_cloud_tmp=$(temp-file blog-tags-fragment)
     if render_cgi_fragment "$cgi_dir/blog-tags" "" "$tag_cloud_tmp"; then
       replace_html_container_by_id \
@@ -899,7 +950,7 @@ prerender_blog_dynamic_sections() {
        "$cgi_dir/blog-lib.sh" \
        "$cgi_dir/blog-list-common.sh" \
        "$cgi_dir/blog-nostr-pages-common.sh" \
-       "$site_dir/site/pages/posts"; then
+       "$pages_dir/posts"; then
     archive_list_tmp=$(temp-file blog-archive-fragment)
     if render_cgi_fragment "$cgi_dir/blog-archive" "" "$archive_list_tmp"; then
       replace_html_container_by_id \
@@ -953,8 +1004,10 @@ build_site() {
     fi
   fi
 
-  run_site_pre_build_hook
   build_dir=$(site_build_dir "$site_dir")
+  pages_dir=$(site_pages_dir "$site_dir")
+  static_dir=$(site_static_dir "$site_dir")
+  run_site_pre_build_hook
 
   mkdir -p "$build_dir/pages"
   mkdir -p "$build_dir/static"
@@ -990,34 +1043,34 @@ build_site() {
     die "build: failed to copy idiomorph-ext.min.js"
 
   if [ -d "$shared_theme_dir" ]; then
-    mkdir -p "$site_dir/site/static/themes"
-    cp -f "$shared_theme_dir"/*.css "$site_dir/site/static/themes/" 2>/dev/null || true
+    mkdir -p "$static_dir/themes"
+    cp -f "$shared_theme_dir"/*.css "$static_dir/themes/" 2>/dev/null || true
   fi
 
-  if [ -d "$site_dir/site/static" ]; then
+  if [ -d "$static_dir" ]; then
     info "Copying static files to build/static/..."
-    cp -r "$site_dir/site/static"/* "$build_dir/static/" 2>/dev/null || true
+    cp -r "$static_dir"/* "$build_dir/static/" 2>/dev/null || true
   fi
   build_cache_token=$(compute_static_asset_cache_token "$build_dir/static")
   if [ -z "$build_cache_token" ]; then
     build_cache_token=0
   fi
 
-  prune_stale_build_pages "$build_dir/pages" "$site_dir/site/pages"
+  prune_stale_build_pages "$build_dir/pages" "$pages_dir"
 
   info "Converting Markdown to HTML..."
   built_count=0
-  if [ -d "$site_dir/site/pages" ]; then
+  if [ -d "$pages_dir" ]; then
     includes_dir="$site_dir/site/includes"
     footer_file="$includes_dir/footer.md"
     head_file="$includes_dir/head.html"
     deps_pages_dir="$build_dir/.deps/pages"
     mkdir -p "$deps_pages_dir"
     md_file_count=$(
-      find "$site_dir/site/pages" -type f -name '*.md' ! -name '._*' 2>/dev/null | wc -l
+      find "$pages_dir" -type f -name '*.md' ! -name '._*' 2>/dev/null | wc -l
     )
     if [ "$md_file_count" -eq 0 ]; then
-      warn "No Markdown files found in $site_dir/site/pages/"
+      warn "No Markdown files found in $pages_dir/"
       warn "Create .md files there to build HTML pages."
     fi
 
@@ -1026,9 +1079,9 @@ build_site() {
       nav_file="$includes_dir/nav-$site_template.md"
     fi
 
-    find "$site_dir/site/pages" -type f -name '*.md' ! -name '._*' | sort | \
+    find "$pages_dir" -type f -name '*.md' ! -name '._*' | sort | \
       while IFS= read -r md_file; do
-      rel_path=${md_file#"$site_dir/site/pages/"}
+      rel_path=${md_file#"$pages_dir/"}
       rel_html=${rel_path%.md}.html
       html_file="$build_dir/pages/$rel_html"
       html_dir=$(dirname "$html_file")
@@ -1162,10 +1215,10 @@ BLOG_FOOTER
       rm -f "$build_dir/.build-count.tmp"
     fi
   else
-    warn "Pages directory not found: $site_dir/site/pages/"
+    warn "Pages directory not found: $pages_dir/"
     warn "Expected site structure:"
-    warn "  $site_dir/site/pages/    - Markdown files (.md)"
-    warn "  $site_dir/site/static/   - CSS, images, etc."
+    warn "  $pages_dir/    - Markdown files (.md)"
+    warn "  $static_dir/   - CSS, images, etc."
     warn "  $build_dir/         - Generated HTML (output)"
   fi
 

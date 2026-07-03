@@ -418,6 +418,76 @@ test_build_honors_external_build_dir() {
   rm -rf "$test_web_root" "$stub_dir"
 }
 
+test_build_honors_external_page_and_static_dirs() {
+  skip-if-compiled || return $?
+
+  test_web_root=$(temp-dir web-build-root)
+  stub_dir=$(make_build_stub_dir)
+  site_name="external-inputs"
+  site_dir="$test_web_root/$site_name"
+  pages_dir=$(temp-dir web-build-pages)
+  static_dir=$(temp-dir web-build-static)
+  build_dir=$(temp-dir web-build-output)
+
+  mkdir -p "$site_dir/site/includes" "$site_dir/site/static" "$pages_dir" "$static_dir"
+  cat > "$site_dir/site.conf" <<EOF
+site-name=$site_name
+template=minimal
+pages-dir=$pages_dir
+static-dir=$static_dir
+build-dir=$build_dir
+EOF
+  cat > "$pages_dir/index.md" <<'EOF'
+---
+title: External Input
+---
+
+External pages root body.
+EOF
+  printf '%s\n' 'body { color: #123456; }' > "$static_dir/style.css"
+  cat > "$site_dir/pre-build" <<'EOF'
+#!/bin/sh
+set -eu
+{
+  printf 'pages=%s\n' "${WIZARDRY_PAGES_DIR:?}"
+  printf 'static=%s\n' "${WIZARDRY_STATIC_DIR:?}"
+  printf 'build=%s\n' "${WIZARDRY_BUILD_DIR:?}"
+  printf 'in_progress=%s\n' "${WIZARDRY_BUILD_IN_PROGRESS:?}"
+} > "$WIZARDRY_SITES_DIR/$WIZARDRY_SITE_NAME/pre-build.env"
+EOF
+  chmod +x "$site_dir/pre-build"
+
+  PATH="$stub_dir:$PATH" WEB_WIZARDRY_ROOT="$test_web_root" WIZARDRY_DIR="$ROOT_DIR" \
+    run_spell spells/web/build "$site_name"
+  assert_success || return 1
+
+  [ -f "$build_dir/pages/index.html" ] || {
+    TEST_FAILURE_REASON="external pages-dir did not produce index.html"
+    rm -rf "$test_web_root" "$stub_dir" "$pages_dir" "$static_dir" "$build_dir"
+    return 1
+  }
+  grep -Fq 'External pages root body.' "$build_dir/pages/index.html" || {
+    TEST_FAILURE_REASON="external pages-dir content was not rendered"
+    rm -rf "$test_web_root" "$stub_dir" "$pages_dir" "$static_dir" "$build_dir"
+    return 1
+  }
+  grep -Fq 'color: #123456' "$build_dir/static/style.css" || {
+    TEST_FAILURE_REASON="external static-dir content was not copied"
+    rm -rf "$test_web_root" "$stub_dir" "$pages_dir" "$static_dir" "$build_dir"
+    return 1
+  }
+  grep -Fq "pages=$pages_dir" "$site_dir/pre-build.env" &&
+    grep -Fq "static=$static_dir" "$site_dir/pre-build.env" &&
+    grep -Fq "build=$build_dir" "$site_dir/pre-build.env" &&
+    grep -Fq 'in_progress=1' "$site_dir/pre-build.env" || {
+    TEST_FAILURE_REASON="pre-build did not receive explicit build path environment"
+    rm -rf "$test_web_root" "$stub_dir" "$pages_dir" "$static_dir" "$build_dir"
+    return 1
+  }
+
+  rm -rf "$test_web_root" "$stub_dir" "$pages_dir" "$static_dir" "$build_dir"
+}
+
 test_build_adds_cache_bust_for_local_static_assets() {
   skip-if-compiled || return $?
 
@@ -663,6 +733,8 @@ run_test_case "build generates output for every template" test_build_generates_h
 run_test_case "build cache falls back to site data cache" test_build_cache_falls_back_to_site_data_only
 run_test_case "build runs site pre-build hook" test_build_runs_site_pre_build_hook
 run_test_case "build honors external build-dir" test_build_honors_external_build_dir
+run_test_case "build honors external page and static dirs" \
+  test_build_honors_external_page_and_static_dirs
 run_test_case "build appends cache bust tokens to local static assets" test_build_adds_cache_bust_for_local_static_assets
 run_test_case "build incremental uses content signatures" test_build_incremental_uses_content_signatures
 run_test_case "build rejects path-shaped site names" test_build_rejects_path_shaped_site_name

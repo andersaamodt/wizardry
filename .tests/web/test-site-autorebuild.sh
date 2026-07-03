@@ -73,7 +73,7 @@ test_site_autorebuild_local_enable_run_disable() {
   cat > "$fake_wizardry/spells/web/build" <<'EOS'
 #!/bin/sh
 set -eu
-printf '%s\n' "$1" >> "${SITE_AUTOREBUILD_BUILD_LOG:?}"
+printf '%s\n' "$*" >> "${SITE_AUTOREBUILD_BUILD_LOG:?}"
 EOS
   chmod +x "$fake_wizardry/spells/web/build"
 
@@ -117,6 +117,11 @@ EOS
 
   if ! grep -q '^testsite$' "$build_log"; then
     TEST_FAILURE_REASON="build spell was not invoked for testsite"
+    rm -rf "$web_root" "$fake_wizardry" "$stub_dir"
+    return 1
+  fi
+  if grep -q -- '--full' "$build_log"; then
+    TEST_FAILURE_REASON="local site-autorebuild should use incremental build by default"
     rm -rf "$web_root" "$fake_wizardry" "$stub_dir"
     return 1
   fi
