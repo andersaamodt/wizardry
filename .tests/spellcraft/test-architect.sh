@@ -57,6 +57,13 @@ SH
   chmod +x "$stub_dir/ollama"
 }
 
+write_local_selection() {
+  state_home=$1
+  mkdir -p "$state_home/wizardry/ai-dev"
+  printf '%s\n' 'ollama' >"$state_home/wizardry/ai-dev/active-runtime"
+  printf '%s\n' 'qwen3.6:35b-a3b' >"$state_home/wizardry/ai-dev/selected-model-ollama"
+}
+
 write_fixture_files() {
   tmp=$1
   mkdir -p "$tmp/src" "$tmp/.tests"
@@ -78,7 +85,10 @@ EOF
 run_architect_with_stub() {
   tmp=$1
   shift
+  write_local_selection "$tmp/.state"
   RUN_CMD_WORKDIR="$tmp" run_cmd env \
+    HOME="$tmp" \
+    XDG_STATE_HOME="$tmp/.state" \
     PATH="$tmp/bin:$PATH" \
     "$ROOT_DIR/spells/spellcraft/architect" "$@"
 }
@@ -88,6 +98,7 @@ test_help() {
   assert_success || return 1
   assert_output_contains "architect a simple pong game based on Godot" || return 1
   assert_output_contains "--checklist FILE" || return 1
+  assert_output_contains "preferred local AI-dev" || return 1
   assert_output_contains "stdout" || return 1
 }
 
@@ -230,6 +241,8 @@ test_concurrent_target_creation_fails_without_force() {
   write_valid_model_output "$tmp/model-output"
 
   RUN_CMD_WORKDIR="$tmp" run_cmd env \
+    HOME="$tmp" \
+    XDG_STATE_HOME="$tmp/.state" \
     PATH="$tmp/bin:$PATH" \
     ARCHITECT_TEST_CREATE_TARGET=1 \
     "$ROOT_DIR/spells/spellcraft/architect" improve auth architecture
@@ -254,6 +267,21 @@ test_accepts_explicit_mlx_local_model() {
   assert_success || return 1
   grep -F 'mlx/mlx-community/Qwen3-Coder-30B-A3B-Instruct-5bit' "$tmp/opencode-model-log" >/dev/null || {
     TEST_FAILURE_REASON="architect should allow explicitly selected local MLX OpenCode models"
+    return 1
+  }
+}
+
+test_default_model_uses_ai_dev_selection() {
+  tmp=$(make_tempdir)
+  make_opencode_stub "$tmp"
+  write_fixture_files "$tmp"
+  write_valid_model_output "$tmp/model-output"
+
+  run_architect_with_stub "$tmp" improve auth architecture
+
+  assert_success || return 1
+  grep -F 'ollama/qwen3.6:35b-a3b' "$tmp/opencode-model-log" >/dev/null || {
+    TEST_FAILURE_REASON="architect should derive its default model from ai-dev local selection"
     return 1
   }
 }
@@ -476,6 +504,8 @@ run_test_case "architect --force replaces existing checklist" \
 run_test_case "architect detects checklist creation before write" \
   test_concurrent_target_creation_fails_without_force
 run_test_case "architect accepts explicit MLX local model" test_accepts_explicit_mlx_local_model
+run_test_case "architect default model follows ai-dev selection" \
+  test_default_model_uses_ai_dev_selection
 run_test_case "architect rejects malformed checkboxes" test_rejects_malformed_checkbox
 run_test_case "architect rejects missing verification commands" test_rejects_missing_verification_command
 run_test_case "architect rejects extra backticked paths" test_rejects_extra_backticked_path

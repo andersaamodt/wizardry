@@ -30,9 +30,10 @@ Options:
   --checklist FILE  Use FILE instead of CHECKLIST.md.
   --force           Replace an existing checklist without asking.
   --print           Print the generated checklist without writing a file.
-  --model MODEL     Use a local OpenCode model (default: ollama/qwen3.6:35b-a3b).
+  --model MODEL     Use a local OpenCode model.
 
-architect is local-only. Remote model providers are rejected.
+When --model is omitted, architect uses wizardry's preferred local AI-dev
+OpenCode model. architect is local-only. Remote model providers are rejected.
 USAGE
   exit 0
   ;;
@@ -43,7 +44,15 @@ require-wizardry || exit 1
 set -eu
 . env-clear
 
-model='ollama/qwen3.6:35b-a3b'
+spell_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+ai_dev_helper=$spell_dir/../.arcana/ai-dev/ai-dev-llm-common
+if [ -f "$ai_dev_helper" ]; then
+  # shellcheck source=/dev/null
+  . "$ai_dev_helper"
+  set -eu
+fi
+
+model=''
 checklist=''
 brief=''
 force=false
@@ -88,14 +97,6 @@ while [ "$#" -gt 0 ]; do
   shift
 done
 
-case "$model" in
-ollama/*|mlx/*)
-  ;;
-*)
-  die 2 "architect: --model must name a local OpenCode model such as ollama/qwen3.6:35b-a3b"
-  ;;
-esac
-
 if [ -z "$checklist" ]; then
   checklist=CHECKLIST.md
 fi
@@ -139,6 +140,22 @@ if [ -f "$checklist_path" ]; then
 fi
 
 command -v opencode >/dev/null 2>&1 || die 127 "architect: opencode is not installed"
+
+if [ -z "$model" ]; then
+  if [ -f "$ai_dev_helper" ]; then
+    model=$(ai_llm_preferred_local_opencode_model 2>/dev/null || printf '')
+  fi
+  [ -n "$model" ] \
+    || die "architect: no preferred local OpenCode model is configured; use --model"
+fi
+
+case "$model" in
+ollama/*|mlx/*)
+  ;;
+*)
+  die 2 "architect: --model must name a local OpenCode model such as ollama/qwen3.6:35b-a3b"
+  ;;
+esac
 
 provider=${model%%/*}
 provider_model=${model#*/}
