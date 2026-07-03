@@ -473,7 +473,7 @@ EOF
   assert_error_contains "literal" || return 1
 }
 
-test_rejects_retained_broad_item() {
+test_removes_retained_broad_item_when_replacement_exists() {
   tmp=$(make_tempdir)
   make_opencode_stub "$tmp"
   write_fixture_files "$tmp"
@@ -486,8 +486,12 @@ test_rejects_retained_broad_item() {
 EOF
 
   run_architect_with_stub "$tmp" --print --checklist CHECKLIST.md improve auth
-  assert_failure || return 1
-  assert_error_contains "broad unchecked item remained" || return 1
+  assert_success || return 1
+  assert_output_contains "Add auth cookie parsing to src/auth.js" || return 1
+  if printf '%s\n' "$OUTPUT" | grep -F -- '- [ ] Fix auth architecture.' >/dev/null 2>&1; then
+    TEST_FAILURE_REASON="architect should remove retained broad original items when a replacement exists"
+    return 1
+  fi
 }
 
 run_test_case "architect shows humane stdout help" test_help
@@ -523,6 +527,7 @@ run_test_case "architect rejects invented verification tools" \
   test_rejects_invented_verification_tools
 run_test_case "architect rejects lost completed items" test_rejects_lost_completed_item
 run_test_case "architect rejects literal newline commands" test_rejects_literal_newline_command
-run_test_case "architect rejects retained broad items" test_rejects_retained_broad_item
+run_test_case "architect removes retained broad items when replacements exist" \
+  test_removes_retained_broad_item_when_replacement_exists
 
 finish_tests

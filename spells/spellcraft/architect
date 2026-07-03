@@ -180,6 +180,8 @@ paths_file=$architect_tmp_dir/paths.txt
 prompt_file=$architect_tmp_dir/prompt.txt
 tree_file=$architect_tmp_dir/tree.txt
 target_file=$architect_tmp_dir/target.txt
+replacement_file=$architect_tmp_dir/replacement-unchecked.txt
+cleaned_file=$architect_tmp_dir/cleaned-checklist.md
 output_file=$architect_tmp_dir/checklist.md
 raw_file=$architect_tmp_dir/opencode.out
 fifo_file=$architect_tmp_dir/opencode.fifo
@@ -282,6 +284,9 @@ architecture plan concrete.
 Hidden paths such as .tests, .github, and dotfiles may not appear in glob
 results; read explicit hidden paths directly when the brief or checklist names
 them.
+Do not browse the web, fetch external documentation, or inspect unrelated
+projects unless the user explicitly asks for external research. This spell is
+for repo-local architecture planning.
 
 Edit only CHECKLIST.md. Do not edit source files, tests, docs, config, or
 generated files. This is a temporary scratch copy; only CHECKLIST.md will be
@@ -303,12 +308,13 @@ Checklist rules:
   coverage, improve help/message polish, or intentionally change semantics.
 - Keep a flat checklist only; no nested checklist items.
 - Do not mark new or rewritten items complete.
-- Each new unchecked item must be one line starting exactly "- [ ] ".
-- Before the verification command, each new unchecked item must name a target
-  file path. The first path before the verification command is the target file.
+- Each new unchecked item must be one line starting exactly
+  "- [ ] Update <target-file-path> so ".
+- The target path must appear immediately after "Update" and before "so".
   The target path may be an existing file or a new file that should be created.
-- Put the target file path near the start of the item. Prefer forms like
-  "Create scenes/ball.tscn ..." or "Update project.godot ...".
+- Use this shape even for new files; "Update new/path.ext so it exists..." is
+  preferable to pathless "Create" wording because downstream evaluators parse
+  the target path from the canonical Update form.
 - Do not write plural or ambiguous targets such as "paddle and ball scenes";
   split them into one item per target file.
 - Each new unchecked item must include exactly one single-line verification
@@ -318,9 +324,10 @@ Checklist rules:
 - Avoid slash-separated prose before the verification command; use "and" for
   paired concepts such as up and down movement.
 - Use this exact shape:
-  - [ ] Add specific change to src/example.js; verify with ${bt}node --check src/example.js${bt}
+  - [ ] Update src/example.js so it performs one specific change; verify with ${bt}node --check src/example.js${bt}
 - Invalid: "- [ ] Add change to src/example.js (verify: node --check src/example.js)"
-- Invalid: "- [ ] Add change to ${bt}src/example.js${bt}; verify with ${bt}node --check src/example.js${bt}"
+- Invalid: "- [ ] Update sidebar to use src/example.js; verify with ${bt}node --check src/example.js${bt}"
+- Invalid: "- [ ] Update ${bt}src/example.js${bt} so it changes; verify with ${bt}node --check src/example.js${bt}"
 - Do not use Markdown code fences.
 - Do not use heredocs, multiline shell, or literal \\n inside commands.
 - For shell scripts, use sh in verification commands unless the repository
@@ -421,6 +428,23 @@ esac
 cp "$scratch_dir/CHECKLIST.md" "$output_file"
 
 [ -s "$output_file" ] || die "architect: local model returned an empty checklist"
+
+if [ -s "$broad_file" ]; then
+  grep -E '^[[:space:]]*[-*][[:space:]]+\[ \][[:space:]]' "$output_file" \
+    | grep -F -x -v -f "$broad_file" >"$replacement_file" 2>/dev/null || :
+  if [ -s "$replacement_file" ]; then
+    awk '
+      NR == FNR {
+        remove[$0] = 1
+        next
+      }
+      !($0 in remove) {
+        print
+      }
+    ' "$broad_file" "$output_file" >"$cleaned_file"
+    mv "$cleaned_file" "$output_file"
+  fi
+fi
 
 : >"$bad_file"
 awk '
