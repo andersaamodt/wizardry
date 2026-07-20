@@ -62,6 +62,28 @@
 ## Suggested Next Moves
 1. Continue category-first remediation in the shared `wizardry-apps` rolling-audit queue.
 
+## Refresh: 2026-07-19
+- Scope: read-only source and standards refresh against current Phronesis policy.
+- Source revision: working-tree observation; this refresh does not claim a clean-tree revision.
+- Result: Round 1's statement that Wizardry had no Python or non-shell surfaces is superseded.
+
+### Current Findings
+
+1. `python-exception-undocumented` — high
+- Direct evidence: `spells/web/build` and `spells/web/fix-site-security` invoke Python helpers; the related install/check spells establish Python availability rather than eliminate the implementation boundary.
+- Required direction: remove, narrow, or explicitly approve the direct helper boundary in the core exception ledger.
+- Re-audit trigger: the next change to either helper or its web-runtime contract.
+
+2. `osascript-boundary-unquarantined` — high
+- Direct evidence: `spells/arcane/trash` and `spells/menu/shutdown-menu` invoke AppleScript from core shell code; additional macOS-specific arcana requires the same review.
+- Required direction: move retained automation behind named Theurgy capabilities or approve an explicit, narrow core exception.
+- Re-audit trigger: the next macOS automation or Theurgy platform-boundary change.
+
+3. `audit-surface-stale` — high
+- Direct evidence: the Round 1 claim of no Python/non-shell surfaces conflicts with the current source paths above.
+- Required direction: audit reports must identify their observed revision and remain historical when source changes.
+- Re-audit trigger: every audit refresh.
+
 ## Validation Notes
 - `sh .tests/psi/test-list-contacts.sh` passed 6/6 during fix-it.
 - I did not run the full Wizardry test suite in this pass.
