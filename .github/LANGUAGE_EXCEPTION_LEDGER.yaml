@@ -16,3 +16,18 @@ python_entries:
     feature: "Compatibility fallbacks for host timestamp metadata."
     rationale: "Portable shell/platform-tool paths remain primary; Python is retained only as a documented host fallback."
     next_action: "Remove when platform-tool coverage is sufficient across supported hosts."
+  - paths:
+      - spells/.arcana/mobile-debugging/mobile-debugging-common
+      - spells/.arcana/yt-dlp/install-yt-dlp
+      - spells/.arcana/yt-dlp/uninstall-yt-dlp
+      - spells/.arcana/crossposting/install-crossposting-granary
+      - spells/.arcana/core/install-bwrap
+      - spells/.arcana/voice-audio/voice-audio-common
+      - spells/.arcana/voice-audio/install-blackhole
+      - spells/web/install-python3
+      - spells/web/check-python3
+      - spells/web/diagnose-sse
+      - spells/web/.requirements/python3.conf
+    feature: "Optional external-tool and deployment prerequisites."
+    rationale: "These spells provision, inspect, or host external Python-backed tools; they do not add first-party Python helper logic."
+    next_action: "Keep each dependency path explicit and remove it when its owning external tool no longer requires Python."
