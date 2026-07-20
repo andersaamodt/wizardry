@@ -30,8 +30,9 @@ printf '%s\n' "Uninstalling docker..."
 "$script_dir/uninstall-docker-daemon" >/dev/null 2>&1 || :
 
 if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
-  if has osascript; then
-    osascript -e 'quit app "Docker"' >/dev/null 2>&1 || :
+  theurgy_macos_ui=${THEURGY_HOME:-$HOME/theurgy}/spells/macos-ui
+  if [ -x "$theurgy_macos_ui" ]; then
+    "$theurgy_macos_ui" docker-quit >/dev/null 2>&1 || :
   fi
 
   remove_path_if_present() {

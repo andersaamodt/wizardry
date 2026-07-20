@@ -69,8 +69,8 @@ fi
 
 # Detect whether loginctl is available for graceful logout (systemd only)
 logout_cmd=""
-if [ "$kernel" = "Darwin" ] && has osascript; then
-  logout_cmd="osascript -e 'tell application \"System Events\" to log out'"
+if [ "$kernel" = "Darwin" ] && [ -x "${THEURGY_HOME:-$HOME/theurgy}/spells/macos-ui" ]; then
+  logout_cmd="${THEURGY_HOME:-$HOME/theurgy}/spells/macos-ui logout-current-user"
 elif has loginctl; then
   logout_cmd="loginctl terminate-user \"\$USER\""
 else

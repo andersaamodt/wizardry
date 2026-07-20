@@ -69,10 +69,9 @@ if [ "$is_macos" -eq 1 ]; then
     run_with_timeout "$op_timeout_tenths" "$docker_bin" desktop stop || :
   fi
 
-  if has osascript; then
-    run_with_timeout 30 osascript -e 'tell application id "com.docker.docker" to quit' || :
-    run_with_timeout 30 osascript -e 'quit app "Docker"' || :
-    run_with_timeout 30 osascript -e 'quit app "Docker Desktop"' || :
+  theurgy_macos_ui=${THEURGY_HOME:-$HOME/theurgy}/spells/macos-ui
+  if [ -x "$theurgy_macos_ui" ]; then
+    run_with_timeout 30 "$theurgy_macos_ui" docker-quit || :
   fi
 
   if has pkill; then

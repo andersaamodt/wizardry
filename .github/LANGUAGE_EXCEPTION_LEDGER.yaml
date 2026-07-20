@@ -1,0 +1,18 @@
+schema_version: 1
+owner: wizardry
+observed_at: "2026-07-19"
+re_audit_by: "2026-10-19"
+python_entries:
+  - paths:
+      - spells/.arcana/voice-recognition/voice-recognition-common
+      - spells/.arcana/crossposting/crossposting-common
+      - spells/.arcana/ai-dev/install-mlx
+    feature: "Third-party machine-learning and social-platform client environments."
+    rationale: "These are external Python runtime boundaries, not first-party helper implementations."
+    next_action: "Keep Python confined to the owning external tool environment."
+  - paths:
+      - spells/.imps/fmt/format-timestamp
+      - spells/.imps/cgi/chat-cleanup-inactive-avatars
+    feature: "Compatibility fallbacks for host timestamp metadata."
+    rationale: "Portable shell/platform-tool paths remain primary; Python is retained only as a documented host fallback."
+    next_action: "Remove when platform-tool coverage is sufficient across supported hosts."

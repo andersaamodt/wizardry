@@ -340,34 +340,14 @@ fi
 
 file_owner_name() {
   target_path=$1
-  if command -v python3 >/dev/null 2>&1; then
-    python3 - "$target_path" <<'PY'
-import os
-import pwd
-import sys
-
-try:
-    print(pwd.getpwuid(os.stat(sys.argv[1]).st_uid).pw_name)
-except Exception:
-    sys.exit(1)
-PY
-    return $?
+  if stat -f '%Su' "$target_path" >/dev/null 2>&1; then
+    stat -f '%Su' "$target_path"
+    return 0
   fi
-
-  if command -v python >/dev/null 2>&1; then
-    python - "$target_path" <<'PY'
-import os
-import pwd
-import sys
-
-try:
-    print(pwd.getpwuid(os.stat(sys.argv[1]).st_uid).pw_name)
-except Exception:
-    sys.exit(1)
-PY
-    return $?
+  if stat -c '%U' "$target_path" >/dev/null 2>&1; then
+    stat -c '%U' "$target_path"
+    return 0
   fi
-
   ls -ld "$target_path" 2>/dev/null | awk '{print $3}'
 }
 

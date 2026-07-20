@@ -82,8 +82,8 @@ fi
 # Detect the best trash command available
 case "$os" in
 mac)
-  if command -v osascript >/dev/null 2>&1; then
-    trash_cmd=osascript
+  if [ -x "${THEURGY_HOME:-$HOME/theurgy}/spells/macos-ui" ]; then
+    trash_cmd=theurgy-macos
   else
     trash_cmd=none
   fi
@@ -108,7 +108,7 @@ if [ "$trash_cmd" = "none" ]; then
   printf '%s\n' "trash: no supported trash utility found for your system." >&2
   case "$os" in
   mac)
-    printf '%s\n' "On macOS, osascript should be available by default." >&2
+    printf '%s\n' "Install Theurgy to enable the macOS trash capability." >&2
     ;;
   linux)
     printf '%s\n' "Install one of: gio, trash-cli (for trash-put), or kde-cli-tools (for kioclient5)." >&2
@@ -142,22 +142,8 @@ for file in "$@"; do
 
   # Perform the trash operation based on available command
   case "$trash_cmd" in
-  osascript)
-    # Convert to absolute path for macOS
-    case "$file" in
-    /*)
-      abs_path=$file
-      ;;
-    *)
-      abs_path="$(pwd)/$file"
-      ;;
-    esac
-    
-    # Escape double quotes and backslashes in the path for AppleScript
-    escaped_path=$(printf '%s' "$abs_path" | sed 's/\\/\\\\/g; s/"/\\"/g')
-    
-    # Use Finder to move to Trash
-    if ! osascript -e "tell application \"Finder\" to delete POSIX file \"$escaped_path\"" >/dev/null 2>&1; then
+  theurgy-macos)
+    if ! "${THEURGY_HOME:-$HOME/theurgy}/spells/macos-ui" trash "$file" >/dev/null 2>&1; then
       printf '%s\n' "trash: failed to trash '$file'" >&2
       exit_status=1
     fi

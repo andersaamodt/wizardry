@@ -47,15 +47,10 @@ run_with_timeout_capture() {
   rm -f "$out_file" 2>/dev/null || :
 }
 
-# Native app-state checks are the most reliable on macOS.
-if has osascript; then
-  if [ "$(run_with_timeout_capture osascript -e 'application "Docker" is running' || printf 'false')" = "true" ]; then
-    exit 0
-  fi
-  if [ "$(run_with_timeout_capture osascript -e 'application "Docker Desktop" is running' || printf 'false')" = "true" ]; then
-    exit 0
-  fi
-  if [ "$(run_with_timeout_capture osascript -e 'application id "com.docker.docker" is running' || printf 'false')" = "true" ]; then
+# Native app-state checks are quarantined in Theurgy on macOS.
+theurgy_macos_ui=${THEURGY_HOME:-$HOME/theurgy}/spells/macos-ui
+if [ -x "$theurgy_macos_ui" ]; then
+  if [ "$(run_with_timeout_capture "$theurgy_macos_ui" docker-is-running || printf 'no')" = "yes" ]; then
     exit 0
   fi
 fi
