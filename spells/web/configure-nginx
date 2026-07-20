@@ -447,7 +447,7 @@ http {
         # directory and returning 403 when autoindex is disabled.
         location = / {
 $desk_host_root_rewrite
-            try_files /pages/index.html /pages/blog.html =404;
+            try_files /pages/index.html /pages/blog.html /index.html =404;
         }
 
         # Artificer Web lives at /artificer while the temporary public host is
