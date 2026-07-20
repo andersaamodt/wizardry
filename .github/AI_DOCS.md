@@ -9,9 +9,9 @@
 
 ### Language Boundaries
 - POSIX sh: canonical Wizardry implementation language.
-- Python: `spells/web/build` and `spells/web/fix-site-security` retain direct helper invocations; Python availability/install spells describe an external dependency rather than a new implementation language. Direct helper use is removal-default until narrowed behind an approved boundary.
+- Python: first-party web helpers no longer invoke Python; remaining Python references are external-tool or compatibility boundaries recorded in `.github/LANGUAGE_EXCEPTION_LEDGER.yaml`.
 - Rust: none in Wizardry core.
-- Direct macOS automation: legacy direct `osascript` calls remain in macOS-specific core flows such as Trash and logout handling. They are removal-default; new or retained automation must cross through a named Theurgy capability and record exact call sites, rationale, and re-audit trigger.
+- Direct macOS automation: core macOS actions cross through named Theurgy capabilities. New or retained exceptions record exact call sites, rationale, and re-audit trigger.
 
 ### Storage And Generated Output
 - Wizardry core does not own one app durable-state root.
@@ -22,5 +22,5 @@
 - `.github/ROLLING_AUDIT.md` is evidence for its recorded source revision only; refresh findings name the observation date, direct paths, and follow-up boundary.
 
 ### Pending Decisions
-- Move retained macOS automation behind Theurgy-owned structured capabilities or approve narrowly justified core exceptions.
-- Replace or explicitly approve the remaining direct Python helper paths.
+- Keep capability migrations complete by removing replaced staging, release, and smoke references and defining unavailable behavior.
+- Narrow remaining Python boundaries to exact paths with dated review.
