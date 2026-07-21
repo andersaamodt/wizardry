@@ -5,6 +5,7 @@ re_audit_by: "2026-10-19"
 python_entries:
   - paths:
       - spells/.arcana/voice-recognition/voice-recognition-common
+      - spells/.arcana/voice-recognition/voice-recognition-transcribe
       - spells/.arcana/crossposting/crossposting-common
       - spells/.arcana/ai-dev/install-mlx
     feature: "Third-party machine-learning and social-platform client environments."
