@@ -38,6 +38,19 @@ total=0
 failed_targets=""
 failed_details=""
 detail_log=$(temp-file verify-posix-details) || exit 1
+gnuisms_patterns=$(temp-file verify-posix-patterns) || exit 1
+cat >"$gnuisms_patterns" <<'PATTERNS'
+[^[:alnum:]_]grep[[:space:]].*-P([[:space:]]|$)	grep -P (PCRE, non-POSIX)
+[^[:alnum:]_]grep[[:space:]].*-o([[:space:]]|$)	grep -o (non-POSIX)
+[^[:alnum:]_]sed[[:space:]].*-r([[:space:]]|$)	sed -r (GNU extension)
+[^[:alnum:]_]sed[[:space:]].*-E([[:space:]]|$)	sed -E (non-POSIX)
+[^[:alnum:]_]xargs[[:space:]].*-r([[:space:]]|$)	xargs -r (GNU extension)
+[^[:alnum:]_]readlink[[:space:]].*-f([[:space:]]|$)	readlink -f (non-POSIX)
+[^[:alnum:]_]stat[[:space:]].*-c([[:space:]]|$)	stat -c (GNU extension)
+[^[:alnum:]_]date[[:space:]].*-d([[:space:]]|$)	date -d (GNU extension)
+[^[:alnum:]_]realpath([[:space:]]|$)	realpath (non-POSIX)
+[^[:alnum:]_]mktemp[[:space:]].*-p([[:space:]]|$)	mktemp -p (non-POSIX)
+PATTERNS
 
 check_bashisms() {
   path=$1
@@ -109,21 +122,8 @@ check_bashisms() {
 
 check_gnuisms() {
   path=$1
-  patterns_file=$(temp-file verify-posix-gnuisms) || return 1
-  cat >"$patterns_file" <<'PATTERNS'
-[^[:alnum:]_]grep[[:space:]].*-P([[:space:]]|$)	grep -P (PCRE, non-POSIX)
-[^[:alnum:]_]grep[[:space:]].*-o([[:space:]]|$)	grep -o (non-POSIX)
-[^[:alnum:]_]sed[[:space:]].*-r([[:space:]]|$)	sed -r (GNU extension)
-[^[:alnum:]_]sed[[:space:]].*-E([[:space:]]|$)	sed -E (non-POSIX)
-[^[:alnum:]_]xargs[[:space:]].*-r([[:space:]]|$)	xargs -r (GNU extension)
-[^[:alnum:]_]readlink[[:space:]].*-f([[:space:]]|$)	readlink -f (non-POSIX)
-[^[:alnum:]_]stat[[:space:]].*-c([[:space:]]|$)	stat -c (GNU extension)
-[^[:alnum:]_]date[[:space:]].*-d([[:space:]]|$)	date -d (GNU extension)
-[^[:alnum:]_]realpath([[:space:]]|$)	realpath (non-POSIX)
-[^[:alnum:]_]mktemp[[:space:]].*-p([[:space:]]|$)	mktemp -p (non-POSIX)
-PATTERNS
 
-  awk -v patterns_file="$patterns_file" '
+  awk -v patterns_file="$gnuisms_patterns" '
     BEGIN {
       in_heredoc = 0
       heredoc_end = ""
@@ -177,13 +177,10 @@ PATTERNS
     }
     END { exit found }
   ' "$path"
-  status=$?
-  cleanup-file "$patterns_file"
-  return "$status"
 }
 
 targets_file=$(temp-file verify-posix-targets) || return 1
-trap 'cleanup-file "$targets_file"; cleanup-file "$detail_log"' EXIT HUP INT TERM
+trap 'cleanup-file "$targets_file"; cleanup-file "$detail_log"; cleanup-file "$gnuisms_patterns"' EXIT HUP INT TERM
 
 # Inline verify_posix_collect_targets and verify_posix_gather_default_targets
 if [ "$#" -gt 0 ]; then

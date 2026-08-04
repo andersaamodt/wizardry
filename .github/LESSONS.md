@@ -345,3 +345,4 @@
 - Local OpenAI-compatible coding models must pass a real tool-call probe, not only a text-completion probe, before a harness treats them as agent-ready.
 - Local OpenAI-compatible servers may need model-template compatibility repair in both directions: parse the model's emitted tool-call format and normalize prior tool-call arguments before replaying them into the chat template.
 - Termux package names are not Debian package names; when a required portable script is absent from Termux repositories, install the upstream script into `$PREFIX/bin` and adapt only its interpreter path.
+- Cross-platform scanners should allocate invariant configuration once per run; per-file temp creation and cleanup can turn a sub-minute macOS check into a Termux timeout without improving isolation.

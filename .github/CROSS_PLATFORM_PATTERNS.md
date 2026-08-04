@@ -145,6 +145,9 @@ fi
 - Termux does not provide Debian's `devscripts` package. Install the published
   `checkbashisms` Perl script into `$PREFIX/bin` and rewrite its interpreter to
   `#!/usr/bin/env perl` so it resolves Termux's userland Perl.
+- Create static scanner configuration once per `verify-posix` run. Recreating
+  and deleting it for every spell turns Termux filesystem latency into a
+  multi-minute validation bottleneck.
 
 ```sh
 # Multi-platform install

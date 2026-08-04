@@ -574,6 +574,8 @@ Wizardry uses several focused documentation files. Keep content in the right doc
 - `checkbashisms` tool detects bash-specific code (not in wizardry but used in CI)
 - On Termux, `install-checkbashisms` installs Debian's published Perl script to
   `$PREFIX/bin` because the Debian `devscripts` package is unavailable there.
+- `verify-posix` reuses one GNU-ism pattern file for the whole scan; it must not
+  recreate static scanner input once per spell.
 - `validate-spells` validates all spells meet requirements
 
 ### Compilation (Doppelganger)
