@@ -103,6 +103,9 @@ fi
 
 export PATH
 
+# Test paths and strict-isolation checks are defined relative to the installation.
+cd "$root_dir"
+
 has_tty=0
 if tty >/dev/null 2>&1 && [ -c /dev/tty ] && [ -r /dev/tty ] && [ -w /dev/tty ]; then
   has_tty=1
@@ -147,7 +150,6 @@ if [ "${GITHUB_ACTIONS-}" != "true" ] && [ "${WIZARDRY_TEST_IN_POCKET-0}" -ne 1 
       else
         printf '%s\n' "test-magic: entering strict pocket-dimension..." >&2
       fi
-      cd "$root_dir"
       exec pocket-dimension --strict --network closed -- test-magic "$@"
     fi
   fi
