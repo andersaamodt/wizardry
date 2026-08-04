@@ -421,7 +421,8 @@ Wizardry uses several focused documentation files. Keep content in the right doc
 ### Arcane File Operations (Level 13)
 
 - `copy` copies files
-- `trash` moves files to trash (safe deletion)
+- `trash` validates operands before selecting a platform backend and moves
+  eligible files through the native trash capability (Theurgy on macOS)
 - `jump-trash` navigates to trash directory
 - `forall` executes command for each file in directory
 - `read-magic` reads and displays file contents
@@ -637,6 +638,8 @@ Wizardry uses several focused documentation files. Keep content in the right doc
 - `network-menu` for network operations
 - `services-menu` for service management
 - `shutdown-menu` for shutdown operations
+- macOS logout actions use Theurgy when its official bridge is installed and a
+  non-GUI process signal fallback otherwise
 - `priorities` menu (also `priority-menu`) for task priorities
 - `users-menu` for user management
 

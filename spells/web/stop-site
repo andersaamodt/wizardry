@@ -88,7 +88,7 @@ stop_site_nginx_pid_running() {
   esac
 
   case "$cmd" in
-    *"$nginx_dir"*nginx*|*"$site_dir"*nginx*|*nginx*"$nginx_dir"*|*nginx*"$site_dir"*|*nginx*)
+    *"$nginx_dir"*nginx*|*"$site_dir"*nginx*|*nginx*"$nginx_dir"*|*nginx*"$site_dir"*)
       return 0
       ;;
   esac

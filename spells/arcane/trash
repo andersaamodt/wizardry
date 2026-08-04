@@ -53,6 +53,35 @@ if [ "$#" -eq 0 ]; then
   exit 2
 fi
 
+# Validate operands before requiring a platform trash backend. Missing paths and
+# non-recursive directories are input errors on every host; `-f` with only
+# missing operands is already complete and must not require a GUI bridge.
+exit_status=0
+trash_has_operand=0
+for file in "$@"; do
+  if [ ! -e "$file" ]; then
+    if [ "$force" -eq 1 ]; then
+      continue
+    fi
+    printf '%s\n' "trash: cannot trash '$file': No such file or directory" >&2
+    exit_status=1
+    continue
+  fi
+  if [ -d "$file" ] && [ "$recursive" -eq 0 ]; then
+    printf '%s\n' "trash: cannot trash '$file': Is a directory (use -r to trash directories)" >&2
+    exit_status=1
+    continue
+  fi
+  trash_has_operand=1
+done
+
+if [ "$exit_status" -ne 0 ]; then
+  exit "$exit_status"
+fi
+if [ "$trash_has_operand" -eq 0 ]; then
+  exit 0
+fi
+
 # Detect the OS
 if command -v detect-distro >/dev/null 2>&1; then
   platform=$(detect-distro 2>/dev/null || printf 'unknown')
@@ -119,8 +148,6 @@ if [ "$trash_cmd" = "none" ]; then
   esac
   exit 1
 fi
-
-exit_status=0
 
 for file in "$@"; do
   # Check if file exists

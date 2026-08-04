@@ -347,3 +347,6 @@
 - Termux package names are not Debian package names; when a required portable script is absent from Termux repositories, install the upstream script into `$PREFIX/bin` and adapt only its interpreter path.
 - Cross-platform scanners should allocate invariant configuration once per run; per-file temp creation and cleanup can turn a sub-minute macOS check into a Termux timeout without improving isolation.
 - When a spell moves between capability families, move its behavioral tests in the same change; stale test paths make `banish` require spells from the wrong level and leave duplicate coverage behind.
+- PID-file safety checks must identify an nginx executable or a site-specific nginx command, not merely match the substring `nginx`; names such as `non-nginx-daemon` are unrelated processes.
+- Platform backends should be selected only after platform-independent operand validation, so safe no-op and input-error behavior does not depend on optional GUI tooling.
+- Tests for external templates should assert the current public layout contract (for Gazeta, Lodestone pages) instead of a retired source filename.

@@ -8,7 +8,7 @@
 # - trash errors when trashing directory without -r
 # - trash succeeds with -r for directories
 # - trash calls gio trash on Linux
-# - trash calls osascript on macOS
+# - trash calls the official Theurgy macOS bridge on macOS
 # - trash calls trash-put as fallback
 # - trash handles multiple files
 # - trash handles combined flags like -rf
@@ -119,27 +119,29 @@ STUB
   assert_success && assert_file_contains "$log_file" "trash"
 }
 
-test_calls_osascript_on_macos() {
+test_calls_theurgy_on_macos() {
   skip-if-compiled || return $?
   stub=$(make_stub_dir)
   target_file="$stub/testfile.txt"
   printf 'test content\n' >"$target_file"
-  log_file="$stub/osascript.log"
-  cat >"$stub/osascript" <<STUB
+  theurgy_home="$stub/theurgy"
+  mkdir -p "$theurgy_home/spells"
+  log_file="$stub/macos-ui.log"
+  cat >"$theurgy_home/spells/macos-ui" <<STUB
 #!/bin/sh
 printf '%s\n' "\$*" >>"$log_file"
 exit 0
 STUB
-  chmod +x "$stub/osascript"
+  chmod +x "$theurgy_home/spells/macos-ui"
   # Create uname stub for macOS detection
   cat >"$stub/uname" <<'STUB'
 #!/bin/sh
 printf 'Darwin\n'
 STUB
   chmod +x "$stub/uname"
-  # Remove gio and trash-put from path to ensure osascript is chosen
-  PATH="$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" run_spell "spells/arcane/trash" "$target_file"
-  assert_success && assert_file_contains "$log_file" "Finder"
+  PATH="$WIZARDRY_IMPS_PATH:$stub:/bin:/usr/bin" THEURGY_HOME="$theurgy_home" \
+    run_spell "spells/arcane/trash" "$target_file"
+  assert_success && assert_file_contains "$log_file" "trash $target_file"
 }
 
 test_calls_trash_put_fallback() {
@@ -233,7 +235,7 @@ run_test_case "trash ignores nonexistent with -f" test_nonexistent_file_with_for
 run_test_case "trash errors on directory without -r" test_directory_without_recursive
 run_test_case "trash succeeds on directory with -r" test_directory_with_recursive
 run_test_case "trash calls gio on Linux" test_calls_gio_on_linux
-run_test_case "trash calls osascript on macOS" test_calls_osascript_on_macos
+run_test_case "trash calls Theurgy on macOS" test_calls_theurgy_on_macos
 run_test_case "trash calls trash-put as fallback" test_calls_trash_put_fallback
 run_test_case "trash handles multiple files" test_multiple_files
 run_test_case "trash handles combined flags -rf" test_combined_flags
