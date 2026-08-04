@@ -572,6 +572,8 @@ Wizardry uses several focused documentation files. Keep content in the right doc
 - `lint-magic` checks spell compliance with project standards
 - Linting checks: POSIX compliance, style, naming, structure, function discipline
 - `checkbashisms` tool detects bash-specific code (not in wizardry but used in CI)
+- On Termux, `install-checkbashisms` installs Debian's published Perl script to
+  `$PREFIX/bin` because the Debian `devscripts` package is unavailable there.
 - `validate-spells` validates all spells meet requirements
 
 ### Compilation (Doppelganger)

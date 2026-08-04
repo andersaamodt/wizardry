@@ -25,10 +25,31 @@ if command -v checkbashisms >/dev/null 2>&1 && [ "$force_install" != "1" ]; then
   exit 0
 fi
 
-# Special handling for Arch Linux and macOS - checkbashisms not in official repos
-if command -v pacman >/dev/null 2>&1 || [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+# Arch, macOS, and Termux need the standalone Debian script. Termux's apt
+# repositories do not carry Debian's devscripts package.
+termux_prefix=""
+case ${PREFIX-} in
+  */data/data/com.termux/files/usr)
+    termux_prefix=$PREFIX
+    ;;
+esac
+
+source_install=0
+if command -v pacman >/dev/null 2>&1; then
+  source_install=1
+elif [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+  source_install=1
+elif [ -n "$termux_prefix" ]; then
+  source_install=1
+fi
+
+if [ "$source_install" -eq 1 ]; then
   # Download checkbashisms directly from Debian sources
-  target_dir="/usr/local/bin"
+  if [ -n "$termux_prefix" ]; then
+    target_dir="$termux_prefix/bin"
+  else
+    target_dir="/usr/local/bin"
+  fi
   debian_base="https://sources.debian.org/data/main/d/devscripts"
   checkbashisms_url="$debian_base/2.23.4+deb12u2/scripts/checkbashisms.pl"
   if [ ! -w "$target_dir" ]; then
@@ -50,6 +71,19 @@ if command -v pacman >/dev/null 2>&1 || [ "$(uname -s 2>/dev/null)" = "Darwin" ]
       printf '%s\n' "install-checkbashisms: failed to download checkbashisms" >&2
       exit 1
     }
+    chmod +x "$target_dir/checkbashisms"
+  fi
+
+  if [ -n "$termux_prefix" ]; then
+    rewritten="$target_dir/checkbashisms.termux.$$"
+    if ! sed '1s|^#!.*perl$|#!/usr/bin/env perl|' \
+      "$target_dir/checkbashisms" >"$rewritten"; then
+      rm -f "$rewritten"
+      printf '%s\n' \
+        "install-checkbashisms: failed to adapt the Perl interpreter path for Termux" >&2
+      exit 1
+    fi
+    mv "$rewritten" "$target_dir/checkbashisms"
     chmod +x "$target_dir/checkbashisms"
   fi
   

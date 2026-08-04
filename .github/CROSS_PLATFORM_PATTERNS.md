@@ -142,6 +142,10 @@ fi
 
 ## Package Management
 
+- Termux does not provide Debian's `devscripts` package. Install the published
+  `checkbashisms` Perl script into `$PREFIX/bin` and rewrite its interpreter to
+  `#!/usr/bin/env perl` so it resolves Termux's userland Perl.
+
 ```sh
 # Multi-platform install
 if command -v apt-get >/dev/null 2>&1; then
