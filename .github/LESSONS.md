@@ -346,3 +346,4 @@
 - Local OpenAI-compatible servers may need model-template compatibility repair in both directions: parse the model's emitted tool-call format and normalize prior tool-call arguments before replaying them into the chat template.
 - Termux package names are not Debian package names; when a required portable script is absent from Termux repositories, install the upstream script into `$PREFIX/bin` and adapt only its interpreter path.
 - Cross-platform scanners should allocate invariant configuration once per run; per-file temp creation and cleanup can turn a sub-minute macOS check into a Termux timeout without improving isolation.
+- When a spell moves between capability families, move its behavioral tests in the same change; stale test paths make `banish` require spells from the wrong level and leave duplicate coverage behind.
