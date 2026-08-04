@@ -101,6 +101,58 @@ if [ -d "$root_dir/spells/.imps" ]; then
   done
 fi
 
+export PATH
+
+has_tty=0
+if tty >/dev/null 2>&1 && [ -c /dev/tty ] && [ -r /dev/tty ] && [ -w /dev/tty ]; then
+  has_tty=1
+fi
+
+# Enter isolation before parsing so the re-executed runner receives the exact
+# requested level, range, and flags. Normalize the working directory because
+# strict isolation exposes only the requested Wizardry root reliably.
+if [ "${GITHUB_ACTIONS-}" != "true" ] && [ "${WIZARDRY_TEST_IN_POCKET-0}" -ne 1 ]; then
+  platform=$(uname -s 2>/dev/null || printf 'unknown')
+  use_strict_pocket=1
+  if [ "$platform" = "Darwin" ] && command -v sudo >/dev/null 2>&1; then
+    if ! sudo -n true >/dev/null 2>&1; then
+      if [ "$has_tty" -eq 1 ]; then
+        printf '%s\n' "test-magic: macOS isolation needs sudo; authenticating now..." > /dev/tty
+        if ! sudo -v < /dev/tty > /dev/tty 2>&1; then
+          printf '%s\n' "test-magic: sudo authentication failed" >&2
+          exit 1
+        fi
+      else
+        printf '%s\n' \
+          "test-magic: macOS isolation needs sudo; no tty is available, so tests will run without pocket-dimension" \
+          >&2
+        use_strict_pocket=0
+      fi
+    fi
+  fi
+  if [ "$use_strict_pocket" -eq 1 ]; then
+    if ! command -v pocket-dimension >/dev/null 2>&1; then
+      printf '%s\n' \
+        "test-magic: pocket-dimension unavailable; proceeding without sandbox isolation" \
+        >&2
+      use_strict_pocket=0
+    elif ! pocket-dimension --strict --check >/dev/null 2>&1; then
+      printf '%s\n' \
+        "test-magic: pocket-dimension unavailable; proceeding without sandbox isolation" \
+        >&2
+      use_strict_pocket=0
+    else
+      if [ "$has_tty" -eq 1 ]; then
+        printf '%s\n' "test-magic: entering strict pocket-dimension..." > /dev/tty
+      else
+        printf '%s\n' "test-magic: entering strict pocket-dimension..." >&2
+      fi
+      cd "$root_dir"
+      exec pocket-dimension --strict --network closed -- test-magic "$@"
+    fi
+  fi
+fi
+
 # Parse arguments
 target_level=28
 max_level=28
@@ -212,55 +264,6 @@ fi
 if [ "$target_level" -lt 0 ] || [ "$target_level" -gt "$max_level" ]; then
   printf 'test-magic: level must be 0-%d\n' "$max_level" >&2
   exit 2
-fi
-
-export PATH
-
-has_tty=0
-if tty >/dev/null 2>&1 && [ -c /dev/tty ] && [ -r /dev/tty ] && [ -w /dev/tty ]; then
-  has_tty=1
-fi
-
-# Run tests inside strict pocket-dimension unless in GitHub Actions (already isolated).
-if [ "${GITHUB_ACTIONS-}" != "true" ] && [ "${WIZARDRY_TEST_IN_POCKET-0}" -ne 1 ]; then
-  platform=$(uname -s 2>/dev/null || printf 'unknown')
-  use_strict_pocket=1
-  if [ "$platform" = "Darwin" ] && command -v sudo >/dev/null 2>&1; then
-    if ! sudo -n true >/dev/null 2>&1; then
-      if [ "$has_tty" -eq 1 ]; then
-        printf '%s\n' "test-magic: macOS isolation needs sudo; authenticating now..." > /dev/tty
-        if ! sudo -v < /dev/tty > /dev/tty 2>&1; then
-          printf '%s\n' "test-magic: sudo authentication failed" >&2
-          exit 1
-        fi
-      else
-        printf '%s\n' \
-          "test-magic: macOS isolation needs sudo; no tty is available, so tests will run without pocket-dimension" \
-          >&2
-        use_strict_pocket=0
-      fi
-    fi
-  fi
-  if [ "$use_strict_pocket" -eq 1 ]; then
-    if ! command -v pocket-dimension >/dev/null 2>&1; then
-      printf '%s\n' \
-        "test-magic: pocket-dimension unavailable; proceeding without sandbox isolation" \
-        >&2
-      use_strict_pocket=0
-    elif ! pocket-dimension --strict --check >/dev/null 2>&1; then
-      printf '%s\n' \
-        "test-magic: pocket-dimension unavailable; proceeding without sandbox isolation" \
-        >&2
-      use_strict_pocket=0
-    else
-      if [ "$has_tty" -eq 1 ]; then
-        printf '%s\n' "test-magic: entering strict pocket-dimension..." > /dev/tty
-      else
-        printf '%s\n' "test-magic: entering strict pocket-dimension..." >&2
-      fi
-      exec pocket-dimension --strict --network closed -- test-magic "$@"
-    fi
-  fi
 fi
 
 # Pre-flight checks (use command -v instead of has since invoke-wizardry not loaded yet)

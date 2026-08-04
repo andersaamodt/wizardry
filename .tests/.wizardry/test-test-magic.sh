@@ -302,6 +302,45 @@ SH
   assert_error_contains "proceeding without sandbox isolation"
 }
 
+strict_pocket_preserves_request_and_normalizes_working_directory() {
+  tmpdir=$(make_tempdir)
+  stub_dir="$tmpdir/bin"
+  fixture_root="$tmpdir/fixture-root"
+  receipt="$tmpdir/pocket-receipt"
+  mkdir -p "$stub_dir" "$fixture_root/spells/.imps"
+
+  cat >"$stub_dir/uname" <<'SH'
+#!/bin/sh
+printf '%s\n' Linux
+SH
+  chmod +x "$stub_dir/uname"
+
+  cat >"$stub_dir/pocket-dimension" <<'SH'
+#!/bin/sh
+if [ "${1-}" = "--strict" ] && [ "${2-}" = "--check" ]; then
+  exit 0
+fi
+printf '%s\n' "$PWD" >"$POCKET_RECEIPT"
+printf '%s\n' "$*" >>"$POCKET_RECEIPT"
+SH
+  chmod +x "$stub_dir/pocket-dimension"
+
+  run_cmd env PATH="$stub_dir:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" \
+    POCKET_RECEIPT="$receipt" \
+    WIZARDRY_DIR="$fixture_root" \
+    sh "$ROOT_DIR/spells/.wizardry/test-magic" 2 --only --verbose
+
+  assert_success || return 1
+  [ "$(sed -n '1p' "$receipt")" = "$fixture_root" ] || {
+    TEST_FAILURE_REASON="strict pocket entered from the wrong directory"
+    return 1
+  }
+  [ "$(sed -n '2p' "$receipt")" = "--strict --network closed -- test-magic 2 --only --verbose" ] || {
+    TEST_FAILURE_REASON="strict pocket did not preserve the test selection and flags"
+    return 1
+  }
+}
+
 skips_xattr_required_tests_on_reduced_hosts() {
   tmpdir=$(make_tempdir)
   stub_dir="$tmpdir/bin"
@@ -767,6 +806,8 @@ run_test_case "system/test-magic requires pocket-dimension" requires_pocket_dime
 run_test_case "system/test-magic falls back when pocket-dimension check fails" falls_back_when_pocket_dimension_check_fails
 run_test_case "system/test-magic falls back when only strict pocket-dimension is unavailable" \
   falls_back_when_only_strict_pocket_dimension_is_unavailable
+run_test_case "system/test-magic strict pocket preserves request and working directory" \
+  strict_pocket_preserves_request_and_normalizes_working_directory
 run_test_case "system/test-magic skips xattr-gated tests on reduced hosts" \
   skips_xattr_required_tests_on_reduced_hosts
 run_test_case "system/test-magic uncovered checks only run from level 0" uncovered_checks_only_run_from_level_0
