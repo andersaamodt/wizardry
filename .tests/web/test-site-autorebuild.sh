@@ -92,6 +92,11 @@ fi
 cat "$1" > "$state_file"
 EOS
   chmod +x "$stub_dir/crontab"
+  cat > "$stub_dir/shasum" <<'EOS'
+#!/bin/sh
+exit 1
+EOS
+  chmod +x "$stub_dir/shasum"
 
   run_cmd env \
     PATH="$stub_dir:/usr/bin:/bin:/usr/sbin:/sbin" \
@@ -131,6 +136,11 @@ EOS
   target_file="$site_root/.wizardry-autorebuild/site-autorebuild.target"
   signature_before=$(cat "$signature_file" 2>/dev/null || printf 'missing')
   target_before=$(cat "$target_file" 2>/dev/null || printf 'missing')
+  if [ -z "$signature_before" ] || [ "$signature_before" = missing ]; then
+    TEST_FAILURE_REASON="site-autorebuild must persist a non-empty content signature"
+    rm -rf "$web_root" "$fake_wizardry" "$stub_dir"
+    return 1
+  fi
   mkdir -p "$site_root/site/bitcoin/data/blocks"
   printf '%s\n' 'runtime block data' > "$site_root/site/bitcoin/data/blocks/blk00001.dat"
   run_cmd env \

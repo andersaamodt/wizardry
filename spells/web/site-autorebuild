@@ -383,14 +383,18 @@ calc_signature() {
     cksum "$content_file" 2>/dev/null || true
   done < "$tmp_paths" > "$tmp_manifest"
 
+  signature=''
   if command -v shasum >/dev/null 2>&1; then
-    signature=$(shasum -a 256 "$tmp_manifest" | awk '{print $1}')
-  elif command -v sha256sum >/dev/null 2>&1; then
-    signature=$(sha256sum "$tmp_manifest" | awk '{print $1}')
-  else
-    signature=$(cksum "$tmp_manifest" | awk '{print $1 ":" $2}')
+    signature=$(shasum -a 256 "$tmp_manifest" 2>/dev/null | awk '{print $1}' || true)
+  fi
+  if [ -z "$signature" ] && command -v sha256sum >/dev/null 2>&1; then
+    signature=$(sha256sum "$tmp_manifest" 2>/dev/null | awk '{print $1}' || true)
+  fi
+  if [ -z "$signature" ]; then
+    signature=$(cksum "$tmp_manifest" 2>/dev/null | awk '{print $1 ":" $2}' || true)
   fi
   rm -f "$tmp_paths" "$tmp_manifest"
+  [ -n "$signature" ] || return 1
   printf '%s\n' "$signature"
 }
 
@@ -699,14 +703,18 @@ run_change_pass() {
         [ -n "$content_file" ] || continue
         cksum "$content_file" 2>/dev/null || true
       done < "$tmp_paths" > "$tmp_manifest"
+      sig=""
       if command -v shasum >/dev/null 2>&1; then
-        sig=$(shasum -a 256 "$tmp_manifest" | awk "{print \\$1}")
-      elif command -v sha256sum >/dev/null 2>&1; then
-        sig=$(sha256sum "$tmp_manifest" | awk "{print \\$1}")
-      else
-        sig=$(cksum "$tmp_manifest" | awk "{print \\$1 \":" \\$2}")
+        sig=$(shasum -a 256 "$tmp_manifest" 2>/dev/null | awk "{print \\$1}" || true)
+      fi
+      if [ -z "$sig" ] && command -v sha256sum >/dev/null 2>&1; then
+        sig=$(sha256sum "$tmp_manifest" 2>/dev/null | awk "{print \\$1}" || true)
+      fi
+      if [ -z "$sig" ]; then
+        sig=$(cksum "$tmp_manifest" 2>/dev/null | awk "{print \\$1 \":" \\$2}" || true)
       fi
       rm -f "$tmp_paths" "$tmp_manifest"
+      [ -n "$sig" ] || exit 1
       printf "%s\n" "$sig"
     ' sh "$content_dir" 2>/dev/null || printf '%s\n' 'missing')
   else
