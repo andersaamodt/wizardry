@@ -798,6 +798,17 @@ help_clarifies_level_0_is_common_tests() {
   return 0
 }
 
+test_magic_snapshots_runner_source() {
+  grep -q 'WIZARDRY_TEST_RUNNER_SNAPSHOT' "$ROOT_DIR/spells/.wizardry/test-magic" || {
+    TEST_FAILURE_REASON="test-magic does not guard its immutable runner snapshot"
+    return 1
+  }
+  grep -q 'cp.*runner_source.*runner_snapshot' "$ROOT_DIR/spells/.wizardry/test-magic" || {
+    TEST_FAILURE_REASON="test-magic does not copy its source before a long run"
+    return 1
+  }
+}
+
 run_test_case "system/test-magic is executable" spell_is_executable
 run_test_case "system/test-magic shows help" shows_help
 run_test_case "system/test-magic has content" spell_has_content
@@ -811,6 +822,8 @@ run_test_case "system/test-magic falls back when only strict pocket-dimension is
   falls_back_when_only_strict_pocket_dimension_is_unavailable
 run_test_case "system/test-magic strict pocket preserves request and working directory" \
   strict_pocket_preserves_request_and_normalizes_working_directory
+run_test_case "system/test-magic snapshots long-running runner source" \
+  test_magic_snapshots_runner_source
 run_test_case "system/test-magic skips xattr-gated tests on reduced hosts" \
   skips_xattr_required_tests_on_reduced_hosts
 run_test_case "system/test-magic uncovered checks only run from level 0" uncovered_checks_only_run_from_level_0

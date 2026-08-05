@@ -155,6 +155,27 @@ if [ "${GITHUB_ACTIONS-}" != "true" ] && [ "${WIZARDRY_TEST_IN_POCKET-0}" -ne 1 
   fi
 fi
 
+# A complete run can take hours on slower hosts. Execute the final runner from
+# an immutable snapshot so an in-place Wizardry update cannot change the shell
+# source while it is still being parsed.
+if [ "${WIZARDRY_TEST_RUNNER_SNAPSHOT-0}" -ne 1 ]; then
+  runner_source=$0
+  case "$runner_source" in
+    */*) ;;
+    *) runner_source=$(command -v "$runner_source" 2>/dev/null || printf '%s' "$runner_source") ;;
+  esac
+  if [ -f "$runner_source" ]; then
+    runner_snapshot=$(mktemp "${TMPDIR:-/tmp}/wizardry-test-magic.XXXXXX") || exit 1
+    trap 'rm -f "$runner_snapshot"' EXIT HUP INT TERM
+    cp "$runner_source" "$runner_snapshot"
+    WIZARDRY_TEST_RUNNER_SNAPSHOT=1 sh "$runner_snapshot" "$@"
+    snapshot_status=$?
+    trap - EXIT HUP INT TERM
+    rm -f "$runner_snapshot"
+    exit "$snapshot_status"
+  fi
+fi
+
 # Parse arguments
 target_level=28
 max_level=28
