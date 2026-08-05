@@ -226,6 +226,7 @@ SH
   chmod +x "$fixture_test_dir/test-dummy.sh"
 
   run_cmd env PATH="$stub_dir:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" \
+    WIZARDRY_TEST_IN_POCKET=0 \
     WIZARDRY_DIR="$fixture_root" \
     sh "$ROOT_DIR/spells/.wizardry/test-magic" 1 --only
 
@@ -295,6 +296,7 @@ SH
   chmod +x "$fixture_test_dir/test-dummy.sh"
 
   run_cmd env PATH="$stub_dir:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" \
+    WIZARDRY_TEST_IN_POCKET=0 \
     WIZARDRY_DIR="$fixture_root" \
     sh "$ROOT_DIR/spells/.wizardry/test-magic" 1 --only
 
@@ -327,6 +329,7 @@ SH
 
   run_cmd env PATH="$stub_dir:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" \
     POCKET_RECEIPT="$receipt" \
+    WIZARDRY_TEST_IN_POCKET=0 \
     WIZARDRY_DIR="$fixture_root" \
     sh "$ROOT_DIR/spells/.wizardry/test-magic" 2 --only --verbose
 
