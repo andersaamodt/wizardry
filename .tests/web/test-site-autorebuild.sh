@@ -127,6 +127,10 @@ EOS
   fi
 
   : > "$build_log"
+  signature_file="$site_root/.wizardry-autorebuild/site-autorebuild.signature"
+  target_file="$site_root/.wizardry-autorebuild/site-autorebuild.target"
+  signature_before=$(cat "$signature_file" 2>/dev/null || printf 'missing')
+  target_before=$(cat "$target_file" 2>/dev/null || printf 'missing')
   mkdir -p "$site_root/site/bitcoin/data/blocks"
   printf '%s\n' 'runtime block data' > "$site_root/site/bitcoin/data/blocks/blk00001.dat"
   run_cmd env \
@@ -139,7 +143,10 @@ EOS
   assert_success
 
   if [ -s "$build_log" ]; then
-    TEST_FAILURE_REASON="runtime Bitcoin block data should not trigger a site rebuild"
+    signature_after=$(cat "$signature_file" 2>/dev/null || printf 'missing')
+    target_after=$(cat "$target_file" 2>/dev/null || printf 'missing')
+    TEST_FAILURE_REASON="runtime Bitcoin block data should not trigger a site rebuild"\
+" (signature $signature_before -> $signature_after; target $target_before -> $target_after)"
     rm -rf "$web_root" "$fake_wizardry" "$stub_dir"
     return 1
   fi
