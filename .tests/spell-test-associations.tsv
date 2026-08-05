@@ -1,0 +1,23 @@
+# Executable spell path<TAB>grouped test path
+spells/.arcana/ai-dev/get-active-llm-runtime	.tests/.arcana/ai-dev/test-runtime-helpers.sh
+spells/.arcana/ai-dev/install-mlx	.tests/.arcana/ai-dev/test-runtime-actions.sh
+spells/.arcana/ai-dev/set-active-llm-runtime	.tests/.arcana/ai-dev/test-runtime-actions.sh
+spells/.arcana/ai-dev/uninstall-mlx	.tests/.arcana/ai-dev/test-runtime-actions.sh
+spells/.arcana/ai-dev/use-llm-model	.tests/.arcana/ai-dev/test-runtime-actions.sh
+spells/.arcana/game-dev/game-dev-common	.tests/.arcana/game-dev/test-game-dev.sh
+spells/.arcana/game-dev/game-dev-menu	.tests/.arcana/game-dev/test-game-dev.sh
+spells/.arcana/game-dev/game-dev-status	.tests/.arcana/game-dev/test-game-dev.sh
+spells/.arcana/game-dev/install-godot	.tests/.arcana/game-dev/test-game-dev.sh
+spells/.arcana/game-dev/is-godot-installed	.tests/.arcana/game-dev/test-game-dev.sh
+spells/.arcana/game-dev/uninstall-godot	.tests/.arcana/game-dev/test-game-dev.sh
+spells/.arcana/mobile-debugging/termux-command-runner	.tests/.arcana/mobile-debugging/test-command-runner-and-uninstall.sh
+spells/.arcana/mobile-debugging/uninstall-android-commandline-tools	.tests/.arcana/mobile-debugging/test-command-runner-and-uninstall.sh
+spells/.arcana/theurgy/check-theurgy-browser-proof-runtime	.tests/.arcana/theurgy/test-theurgy-browser-proof-runtime.sh
+spells/.arcana/theurgy/install-theurgy-browser-proof-runtime	.tests/.arcana/theurgy/test-theurgy-browser-proof-runtime.sh
+spells/.arcana/theurgy/theurgy-browser-proof-runtime-status	.tests/.arcana/theurgy/test-theurgy-browser-proof-runtime.sh
+spells/.arcana/voice-audio/install-supercollider	.tests/.arcana/voice-audio/test-supercollider-installable.sh
+spells/.arcana/voice-audio/is-supercollider-installed	.tests/.arcana/voice-audio/test-supercollider-installable.sh
+spells/.arcana/voice-audio/uninstall-supercollider	.tests/.arcana/voice-audio/test-supercollider-installable.sh
+spells/.arcana/voice-recognition/voice-recognition-transcribe	.tests/.arcana/voice-recognition/test-voice-recognition-transcribe.sh
+spells/.arcana/wizardry-apps/is-xcodegen-installed	.tests/.arcana/wizardry-apps/test-xcodegen-lifecycle.sh
+spells/.arcana/wizardry-apps/uninstall-xcodegen	.tests/.arcana/wizardry-apps/test-xcodegen-lifecycle.sh

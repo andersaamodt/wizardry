@@ -1085,6 +1085,7 @@ if [ "$min_level_range" -eq 0 ]; then
   coverage_total=0
   coverage_covered=0
   uncovered_spells=""
+  test_associations_file="$test_dir/spell-test-associations.tsv"
 
   find_timeout="${WIZARDRY_FIND_TIMEOUT:-80}"
   spell_list=""
@@ -1114,7 +1115,15 @@ if [ "$min_level_range" -eq 0 ]; then
     base_check=$(basename "$rel_check")
     candidate_sh="$test_dir/$dir_check/test-${base_check}.sh"
 
-    if [ -f "$candidate_sh" ]; then
+    associated_test=""
+    if [ -f "$test_associations_file" ]; then
+      associated_test=$(awk -F '\t' -v spell="$rel" '
+        $1 == spell { print $2; exit }
+      ' "$test_associations_file")
+    fi
+
+    if [ -f "$candidate_sh" ] || \
+      { [ -n "$associated_test" ] && [ -f "$root_dir/$associated_test" ]; }; then
       coverage_covered=$((coverage_covered + 1))
     else
       if [ -n "$uncovered_spells" ]; then
@@ -1168,7 +1177,17 @@ EOF_SPELLS
 
     spell_path="$root_dir/spells/$dir/$base"
 
-    if [ ! -f "$spell_path" ]; then
+    association_found=0
+    if [ -f "$test_associations_file" ]; then
+      if awk -F '\t' -v test_path=".tests/$rel" '
+        $2 == test_path { found = 1 }
+        END { exit(found ? 0 : 1) }
+      ' "$test_associations_file"; then
+        association_found=1
+      fi
+    fi
+
+    if [ ! -f "$spell_path" ] && [ "$association_found" -ne 1 ]; then
       if [ -n "$extraneous_files" ]; then
         extraneous_files=$(printf '%s\n%s' "$extraneous_files" ".tests/$rel")
       else
