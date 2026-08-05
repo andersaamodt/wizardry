@@ -44,13 +44,14 @@ test_requires_torify_for_tor_mode() {
 exit 0
 EOF
   chmod +x "$stubdir/sshfs"
-  for util in sh env printf mkdir; do
+  for util in sh env printf mkdir dirname basename sed cat head; do
     if command -v "$util" >/dev/null 2>&1; then
       ln -sf "$(command -v "$util")" "$stubdir/$util" 2>/dev/null || true
     fi
   done
   # Run with --tor flag but no torify available
-  PATH="$stubdir:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:/bin:/usr/bin" run_spell "spells/translocation/open-portal" --tor
+  PATH="$stubdir:$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips" \
+    run_spell "spells/translocation/open-portal" --tor
   assert_failure || return 1
   assert_error_contains "torify" || return 1
 }

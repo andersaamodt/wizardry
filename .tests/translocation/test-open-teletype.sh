@@ -25,12 +25,13 @@ test_requires_torify() {
   stubdir=$(make_tempdir)/bin
   mkdir -p "$stubdir"
   # Provide basic utilities but not torify
-  for util in sh env printf; do
+  for util in sh env printf dirname basename sed cat head; do
     if command -v "$util" >/dev/null 2>&1; then
       ln -sf "$(command -v "$util")" "$stubdir/$util" 2>/dev/null || true
     fi
   done
-  PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$stubdir:/bin:/usr/bin" run_spell "spells/translocation/open-teletype"
+  PATH="$WIZARDRY_IMPS_PATH:$ROOT_DIR/spells/cantrips:$stubdir" \
+    run_spell "spells/translocation/open-teletype"
   assert_failure || return 1
   assert_error_contains "torify (tor) not found" || return 1
 }
