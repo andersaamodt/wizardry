@@ -278,7 +278,7 @@ EOF
 test_fix_site_security_nginx_is_group_writable() {
   skip-if-compiled || return $?
 
-  web_root=$(temp-dir web-wizardry-test)
+  web_root=$(mktemp -d "${TMPDIR:-/tmp}/web-wizardry-test.XXXXXX")
   site_dir="$web_root/mysite"
   mkdir -p "$site_dir/site"
   nginx_dir=$("$ROOT_DIR/spells/.imps/web/site-runtime-dir" "$site_dir" nginx)

@@ -298,7 +298,20 @@ SH
   export PATH="$test_tmpdir/stubs:$PATH"
   export QUERY_STRING="room=TestRoom"
 
-  run_with_timeout chat-stream >/dev/null
+  chat-stream >/dev/null 2>&1 &
+  stream_pid=$!
+  attempts=0
+  while [ "$attempts" -lt 50 ] && [ ! -s "$fifo_log" ]; do
+    if ! kill -0 "$stream_pid" 2>/dev/null; then
+      break
+    fi
+    sleep 0.1
+    attempts=$((attempts + 1))
+  done
+  kill -TERM "$stream_pid" 2>/dev/null || true
+  sleep 0.1
+  kill -KILL "$stream_pid" 2>/dev/null || true
+  wait "$stream_pid" 2>/dev/null || true
   fifo_path=$(cat "$fifo_log" 2>/dev/null || printf '')
   case "$fifo_path" in
     "$TMPDIR"/chat_stream_*_fifo) : ;;
