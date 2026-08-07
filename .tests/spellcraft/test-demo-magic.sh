@@ -129,7 +129,9 @@ test_default_runs_all_levels() {
   assert_output_contains "Level 15: Divination" || return 1
   assert_output_contains "divination-scroll.txt" || return 1
   assert_output_contains "Level 17: Cryptography" || return 1
-  assert_output_contains "hashchant -> 0x" || return 1
+  assert_output_contains_either \
+    "hashchant -> 0x" \
+    "hashchant/evoke-hash skipped: extended attributes unavailable on this host." || return 1
   assert_output_contains_either "evoke-hash ->" "evoke-hash skipped:" || return 1
   assert_output_contains "Level 18: SSH & Remote Access" || return 1
   assert_output_contains "open-portal --help -> Usage: open-portal" || return 1
