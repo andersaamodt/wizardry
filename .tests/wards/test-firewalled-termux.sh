@@ -477,7 +477,11 @@ SH
   assert_success || return 1
   assert_output_contains "typed fallback worked" || return 1
   assert_file_contains "$tmpdir/adb.log" "sh%s/sdcard/wt/r"
-  assert_file_contains "$tmpdir/adb.log" "ENTER"
+  assert_file_contains "$tmpdir/adb.log" "ENTER" || return 1
+  if grep -q 'force-stop com.termux' "$tmpdir/adb.log"; then
+    TEST_FAILURE_REASON="typed fallback must not kill existing Termux sessions"
+    return 1
+  fi
 }
 
 falls_back_to_typed_termux_launch_when_intent_denial_is_only_on_stderr() {
