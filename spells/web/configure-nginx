@@ -276,7 +276,7 @@ wizardry_fastcgi_socket_path() {
     printf '%s\n' "$socket_default"
     return 0
   fi
-  socket_root=${WIZARDRY_FCGI_SOCKET_DIR:-/tmp/wizardry-fcgiwrap}
+  socket_root=${WIZARDRY_FCGI_SOCKET_DIR:-${TMPDIR:-/tmp}/wizardry-fcgiwrap}
   mkdir -p "$socket_root"
   if command -v shasum >/dev/null 2>&1; then
     socket_key=$(printf '%s' "$socket_site_dir" | shasum -a 256 | awk '{print $1}')

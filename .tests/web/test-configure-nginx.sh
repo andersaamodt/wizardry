@@ -464,6 +464,24 @@ test_configure_nginx_uses_xdg_runtime_for_git_workspace_roots() {
   rm -rf "$tmpdir" "$stub_dir"
 }
 
+test_configure_nginx_uses_tmpdir_for_long_socket_paths() {
+  skip-if-compiled || return $?
+
+  tmpdir=$(make_tempdir)
+  runtime_dir="$tmpdir/runtime"
+  test_web_root="$tmpdir/a-very-long-web-root-name-that-forces-the-fastcgi-socket-fallback"
+  stub_dir=$(temp-dir web-wizardry-stub)
+  mkdir -p "$runtime_dir" "$test_web_root/mytestsite"
+  stub-sudo "$stub_dir"
+
+  status=0
+  PATH="$stub_dir:$PATH" TMPDIR="$runtime_dir" WEB_WIZARDRY_ROOT="$test_web_root" \
+    sh "$test_root/spells/web/configure-nginx" mytestsite >/dev/null 2>&1 || status=$?
+  [ "$status" -eq 0 ] || return 1
+  assert_file_contains "$test_web_root/mytestsite/nginx/nginx.conf" \
+    "$runtime_dir/wizardry-fcgiwrap/" || return 1
+}
+
 run_test_case "configure-nginx --help" test_configure_nginx_help
 run_test_case "configure-nginx creates local mime.types" test_configure_nginx_creates_local_mimetypes
 run_test_case "configure-nginx supports .onion addresses" test_configure_nginx_supports_onion_addresses
@@ -486,5 +504,7 @@ run_test_case "configure-nginx honors external build-dir" \
   test_configure_nginx_honors_external_build_dir
 run_test_case "configure-nginx uses XDG runtime dirs for git workspace sites" \
   test_configure_nginx_uses_xdg_runtime_for_git_workspace_roots
+run_test_case "configure-nginx uses TMPDIR for long FastCGI socket paths" \
+  test_configure_nginx_uses_tmpdir_for_long_socket_paths
 
 finish_tests
