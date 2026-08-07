@@ -242,8 +242,8 @@ set_secure_perms() {
     return 0
   fi
 
-  fix_security_run_priv find "$target" -type d -exec chmod 750 {} +
-  fix_security_run_priv find "$target" -type f -exec chmod 640 {} +
+  fix_security_run_priv find "$target" -type d -exec chmod 750 {} \;
+  fix_security_run_priv find "$target" -type f -exec chmod 640 {} \;
 }
 
 fix_security_canonical_dir() {
@@ -401,8 +401,8 @@ fix_security_run_priv chown -R "$actual_user":"$site_group" "$site_data_dir"
 
 # Set permissions on build directory - actual user writes, site user reads
 if [ -d "$build_dir" ]; then
-  fix_security_run_priv find "$build_dir" -type d -exec chmod 755 {} + 2>/dev/null || true
-  fix_security_run_priv find "$build_dir" -type f -exec chmod 644 {} + 2>/dev/null || true
+  fix_security_run_priv find "$build_dir" -type d -exec chmod 755 {} \; 2>/dev/null || true
+  fix_security_run_priv find "$build_dir" -type f -exec chmod 644 {} \; 2>/dev/null || true
 fi
 
 # Set permissions on nginx directory - both actual user and site user need write access.
@@ -415,16 +415,16 @@ if [ -d "$nginx_dir" ]; then
   fix_security_run_priv mkdir -p "$nginx_dir/temp/scgi"
   
   # Group-write allows the site user to create/update pid, logs, sockets, and temp files.
-  fix_security_run_priv find "$nginx_dir" -type d -exec chmod 775 {} + 2>/dev/null || true
-  fix_security_run_priv find "$nginx_dir" -type f -exec chmod 664 {} + 2>/dev/null || true
+  fix_security_run_priv find "$nginx_dir" -type d -exec chmod 775 {} \; 2>/dev/null || true
+  fix_security_run_priv find "$nginx_dir" -type f -exec chmod 664 {} \; 2>/dev/null || true
 fi
 
 # Set permissions on site data directory - make it accessible to actual user
 # so "Open site data" works. Use 755 for dirs so user can cd into it.
 # Files need 664 so site user (owner) can write to them (e.g., chat logs)
 if [ -d "$site_data_dir" ]; then
-  fix_security_run_priv find "$site_data_dir" -type d -exec chmod 755 {} + 2>/dev/null || true
-  fix_security_run_priv find "$site_data_dir" -type f -exec chmod 664 {} + 2>/dev/null || true
+  fix_security_run_priv find "$site_data_dir" -type d -exec chmod 755 {} \; 2>/dev/null || true
+  fix_security_run_priv find "$site_data_dir" -type f -exec chmod 664 {} \; 2>/dev/null || true
 fi
 
 # Ensure site directory itself is accessible (755) and owned by actual user
@@ -436,8 +436,8 @@ fi
 # Ensure source directories are owned by actual user and readable by site user
 if [ -d "$site_dir/site" ]; then
   fix_security_run_priv chown -R "$actual_user":"$site_group" "$site_dir/site"
-  fix_security_run_priv find "$site_dir/site" -type d -exec chmod 755 {} + 2>/dev/null || true
-  fix_security_run_priv find "$site_dir/site" -type f -exec chmod 644 {} + 2>/dev/null || true
+  fix_security_run_priv find "$site_dir/site" -type d -exec chmod 755 {} \; 2>/dev/null || true
+  fix_security_run_priv find "$site_dir/site" -type f -exec chmod 644 {} \; 2>/dev/null || true
 fi
 
 # Fix allowlist permissions BEFORE reading it in apply_allowlist
