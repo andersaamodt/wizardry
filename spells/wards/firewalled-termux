@@ -12,7 +12,8 @@ Pushes a local shell script to Android shared storage, asks Termux to run it
 through the official RUN_COMMAND intent, then pulls back stdout, stderr, and
 the payload exit code as files. If Android denies the background intent,
 Wizardry wakes the unlocked device and opens Termux before typing the launch;
-Termux does not need to be open beforehand.
+Termux does not need to be open beforehand. While the payload runs, Wizardry
+uses Termux's wake-lock tools when available so the display may turn off.
 USAGE
   exit 0
   ;;

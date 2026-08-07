@@ -12,6 +12,7 @@ shows_help() {
   run_spell spells/wards/firewalled-termux --help
   assert_success || return 1
   assert_output_contains "Usage: firewalled-termux" || return 1
+  assert_output_contains "display may turn off" || return 1
 }
 
 runs_payload_via_termux_intent_and_pulls_artifacts() {

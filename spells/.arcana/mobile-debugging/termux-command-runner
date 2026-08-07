@@ -11,6 +11,10 @@ result_dir=${2-}
 args_file=${3-}
 work_dir=${4-}
 
+termux_shell=${TERMUX_SHELL_COMMAND:-/data/data/com.termux/files/usr/bin/sh}
+termux_wake_lock=${TERMUX_WAKE_LOCK_COMMAND:-/data/data/com.termux/files/usr/bin/termux-wake-lock}
+termux_wake_unlock=${TERMUX_WAKE_UNLOCK_COMMAND:-/data/data/com.termux/files/usr/bin/termux-wake-unlock}
+
 [ -n "$payload_path" ] || exit 2
 [ -n "$result_dir" ] || exit 2
 [ -n "$args_file" ] || exit 2
@@ -25,16 +29,32 @@ rm -f "$stdout_file" "$stderr_file" "$status_file"
 
 cd "$work_dir"
 
+wake_lock_held=0
+release_wake_lock() {
+  if [ "$wake_lock_held" -eq 1 ] && [ -x "$termux_wake_unlock" ]; then
+    "$termux_wake_unlock" >/dev/null 2>&1 || true
+    wake_lock_held=0
+  fi
+}
+trap 'release_wake_lock' EXIT HUP INT TERM
+
+if [ -x "$termux_wake_lock" ] && [ -x "$termux_wake_unlock" ] && \
+  "$termux_wake_lock" >/dev/null 2>&1; then
+  wake_lock_held=1
+fi
+
 set --
 while IFS= read -r runner_arg || [ -n "$runner_arg" ]; do
   set -- "$@" "$runner_arg"
 done < "$args_file"
 
-if /data/data/com.termux/files/usr/bin/sh "$payload_path" "$@" >"$stdout_file" 2>"$stderr_file"; then
+if "$termux_shell" "$payload_path" "$@" >"$stdout_file" 2>"$stderr_file"; then
   runner_status=0
 else
   runner_status=$?
 fi
 
 printf '%s\n' "$runner_status" >"$status_file"
+release_wake_lock
+trap - EXIT HUP INT TERM
 exit 0
