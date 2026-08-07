@@ -280,8 +280,9 @@ test_fix_site_security_nginx_is_group_writable() {
 
   web_root=$(temp-dir web-wizardry-test)
   site_dir="$web_root/mysite"
-  nginx_dir="$site_dir/nginx"
-  mkdir -p "$site_dir/site" "$nginx_dir"
+  mkdir -p "$site_dir/site"
+  nginx_dir=$("$ROOT_DIR/spells/.imps/web/site-runtime-dir" "$site_dir" nginx)
+  mkdir -p "$nginx_dir"
   cat > "$site_dir/site.conf" <<EOF
 # Site configuration for mysite
 site-name=mysite
