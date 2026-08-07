@@ -10,6 +10,12 @@ done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
+# Security checks can offer repairs when the fixture home has a restrictive
+# Termux umask. Tests must always select the declared default instead of reading
+# a real controlling terminal.
+ASK_CANTRIP_INPUT=none
+export ASK_CANTRIP_INPUT
+
 # Test that ward-system exists and is executable
 test_ward_system_exists() {
   [ -f "$ROOT_DIR/spells/wards/ward-system" ] && [ -x "$ROOT_DIR/spells/wards/ward-system" ]
