@@ -116,6 +116,8 @@ fi
 # Create temporary file for timing data
 tmpfile=$(temp-file profile-tests)
 on-exit cleanup-file "$tmpfile"
+profile_run_root=$(temp-dir profile-tests-runs)
+on-exit cleanup-dir "$profile_run_root"
 
 info "Profiling tests..."
 
@@ -141,17 +143,19 @@ while IFS= read -r test_path; do
   printf '\r[%d/%d] %s...' "$current" "$test_count" "$test_name" >&2
   
   # Time the test execution - timing method determined once above
+  profile_test_tmp="$profile_run_root/run.$current"
+  mkdir -p "$profile_test_tmp"
   if [ "$has_nanoseconds" -eq 1 ]; then
     start_time=$(date +%s.%N)
     test_exit=0
-    sh "$test_path" >/dev/null 2>&1 || test_exit=$?
+    WIZARDRY_TMPDIR="$profile_test_tmp" sh "$test_path" >/dev/null 2>&1 || test_exit=$?
     end_time=$(date +%s.%N)
     duration=$(awk -v start="$start_time" -v end="$end_time" \
       'BEGIN { printf "%.3f", end - start; exit }')
   else
     start_time=$(date +%s)
     test_exit=0
-    sh "$test_path" >/dev/null 2>&1 || test_exit=$?
+    WIZARDRY_TMPDIR="$profile_test_tmp" sh "$test_path" >/dev/null 2>&1 || test_exit=$?
     end_time=$(date +%s)
     duration=$((end_time - start_time))
     duration=$(printf '%d.000' "$duration")
