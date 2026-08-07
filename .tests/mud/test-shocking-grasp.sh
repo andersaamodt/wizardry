@@ -9,6 +9,10 @@ done
 test_shocking_grasp_charges_avatar() {
   # Create test directory (like the original test)
   test_tempdir=$(make_tempdir)
+  stub_dir=$(make_tempdir)
+  stub-xattr "$stub_dir"
+  PATH="$stub_dir:$PATH"
+  export PATH
   
   # Create avatar
   avatar_path="$test_tempdir/.testuser"
@@ -51,6 +55,10 @@ test_shocking_grasp_charges_avatar() {
 test_shocking_grasp_silent_by_default() {
   # Create test directory
   test_tempdir=$(make_tempdir)
+  stub_dir=$(make_tempdir)
+  stub-xattr "$stub_dir"
+  PATH="$stub_dir:$PATH"
+  export PATH
   
   # Create avatar
   avatar_path="$test_tempdir/.testuser"
