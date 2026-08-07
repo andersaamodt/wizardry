@@ -9,6 +9,12 @@ done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
+run_isolated_test_spell() {
+  nested_tmpdir=$(make_tempdir)
+  WIZARDRY_TMPDIR="$nested_tmpdir" run_spell \
+    "spells/.wizardry/test-spell" "$@"
+}
+
 test_help() {
   run_spell "spells/.wizardry/test-spell" --help
   assert_success && assert_output_contains "Usage:"
@@ -16,14 +22,14 @@ test_help() {
 
 test_runs_test_file_successfully() {
   # Run a simple test
-  run_spell "spells/.wizardry/test-spell" "cantrips/test-ask-yn.sh"
+  run_isolated_test_spell "cantrips/test-ask-yn.sh"
   assert_success
   assert_output_contains "tests passed"
 }
 
 test_skip_common_flag_is_ignored() {
   # --skip-common flag is deprecated but accepted for compatibility
-  run_spell "spells/.wizardry/test-spell" "--skip-common" "cantrips/test-ask-yn.sh"
+  run_isolated_test_spell "--skip-common" "cantrips/test-ask-yn.sh"
   assert_success
   assert_output_contains "tests passed"
 }
