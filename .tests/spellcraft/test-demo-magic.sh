@@ -138,8 +138,13 @@ test_default_runs_all_levels() {
   assert_output_contains "Level 19: Security Wards" || return 1
   assert_output_contains "ssh-barrier --help -> Usage: ssh-barrier" || return 1
   assert_output_contains "Level 20: Process & System Info (PSI)" || return 1
-  assert_output_contains "get-checked -> 1" || return 1
-  assert_output_contains "get-checked -> 0" || return 1
+  case "$OUTPUT" in
+    *"check/uncheck skipped: extended attributes unavailable on this host."*) : ;;
+    *)
+      assert_output_contains "get-checked -> 1" || return 1
+      assert_output_contains "get-checked -> 0" || return 1
+      ;;
+  esac
   assert_output_contains "Level 22: Core Menu Infrastructure" || return 1
   assert_output_contains "main-menu --help -> Usage: . main-menu" || return 1
   assert_output_contains "Level 24: MUD Administration Menus" || return 1
