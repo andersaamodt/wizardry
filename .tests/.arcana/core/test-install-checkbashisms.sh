@@ -35,6 +35,7 @@ installs_into_termux_prefix_without_devscripts() {
   fixture=$(make_fixture)
   prefix="$fixture/data/data/com.termux/files/usr"
   stub_dir="$fixture/bin"
+  pkg_log="$fixture/pkg.log"
   mkdir -p "$prefix/bin" "$stub_dir"
 
   cat <<'SCRIPT' >"$stub_dir/uname"
@@ -66,9 +67,22 @@ cat <<'TOOL' >"$output"
 exit 0;
 TOOL
 SCRIPT
-  chmod +x "$stub_dir/uname" "$stub_dir/apt-get" "$stub_dir/sudo" "$stub_dir/curl"
+  cat <<'SCRIPT' >"$stub_dir/pkg"
+#!/bin/sh
+printf '%s\n' "$*" >>"${PKG_LOG:?}"
+cat <<'PERL' >"${PREFIX:?}/bin/perl"
+#!/bin/sh
+exit 0
+PERL
+chmod +x "${PREFIX}/bin/perl"
+SCRIPT
+  cat <<'SCRIPT' >"$stub_dir/perl"
+#!/bin/sh
+exit 1
+SCRIPT
+  chmod +x "$stub_dir/uname" "$stub_dir/apt-get" "$stub_dir/sudo" "$stub_dir/curl" "$stub_dir/pkg" "$stub_dir/perl"
 
-  run_cmd env PATH="$stub_dir:$initial_path" PREFIX="$prefix" \
+  run_cmd env PATH="$prefix/bin:$stub_dir:$initial_path" PREFIX="$prefix" PKG_LOG="$pkg_log" \
     INSTALL_CHECKBASHISMS_FORCE_INSTALL=1 \
     "$ROOT_DIR/spells/.arcana/core/install-checkbashisms"
 
@@ -83,6 +97,10 @@ SCRIPT
     return 1
   }
   assert_output_contains "checkbashisms installed successfully from Debian sources." || return 1
+  grep -q '^install -y perl$' "$pkg_log" || {
+    TEST_FAILURE_REASON="expected the Termux Perl prerequisite to be installed with pkg"
+    return 1
+  }
 }
 
 run_test_case "install-checkbashisms exits when tool is present" creates_no_install_when_present

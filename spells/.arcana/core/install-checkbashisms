@@ -18,13 +18,6 @@ set -eu
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 
-# Check if already installed
-force_install="${INSTALL_CHECKBASHISMS_FORCE_INSTALL:-0}"
-if command -v checkbashisms >/dev/null 2>&1 && [ "$force_install" != "1" ]; then
-  printf '%s\n' "checkbashisms is already installed."
-  exit 0
-fi
-
 # Arch, macOS, and Termux need the standalone Debian script. Termux's apt
 # repositories do not carry Debian's devscripts package.
 termux_prefix=""
@@ -33,6 +26,15 @@ case ${PREFIX-} in
     termux_prefix=$PREFIX
     ;;
 esac
+
+# A path entry is not enough: the standalone script also needs a working Perl
+# interpreter. This catches incomplete Termux installs left by older versions.
+force_install="${INSTALL_CHECKBASHISMS_FORCE_INSTALL:-0}"
+if command -v checkbashisms >/dev/null 2>&1 && [ "$force_install" != "1" ] \
+  && checkbashisms --version >/dev/null 2>&1; then
+  printf '%s\n' "checkbashisms is already installed."
+  exit 0
+fi
 
 source_install=0
 if command -v pacman >/dev/null 2>&1; then
@@ -44,6 +46,18 @@ elif [ -n "$termux_prefix" ]; then
 fi
 
 if [ "$source_install" -eq 1 ]; then
+  if [ -n "$termux_prefix" ] \
+    && { ! command -v perl >/dev/null 2>&1 || ! perl -e 'exit 0' >/dev/null 2>&1; }; then
+    command -v pkg >/dev/null 2>&1 || {
+      printf '%s\n' "install-checkbashisms: Termux pkg is required to install Perl" >&2
+      exit 1
+    }
+    pkg install -y perl || {
+      printf '%s\n' "install-checkbashisms: failed to install the Termux Perl prerequisite" >&2
+      exit 1
+    }
+  fi
+
   # Download checkbashisms directly from Debian sources
   if [ -n "$termux_prefix" ]; then
     target_dir="$termux_prefix/bin"
@@ -87,7 +101,8 @@ if [ "$source_install" -eq 1 ]; then
     chmod +x "$target_dir/checkbashisms"
   fi
   
-  if command -v checkbashisms >/dev/null 2>&1; then
+  if command -v checkbashisms >/dev/null 2>&1 \
+    && checkbashisms --version >/dev/null 2>&1; then
     printf '%s\n' "checkbashisms installed successfully from Debian sources."
     exit 0
   else
