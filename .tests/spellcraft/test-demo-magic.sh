@@ -109,7 +109,9 @@ test_default_runs_all_levels() {
   assert_success || return 1
   assert_output_contains "Level 3: Glossary & Parsing" || return 1
   assert_output_contains "Level 5: Extended Attributes" || return 1
-  assert_output_contains "xattr round-trip -> mood=calm" || return 1
+  assert_output_contains_either \
+    "xattr round-trip -> mood=calm" \
+    "xattr round-trip skipped: extended attributes unavailable on this host." || return 1
   assert_output_contains "yaml-to-enchantment -> mood=calm" || return 1
   assert_output_contains "main-menu --help -> Usage: . main-menu" || return 1
   assert_output_contains "Level 6: Task Priorities" || return 1

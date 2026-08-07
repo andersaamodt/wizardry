@@ -250,10 +250,17 @@ test_chat_stream_sends_member_list() {
   mkdir -p "$CHAT_DIR/TestRoom"
   mkdir -p "$CHAT_DIR/TestRoom/.Alice"
   mkdir -p "$CHAT_DIR/TestRoom/.Bob"
-  
-  export QUERY_STRING="room=TestRoom"
-  output=$(run_with_timeout chat-stream)
-  
+
+  patterns_file=$(mktemp)
+  cat > "$patterns_file" <<'EOF'
+event: members
+Alice
+Bob
+EOF
+  output=$(capture_stream_until_patterns "$patterns_file" \
+    env QUERY_STRING="room=TestRoom" chat-stream)
+
+  rm -f "$patterns_file"
   cleanup_test_env
   
   printf '%s' "$output" | grep -q "event: members" && \
