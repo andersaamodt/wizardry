@@ -119,7 +119,7 @@ last_message_time=$(date +%s)
 last_room_mtime=0
 
 # Create FIFO for tail output
-fifo="/tmp/chat_stream_$$_fifo"
+fifo="${TMPDIR:-/tmp}/chat_stream_$$_fifo"
 mkfifo "$fifo" || {
   sse-error 500 "Failed to create communication channel"
   sleep 0.1  # Ensure output is flushed before exit

@@ -275,6 +275,32 @@ test_chat_stream_outputs_sse_headers() {
   printf '%s' "$output" | grep -q "Content-Type: text/event-stream"
 }
 
+test_chat_stream_uses_tmpdir_for_fifo() {
+  setup_test_env
+
+  mkdir -p "$CHAT_DIR/TestRoom" "$test_tmpdir/runtime" "$test_tmpdir/stubs"
+  fifo_log="$test_tmpdir/fifo.log"
+  cat >"$test_tmpdir/stubs/mkfifo" <<'SH'
+#!/bin/sh
+printf '%s\n' "$1" >"${MKFIFO_LOG:?}"
+exit 1
+SH
+  chmod +x "$test_tmpdir/stubs/mkfifo"
+  export MKFIFO_LOG="$fifo_log"
+  export TMPDIR="$test_tmpdir/runtime"
+  export PATH="$test_tmpdir/stubs:$PATH"
+  export QUERY_STRING="room=TestRoom"
+
+  run_with_timeout chat-stream >/dev/null
+  fifo_path=$(cat "$fifo_log" 2>/dev/null || printf '')
+  case "$fifo_path" in
+    "$TMPDIR"/chat_stream_*_fifo) : ;;
+    *) cleanup_test_env; return 1 ;;
+  esac
+
+  cleanup_test_env
+}
+
 run_test_case "chat-stream is executable" test_chat_stream_exists
 run_test_case "chat-stream rejects invalid room names" test_chat_stream_rejects_invalid_room_name
 run_test_case "chat-stream rejects empty room parameter" test_chat_stream_rejects_empty_room
@@ -285,5 +311,6 @@ run_test_case "chat-stream handles same-second messages" test_chat_stream_handle
 run_test_case "chat-stream connects instantly regardless of history" test_chat_stream_connects_instantly_regardless_of_history
 run_test_case "chat-stream sends member list" test_chat_stream_sends_member_list
 run_test_case "chat-stream outputs SSE headers" test_chat_stream_outputs_sse_headers
+run_test_case "chat-stream creates its FIFO under TMPDIR" test_chat_stream_uses_tmpdir_for_fifo
 
 finish_tests
