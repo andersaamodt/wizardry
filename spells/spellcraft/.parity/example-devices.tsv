@@ -1,0 +1,2 @@
+# id	platform	transports	required_prerequisites	satisfied_prerequisites
+simulated-android	android_termux	lan,tor	-	-

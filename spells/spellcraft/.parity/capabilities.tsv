@@ -1,0 +1,11 @@
+# id	outcome	discovery	executor	host_platforms	control_targets	required_scopes
+terminal_system	Discover and run Wizardry terminal and system operations from its menus.	menu -> core wizardry / system menu	artificer	macos,debian,nixos,arch,android_termux,windows_wsl	-	wizardry.command.execute
+files_navigation_ssh	Navigate files and open an SSH portal to another machine.	menu -> spellbook -> translocation	artificer	macos,debian,nixos,arch,android_termux,windows_wsl	-	files.read,ssh.connect
+software_installation	Find and install selected software through the Arcana installer menu.	menu -> install menu	artificer	macos,debian,nixos,arch,android_termux,windows_wsl	-	software.install
+private_sharing_sync	Install and operate private sharing or synchronization with Syncthing, SimpleX, or Tor.	install menu -> Syncthing / SimpleX / Tor	artificer	macos,debian,nixos,arch,android_termux,windows_wsl	-	software.install,network.private_service
+media_capture_transform	Download, capture, or transform media with yt-dlp, FFmpeg, webcam, and audio tooling.	install menu -> yt-dlp / webcam / voice	artificer	macos,debian,nixos,arch,android_termux,windows_wsl	-	media.capture,media.transform
+voice_recognition	Install voice recognition and turn speech into structured intent for an upstream consumer.	install menu -> voice -> voice recognition	external	macos,debian,nixos,arch,android_termux,windows_wsl	-	microphone.read
+mobile_debug_control	Connect to and test a mobile device through authorized debugging tooling.	install menu -> mobile debugging	actuator	macos,debian,nixos,arch,android_termux,windows_wsl	android_termux,ios	device.debug,device.control
+web_publishing	Create and publish a website using Wizardry's web tooling.	install menu -> web wizardry	artificer	macos,debian,nixos,arch,android_termux,windows_wsl	-	files.write,network.publish
+local_ai_artificer	Install local AI development tools and deploy or test Artificer.	install menu -> AI dev	artificer	macos,debian,nixos,arch,windows_wsl	-	software.install,agent.deploy
+creation_development	Create software, sites, or games using Wizardry development menus and commands.	install menu -> wizardry projects / game development / AI dev	artificer	macos,debian,nixos,arch,android_termux,windows_wsl	-	files.write,process.execute

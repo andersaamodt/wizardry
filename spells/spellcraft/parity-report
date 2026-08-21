@@ -1,0 +1,139 @@
+#!/bin/sh
+
+# Report which Wizardry capabilities have real passing evidence on each platform.
+# Uses only POSIX shell and awk; runtime evidence may be supplied as a TSV file.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: parity-report [EVIDENCE-FILE]
+
+Show Wizardry's evidence-backed capability matrix. If EVIDENCE-FILE is omitted,
+use the conservative evidence bundled with Wizardry.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+if [ "$#" -gt 1 ]; then
+  printf '%s\n' 'Usage: parity-report [EVIDENCE-FILE]' >&2
+  exit 2
+fi
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+data_dir=${PARITY_DATA_DIR:-$script_dir/.parity}
+capabilities=$data_dir/capabilities.tsv
+platforms=$data_dir/platforms.tsv
+evidence=${1:-$data_dir/baseline-evidence.tsv}
+
+for required_file in "$capabilities" "$platforms" "$evidence"; do
+  if [ ! -r "$required_file" ]; then
+    printf 'parity-report: cannot read %s\n' "$required_file" >&2
+    exit 1
+  fi
+done
+
+awk -F '\t' -v capabilities_file="$capabilities" \
+  -v platforms_file="$platforms" -v evidence_file="$evidence" '
+  function listed(list, value) {
+    return list != "-" && index("," list ",", "," value ",") > 0
+  }
+  function supported(capability, platform) {
+    return (platform_host[platform] == "true" &&
+      listed(capability_hosts[capability], platform)) ||
+      listed(capability_targets[capability], platform)
+  }
+  function status(capability, platform, key, missing) {
+    reason = ""
+    if (!supported(capability, platform)) {
+      reason = "unavailable on this platform"
+      return "RED"
+    }
+    key = capability SUBSEP platform
+    if (!(key in evidence_kind)) {
+      reason = "missing outcome evidence"
+      return "YELLOW"
+    }
+    if (evidence_prerequisites[key] != "-") {
+      reason = "prerequisite: " evidence_prerequisites[key]
+      return "YELLOW"
+    }
+    missing = ""
+    if (evidence_discoverable[key] != "true") missing = "discoverable"
+    if (evidence_installed[key] != "true") missing = missing (missing ? ", " : "") "installed"
+    if (evidence_executable[key] != "true") missing = missing (missing ? ", " : "") "executable"
+    if (evidence_outcome[key] != "true") missing = missing (missing ? ", " : "") "outcome_passed"
+    if (missing != "") {
+      reason = "missing passing evidence: " missing
+      return "YELLOW"
+    }
+    if (evidence_kind[key] != "automated_on_platform" &&
+      evidence_kind[key] != "manual_on_device") {
+      reason = "real-platform evidence required"
+      return "YELLOW"
+    }
+    if (evidence_refs[key] == "-") {
+      reason = "evidence reference required"
+      return "YELLOW"
+    }
+    reason = "real outcome evidence passed"
+    return "GREEN"
+  }
+  $0 == "" || $1 ~ /^#/ { next }
+  FILENAME == capabilities_file {
+    capability_count++
+    capability_order[capability_count] = $1
+    capability_outcome[$1] = $2
+    capability_hosts[$1] = $5
+    capability_targets[$1] = $6
+    next
+  }
+  FILENAME == platforms_file {
+    platform_count++
+    platform_order[platform_count] = $1
+    platform_label[$1] = $2
+    platform_host[$1] = $3
+    platform_state[$1] = $4
+    next
+  }
+  FILENAME == evidence_file {
+    key = $1 SUBSEP $2
+    evidence_kind[key] = $4
+    evidence_discoverable[key] = $5
+    evidence_installed[key] = $6
+    evidence_executable[key] = $7
+    evidence_outcome[key] = $8
+    evidence_prerequisites[key] = $9
+    evidence_refs[key] = $10
+  }
+  END {
+    print "parity — Wizardry capability audit"
+    print "Green requires discovery, installation, execution, and real outcome evidence."
+    print ""
+    for (p = 1; p <= platform_count; p++) {
+      platform = platform_order[p]
+      green = yellow = red = 0
+      for (c = 1; c <= capability_count; c++) {
+        result = status(capability_order[c], platform)
+        if (result == "GREEN") green++
+        else if (result == "YELLOW") yellow++
+        else red++
+      }
+      printf "%-22s GREEN %2d  YELLOW %2d  RED %2d  (%s)\n", \
+        platform_label[platform], green, yellow, red, platform_state[platform]
+    }
+    print ""
+    print "Outcome matrix"
+    for (c = 1; c <= capability_count; c++) {
+      capability = capability_order[c]
+      printf "\n%s: %s\n", capability, capability_outcome[capability]
+      for (p = 1; p <= platform_count; p++) {
+        platform = platform_order[p]
+        result = status(capability, platform)
+        printf "  %-16s %-6s %s\n", platform, result, reason
+      }
+    }
+  }
+' "$capabilities" "$platforms" "$evidence"

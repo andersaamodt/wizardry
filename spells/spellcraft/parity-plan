@@ -1,0 +1,86 @@
+#!/bin/sh
+
+# List the outcome checks needed to prove Wizardry capabilities on a platform.
+# Reads Wizardry's small tab-separated Parity manifests with POSIX awk.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: parity-plan [PLATFORM]
+
+List capability checks for every platform, or only PLATFORM when supplied.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+if [ "$#" -gt 1 ]; then
+  printf '%s\n' 'Usage: parity-plan [PLATFORM]' >&2
+  exit 2
+fi
+
+selected_platform=${1--}
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+data_dir=${PARITY_DATA_DIR:-$script_dir/.parity}
+capabilities=$data_dir/capabilities.tsv
+platforms=$data_dir/platforms.tsv
+
+for required_file in "$capabilities" "$platforms"; do
+  if [ ! -r "$required_file" ]; then
+    printf 'parity-plan: cannot read %s\n' "$required_file" >&2
+    exit 1
+  fi
+done
+
+awk -F '\t' -v capabilities_file="$capabilities" \
+  -v platforms_file="$platforms" -v selected="$selected_platform" '
+  function listed(list, value) {
+    return list != "-" && index("," list ",", "," value ",") > 0
+  }
+  $0 == "" || $1 ~ /^#/ { next }
+  FILENAME == capabilities_file {
+    capability_count++
+    capability_order[capability_count] = $1
+    capability_outcome[$1] = $2
+    capability_discovery[$1] = $3
+    capability_hosts[$1] = $5
+    capability_targets[$1] = $6
+    next
+  }
+  FILENAME == platforms_file {
+    platform_count++
+    platform_order[platform_count] = $1
+    platform_found[$1] = 1
+    platform_host[$1] = $3
+    platform_prerequisites[$1] = $6
+    platform_gate[$1] = $7
+    platform_gate_scope[$1] = $8
+  }
+  END {
+    if (selected != "-" && !(selected in platform_found)) {
+      print "parity-plan: unknown platform: " selected > "/dev/stderr"
+      exit 2
+    }
+    for (p = 1; p <= platform_count; p++) {
+      platform = platform_order[p]
+      if (selected != "-" && selected != platform) continue
+      for (c = 1; c <= capability_count; c++) {
+        capability = capability_order[c]
+        as_host = platform_host[platform] == "true" &&
+          listed(capability_hosts[capability], platform)
+        as_target = listed(capability_targets[capability], platform)
+        if (!as_host && !as_target) continue
+        printf "%s / %s\n", platform, capability
+        printf "  outcome: %s\n", capability_outcome[capability]
+        printf "  discover: %s\n", capability_discovery[capability]
+        print "  prove: discoverable, installed, executable, outcome_passed"
+        if (platform_prerequisites[platform] != "-" &&
+          (platform_gate_scope[platform] == "host_runtime" || as_target))
+          printf "  manual gate: %s (%s)\n", platform_prerequisites[platform], \
+            platform_gate[platform]
+      }
+    }
+  }
+' "$capabilities" "$platforms"

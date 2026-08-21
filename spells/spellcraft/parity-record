@@ -1,0 +1,98 @@
+#!/bin/sh
+
+# Print one Wizardry capability observation as an appendable TSV record.
+# The caller chooses where runtime evidence is stored; this spell writes stdout only.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: parity-record CAPABILITY PLATFORM KIND CHECKS [PREREQUISITES] [EVIDENCE-REFS] [NOTES]
+
+Print one tab-separated evidence record. CHECKS is a comma-separated selection
+of discoverable, installed, executable, and outcome_passed. Use - for an empty
+optional field.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+case $# in
+4|5|6|7) ;;
+*)
+  printf '%s\n' 'Usage: parity-record CAPABILITY PLATFORM KIND CHECKS [PREREQUISITES] [EVIDENCE-REFS] [NOTES]' >&2
+  exit 2
+  ;;
+esac
+
+capability=$1
+platform=$2
+kind=$3
+checks=$4
+prerequisites=${5--}
+evidence_refs=${6--}
+notes=${7--}
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+data_dir=${PARITY_DATA_DIR:-$script_dir/.parity}
+capabilities=$data_dir/capabilities.tsv
+platforms=$data_dir/platforms.tsv
+
+if ! awk -F '\t' -v wanted="$capability" '$1 == wanted { found = 1 } END { exit !found }' "$capabilities"; then
+  printf 'parity-record: unknown capability: %s\n' "$capability" >&2
+  exit 2
+fi
+if ! awk -F '\t' -v wanted="$platform" '$1 == wanted { found = 1 } END { exit !found }' "$platforms"; then
+  printf 'parity-record: unknown platform: %s\n' "$platform" >&2
+  exit 2
+fi
+
+case $kind in
+automated_on_platform|manual_on_device|source_assertion|simulated) ;;
+*)
+  printf 'parity-record: unknown evidence kind: %s\n' "$kind" >&2
+  exit 2
+  ;;
+esac
+
+tab=$(printf '\t')
+newline='
+'
+for field in "$capability" "$platform" "$kind" "$checks" \
+  "$prerequisites" "$evidence_refs" "$notes"; do
+  case $field in
+  *"$tab"*|*"$newline"*)
+    printf '%s\n' 'parity-record: fields cannot contain tabs or newlines' >&2
+    exit 2
+    ;;
+  esac
+done
+
+discoverable=false
+installed=false
+executable=false
+outcome_passed=false
+old_ifs=$IFS
+IFS=,
+set -- $checks
+IFS=$old_ifs
+for check in "$@"; do
+  case $check in
+  discoverable) discoverable=true ;;
+  installed) installed=true ;;
+  executable) executable=true ;;
+  outcome_passed) outcome_passed=true ;;
+  -|'') ;;
+  *)
+    printf 'parity-record: unknown check: %s\n' "$check" >&2
+    exit 2
+    ;;
+  esac
+done
+
+recorded_at=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
+printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+  "$capability" "$platform" "$recorded_at" "$kind" "$discoverable" \
+  "$installed" "$executable" "$outcome_passed" "$prerequisites" \
+  "$evidence_refs" "$notes"

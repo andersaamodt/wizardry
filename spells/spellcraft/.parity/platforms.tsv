@@ -1,0 +1,9 @@
+# id	label	wizardry_host	status	transports	prerequisites	gate_description	gate_scope
+macos	macOS	true	working primary	local,lan,tor	-	-	-
+debian	Debian/Ubuntu	true	validated on Raspberry Pi	local,lan,tor	-	-	-
+nixos	NixOS	true	untested	local,lan,tor	-	-	-
+arch	Arch	true	untested	local,lan,tor	-	-	-
+android_termux	Android via Termux	true	under active validation	local,lan,tor	wifi_debugging_enabled	Enable Android Wi-Fi debugging before remote control.	remote_routing
+windows_wsl	Windows via WSL	true	untested compatibility path	local,lan	wsl_installed	Install a supported Linux distribution under WSL.	host_runtime
+windows_native	Windows native	false	not planned	-	-	-	-
+ios	iPhone/iOS	false	official debugging tools only	official_debug	official_debug_session	Connect and authorize the device through Apple's official debugging tools.	remote_routing

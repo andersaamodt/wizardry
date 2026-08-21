@@ -1,0 +1,150 @@
+#!/bin/sh
+
+# Choose a stable authorized Wizardry target from a tab-separated device inventory.
+# This spell makes a routing decision only; an executor performs the operation.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: parity-route CAPABILITY PLATFORM DEVICES [GRANTED-SCOPES] [TRANSPORTS]
+
+Choose an eligible device. Comma-separate scopes and preferred transports; use
+- for none. DEVICES has columns: id, platform, transports, required prerequisites,
+and satisfied prerequisites.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+
+case $# in
+3|4|5) ;;
+*)
+  printf '%s\n' 'Usage: parity-route CAPABILITY PLATFORM DEVICES [GRANTED-SCOPES] [TRANSPORTS]' >&2
+  exit 2
+  ;;
+esac
+
+capability=$1
+platform=$2
+devices=$3
+granted_scopes=${4--}
+preferred_transports=${5-local,lan,tor,official_debug}
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+data_dir=${PARITY_DATA_DIR:-$script_dir/.parity}
+capabilities=$data_dir/capabilities.tsv
+platforms=$data_dir/platforms.tsv
+
+for required_file in "$capabilities" "$platforms" "$devices"; do
+  if [ ! -r "$required_file" ]; then
+    printf 'parity-route: cannot read %s\n' "$required_file" >&2
+    exit 1
+  fi
+done
+
+awk -F '\t' -v capabilities_file="$capabilities" \
+  -v platforms_file="$platforms" -v devices_file="$devices" \
+  -v wanted_capability="$capability" -v wanted_platform="$platform" \
+  -v granted="$granted_scopes" -v preferred="$preferred_transports" '
+  function listed(list, value) {
+    return list != "-" && index("," list ",", "," value ",") > 0
+  }
+  function choose_transport(available, count, choices, i) {
+    count = split(preferred, choices, ",")
+    for (i = 1; i <= count; i++)
+      if (listed(available, choices[i])) return choices[i]
+    return ""
+  }
+  function missing(required, satisfied, count, items, i, result) {
+    if (required == "-" || required == "") return "-"
+    count = split(required, items, ",")
+    result = ""
+    for (i = 1; i <= count; i++)
+      if (!listed(satisfied, items[i]))
+        result = result (result ? "," : "") items[i]
+    return result ? result : "-"
+  }
+  $0 == "" || $1 ~ /^#/ { next }
+  FILENAME == capabilities_file && $1 == wanted_capability {
+    capability_found = 1
+    executor = $4
+    hosts = $5
+    targets = $6
+    required_scopes = $7
+    next
+  }
+  FILENAME == platforms_file && $1 == wanted_platform {
+    platform_found = 1
+    platform_is_host = $3
+    platform_prerequisites = $6
+    next
+  }
+  FILENAME == devices_file && $2 == wanted_platform {
+    device_transports[$1] = $3
+    device_required[$1] = $4
+    device_satisfied[$1] = $5
+  }
+  END {
+    if (!capability_found) {
+      print "status=rejected"
+      print "reason=unknown capability: " wanted_capability
+      exit 2
+    }
+    if (!platform_found) {
+      print "status=rejected"
+      print "reason=unknown platform: " wanted_platform
+      exit 2
+    }
+    scope_count = split(required_scopes, scopes, ",")
+    absent = ""
+    for (i = 1; i <= scope_count; i++)
+      if (!listed(granted, scopes[i]))
+        absent = absent (absent ? "," : "") scopes[i]
+    if (absent != "") {
+      print "status=rejected"
+      print "executor=" executor
+      print "reason=missing authorization scopes: " absent
+      exit 2
+    }
+    as_host = platform_is_host == "true" && listed(hosts, wanted_platform)
+    as_target = listed(targets, wanted_platform)
+    if (!as_host && !as_target) {
+      print "status=ineligible"
+      print "executor=" executor
+      print "reason=capability is unavailable on this platform"
+      exit 2
+    }
+    selected = ""
+    selected_transport = ""
+    for (device in device_transports) {
+      transport = choose_transport(device_transports[device])
+      if (transport != "" && (selected == "" || device < selected)) {
+        selected = device
+        selected_transport = transport
+      }
+    }
+    if (selected == "") {
+      print "status=ineligible"
+      print "executor=" executor
+      print "reason=no eligible target and transport"
+      exit 2
+    }
+    required = platform_prerequisites
+    if (device_required[selected] != "-") {
+      if (required == "-") required = device_required[selected]
+      else required = required "," device_required[selected]
+    }
+    unmet = missing(required, device_satisfied[selected])
+    if (unmet != "-") print "status=manual_gate"
+    else print "status=eligible"
+    print "device=" selected
+    print "transport=" selected_transport
+    print "executor=" executor
+    if (unmet != "-") {
+      print "missing_prerequisites=" unmet
+      print "reason=manual prerequisite must be satisfied"
+    } else print "reason=authorized eligible route"
+  }
+' "$capabilities" "$platforms" "$devices"
