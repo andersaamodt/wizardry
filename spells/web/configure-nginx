@@ -265,7 +265,8 @@ elif [ -n "$desk_route_host" ]; then
 fi
 
 # Create nginx config directory
-nginx_conf_dir=$("${WIZARDRY_DIR:-$HOME/.wizardry}/spells/.imps/web/site-runtime-dir" "$site_dir" nginx)
+site_runtime_dir="${WIZARDRY_DIR:-$HOME/.wizardry}/spells/.imps/web/site-runtime-dir"
+nginx_conf_dir=$("$site_runtime_dir" "$site_dir" nginx)
 mkdir -p "$nginx_conf_dir"
 
 wizardry_fastcgi_socket_path() {
@@ -330,7 +331,8 @@ fi
 
 site_build_dir() {
   site_build_dir_site_dir=$1
-  site_build_dir_config=$(config-get "$site_build_dir_site_dir/site.conf" build-dir 2>/dev/null || printf '')
+  site_build_dir_config=$(config-get \
+    "$site_build_dir_site_dir/site.conf" build-dir 2>/dev/null || printf '')
   case "$site_build_dir_config" in
     '')
       site_build_dir_path="$site_build_dir_site_dir/build"
@@ -465,6 +467,11 @@ $desk_host_root_rewrite
         # in a single server response (no client-side route repair).
         location ~ ^/posts/([A-Za-z0-9-]+)/?$ {
             rewrite ^/posts/([A-Za-z0-9-]+)/?$ /cgi/blog-open-post?path=posts/\$1.md last;
+        }
+
+        # Human-readable public and unlisted attachment links.
+        location ~ ^/file/([^/]+)(?:/.*)?$ {
+            rewrite ^/file/([^/]+)(?:/.*)?$ /cgi/blog-file?file_key=\$1 last;
         }
 
         # Desk is a private spatial app with room URLs beneath /desk.
