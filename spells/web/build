@@ -61,11 +61,23 @@ workspace_state_key() {
     return 0
   }
   if command -v shasum >/dev/null 2>&1; then
-    workspace_state_key_digest=$(printf '%s' "$workspace_state_key_root" | shasum -a 256 | awk '{print $1}')
+    workspace_state_key_digest=$(
+      printf '%s' "$workspace_state_key_root" |
+        shasum -a 256 |
+        awk '{print $1}'
+    )
   elif command -v sha256sum >/dev/null 2>&1; then
-    workspace_state_key_digest=$(printf '%s' "$workspace_state_key_root" | sha256sum | awk '{print $1}')
+    workspace_state_key_digest=$(
+      printf '%s' "$workspace_state_key_root" |
+        sha256sum |
+        awk '{print $1}'
+    )
   else
-    workspace_state_key_digest=$(printf '%s' "$workspace_state_key_root" | tr '/ ' '__' | tr -cd '[:alnum:]_.-')
+    workspace_state_key_digest=$(
+      printf '%s' "$workspace_state_key_root" |
+        tr '/ ' '__' |
+        tr -cd '[:alnum:]_.-'
+    )
   fi
   workspace_state_key_short=$(printf '%s' "$workspace_state_key_digest" | cut -c1-16)
   [ -n "$workspace_state_key_short" ] || workspace_state_key_short=workspace
@@ -76,7 +88,9 @@ default_site_data_dir() {
   case "$sites_dir" in
     "$HOME"/git|"$HOME"/git/*|/Users/andersaamodt/git|/Users/andersaamodt/git/*)
       xdg_state_home=${XDG_STATE_HOME:-$HOME/.local/state}
-      printf '%s/wizardry/web-sites/%s/.sitedata/%s\n' "$xdg_state_home" "$(workspace_state_key "$sites_dir")" "$site_name"
+      workspace_key=$(workspace_state_key "$sites_dir")
+      printf '%s/wizardry/web-sites/%s/.sitedata/%s\n' \
+        "$xdg_state_home" "$workspace_key" "$site_name"
       return 0
       ;;
   esac
@@ -94,7 +108,8 @@ site_build_dir() {
   if [ -n "${WIZARDRY_BUILD_DIR:-}" ]; then
     site_build_dir_config=$WIZARDRY_BUILD_DIR
   else
-    site_build_dir_config=$(config-get "$site_build_dir_site_dir/site.conf" build-dir 2>/dev/null || printf '')
+    site_build_dir_config=$(config-get \
+      "$site_build_dir_site_dir/site.conf" build-dir 2>/dev/null || printf '')
   fi
   case "$site_build_dir_config" in
     '')
@@ -127,7 +142,9 @@ site_configured_dir() {
   if [ -n "$site_configured_dir_env_value" ]; then
     site_configured_dir_config=$site_configured_dir_env_value
   else
-    site_configured_dir_config=$(config-get "$site_configured_dir_site_dir/site.conf" "$site_configured_dir_key" 2>/dev/null || printf '')
+    site_configured_dir_config=$(config-get \
+      "$site_configured_dir_site_dir/site.conf" \
+      "$site_configured_dir_key" 2>/dev/null || printf '')
   fi
   case "$site_configured_dir_config" in
     '')
@@ -154,12 +171,20 @@ site_configured_dir() {
 
 site_pages_dir() {
   site_pages_dir_site_dir=$1
-  site_configured_dir "$site_pages_dir_site_dir" pages-dir "${WIZARDRY_PAGES_DIR:-}" "$site_pages_dir_site_dir/site/pages"
+  site_configured_dir \
+    "$site_pages_dir_site_dir" \
+    pages-dir \
+    "${WIZARDRY_PAGES_DIR:-}" \
+    "$site_pages_dir_site_dir/site/pages"
 }
 
 site_static_dir() {
   site_static_dir_site_dir=$1
-  site_configured_dir "$site_static_dir_site_dir" static-dir "${WIZARDRY_STATIC_DIR:-}" "$site_static_dir_site_dir/site/static"
+  site_configured_dir \
+    "$site_static_dir_site_dir" \
+    static-dir \
+    "${WIZARDRY_STATIC_DIR:-}" \
+    "$site_static_dir_site_dir/site/static"
 }
 
 if ! has pandoc; then
@@ -230,7 +255,9 @@ render_raw_html_markdown_page() {
     printf '%s\n' '<head>'
     printf '%s\n' '  <meta charset="utf-8" />'
     printf '  <meta name="generator" content="wizardry" />\n'
-    printf '  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />\n'
+    printf '%s%s\n' \
+      '  <meta name="viewport" content="width=device-width, ' \
+      'initial-scale=1.0, user-scalable=yes" />'
     printf '  <title>%s</title>\n' "$(xml_escape "$page_title")"
     printf '  <link rel="stylesheet" href="/static/style.css" />\n'
     cat "$htmx_header"
@@ -994,7 +1021,8 @@ build_site() {
 
   if [ ! -f "$js_lib_dir/htmx.min.js" ] || [ ! -f "$js_lib_dir/idiomorph-ext.min.js" ]; then
     if [ "${WIZARDRY_WEB_REQUIRE_CACHED_LIBS:-0}" = "1" ]; then
-      die "build: web libraries are missing at $js_lib_dir; run install-htmx before deployment builds"
+      missing_libraries="build: web libraries are missing at $js_lib_dir;"
+      die "$missing_libraries run install-htmx before deployment builds"
     fi
     info "Web libraries not found, installing..."
     WIZARDRY_WEB_JS_DIR="$js_lib_dir"

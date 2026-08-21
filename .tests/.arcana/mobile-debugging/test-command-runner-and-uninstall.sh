@@ -11,6 +11,12 @@ termux_runner_requires_its_envelope() {
   assert_status 2
 }
 
+termux_runner_shows_help() {
+  run_spell spells/.arcana/mobile-debugging/termux-command-runner --help
+  assert_success || return 1
+  assert_output_contains "Usage: termux-command-runner"
+}
+
 termux_runner_records_complete_receipts() {
   runner=$ROOT_DIR/spells/.arcana/mobile-debugging/termux-command-runner
   grep -q 'stdout.txt' "$runner" &&
@@ -60,6 +66,7 @@ android_commandline_uninstaller_shows_help() {
 }
 
 run_test_case "Termux command runner requires its job envelope" termux_runner_requires_its_envelope
+run_test_case "Termux command runner shows help" termux_runner_shows_help
 run_test_case "Termux command runner records complete receipts" termux_runner_records_complete_receipts
 run_test_case "Termux command runner holds a wake lock for each payload" \
   termux_runner_holds_wake_lock_for_payload

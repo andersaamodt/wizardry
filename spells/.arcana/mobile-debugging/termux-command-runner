@@ -1,8 +1,19 @@
-#!/data/data/com.termux/files/usr/bin/sh
+#!/bin/sh
 
 # Execute a pushed payload script inside Termux and persist stdout/stderr/status
 # to a shared result directory so host-side automation can collect exact
 # artifacts without scraping terminal UI.
+
+case "${1-}" in
+  --help|--usage|-h)
+    cat <<'USAGE'
+Usage: termux-command-runner PAYLOAD RESULT_DIR ARGS_FILE WORK_DIR
+
+Run a payload inside Termux and write its output and exit status to RESULT_DIR.
+USAGE
+    exit 0
+    ;;
+esac
 
 set -eu
 
@@ -13,7 +24,8 @@ work_dir=${4-}
 
 termux_shell=${TERMUX_SHELL_COMMAND:-/data/data/com.termux/files/usr/bin/sh}
 termux_wake_lock=${TERMUX_WAKE_LOCK_COMMAND:-/data/data/com.termux/files/usr/bin/termux-wake-lock}
-termux_wake_unlock=${TERMUX_WAKE_UNLOCK_COMMAND:-/data/data/com.termux/files/usr/bin/termux-wake-unlock}
+termux_wake_unlock=${TERMUX_WAKE_UNLOCK_COMMAND:-\
+/data/data/com.termux/files/usr/bin/termux-wake-unlock}
 
 [ -n "$payload_path" ] || exit 2
 [ -n "$result_dir" ] || exit 2
