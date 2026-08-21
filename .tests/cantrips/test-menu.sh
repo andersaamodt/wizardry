@@ -11,7 +11,7 @@ done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-PTY_SEND_DELAY=${PTY_SEND_DELAY:-5}
+PTY_SEND_DELAY=${PTY_SEND_DELAY:-3}
 export PTY_SEND_DELAY
 
 menu_requires_all_helpers() {
