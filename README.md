@@ -66,6 +66,12 @@ menu
 ```
 This displays an interactive menu. Most (soon all) wizardry spells and features will be discoverable through the menu.
 
+If a folder contains a default local menu spell, you can open it with:
+
+```sh
+menu .
+```
+
 ## Spells
 
 A spell is a specially-curated shell script:

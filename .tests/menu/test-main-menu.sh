@@ -79,11 +79,87 @@ test_main_menu_loads_colors_gracefully() {
   }
 }
 
+test_main_menu_shows_local_menus_first() {
+  skip-if-compiled || return $?
+  tmp=$(make_tempdir)
+  project_dir="$tmp/crucible"
+  mkdir -p "$project_dir"
+  stub-menu "$tmp"
+  stub-require-command "$tmp"
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$tmp/exit-label"
+
+  cat >"$project_dir/crucible-menu" <<'SH'
+#!/bin/sh
+exit 0
+SH
+  chmod +x "$project_dir/crucible-menu"
+
+  cat >"$project_dir/web-wizardry-menu" <<'SH'
+#!/bin/sh
+exit 0
+SH
+  chmod +x "$project_dir/web-wizardry-menu"
+
+  old_pwd=$(pwd)
+  cd "$project_dir" || return 1
+  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/main-menu"
+  cd "$old_pwd" || return 1
+
+  assert_success || return 1
+  args=$(cat "$tmp/log")
+  case "$args" in
+    *"Main Menu:"*"Crucible%./crucible-menu"*"Web Wizardry%./web-wizardry-menu"*"---"*"Cast%cast"*)
+      return 0
+      ;;
+    *)
+      TEST_FAILURE_REASON="local menus missing or in wrong order: $args"
+      return 1
+      ;;
+  esac
+}
+
+test_main_menu_omits_local_divider_without_local_menus() {
+  skip-if-compiled || return $?
+  tmp=$(make_tempdir)
+  project_dir="$tmp/empty-room"
+  mkdir -p "$project_dir"
+  stub-menu "$tmp"
+  stub-require-command "$tmp"
+  cat >"$tmp/exit-label" <<'SH'
+#!/bin/sh
+printf '%s' "Exit"
+SH
+  chmod +x "$tmp/exit-label"
+
+  old_pwd=$(pwd)
+  cd "$project_dir" || return 1
+  PATH="$tmp:$PATH" MENU_LOG="$tmp/log" run_sourced_spell "spells/menu/main-menu"
+  cd "$old_pwd" || return 1
+
+  assert_success || return 1
+  args=$(cat "$tmp/log")
+  case "$args" in
+    *"---"*)
+      TEST_FAILURE_REASON="unexpected local divider without local menus: $args"
+      return 1
+      ;;
+    *)
+      return 0
+      ;;
+  esac
+}
+
 run_test_case "main-menu requires menu dependency" test_main_menu_checks_dependency
 run_test_case "main-menu forwards menu entries" test_main_menu_passes_expected_entries
 run_test_case "main-menu fails without menu dependency" test_main_menu_fails_without_menu_dependency
 run_test_case "main-menu shows title" test_main_menu_shows_title
 run_test_case "main-menu loads colors gracefully" test_main_menu_loads_colors_gracefully
+run_test_case "main-menu shows local menus first" test_main_menu_shows_local_menus_first
+run_test_case "main-menu omits local divider without local menus" test_main_menu_omits_local_divider_without_local_menus
 
 # Test ESC and Exit behavior - menu exits properly when TERM signal is sent
 test_esc_exit_behavior() {
