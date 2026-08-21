@@ -12,7 +12,7 @@ The language of magic—a human heirloom—is rich in evocative words for hidden
 
 ## Project status
 
-**Current status:** Core wizardry works on macOS; other platforms still need testing.
+**Current status:** macOS works; Debian and Android/Termux are mostly automated-tested.
 
 - ✅ POSIX shell spell and imp conventions
 - ✅ Interactive command-discovery menus
@@ -20,18 +20,17 @@ The language of magic—a human heirloom—is rich in evocative words for hidden
 - ✅ Arcana installer menus for the free software suite
 - ✅ MUD-style command parsing and magical vocabulary
 - ☐ Terminal theming and MUD game: Patchy
-- ☐ Cross-platform testing: macOS is primary; Android via Termux is under active validation
+- ☐ Cross-platform hand-testing
 
-| OS                        | Shortname | Status                              |
-| ------------------------- | --------- | ----------------------------------- |
-| **Debian (and Ubuntu)**   | `debian`  | 🟡 **untested**                     |
-| **NixOS**                 | `nixos`   | 🟡 **untested**                     |
-| **MacOS**                 | `macos`   | 🟢 **working**                      |
-| **Arch**                  | `arch`    | 🟠 **untested**                     |
-| **Android (via Termux)**  | `termux`  | 🟡 **supported path under active validation** |
-| **Windows**               | —         | ✘ **no support planned (except WSL)** |
-
-Current Android boundary: Wizardry's Android story is the Termux userland path, with Android-facing mobile-debugging tooling quarantined under Theurgy-flavored storage roots. As of June 16, 2026, host-side Termux detection, rc-file selection, install-path handling, reduced-xattr `banish`/`test-magic`/`demo-magic` behavior, and the private adb / Termux wrapper lanes are covered by focused tests and host-side smoke runs, while the final fully repeatable on-device Termux walkthrough is still being completed.
+| OS                       | Shortname | Status                         |
+| ------------------------ | --------- | ------------------------------ |
+| **Debian (and Ubuntu)**  | `debian`  | 🟡 **mostly automated-tested** |
+| **NixOS**                | `nixos`   | 🟡 **untested**                |
+| **macOS**                | `macos`   | 🟢 **working**                 |
+| **Arch**                 | `arch`    | 🟡 **untested**                |
+| **Android (via Termux)** | `termux`  | 🟡 **mostly automated-tested** |
+| **Windows via WSL**      | —         | 🟡 **untested**                |
+| **Windows native**       | —         | ✘ **no support planned**       |
 
 ## Installation
 
