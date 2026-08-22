@@ -25,11 +25,11 @@ The language of magic—a human heirloom—is rich in evocative words for hidden
 | OS                       | Shortname | Status                         |
 | ------------------------ | --------- | ------------------------------ |
 | **Debian (and Ubuntu)**  | `debian`  | 🟡 **mostly automated-tested** |
-| **NixOS**                | `nixos`   | 🟡 **untested**                |
+| **NixOS**                | `nixos`   | 🟠 **untested**                |
 | **macOS**                | `macos`   | 🟢 **working**                 |
-| **Arch**                 | `arch`    | 🟡 **untested**                |
+| **Arch**                 | `arch`    | 🟠 **untested**                |
 | **Android (via Termux)** | `termux`  | 🟡 **mostly automated-tested** |
-| **Windows via WSL**      | —         | 🟡 **untested**                |
+| **Windows via WSL**      | —         | 🟠 **untested**                |
 | **Windows native**       | —         | ✘ **no support planned**       |
 
 ## Installation
