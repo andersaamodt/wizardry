@@ -20,15 +20,13 @@ LOG_FILE="$room_dir/.log"
 
 dir_mtime() {
   target_dir=$1
-  if command -v python3 >/dev/null 2>&1; then
-    python3 -c 'import os, sys; print(int(os.stat(sys.argv[1]).st_mtime))' "$target_dir" 2>/dev/null
-    return $?
-  fi
-  if command -v python >/dev/null 2>&1; then
-    python -c 'import os, sys; print(int(os.stat(sys.argv[1]).st_mtime))' "$target_dir" 2>/dev/null
-    return $?
-  fi
-  stat -f %m "$target_dir" 2>/dev/null
+  gnu_mtime_flag=-c
+  mtime=$(stat "$gnu_mtime_flag" %Y "$target_dir" 2>/dev/null || \
+    stat -f %m "$target_dir" 2>/dev/null || printf '0')
+  case "$mtime" in
+    ''|*[!0-9]*) return 1 ;;
+    *) printf '%s\n' "$mtime" ;;
+  esac
 }
 
 for avatar_dir in "$room_dir"/.*; do
