@@ -1,0 +1,94 @@
+#!/bin/sh
+# site-runtime-dir SITE_DIR [COMPONENT]
+# Print the runtime directory for generated site-local service state.
+
+set -eu
+
+site_dir=${1-}
+runtime_component=${2-}
+if [ -z "$site_dir" ]; then
+  printf '%s\n' "site-runtime-dir: site directory required" >&2
+  exit 2
+fi
+
+while [ "${site_dir%/}" != "$site_dir" ] && [ "$site_dir" != "/" ]; do
+  site_dir=${site_dir%/}
+done
+
+case "$site_dir" in
+  /*) ;;
+  *)
+    site_dir=$(CDPATH= cd -- "$site_dir" 2>/dev/null && pwd -P) || {
+      printf '%s\n' "site-runtime-dir: site directory does not exist: $site_dir" >&2
+      exit 1
+    }
+    ;;
+esac
+
+if [ ! -d "$site_dir" ]; then
+  printf '%s\n' "site-runtime-dir: site directory does not exist: $site_dir" >&2
+  exit 1
+fi
+
+site_name=${site_dir##*/}
+sites_root=${site_dir%/*}
+runtime_root=$site_dir
+
+case "$site_dir" in
+  "$HOME"/git/*|/Users/andersaamodt/git/*)
+    xdg_state_home=${XDG_STATE_HOME:-$HOME/.local/state}
+    if command -v shasum >/dev/null 2>&1; then
+      runtime_key=$(printf '%s' "$sites_root" | shasum -a 256 | awk '{print $1}')
+    elif command -v sha256sum >/dev/null 2>&1; then
+      runtime_key=$(printf '%s' "$sites_root" | sha256sum | awk '{print $1}')
+    else
+      runtime_key=$(printf '%s' "$sites_root" | tr '/ ' '__' | tr -cd '[:alnum:]_.-')
+    fi
+    runtime_key=$(printf '%s' "$runtime_key" | cut -c1-16)
+    [ -n "$runtime_key" ] || runtime_key=workspace
+    runtime_root=$xdg_state_home/wizardry/web-sites/$runtime_key/.runtime/$site_name
+    ;;
+esac
+
+if [ -n "$runtime_component" ]; then
+  runtime_path=$runtime_root/$runtime_component
+else
+  runtime_path=$runtime_root
+fi
+
+if [ -n "$runtime_component" ] && [ "$runtime_path" != "$site_dir/$runtime_component" ]; then
+  legacy_path=$site_dir/$runtime_component
+  mkdir -p "$(dirname "$runtime_path")"
+  if [ -e "$legacy_path" ]; then
+    if [ ! -e "$runtime_path" ]; then
+      mv "$legacy_path" "$runtime_path" 2>/dev/null || {
+        mkdir -p "$runtime_path"
+      }
+    fi
+    if [ -d "$legacy_path" ] && [ -d "$runtime_path" ]; then
+      find "$legacy_path" -mindepth 1 -type d -print |
+        while IFS= read -r legacy_dir || [ -n "$legacy_dir" ]; do
+        rel=${legacy_dir#"$legacy_path"/}
+        mkdir -p "$runtime_path/$rel"
+      done
+      find "$legacy_path" -mindepth 1 \( -type f -o -type l \) -print |
+        while IFS= read -r legacy_file || [ -n "$legacy_file" ]; do
+        rel=${legacy_file#"$legacy_path"/}
+        rel_parent=${rel%/*}
+        if [ "$rel_parent" != "$rel" ]; then
+          mkdir -p "$runtime_path/$rel_parent"
+        fi
+        if [ ! -e "$runtime_path/$rel" ]; then
+          if ! mv "$legacy_file" "$runtime_path/$rel" 2>/dev/null; then
+            cp "$legacy_file" "$runtime_path/$rel" 2>/dev/null || true
+          fi
+        fi
+        [ -e "$legacy_file" ] && rm -f "$legacy_file" 2>/dev/null || true
+      done
+      find "$legacy_path" -depth -type d -exec rmdir {} \; 2>/dev/null || true
+    fi
+    rmdir "$legacy_path" 2>/dev/null || true
+  fi
+fi
+
+printf '%s\n' "$runtime_path"

@@ -39,8 +39,15 @@ if has curl; then
   if [ -n "$tags_json" ]; then
     ollama_models=$(
       printf '%s\n' "$tags_json" |
-        grep -o '"name":"[^"]*"' |
-        sed 's/"name":"//; s/"$//'
+        awk -F'"' '
+          {
+            for (i = 2; i < NF; i += 2) {
+              if ($i == "name" && $(i + 1) == ":") {
+                print $(i + 2)
+              }
+            }
+          }
+        '
     )
   fi
 fi

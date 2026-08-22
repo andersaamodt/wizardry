@@ -10,6 +10,12 @@ done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
+# Security checks can offer repairs when the fixture home has a restrictive
+# Termux umask. Tests must always select the declared default instead of reading
+# a real controlling terminal.
+ASK_CANTRIP_INPUT=none
+export ASK_CANTRIP_INPUT
+
 # Test that ward-system exists and is executable
 test_ward_system_exists() {
   [ -f "$ROOT_DIR/spells/wards/ward-system" ] && [ -x "$ROOT_DIR/spells/wards/ward-system" ]
@@ -135,7 +141,7 @@ test_ward_system_ssh_check() {
   skip-if-compiled || return $?
   
   # Create temporary test environment
-  tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/ward-system-test.XXXXXX")
+  tmpdir=$(make_tempdir)
   
   # Save original HOME and set to temp
   old_home=$HOME
@@ -163,7 +169,7 @@ test_ward_system_detects_bad_ssh_perms() {
   skip-if-compiled || return $?
   
   # Create a wrapper script that sets up bad SSH perms and then runs ward-system
-  tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/ward-system-test.XXXXXX")
+  tmpdir=$(make_tempdir)
   wrapper="$tmpdir/test-wrapper.sh"
   
   cat >"$wrapper" <<'WRAPPER'

@@ -1,4 +1,5 @@
 #!/bin/sh
+# REQUIRES_XATTR: requires filesystem xattrs
 # Test cases for file-to-folder:
 # - file-to-folder shows usage text
 # - file-to-folder converts file with extension to folder

@@ -124,7 +124,30 @@ fi
 - For macOS Wizardry desktop builds, Swift Package Manager and the Xcode Command Line Tools cover Swift, Clang, framework headers, `codesign`, `sips`, and `iconutil` on normal developer machines.
 - When installing `appimagetool` as a downloaded `.AppImage`, install a small wrapper named `appimagetool` that sets `APPIMAGE_EXTRACT_AND_RUN=1` and then executes the downloaded AppImage. This avoids a hard dependency on FUSE support on target Linux machines.
 
+## Sandbox Feature Detection
+
+- Treat `pocket-dimension` availability as a capability probe, not just a command lookup. On Linux-class hosts such as Android/Termux, `test-magic` should run `pocket-dimension --strict --check` and fall back with a warning when `bwrap` is missing or unusable.
+
+## Android Automation
+
+- Prefer Termux's official `RUN_COMMAND` intent plus pushed scripts and pulled result artifacts over synthesized terminal keystrokes; use `adb`/Maestro UI input only for wake, unlock, app recovery, or other device-state normalization.
+- For host-driven Termux runs, push a stable runner script and a generated payload script to shared storage, execute them in background Termux context, and wait on explicit `stdout.txt`, `stderr.txt`, and `exit-code.txt` artifacts instead of scraping screenshots or terminal transcripts.
+- Treat Termux `RUN_COMMAND` as a capability probe, not a guarantee from app presence alone; if the device refuses the intent or never writes result artifacts, fall back to launching Termux and typing the pre-pushed runner script while keeping the same artifact-based result contract.
+- When a Termux-side Tor onion service is publishing Android wireless debugging, resolve the adb TLS port on the phone itself with `getprop service.adb.tls.port` and forward `127.0.0.1:$PORT`; do not freeze a host-discovered Wi-Fi endpoint into the phone's Tor config.
+- Keep Android transport validation (`firewalled-adb`, `firewalled-maestro`, Tor forwarding, private adb server setup) separate from workflow validation so Wizardry behavior tests can assume a working lane once the transport layer has passed.
+- Planned improvement: add a single recovery flow that wakes the phone, unlocks it, dismisses stray UI state, and returns to a known-ready automation state before any higher-level Android smoke run.
+- Planned improvement: standardize a prepared Android fixture with Termux, `allow-external-apps=true`, storage permission, and any recurring helper packages or scripts already installed so repeated validation does not rebuild baseline state.
+- Planned improvement: add a first-class on-device smoke spell that composes transport checks, Termux script push/run/pull, and cleanup into one repeatable Android support gate.
+- Planned improvement: prefer a Termux companion API or other explicit bridge only when the official `RUN_COMMAND` path cannot cover the needed workflow without UI typing.
+
 ## Package Management
+
+- Termux does not provide Debian's `devscripts` package. Install the published
+  `checkbashisms` Perl script into `$PREFIX/bin` and rewrite its interpreter to
+  `#!/usr/bin/env perl` so it resolves Termux's userland Perl.
+- Create static scanner configuration once per `verify-posix` run. Recreating
+  and deleting it for every spell turns Termux filesystem latency into a
+  multi-minute validation bottleneck.
 
 ```sh
 # Multi-platform install
@@ -197,6 +220,9 @@ if [ -t 1 ] && [ "$TERM" != "dumb" ]; then
   reset=$(tput sgr0 2>/dev/null || printf '')
 fi
 ```
+
+- Treat Termux as a first-class Linux startup-file target: when selecting an rc file for Wizardry PATH exports, prefer `~/.bashrc` before generic shell fallbacks so Android installs land in the startup file Termux users actually inherit by default.
+- When seeding a fallback baseline `PATH` on Termux, append `/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin` after the existing `/data/data/com.termux/files/usr/bin` entry instead of prepending it; Android `/bin/*` wrappers can shadow healthier Termux userland tools such as `df`.
 
 ## Terminal Size Detection
 

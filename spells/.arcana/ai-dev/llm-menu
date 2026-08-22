@@ -21,6 +21,11 @@ set -eu
 . env-clear
 . colors
 
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+# shellcheck source=/dev/null
+. "$script_dir/ai-dev-llm-common"
+set -eu
+
 if ! require menu "The llm-menu needs the 'menu' command to present options."; then
   exit 1
 fi
@@ -35,13 +40,17 @@ trap 'exit 130' INT
 trap 'exit 0' TERM
 
 while :; do
+  runtime=$(ai_llm_resolve_runtime)
+  runtime_label=$(ai_llm_runtime_label "$runtime")
+
   # Build menu
-  set -- "Delete model%uninstall-llm \"$model\" && kill -TERM \$PPID"
+  set -- "Use as active model%$script_dir/use-llm-model \"$model\" && kill -TERM \$PPID"
+  set -- "$@" "Delete model%$script_dir/uninstall-llm \"$model\" && kill -TERM \$PPID"
   
   exit_label=$(exit-label)
   set -- "$@" "${exit_label}%kill -TERM \$PPID"
   
-  menu "LLM: $model" "$@" || menu_status=$?
+  menu "$runtime_label model: $model" "$@" || menu_status=$?
   menu_status=${menu_status:-0}
   
   # ESC causes menu to exit with 130

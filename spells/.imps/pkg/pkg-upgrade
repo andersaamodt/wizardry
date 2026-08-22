@@ -10,6 +10,7 @@ pug_pm=$(pkg-manager) || {
 }
 
 case $pug_pm in
+  termux) pkg upgrade -y ;;
   apt)    sudo apt-get -y upgrade ;;
   pacman) sudo pacman --noconfirm -Su ;;
   nix)    nix-env -u ;;

@@ -1,0 +1,89 @@
+#!/bin/sh
+
+# Switch an already-reachable Android device into classic adb-over-TCP mode.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: enable-mobile-tcpip-adb --serial PHONE_IP:ADB_PORT [--port 5555]
+
+Uses an existing adb connection to ask the phone's adbd to listen on a stable
+TCP port. This is useful before refreshing the Termux/Tor adb publisher so it
+can target service.adb.tcp.port instead of a rotating wireless-debugging port.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+serial=
+tcp_port=5555
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --serial)
+      [ "${2-}" ] || die "enable-mobile-tcpip-adb: --serial requires a value"
+      serial=$2
+      shift 2
+      ;;
+    --port)
+      [ "${2-}" ] || die "enable-mobile-tcpip-adb: --port requires a value"
+      tcp_port=$2
+      shift 2
+      ;;
+    *)
+      die 2 "enable-mobile-tcpip-adb: unknown option '$1'"
+      ;;
+  esac
+done
+
+[ -n "$serial" ] || die 2 "enable-mobile-tcpip-adb: --serial is required"
+
+case "$serial$tcp_port" in
+  *'
+'*)
+    die "enable-mobile-tcpip-adb: arguments must not contain line breaks"
+    ;;
+esac
+
+case "$serial" in
+  [0-9]*.[0-9]*.[0-9]*.[0-9]*:[0-9]*)
+    serial_host=${serial%:*}
+    ;;
+  *)
+    die 2 "enable-mobile-tcpip-adb: --serial must be PHONE_IP:ADB_PORT"
+    ;;
+esac
+
+case "$tcp_port" in
+  ''|*[!0-9]*)
+    die 2 "enable-mobile-tcpip-adb: --port must be numeric"
+    ;;
+esac
+
+firewalled_adb=$(command -v firewalled-adb || true)
+[ -n "$firewalled_adb" ] || firewalled_adb="$script_dir/../../wards/firewalled-adb"
+[ -x "$firewalled_adb" ] || die "enable-mobile-tcpip-adb: firewalled-adb not found"
+
+"$firewalled_adb" --serial "$serial" --allow "$serial" -- tcpip "$tcp_port" >/dev/null
+
+reported_port=$("$firewalled_adb" --serial "$serial" --allow "$serial" -- shell \
+  "getprop service.adb.tcp.port 2>/dev/null || printf ''" 2>/dev/null || true)
+reported_port=$(printf '%s' "$reported_port" | tr -d '\r\n')
+
+case "$reported_port" in
+  "$tcp_port") ;;
+  *)
+    die "enable-mobile-tcpip-adb: service.adb.tcp.port did not switch to $tcp_port"
+    ;;
+esac
+
+printf 'Android adb TCP/IP is now listening on %s:%s\n' "$serial_host" "$tcp_port"
+printf 'Next steps:\n'
+printf '  firewalled-adb --serial %s:%s -- get-state\n' "$serial_host" "$tcp_port"
+printf '  setup-mobile-tor-adb --serial %s\n' "$serial"

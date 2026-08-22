@@ -10,7 +10,7 @@ Usage: magic-missile [-v] [target]
 Cast a magic missile that deals random damage to a target file or folder.
 If no target is specified, a random file or folder in the current directory is selected.
 
-The spell logs actions to the room .log file. Use -v for verbose local output.
+The spell logs actions to the room activity log. Use -v for verbose local output.
 
 Example:
   magic-missile treasure-chest
@@ -153,6 +153,6 @@ fi
 # Log the attack to room log for multiplayer visibility
 player_name=${MUD_PLAYER:-${USER:-Someone}}
 timestamp=$(log-timestamp)
-room_log="$PWD/.log"
+room_log=$(log-path "$PWD")
 log_entry="[$timestamp] $player_name casts magic missile at ${BLUE}$target${RESET}, dealing $damage damage!"
 printf '%s\n' "$log_entry" >> "$room_log" 2>/dev/null || true

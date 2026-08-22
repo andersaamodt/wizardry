@@ -27,7 +27,7 @@ test_menu_shows_blackhole_on_macos() {
   assert_success || return 1
   args=$(cat "$tmp/menu.log")
   case "$args" in
-    *"Voice Audio:"*"[ ] BlackHole render reference%WIZARDRY_LOG_LEVEL=1 $ROOT_DIR/spells/.arcana/voice-audio/install-blackhole"*'Exit%kill -TERM $PPID'*) : ;;
+    *"Voice Audio:"*"[ ] BlackHole render reference%WIZARDRY_LOG_LEVEL=1 $ROOT_DIR/spells/.arcana/voice-audio/install-blackhole"*"[ ] SuperCollider%$ROOT_DIR/spells/.arcana/voice-audio/install-supercollider"*'Exit%kill -TERM $PPID'*) : ;;
     *)
       TEST_FAILURE_REASON="unexpected macOS voice audio menu options: $args"
       return 1
@@ -54,7 +54,7 @@ test_menu_shows_pipewire_on_linux() {
   assert_success || return 1
   args=$(cat "$tmp/menu.log")
   case "$args" in
-    *"Voice Audio:"*"[ ] PipeWire render reference%WIZARDRY_LOG_LEVEL=1 $ROOT_DIR/spells/.arcana/voice-audio/install-pipewire"*'Exit%kill -TERM $PPID'*) : ;;
+    *"Voice Audio:"*"[ ] PipeWire render reference%WIZARDRY_LOG_LEVEL=1 $ROOT_DIR/spells/.arcana/voice-audio/install-pipewire"*"[ ] SuperCollider%$ROOT_DIR/spells/.arcana/voice-audio/install-supercollider"*'Exit%kill -TERM $PPID'*) : ;;
     *)
       TEST_FAILURE_REASON="unexpected Linux voice audio menu options: $args"
       return 1

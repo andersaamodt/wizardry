@@ -1,0 +1,803 @@
+#!/bin/sh
+
+# Shared helpers for mobile-debugging arcana and firewalled adb.
+# Downloaded Android tooling is staged under a Theurgy-flavored XDG root so
+# Google-facing or closed-source dependencies stay quarantined from core shell
+# state while Wizardry keeps stable wrapper entrypoints.
+
+case "${1-}" in
+--help|--usage|-h)
+  case "$0" in
+    */mobile-debugging-common)
+      cat <<'USAGE'
+Usage: mobile-debugging-common
+
+Shared helper library for mobile debugging installers and wrappers.
+USAGE
+      exit 0
+      ;;
+  esac
+  ;;
+esac
+
+set +eu
+
+mobile_debugging_data_root() {
+  if [ -n "${XDG_DATA_HOME:-}" ]; then
+    printf '%s\n' "$XDG_DATA_HOME/theurgy/mobile-debugging"
+  else
+    printf '%s\n' "$HOME/.local/share/theurgy/mobile-debugging"
+  fi
+}
+
+mobile_debugging_legacy_data_root() {
+  if [ -n "${XDG_DATA_HOME:-}" ]; then
+    printf '%s\n' "$XDG_DATA_HOME/wizardry/mobile-debugging"
+  else
+    printf '%s\n' "$HOME/.local/share/wizardry/mobile-debugging"
+  fi
+}
+
+mobile_debugging_legacy_sdk_root() {
+  printf '%s\n' "$(mobile_debugging_legacy_data_root)/android-sdk"
+}
+
+mobile_debugging_sdk_root() {
+  printf '%s\n' "$(mobile_debugging_data_root)/android-sdk"
+}
+
+mobile_debugging_legacy_java_root() {
+  printf '%s\n' "$(mobile_debugging_legacy_data_root)/java"
+}
+
+mobile_debugging_java_root() {
+  printf '%s\n' "$(mobile_debugging_data_root)/java"
+}
+
+mobile_debugging_legacy_java_install_dir() {
+  printf '%s\n' "$(mobile_debugging_legacy_java_root)/current"
+}
+
+mobile_debugging_java_install_dir() {
+  printf '%s\n' "$(mobile_debugging_java_root)/current"
+}
+
+mobile_debugging_resolved_java_install_dir() {
+  preferred_dir=$(mobile_debugging_java_install_dir)
+  legacy_dir=$(mobile_debugging_legacy_java_install_dir)
+  if [ -d "$preferred_dir" ]; then
+    printf '%s\n' "$preferred_dir"
+  elif [ -d "$legacy_dir" ]; then
+    printf '%s\n' "$legacy_dir"
+  else
+    printf '%s\n' "$preferred_dir"
+  fi
+}
+
+mobile_debugging_java_home_dir() {
+  install_dir=$(mobile_debugging_resolved_java_install_dir)
+  if [ -d "$install_dir/Contents/Home" ]; then
+    printf '%s\n' "$install_dir/Contents/Home"
+  else
+    printf '%s\n' "$install_dir"
+  fi
+}
+
+mobile_debugging_java_bin_dir() {
+  printf '%s\n' "$(mobile_debugging_java_home_dir)/bin"
+}
+
+mobile_debugging_java_path() {
+  printf '%s\n' "$(mobile_debugging_java_bin_dir)/java"
+}
+
+mobile_debugging_platform_tools_dir() {
+  printf '%s\n' "$(mobile_debugging_sdk_root)/platform-tools"
+}
+
+mobile_debugging_commandline_tools_dir() {
+  printf '%s\n' "$(mobile_debugging_sdk_root)/cmdline-tools/latest"
+}
+
+mobile_debugging_adb_path() {
+  preferred_path="$(mobile_debugging_platform_tools_dir)/adb"
+  legacy_path="$(mobile_debugging_legacy_sdk_root)/platform-tools/adb"
+  if [ -x "$preferred_path" ]; then
+    printf '%s\n' "$preferred_path"
+  elif [ -x "$legacy_path" ]; then
+    printf '%s\n' "$legacy_path"
+  else
+    printf '%s\n' "$preferred_path"
+  fi
+}
+
+mobile_debugging_legacy_maestro_root() {
+  printf '%s\n' "$(mobile_debugging_legacy_data_root)/maestro-cli"
+}
+
+mobile_debugging_maestro_root() {
+  printf '%s\n' "$(mobile_debugging_data_root)/maestro-cli"
+}
+
+mobile_debugging_legacy_maestro_install_dir() {
+  printf '%s\n' "$(mobile_debugging_legacy_maestro_root)/current"
+}
+
+mobile_debugging_maestro_install_dir() {
+  printf '%s\n' "$(mobile_debugging_maestro_root)/current"
+}
+
+mobile_debugging_resolved_maestro_install_dir() {
+  preferred_dir=$(mobile_debugging_maestro_install_dir)
+  legacy_dir=$(mobile_debugging_legacy_maestro_install_dir)
+  if [ -d "$preferred_dir" ]; then
+    printf '%s\n' "$preferred_dir"
+  elif [ -d "$legacy_dir" ]; then
+    printf '%s\n' "$legacy_dir"
+  else
+    printf '%s\n' "$preferred_dir"
+  fi
+}
+
+mobile_debugging_maestro_bin_dir() {
+  printf '%s\n' "$(mobile_debugging_resolved_maestro_install_dir)/bin"
+}
+
+mobile_debugging_maestro_path() {
+  printf '%s\n' "$(mobile_debugging_maestro_bin_dir)/maestro"
+}
+
+mobile_debugging_java_exec() {
+  mobile_debugging_installed_java=$(mobile_debugging_java_path)
+  if [ -x "$mobile_debugging_installed_java" ]; then
+    printf '%s\n' "$mobile_debugging_installed_java"
+    return 0
+  fi
+  if command -v java >/dev/null 2>&1; then
+    command -v java
+    return 0
+  fi
+  return 1
+}
+
+mobile_debugging_python3_exec() {
+  if command -v python3 >/dev/null 2>&1; then
+    command -v python3
+    return 0
+  fi
+  return 1
+}
+
+mobile_debugging_java_ready() {
+  mobile_debugging_java=$(mobile_debugging_java_exec || true)
+  [ -n "$mobile_debugging_java" ] || return 1
+  "$mobile_debugging_java" -version >/dev/null 2>&1
+}
+
+mobile_debugging_sdkmanager_exec() {
+  installed_sdkmanager="$(mobile_debugging_commandline_tools_dir)/bin/sdkmanager"
+  if [ -x "$installed_sdkmanager" ]; then
+    printf '%s\n' "$installed_sdkmanager"
+    return 0
+  fi
+  if command -v sdkmanager >/dev/null 2>&1; then
+    command -v sdkmanager
+    return 0
+  fi
+  return 1
+}
+
+mobile_debugging_adb_exec() {
+  mobile_debugging_installed_adb=$(mobile_debugging_adb_path)
+  if [ -x "$mobile_debugging_installed_adb" ]; then
+    printf '%s\n' "$mobile_debugging_installed_adb"
+    return 0
+  fi
+  if command -v adb >/dev/null 2>&1; then
+    command -v adb
+    return 0
+  fi
+  return 1
+}
+
+mobile_debugging_maestro_exec() {
+  mobile_debugging_installed_maestro=$(mobile_debugging_maestro_path)
+  if [ -x "$mobile_debugging_installed_maestro" ]; then
+    printf '%s\n' "$mobile_debugging_installed_maestro"
+    return 0
+  fi
+  if command -v maestro >/dev/null 2>&1; then
+    command -v maestro
+    return 0
+  fi
+  return 1
+}
+
+mobile_debugging_platform_tools_installed() {
+  [ -x "$(mobile_debugging_adb_path)" ]
+}
+
+mobile_debugging_commandline_tools_installed() {
+  [ -x "$(mobile_debugging_commandline_tools_dir)/bin/sdkmanager" ]
+}
+
+mobile_debugging_maestro_installed() {
+  [ -x "$(mobile_debugging_maestro_path)" ]
+}
+
+mobile_debugging_java_installed() {
+  [ -x "$(mobile_debugging_java_path)" ]
+}
+
+mobile_debugging_sha256_exec() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    printf '%s\n' "sha256sum"
+    return 0
+  fi
+  if command -v shasum >/dev/null 2>&1; then
+    printf '%s\n' "shasum -a 256"
+    return 0
+  fi
+  if command -v openssl >/dev/null 2>&1; then
+    printf '%s\n' "openssl dgst -sha256 -r"
+    return 0
+  fi
+  return 1
+}
+
+mobile_debugging_download_supported() {
+  command -v curl >/dev/null 2>&1 || command -v wget >/dev/null 2>&1
+}
+
+mobile_debugging_download_to_file() {
+  url=$1
+  destination=$2
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL -o "$destination" -- "$url"
+    return $?
+  fi
+  if command -v wget >/dev/null 2>&1; then
+    wget -qO "$destination" -- "$url"
+    return $?
+  fi
+  return 1
+}
+
+mobile_debugging_maestro_release_api_url() {
+  default_url=https://api.github.com/repos/mobile-dev-inc/Maestro/releases/latest
+  printf '%s\n' "${MOBILE_DEBUGGING_MAESTRO_RELEASE_API_URL:-$default_url}"
+}
+
+mobile_debugging_temurin_release_api_url() {
+  temurin_architecture=$(mobile_debugging_temurin_architecture)
+  temurin_os=$(mobile_debugging_temurin_os)
+  default_url="https://api.adoptium.net/v3/assets/latest/17/hotspot"
+  default_url="$default_url?architecture=$temurin_architecture"
+  default_url="$default_url&heap_size=normal&image_type=jdk"
+  default_url="$default_url&jvm_impl=hotspot&os=$temurin_os&vendor=eclipse"
+  printf '%s\n' "${MOBILE_DEBUGGING_TEMURIN_RELEASE_API_URL:-$default_url}"
+}
+
+mobile_debugging_temurin_architecture() {
+  case "$(uname -m 2>/dev/null || printf unknown)" in
+    arm64|aarch64)
+      printf '%s\n' "aarch64"
+      ;;
+    x86_64|amd64)
+      printf '%s\n' "x64"
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+mobile_debugging_temurin_os() {
+  case "$(uname -s 2>/dev/null || printf unknown)" in
+    Darwin)
+      printf '%s\n' "mac"
+      ;;
+    Linux)
+      printf '%s\n' "linux"
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+mobile_debugging_extract_json_string() {
+  json_file=$1
+  field_name=$2
+  python3_exec=$(mobile_debugging_python3_exec || true)
+  if [ -n "$python3_exec" ]; then
+    "$python3_exec" - "$json_file" "$field_name" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], 'r', encoding='utf-8') as handle:
+    data = json.load(handle)
+
+value = data.get(sys.argv[2], "")
+if isinstance(value, str):
+    print(value)
+PY
+    return 0
+  fi
+  sed -n 's/.*"'"$field_name"'":[[:space:]]*"\([^"]*\)".*/\1/p' "$json_file" | head -n 1
+}
+
+mobile_debugging_maestro_asset_field() {
+  json_file=$1
+  asset_name=$2
+  field_name=$3
+  python3_exec=$(mobile_debugging_python3_exec || true)
+  if [ -n "$python3_exec" ]; then
+    "$python3_exec" - "$json_file" "$asset_name" "$field_name" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], 'r', encoding='utf-8') as handle:
+    data = json.load(handle)
+
+for asset in data.get("assets", []):
+    if asset.get("name") == sys.argv[2]:
+        value = asset.get(sys.argv[3], "")
+        if isinstance(value, str):
+            print(value)
+        break
+PY
+    return 0
+  fi
+  awk -v asset="$asset_name" -v key="$field_name" '
+    BEGIN {
+      in_object = 0
+      asset_match = 0
+    }
+    /{/ {
+      in_object = 1
+      asset_match = 0
+    }
+    {
+      if (in_object && $0 ~ "\"" "name" "\"[[:space:]]*:[[:space:]]*\"" asset "\"") {
+        asset_match = 1
+      }
+      if (in_object && asset_match && $0 ~ "\"" key "\"[[:space:]]*:[[:space:]]*\"") {
+        line = $0
+        sub(".*\"" key "\"[[:space:]]*:[[:space:]]*\"", "", line)
+        sub("\".*", "", line)
+        print line
+        exit
+      }
+    }
+    /^[[:space:]]*}[,]?[[:space:]]*$/ {
+      in_object = 0
+      asset_match = 0
+    }
+  ' "$json_file"
+}
+
+mobile_debugging_extract_json_list0_string() {
+  json_file=$1
+  field_path=$2
+  python3_exec=$(mobile_debugging_python3_exec || true)
+  if [ -n "$python3_exec" ]; then
+    "$python3_exec" - "$json_file" "$field_path" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], 'r', encoding='utf-8') as handle:
+    data = json.load(handle)
+
+if not isinstance(data, list) or not data:
+    sys.exit(0)
+
+value = data[0]
+for part in sys.argv[2].split('.'):
+    if not isinstance(value, dict):
+        value = ""
+        break
+    value = value.get(part, "")
+
+if isinstance(value, str):
+    print(value)
+PY
+    return 0
+  fi
+  return 1
+}
+
+mobile_debugging_latest_commandline_tools_url() {
+  os_name=$1
+  metadata_file=$2
+  case "$os_name" in
+    Darwin) url_pattern='commandlinetools-mac-[0-9][0-9]*_latest[.]zip' ;;
+    Linux) url_pattern='commandlinetools-linux-[0-9][0-9]*_latest[.]zip' ;;
+    *) return 1 ;;
+  esac
+
+  sed -n "s/.*<url>\\($url_pattern\\)<\\/url>.*/\\1/p" "$metadata_file" | head -n 1 |
+    awk '{ print "https://dl.google.com/android/repository/" $1 }'
+}
+
+mobile_debugging_sha256_file() {
+  file_path=$1
+  sha_cmd=$(mobile_debugging_sha256_exec || true)
+  [ -n "$sha_cmd" ] || die "mobile-debugging: no sha256 tool found"
+  # shellcheck disable=SC2086
+  set -- $sha_cmd "$file_path"
+  "$@" | awk '{print $1}'
+}
+
+install_android_platform_tools_main() {
+  if mobile_debugging_platform_tools_installed; then
+    success "Android platform tools already installed at $(mobile_debugging_platform_tools_dir)"
+    return 0
+  fi
+
+  sdk_root=$(mobile_debugging_sdk_root)
+  mkdir -p "$sdk_root"
+
+  case "$(uname -s 2>/dev/null || printf unknown)" in
+    Darwin)
+      archive_url=https://dl.google.com/android/repository/platform-tools-latest-darwin.zip
+      ;;
+    Linux)
+      archive_url=https://dl.google.com/android/repository/platform-tools-latest-linux.zip
+      ;;
+    *)
+      die "install-android-platform-tools: unsupported host platform"
+      ;;
+  esac
+
+  if ! mobile_debugging_download_supported; then
+    die "install-android-platform-tools: curl or wget is required"
+  fi
+
+  command -v unzip >/dev/null 2>&1 || die "install-android-platform-tools: unzip is required"
+
+  archive_file=$(temp-file)
+  archive_dir=$(temp-dir)
+  on-exit cleanup-file "$archive_file"
+  on-exit cleanup-dir "$archive_dir"
+
+  step "Downloading Android platform tools into $sdk_root..."
+  mobile_debugging_download_to_file "$archive_url" "$archive_file" || \
+    die "install-android-platform-tools: download failed"
+
+  rm -rf "$(mobile_debugging_platform_tools_dir)"
+  unzip -q "$archive_file" -d "$archive_dir" || die "install-android-platform-tools: unzip failed"
+  [ -d "$archive_dir/platform-tools" ] || \
+    die "install-android-platform-tools: archive did not contain platform-tools"
+  mv "$archive_dir/platform-tools" "$sdk_root/platform-tools" || \
+    die "install-android-platform-tools: failed to stage platform-tools"
+
+  mobile_debugging_platform_tools_installed || \
+    die "install-android-platform-tools: adb was not installed"
+  installed_platform_tools_dir=$(mobile_debugging_platform_tools_dir)
+  success "Installed Android platform tools at $installed_platform_tools_dir"
+}
+
+install_android_commandline_tools_main() {
+  if mobile_debugging_commandline_tools_installed; then
+    success "Android command-line tools already installed at"
+    success "$(mobile_debugging_commandline_tools_dir)"
+    return 0
+  fi
+
+  case "$(uname -s 2>/dev/null || printf unknown)" in
+    Darwin|Linux)
+      host_os=$(uname -s 2>/dev/null || printf unknown)
+      ;;
+    *)
+      die "install-android-commandline-tools: unsupported host platform"
+      ;;
+  esac
+
+  if ! mobile_debugging_download_supported; then
+    die "install-android-commandline-tools: curl or wget is required"
+  fi
+
+  command -v unzip >/dev/null 2>&1 || die "install-android-commandline-tools: unzip is required"
+
+  sdk_root=$(mobile_debugging_sdk_root)
+  metadata_file=$(temp-file)
+  archive_file=$(temp-file)
+  archive_dir=$(temp-dir)
+  on-exit cleanup-file "$metadata_file"
+  on-exit cleanup-file "$archive_file"
+  on-exit cleanup-dir "$archive_dir"
+
+  step "Fetching Android SDK repository metadata..."
+  mobile_debugging_download_to_file \
+    https://dl.google.com/android/repository/repository2-1.xml \
+    "$metadata_file" || die "install-android-commandline-tools: failed to fetch repository metadata"
+
+  archive_url=$(mobile_debugging_latest_commandline_tools_url "$host_os" "$metadata_file")
+  [ -n "$archive_url" ] || die "install-android-commandline-tools: command-line tools URL not found"
+
+  step "Downloading Android command-line tools..."
+  mobile_debugging_download_to_file "$archive_url" "$archive_file" || \
+    die "install-android-commandline-tools: download failed"
+
+  unzip -q "$archive_file" -d "$archive_dir" || \
+    die "install-android-commandline-tools: unzip failed"
+  [ -d "$archive_dir/cmdline-tools" ] || \
+    die "install-android-commandline-tools: archive did not contain cmdline-tools"
+
+  mkdir -p "$sdk_root/cmdline-tools"
+  commandline_tools_dir=$(mobile_debugging_commandline_tools_dir)
+  commandline_tools_staging_dir="$sdk_root/cmdline-tools/latest.new"
+  rm -rf "$commandline_tools_dir" "$commandline_tools_staging_dir"
+  mv "$archive_dir/cmdline-tools" "$commandline_tools_staging_dir" || \
+    die "install-android-commandline-tools: failed to stage command-line tools"
+  mv "$commandline_tools_staging_dir" "$commandline_tools_dir" || \
+    die "install-android-commandline-tools: failed to activate command-line tools"
+
+  mobile_debugging_commandline_tools_installed || \
+    die "install-android-commandline-tools: sdkmanager was not installed"
+  success "Installed Android command-line tools at $commandline_tools_dir"
+}
+
+install_maestro_cli_main() {
+  if mobile_debugging_maestro_installed; then
+    success "Maestro CLI already installed at $(mobile_debugging_maestro_install_dir)"
+    if ! mobile_debugging_java_ready; then
+      info "Java 17+ is still required before Maestro can run."
+    fi
+    return 0
+  fi
+
+  command -v unzip >/dev/null 2>&1 || die "install-maestro-cli: unzip is required"
+
+  mobile_debugging_download_supported || die "install-maestro-cli: curl or wget is required"
+
+  maestro_root=$(mobile_debugging_maestro_root)
+  metadata_file=$(temp-file)
+  archive_file=$(temp-file)
+  archive_dir=$(temp-dir)
+  on-exit cleanup-file "$metadata_file"
+  on-exit cleanup-file "$archive_file"
+  on-exit cleanup-dir "$archive_dir"
+  mkdir -p "$archive_dir"
+  mkdir -p "$archive_dir"
+
+  release_api_url=$(mobile_debugging_maestro_release_api_url)
+  step "Fetching Maestro CLI release metadata..."
+  mobile_debugging_download_to_file "$release_api_url" "$metadata_file" || \
+    die "install-maestro-cli: failed to fetch release metadata"
+
+  release_tag=$(mobile_debugging_extract_json_string "$metadata_file" "tag_name")
+  [ -n "$release_tag" ] || die "install-maestro-cli: release metadata did not include a tag"
+
+  archive_url=$(
+    mobile_debugging_maestro_asset_field \
+      "$metadata_file" "maestro.zip" "browser_download_url"
+  )
+  archive_sha=$(mobile_debugging_maestro_asset_field "$metadata_file" "maestro.zip" "digest")
+  [ -n "$archive_url" ] || die "install-maestro-cli: release metadata did not include maestro.zip"
+  archive_sha=${archive_sha#sha256:}
+
+  step "Downloading Maestro CLI $release_tag..."
+  mobile_debugging_download_to_file "$archive_url" "$archive_file" || \
+    die "install-maestro-cli: failed to download maestro.zip"
+
+  if [ -n "$archive_sha" ]; then
+    actual_sha=$(mobile_debugging_sha256_file "$archive_file")
+    [ "$actual_sha" = "$archive_sha" ] || die "install-maestro-cli: sha256 mismatch for maestro.zip"
+  fi
+
+  unzip -q "$archive_file" -d "$archive_dir" || die "install-maestro-cli: unzip failed"
+
+  extracted_maestro=$(find "$archive_dir" -type f -path '*/bin/maestro' | head -n 1)
+  [ -n "$extracted_maestro" ] || die "install-maestro-cli: archive did not contain bin/maestro"
+  extracted_root=$(dirname "$(dirname "$extracted_maestro")")
+
+  mkdir -p "$maestro_root"
+  staging_dir="$maestro_root/current.new"
+  rm -rf "$staging_dir"
+
+  if [ "$extracted_root" = "$archive_dir" ]; then
+    mkdir -p "$staging_dir"
+    cp -R "$archive_dir"/. "$staging_dir"/ || die "install-maestro-cli: failed to stage Maestro CLI"
+  else
+    mv "$extracted_root" "$staging_dir" || \
+      die "install-maestro-cli: failed to move extracted Maestro CLI"
+  fi
+
+  printf '%s\n' "$release_tag" >"$staging_dir/RELEASE_TAG"
+  rm -rf "$(mobile_debugging_maestro_install_dir)"
+  maestro_install_dir=$(mobile_debugging_maestro_install_dir)
+  mv "$staging_dir" "$maestro_install_dir" || \
+    die "install-maestro-cli: failed to activate install"
+
+  mobile_debugging_maestro_installed || die "install-maestro-cli: maestro was not installed"
+
+  if mobile_debugging_java_ready; then
+    success "Installed Maestro CLI $release_tag at $(mobile_debugging_maestro_install_dir)"
+  else
+    success "Installed Maestro CLI $release_tag at $(mobile_debugging_maestro_install_dir)"
+    info "Java 17+ is not available yet; Maestro may not run until Java is installed."
+  fi
+}
+
+install_temurin_jdk_main() {
+  if mobile_debugging_java_installed && mobile_debugging_java_ready; then
+    success "Temurin JDK already installed at $(mobile_debugging_java_install_dir)"
+    return 0
+  fi
+
+  mobile_debugging_download_supported || die "install-temurin-jdk: curl or wget is required"
+  command -v tar >/dev/null 2>&1 || die "install-temurin-jdk: tar is required"
+
+  java_root=$(mobile_debugging_java_root)
+  metadata_file=$(temp-file)
+  archive_file=$(temp-file)
+  archive_dir=$(temp-dir)
+  on-exit cleanup-file "$metadata_file"
+  on-exit cleanup-file "$archive_file"
+  on-exit cleanup-dir "$archive_dir"
+  mkdir -p "$archive_dir"
+
+  release_api_url=$(mobile_debugging_temurin_release_api_url)
+  step "Fetching Temurin JDK release metadata..."
+  mobile_debugging_download_to_file "$release_api_url" "$metadata_file" || \
+    die "install-temurin-jdk: failed to fetch release metadata"
+
+  release_name=$(mobile_debugging_extract_json_list0_string "$metadata_file" "release_name")
+  archive_url=$(mobile_debugging_extract_json_list0_string "$metadata_file" "binary.package.link")
+  archive_sha=$(
+    mobile_debugging_extract_json_list0_string \
+      "$metadata_file" "binary.package.checksum"
+  )
+  archive_name=$(mobile_debugging_extract_json_list0_string "$metadata_file" "binary.package.name")
+  [ -n "$release_name" ] || \
+    die "install-temurin-jdk: release metadata did not include a release name"
+  [ -n "$archive_url" ] || die "install-temurin-jdk: release metadata did not include a package URL"
+
+  step "Downloading Temurin JDK $release_name..."
+  mobile_debugging_download_to_file "$archive_url" "$archive_file" || \
+    die "install-temurin-jdk: failed to download archive"
+
+  if [ -n "$archive_sha" ]; then
+    actual_sha=$(mobile_debugging_sha256_file "$archive_file")
+    [ "$actual_sha" = "$archive_sha" ] || \
+      die "install-temurin-jdk: sha256 mismatch for $archive_name"
+  fi
+
+  mkdir -p "$java_root"
+  staging_dir="$java_root/current.new"
+  rm -rf "$staging_dir"
+  mkdir -p "$staging_dir"
+
+  tar -xzf "$archive_file" -C "$archive_dir" || die "install-temurin-jdk: failed to extract archive"
+  extracted_root=$(find "$archive_dir" -mindepth 1 -maxdepth 1 -type d | head -n 1)
+  [ -n "$extracted_root" ] || \
+    die "install-temurin-jdk: archive did not contain an extracted directory"
+
+  mv "$extracted_root" "$staging_dir" || die "install-temurin-jdk: failed to stage Temurin JDK"
+  extracted_basename=$(basename "$extracted_root")
+  staged_inner_root="$staging_dir/$extracted_basename"
+  staged_inner_java="$staged_inner_root/Contents/Home/bin/java"
+  if [ -d "$staged_inner_root" ] &&
+    [ ! -x "$staging_dir/bin/java" ] &&
+    [ -x "$staged_inner_java" ]; then
+    moved_root="$staged_inner_root"
+    temp_flat="$java_root/current.flat"
+    rm -rf "$temp_flat"
+    mv "$moved_root" "$temp_flat" || die "install-temurin-jdk: failed to flatten Temurin JDK"
+    rm -rf "$staging_dir"
+    mv "$temp_flat" "$staging_dir" || \
+      die "install-temurin-jdk: failed to finalize Temurin JDK layout"
+  fi
+
+  printf '%s\n' "$release_name" >"$staging_dir/RELEASE_TAG"
+  rm -rf "$(mobile_debugging_java_install_dir)"
+  java_install_dir=$(mobile_debugging_java_install_dir)
+  mv "$staging_dir" "$java_install_dir" || \
+    die "install-temurin-jdk: failed to activate install"
+
+  mobile_debugging_java_ready || die "install-temurin-jdk: java was not installed correctly"
+  success "Installed Temurin JDK $release_name at $(mobile_debugging_java_install_dir)"
+}
+
+uninstall_android_platform_tools_main() {
+  sdk_root=$(mobile_debugging_sdk_root)
+  legacy_sdk_root=$(mobile_debugging_legacy_sdk_root)
+  platform_tools_dir=$sdk_root/platform-tools
+  legacy_platform_tools_dir=$legacy_sdk_root/platform-tools
+  removed=0
+
+  if [ -d "$platform_tools_dir" ]; then
+    rm -rf "$platform_tools_dir"
+    removed=1
+  fi
+
+  if [ "$legacy_platform_tools_dir" != "$platform_tools_dir" ] &&
+    [ -d "$legacy_platform_tools_dir" ]; then
+    rm -rf "$legacy_platform_tools_dir"
+    removed=1
+  fi
+
+  rmdir "$sdk_root" 2>/dev/null || true
+  if [ "$legacy_sdk_root" != "$sdk_root" ]; then
+    rmdir "$legacy_sdk_root" 2>/dev/null || true
+  fi
+
+  if [ "$removed" -eq 0 ]; then
+    info "Android platform tools are not installed"
+    return 0
+  fi
+
+  success "Removed Android platform tools from Theurgy quarantine roots"
+}
+
+uninstall_android_commandline_tools_main() {
+  commandline_tools_dir=$(mobile_debugging_commandline_tools_dir)
+  legacy_commandline_tools_dir="$(mobile_debugging_legacy_sdk_root)/cmdline-tools/latest"
+  removed=0
+
+  if [ -d "$commandline_tools_dir" ]; then
+    rm -rf "$commandline_tools_dir"
+    removed=1
+  fi
+
+  if [ "$legacy_commandline_tools_dir" != "$commandline_tools_dir" ] &&
+    [ -d "$legacy_commandline_tools_dir" ]; then
+    rm -rf "$legacy_commandline_tools_dir"
+    removed=1
+  fi
+
+  if [ "$removed" -eq 0 ]; then
+    info "Android command-line tools are not installed"
+    return 0
+  fi
+
+  success "Removed Android command-line tools from Theurgy quarantine roots"
+}
+
+uninstall_maestro_cli_main() {
+  maestro_root=$(mobile_debugging_maestro_root)
+  legacy_maestro_root=$(mobile_debugging_legacy_maestro_root)
+  removed=0
+
+  if [ -d "$maestro_root" ]; then
+    rm -rf "$maestro_root"
+    removed=1
+  fi
+
+  if [ "$legacy_maestro_root" != "$maestro_root" ] && [ -d "$legacy_maestro_root" ]; then
+    rm -rf "$legacy_maestro_root"
+    removed=1
+  fi
+
+  if [ "$removed" -eq 0 ]; then
+    info "Maestro CLI is not installed"
+    return 0
+  fi
+
+  success "Removed Maestro CLI from Theurgy quarantine roots"
+}
+
+uninstall_temurin_jdk_main() {
+  java_root=$(mobile_debugging_java_root)
+  legacy_java_root=$(mobile_debugging_legacy_java_root)
+  removed=0
+
+  if [ -d "$java_root" ]; then
+    rm -rf "$java_root"
+    removed=1
+  fi
+
+  if [ "$legacy_java_root" != "$java_root" ] && [ -d "$legacy_java_root" ]; then
+    rm -rf "$legacy_java_root"
+    removed=1
+  fi
+
+  if [ "$removed" -eq 0 ]; then
+    info "Temurin JDK is not installed"
+    return 0
+  fi
+
+  success "Removed Temurin JDK from Theurgy quarantine roots"
+}

@@ -27,10 +27,18 @@ unset iw_sourced iw_base
 
 # Ensure baseline PATH before anything else (macOS may have empty PATH)
 baseline_path="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+termux_bin="/data/data/com.termux/files/usr/bin"
 case ":${PATH-}:" in
   *":/usr/bin:"*|*":/bin:"*) ;;
   *)
-    PATH="${baseline_path}${PATH:+:}${PATH-}"
+    case ":${PATH-}:" in
+      *":$termux_bin:"*)
+        PATH="${PATH}${PATH:+:}${baseline_path}"
+        ;;
+      *)
+        PATH="${baseline_path}${PATH:+:}${PATH-}"
+        ;;
+    esac
     export PATH
     ;;
 esac

@@ -1,0 +1,92 @@
+#!/bin/sh
+
+# Run Maestro against a phone adb onion service through a caged Tor forward.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: firewalled-maestro-tor --onion HOST.onion:PORT [--local-port PORT] [--socks 127.0.0.1:9050] -- MAESTRO_ARGS...
+
+Starts a temporary localhost Tor forward, then runs firewalled-maestro against it.
+The phone must expose its wireless-debugging adb port as an onion service.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+onion_endpoint=
+local_port=$((18000 + ($$ % 10000)))
+socks_endpoint=127.0.0.1:9050
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --onion)
+      [ "${2-}" ] || die "firewalled-maestro-tor: --onion requires a value"
+      onion_endpoint=$2
+      shift 2
+      ;;
+    --local-port)
+      [ "${2-}" ] || die "firewalled-maestro-tor: --local-port requires a value"
+      local_port=$2
+      shift 2
+      ;;
+    --socks)
+      [ "${2-}" ] || die "firewalled-maestro-tor: --socks requires a value"
+      socks_endpoint=$2
+      shift 2
+      ;;
+    --)
+      shift
+      break
+      ;;
+    *)
+      die 2 "firewalled-maestro-tor: unknown option '$1'"
+      ;;
+  esac
+done
+
+[ -n "$onion_endpoint" ] || die 2 "firewalled-maestro-tor: --onion is required"
+[ "$#" -gt 0 ] || die 2 "firewalled-maestro-tor: MAESTRO_ARGS are required"
+
+tor_adb_forward=$(command -v tor-adb-forward || true)
+[ -n "$tor_adb_forward" ] || tor_adb_forward="$script_dir/tor-adb-forward"
+[ -x "$tor_adb_forward" ] || die "firewalled-maestro-tor: tor-adb-forward not found"
+
+firewalled_maestro=$(command -v firewalled-maestro || true)
+[ -n "$firewalled_maestro" ] || firewalled_maestro="$script_dir/firewalled-maestro"
+[ -x "$firewalled_maestro" ] || die "firewalled-maestro-tor: firewalled-maestro not found"
+
+"$tor_adb_forward" \
+  --onion "$onion_endpoint" \
+  --local-port "$local_port" \
+  --socks "$socks_endpoint" \
+  >/dev/null 2>&1 &
+forward_pid=$!
+trap 'kill "$forward_pid" >/dev/null 2>&1 || true' EXIT HUP INT TERM
+
+if command -v nc >/dev/null 2>&1; then
+  waited=0
+  while [ "$waited" -lt 5 ]; do
+    if nc -z 127.0.0.1 "$local_port" >/dev/null 2>&1; then
+      break
+    fi
+    sleep 1
+    waited=$((waited + 1))
+  done
+else
+  sleep 1
+fi
+
+"$firewalled_maestro" \
+  --serial "127.0.0.1:$local_port" \
+  --allow "127.0.0.1:$local_port" \
+  -- "$@"
+command_status=$?
+
+kill "$forward_pid" >/dev/null 2>&1 || true
+trap - EXIT HUP INT TERM
+exit "$command_status"

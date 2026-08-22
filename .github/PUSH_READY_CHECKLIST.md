@@ -16,6 +16,9 @@
 ## Storage Rules
 - Put durable operator state under XDG/user-local state directories, not inside the checkout.
 - Put transient test and assay output under temp/state directories, not inside the checkout.
+- Never put app-instance state, user settings, browser profiles, temp homes, runtime logs, or cache directories in the repo folder.
+- Treat repo-local app state or temp cruft as a bug in the app/tooling design, not as an acceptable workflow.
+- Repo folders are canonical source/development contexts, not per-machine runtime sandboxes.
 - Keep compiled artifacts and release packages ignored locally and published via CI artifacts/releases.
 - If a path must exist near the repo for tooling reasons, ignore it and document why it cannot live elsewhere.
 

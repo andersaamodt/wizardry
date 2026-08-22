@@ -43,11 +43,67 @@ esac
 web_root=${WEB_WIZARDRY_ROOT:-${WIZARDRY_SITES_DIR:-$HOME/sites}}
 sites_dir="$web_root"
 site_dir="$sites_dir/$site_name"
+cr=$(printf '\r')
 
 if [ ! -d "$site_dir" ]; then
   printf 'run-site-daemon: site '\''%s'\'' not found\n' "$site_name" >&2
   exit 1
 fi
+
+run_site_daemon_build_dir() {
+  site_build_dir_site_dir=$1
+  site_build_dir_config=$(config-get \
+    "$site_build_dir_site_dir/site.conf" build-dir 2>/dev/null || printf '')
+  case "$site_build_dir_config" in
+    '')
+      printf '%s\n' "$site_build_dir_site_dir/build"
+      ;;
+    *"$cr"*|*'
+'*|.|..|../*|*/../*|*/..)
+      printf 'run-site-daemon: invalid build-dir\n' >&2
+      exit 2
+      ;;
+    \~)
+      printf '%s\n' "$HOME"
+      ;;
+    \~/*)
+      printf '%s\n' "$HOME/${site_build_dir_config#\~/}"
+      ;;
+    /*)
+      printf '%s\n' "$site_build_dir_config"
+      ;;
+    *)
+      printf '%s\n' "$site_build_dir_site_dir/$site_build_dir_config"
+      ;;
+  esac
+}
+
+build_dir=$(run_site_daemon_build_dir "$site_dir")
+nginx_dir=$("$wizardry_dir/spells/.imps/web/site-runtime-dir" "$site_dir" nginx)
+
+run_site_daemon_fastcgi_socket_path() {
+  socket_site_dir=$1
+  socket_site_name=$2
+  socket_default="$nginx_dir/fcgiwrap.sock"
+  if [ "${#socket_default}" -le 90 ]; then
+    printf '%s\n' "$socket_default"
+    return 0
+  fi
+  socket_root=${WIZARDRY_FCGI_SOCKET_DIR:-/tmp/wizardry-fcgiwrap}
+  mkdir -p "$socket_root"
+  if command -v shasum >/dev/null 2>&1; then
+    socket_key=$(printf '%s' "$socket_site_dir" | shasum -a 256 | awk '{print $1}')
+  elif command -v sha256sum >/dev/null 2>&1; then
+    socket_key=$(printf '%s' "$socket_site_dir" | sha256sum | awk '{print $1}')
+  else
+    socket_key=$(printf '%s' "$socket_site_dir" | cksum | awk '{print $1}')
+  fi
+  socket_key=$(printf '%s' "$socket_key" | cut -c1-16)
+  [ -n "$socket_key" ] || socket_key=runtime
+  printf '%s/%s-%s.sock\n' "$socket_root" "$socket_site_name" "$socket_key"
+}
+
+fcgi_sock=$(run_site_daemon_fastcgi_socket_path "$site_dir" "$site_name")
 
 find_nginx_bin() {
   if command -v nginx >/dev/null 2>&1; then
@@ -82,14 +138,14 @@ fi
 printf 'Using nginx binary: %s\n' "$nginx_bin" >&2
 
 # Build site if not built
-if [ ! -f "$site_dir/build/pages/index.html" ]; then
+if [ ! -f "$build_dir/pages/index.html" ]; then
   printf 'Building site before serving...\n' >&2
   # Note: Can't call 'build' spell here - it's not in PATH after env-clear
-  # If build/ doesn't exist, nginx will fail to start and error will be logged
+  # If the configured build dir doesn't exist, nginx will fail to start and error will be logged
 fi
 
 # Generate nginx config if not exists
-if [ ! -f "$site_dir/nginx/nginx.conf" ]; then
+if [ ! -f "$nginx_dir/nginx.conf" ]; then
   printf 'run-site-daemon: nginx.conf missing - run configure-nginx first\n' >&2
   exit 1
 fi
@@ -98,8 +154,8 @@ cleanup_fcgiwrap() {
   if [ -n "${fcgi_pid-}" ] && kill -0 "$fcgi_pid" 2>/dev/null; then
     kill "$fcgi_pid" 2>/dev/null || true
   fi
-  if [ -f "$site_dir/nginx/fcgiwrap.sock" ]; then
-    rm -f "$site_dir/nginx/fcgiwrap.sock"
+  if [ -f "$fcgi_sock" ]; then
+    rm -f "$fcgi_sock"
   fi
 }
 
@@ -107,13 +163,12 @@ trap 'cleanup_fcgiwrap' INT TERM EXIT
 
 # Start fcgiwrap if available (for CGI support)
 if command -v fcgiwrap >/dev/null 2>&1; then
-  fcgi_sock="$site_dir/nginx/fcgiwrap.sock"
-  if [ -S "$fcgi_sock" ] && [ -f "$site_dir/nginx/fcgiwrap.pid" ]; then
-    stale_pid=$(cat "$site_dir/nginx/fcgiwrap.pid" 2>/dev/null || echo "")
+  if [ -S "$fcgi_sock" ] && [ -f "$nginx_dir/fcgiwrap.pid" ]; then
+    stale_pid=$(cat "$nginx_dir/fcgiwrap.pid" 2>/dev/null || echo "")
     if [ -n "$stale_pid" ] && kill -0 "$stale_pid" 2>/dev/null; then
       :
     else
-      rm -f "$site_dir/nginx/fcgiwrap.pid" "$fcgi_sock"
+      rm -f "$nginx_dir/fcgiwrap.pid" "$fcgi_sock"
     fi
   fi
 
@@ -153,7 +208,7 @@ if command -v fcgiwrap >/dev/null 2>&1; then
         WIZARDRY_SITE_NAME="$site_name" \
         fcgiwrap -c "$fcgiwrap_workers" -s "unix:$fcgi_sock" &
     fcgi_pid=$!
-    printf '%s\n' "$fcgi_pid" > "$site_dir/nginx/fcgiwrap.pid"
+    printf '%s\n' "$fcgi_pid" > "$nginx_dir/fcgiwrap.pid"
     sleep 1
   fi
 fi
@@ -161,8 +216,12 @@ fi
 printf 'Starting nginx for %s...\n' "$site_name" >&2
 
 # Capture nginx startup errors to help debug issues  
-nginx_startup_log="$site_dir/nginx/startup.log"
-"$nginx_bin" -p "$site_dir" -e "$site_dir/nginx/error.log" -c "$site_dir/nginx/nginx.conf" 2>"$nginx_startup_log" &
+nginx_startup_log="$nginx_dir/startup.log"
+"$nginx_bin" \
+  -p "$nginx_dir" \
+  -e "$nginx_dir/error.log" \
+  -c "$nginx_dir/nginx.conf" \
+  2>"$nginx_startup_log" &
 nginx_pid=$!
 
 sleep 1
@@ -173,17 +232,17 @@ if ! kill -0 "$nginx_pid" 2>/dev/null; then
     printf 'nginx startup error (stderr):\n' >&2
     cat "$nginx_startup_log" >&2
   fi
-  if [ -f "$site_dir/nginx/error.log" ] && [ -s "$site_dir/nginx/error.log" ]; then
+  if [ -f "$nginx_dir/error.log" ] && [ -s "$nginx_dir/error.log" ]; then
     printf 'nginx error log (last 20 lines):\n' >&2
-    tail -20 "$site_dir/nginx/error.log" >&2
+    tail -20 "$nginx_dir/error.log" >&2
   fi
   printf 'run-site-daemon: nginx failed to start (process exited immediately)\n' >&2
   exit 1
 fi
 
 # Ensure a readable PID file exists even if nginx delays writing its own pid path.
-if [ ! -f "$site_dir/nginx/nginx.pid" ]; then
-  printf '%s\n' "$nginx_pid" > "$site_dir/nginx/nginx.pid" 2>/dev/null || true
+if [ ! -f "$nginx_dir/nginx.pid" ]; then
+  printf '%s\n' "$nginx_pid" > "$nginx_dir/nginx.pid" 2>/dev/null || true
 fi
 
 printf 'Site daemon running. nginx PID: %s\n' "$nginx_pid" >&2

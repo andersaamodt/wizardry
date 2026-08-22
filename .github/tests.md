@@ -37,6 +37,12 @@ Common adversarial fixtures:
 - fake network/package-manager/tool outputs instead of live services
 - parser/gloss/menu/PTY inputs that exercise caller state and command boundaries
 
+## Capability Markers
+
+- Use whole-file capability markers in the first five lines when a test genuinely needs a host feature that cannot be stubbed cleanly.
+- `# REQUIRES_XATTR: reason` tells `test-magic` to skip that file visibly on hosts where filesystem xattrs are unavailable or unprobeable.
+- Reserve `REQUIRES_XATTR` for tests that need real filesystem xattrs; prefer normal stubs for helper-ordering and fallback behavior.
+
 ## Test-Driven Flow
 
 1. Write tests that reproduce the bug or test the new feature FIRST

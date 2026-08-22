@@ -17,6 +17,9 @@ set -eu
 . env-clear
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+# shellcheck source=/dev/null
+. "$script_dir/ai-dev-llm-common"
+set -eu
 
 # Check if installed
 if ! "$script_dir/is-ai-component-installed" ollama 2>/dev/null; then
@@ -58,6 +61,15 @@ fi
 # Verify uninstallation
 if "$script_dir/is-ai-component-installed" ollama 2>/dev/null; then
   die "uninstall-ollama: uninstallation verification failed"
+fi
+
+runtime=$(ai_llm_get_active_runtime)
+if [ "$runtime" = "ollama" ] && "$script_dir/is-ai-component-installed" mlx 2>/dev/null; then
+  ai_llm_set_active_runtime "mlx" || true
+fi
+
+if ! ai_llm_sync_opencode_runtime; then
+  warn "uninstall-ollama: OpenCode runtime sync failed"
 fi
 
 success "ollama uninstalled successfully"

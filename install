@@ -279,7 +279,25 @@ else
         fi
         if [ -n "$LOCAL_SOURCE" ]; then
                 printf '%s\n' "Copying wizardry from '$LOCAL_SOURCE' to '$INSTALL_DIR'..."
-                if ! cp -R "$LOCAL_SOURCE" "$INSTALL_DIR"; then
+                if ! mkdir -p "$INSTALL_DIR"; then
+                        printf '%s\n' "Error: Unable to create install directory '$INSTALL_DIR'." >&2
+                        exit 1
+                fi
+                copy_failed=0
+                for entry in "$LOCAL_SOURCE"/.[!.]* "$LOCAL_SOURCE"/..?* "$LOCAL_SOURCE"/*; do
+                        [ -e "$entry" ] || continue
+                        entry_name=${entry##*/}
+                        case $entry_name in
+                                .|..|.git|.codex|.uninstall)
+                                        continue
+                                        ;;
+                        esac
+                        if ! cp -R "$entry" "$INSTALL_DIR/$entry_name"; then
+                                copy_failed=1
+                                break
+                        fi
+                done
+                if [ "$copy_failed" -ne 0 ]; then
                         printf '%s\n' "Error: Unable to copy wizardry from '$LOCAL_SOURCE'." >&2
                         exit 1
                 fi
@@ -359,6 +377,26 @@ ASK_YN="$ABS_DIR/spells/cantrips/ask-yn"
 INSTALL_CD="$ABS_DIR/spells/.arcana/mud/install-cd"
 TOGGLE_CD="$ABS_DIR/spells/.arcana/mud/toggle-cd"
 TOGGLE_ALL_MUD="$ABS_DIR/spells/.arcana/mud/toggle-all-mud"
+
+# Fresh local-source installs may call copied helper spells before
+# invoke-wizardry has ever prepared PATH. Seed the copied tree onto PATH so
+# sourced helpers such as env-clear and die resolve from the installation being
+# prepared instead of depending on the caller's ambient environment.
+install_saved_path=$PATH
+PATH="$ABS_DIR/spells"
+if [ -d "$ABS_DIR/spells/.imps" ]; then
+        PATH="$PATH:$ABS_DIR/spells/.imps"
+        for impdir in "$ABS_DIR"/spells/.imps/*; do
+                [ -d "$impdir" ] || continue
+                PATH="$PATH:$impdir"
+        done
+fi
+for spell_dir in "$ABS_DIR"/spells/*; do
+        [ -d "$spell_dir" ] || continue
+        PATH="$PATH:$spell_dir"
+done
+PATH="$PATH:$install_saved_path"
+export PATH
 
 # NOTE: Spells no longer need to be pre-installed.
 # Users can still use install() functions in spells for explicit customizations like aliases.
@@ -642,34 +680,32 @@ if [ "$needs_installation" -eq 0 ] && [ "$WIZARDRY_EXISTED_BEFORE" -eq 1 ]; then
         printf '  4) %sExit%s - Do nothing and exit\n' "$CYAN" "$RESET"
         printf '\n'
         
-        # Read user choice
-        # Check if we can read input. When running via curl | sh, stdin is a pipe
-        # containing the script content, not user input. We must check if we can
-        # read from /dev/tty instead.
         choice=""
-        if [ -t 0 ]; then
-                # stdin is a terminal - read directly from stdin
-                printf '%sEnter your choice (1-4): %s' "$BOLD" "$RESET" >&2
-                IFS= read -r choice
-        elif [ -r /dev/tty ]; then
-                # stdin is not a terminal, but /dev/tty is available
-                # This handles curl | sh case where stdin has script content
-                printf '%sEnter your choice (1-4): %s' "$BOLD" "$RESET" >&2
-                IFS= read -r choice </dev/tty || choice=
-        fi
-        
-        # Handle non-interactive defaults
-        if [ -z "$choice" ]; then
-                if [ "${WIZARDRY_INSTALL_ASSUME_YES-}" = "1" ]; then
-                        # In automated mode with ASSUME_YES, default to repair
-                        choice="1"
-                        printf '%s\n' "Non-interactive mode: defaulting to repair (option 1)"
-                else
+        if [ "${WIZARDRY_INSTALL_ASSUME_YES-}" = "1" ]; then
+                choice="1"
+                printf '%s\n' "Non-interactive mode: defaulting to repair (option 1)"
+        else
+                # Read user choice
+                # Check if we can read input. When running via curl | sh, stdin is a pipe
+                # containing the script content, not user input. We must check if we can
+                # read from /dev/tty instead.
+                if [ -t 0 ]; then
+                        # stdin is a terminal - read directly from stdin
+                        printf '%sEnter your choice (1-4): %s' "$BOLD" "$RESET" >&2
+                        IFS= read -r choice
+                elif [ -r /dev/tty ]; then
+                        # stdin is not a terminal, but /dev/tty is available
+                        # This handles curl | sh case where stdin has script content
+                        printf '%sEnter your choice (1-4): %s' "$BOLD" "$RESET" >&2
+                        IFS= read -r choice </dev/tty || choice=
+                fi
+
+                if [ -z "$choice" ]; then
                         printf '%s\n' "Wizardry is already installed. Run 'menu' or 'mud' to use it."
                         exit 0
                 fi
         fi
-        
+
         case $choice in
                 1)
                         # Repair - continue with normal flow

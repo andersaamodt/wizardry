@@ -75,9 +75,13 @@ probe_fail=0
 tmpdir=''
 case " $probe_set " in
   *" find "*)
-    tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/detect-posix.XXXXXX") || exit 1
+    detect_posix_state_home=${XDG_STATE_HOME:-${HOME:-/tmp}/.local/state}
+    tmpdir=${DETECT_POSIX_TMPDIR:-$detect_posix_state_home/wizardry/detect-posix}
+    rm -rf "$tmpdir"
+    mkdir -p "$tmpdir" || exit 1
     touch "$tmpdir/probe"
     trap '[ -n "${tmpdir-}" ] && [ -d "$tmpdir" ] && rm -rf "$tmpdir"' EXIT HUP INT TERM
+    unset detect_posix_state_home
     ;;
 esac
 

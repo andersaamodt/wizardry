@@ -15,7 +15,7 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 make_spellbook_dir() {
-  dir=$(mktemp -d "$WIZARDRY_TMPDIR/spellbook.XXXXXX") || exit 1
+  dir=$(make_tempdir) || exit 1
   printf '%s\n' "$dir"
 }
 

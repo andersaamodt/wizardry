@@ -1,0 +1,73 @@
+#!/bin/sh
+
+# Report installation status for mobile debugging tools.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: mobile-debugging-status
+
+Reports installation status for mobile debugging tools.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+if command -v colors >/dev/null 2>&1; then
+  . colors
+else
+  RESET=""
+  THEME_SUCCESS=""
+  GREY=""
+fi
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+. "$script_dir/mobile-debugging-common"
+set -eu
+
+java_ready=0
+platform_tools_installed=0
+commandline_tools_installed=0
+maestro_installed=0
+tor_adb_ready=0
+
+mobile_debugging_java_ready && java_ready=1
+mobile_debugging_platform_tools_installed && platform_tools_installed=1
+mobile_debugging_commandline_tools_installed && commandline_tools_installed=1
+mobile_debugging_maestro_installed && maestro_installed=1
+if command -v tor >/dev/null 2>&1 && command -v socat >/dev/null 2>&1; then
+  tor_adb_ready=1
+fi
+
+if [ "$java_ready" -eq 1 ] &&
+  [ "$platform_tools_installed" -eq 1 ] &&
+  [ "$maestro_installed" -eq 1 ] &&
+  [ "$tor_adb_ready" -eq 1 ]; then
+  printf '%sinstalled + Tor adb%s\n' "$THEME_SUCCESS" "$RESET"
+elif [ "$java_ready" -eq 1 ] &&
+  [ "$platform_tools_installed" -eq 1 ] &&
+  [ "$maestro_installed" -eq 1 ]; then
+  printf '%sinstalled%s\n' "$THEME_SUCCESS" "$RESET"
+elif [ "$platform_tools_installed" -eq 1 ] &&
+  [ "$commandline_tools_installed" -eq 1 ]; then
+  printf '%sAndroid SDK tools%s\n' "$THEME_SUCCESS" "$RESET"
+elif [ "$platform_tools_installed" -eq 1 ] && [ "$maestro_installed" -eq 1 ]; then
+  printf '%sadb + Maestro (Java missing)%s\n' "$THEME_SUCCESS" "$RESET"
+elif [ "$commandline_tools_installed" -eq 1 ]; then
+  printf '%ssdkmanager only%s\n' "$THEME_SUCCESS" "$RESET"
+elif [ "$java_ready" -eq 1 ] && [ "$maestro_installed" -eq 1 ]; then
+  printf '%sJava + Maestro%s\n' "$THEME_SUCCESS" "$RESET"
+elif [ "$java_ready" -eq 1 ]; then
+  printf '%sJava only%s\n' "$THEME_SUCCESS" "$RESET"
+elif [ "$platform_tools_installed" -eq 1 ]; then
+  printf '%sadb only%s\n' "$THEME_SUCCESS" "$RESET"
+elif [ "$maestro_installed" -eq 1 ]; then
+  printf '%sMaestro only%s\n' "$THEME_SUCCESS" "$RESET"
+else
+  printf '%snot installed%s\n' "$GREY" "$RESET"
+fi

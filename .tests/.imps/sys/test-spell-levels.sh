@@ -79,8 +79,21 @@ SCRIPT_EOF
   assert_output_contains "level name:"
 }
 
+test_web_level_excludes_relocated_supercollider_installers() {
+  skip-if-compiled || return $?
+  web_spells=$(spell-levels 28 spells)
+  case " $web_spells " in
+    *' install-supercollider:web '*|*' uninstall-supercollider:web '*)
+      TEST_FAILURE_REASON="level 28 still references relocated SuperCollider installers"
+      return 1
+      ;;
+  esac
+}
+
 run_test_case "spell-levels defines level spells" test_level_spells_have_expected_entries
 run_test_case "spell-levels defines level imps" test_level_imps_have_expected_entries
 run_test_case "spell-levels defines level names" test_level_names_are_defined
+run_test_case "web level excludes relocated SuperCollider installers" \
+  test_web_level_excludes_relocated_supercollider_installers
 
 finish_tests

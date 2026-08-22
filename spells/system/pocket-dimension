@@ -351,7 +351,7 @@ while [ "$#" -gt 0 ]; do
   }
 
   if [ "$#" -lt 1 ]; then
-    pocket_dimension_usage >&2
+    printf '%s\n' 'Usage: pocket-dimension [OPTIONS] -- command [args...]' >&2
     exit 2
   fi
 
@@ -369,7 +369,30 @@ while [ "$#" -gt 0 ]; do
     exit 1
   fi
 
-  pocket_root=$(mktemp -d "${TMPDIR:-/tmp}/wizardry-pocket.XXXXXX")
+  pocket_state_home=${XDG_STATE_HOME:-${HOME:-/tmp}/.local/state}
+  pocket_scratch_root=${WIZARDRY_POCKET_SCRATCH_ROOT:-$pocket_state_home/wizardry/pocket-dimension}
+  pocket_label=$(pwd -P | sed 's|[^A-Za-z0-9._-]|_|g' | cut -c 1-120)
+  pocket_slot=0
+  pocket_root=''
+  pocket_lock=''
+  while [ "$pocket_slot" -le 16 ]; do
+    pocket_candidate=$pocket_scratch_root/$pocket_label
+    if [ "$pocket_slot" -gt 0 ]; then
+      pocket_candidate=$pocket_candidate.$pocket_slot
+    fi
+    pocket_candidate_lock=$pocket_candidate.lock
+    if mkdir -p "$pocket_scratch_root" && mkdir "$pocket_candidate_lock" 2>/dev/null; then
+      pocket_root=$pocket_candidate
+      pocket_lock=$pocket_candidate_lock
+      break
+    fi
+    pocket_slot=$((pocket_slot + 1))
+  done
+  if [ -z "$pocket_root" ]; then
+    printf '%s\n' "pocket-dimension: no scratch slot available under $pocket_scratch_root" >&2
+    exit 1
+  fi
+  rm -rf "$pocket_root"
   pocket_home="$pocket_root/home"
   pocket_tmp="$pocket_root/tmp"
   pocket_run="$pocket_root/run"
@@ -398,19 +421,15 @@ while [ "$#" -gt 0 ]; do
     progress_msg "pocket-dimension: skipping host filesystem snapshot in strict macOS mode"
   fi
 
-  snapshot_files() {
-    snapshot_target=$1
+  if [ "$record_mutations" -eq 1 ] && [ "$snapshot_enabled" -eq 1 ]; then
+    snapshot_target=$record_dir/before
     if command -v cksum >/dev/null 2>&1; then
       find "$workdir" -type f -print | sort | while IFS= read -r file; do
         cksum "$file"
-      done >"$snapshot_target"
+      done >"$snapshot_target" 2>/dev/null || true
     else
-      find "$workdir" -type f -print | sort >"$snapshot_target"
+      find "$workdir" -type f -print | sort >"$snapshot_target" 2>/dev/null || true
     fi
-  }
-
-  if [ "$record_mutations" -eq 1 ] && [ "$snapshot_enabled" -eq 1 ]; then
-    snapshot_files "$record_dir/before" 2>/dev/null || true
   fi
 
   env_args=""
@@ -681,7 +700,14 @@ RUNNER
   cleanup_active_macos_temp_user
 
   if [ "$record_mutations" -eq 1 ] && [ "$snapshot_enabled" -eq 1 ]; then
-    snapshot_files "$record_dir/after" 2>/dev/null || true
+    snapshot_target=$record_dir/after
+    if command -v cksum >/dev/null 2>&1; then
+      find "$workdir" -type f -print | sort | while IFS= read -r file; do
+        cksum "$file"
+      done >"$snapshot_target" 2>/dev/null || true
+    else
+      find "$workdir" -type f -print | sort >"$snapshot_target" 2>/dev/null || true
+    fi
     if command -v diff >/dev/null 2>&1; then
       diff -u "$record_dir/before" "$record_dir/after" \
         >"$record_dir/mutations.diff" 2>/dev/null || true
@@ -695,6 +721,9 @@ RUNNER
 
   if [ "$keep_pocket" -eq 0 ]; then
     rm -rf "$pocket_root"
+  fi
+  if [ -n "${pocket_lock-}" ]; then
+    rmdir "$pocket_lock" 2>/dev/null || true
   fi
 
   exit "$status"

@@ -1,0 +1,80 @@
+#!/bin/sh
+
+# Install MLX local LLM runtime for ai-dev workflows.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-mlx
+
+Installs MLX runtime for local model inference on Apple Silicon macOS.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+# shellcheck source=/dev/null
+. "$script_dir/ai-dev-llm-common"
+set -eu
+
+if ! ai_llm_is_mlx_supported; then
+  die "install-mlx: MLX is supported only on Apple Silicon macOS"
+fi
+
+if [ -f "$ai_llm_mlx_root/installed" ] && ai_llm_mlx_runtime_ready; then
+  success "MLX is already installed"
+  exit 0
+fi
+
+if ! has python3; then
+  die 127 "install-mlx: python3 is required"
+fi
+
+printf '%s\n' "Installing MLX..."
+
+mkdir -p "$ai_llm_mlx_root"
+
+if [ -d "$ai_llm_mlx_venv" ]; then
+  rm -rf "$ai_llm_mlx_venv"
+fi
+
+step "Creating MLX virtual environment"
+python3 -m venv "$ai_llm_mlx_venv" || die "install-mlx: could not create virtual environment"
+[ -x "$ai_llm_mlx_python" ] || die "install-mlx: python binary missing in virtual environment"
+
+"$ai_llm_mlx_python" -m ensurepip --upgrade >/dev/null 2>&1 || true
+if ! "$ai_llm_mlx_python" -m pip install --upgrade pip >/dev/null 2>&1; then
+  die "install-mlx: pip upgrade failed"
+fi
+
+step "Installing MLX packages"
+mlx_lm_version=${AI_DEV_MLX_LM_VERSION:-0.29.1}
+huggingface_hub_version=${AI_DEV_HUGGINGFACE_HUB_VERSION:-0.36.2}
+"$ai_llm_mlx_python" -m pip install --upgrade \
+  "mlx-lm==$mlx_lm_version" \
+  "huggingface-hub==$huggingface_hub_version" \
+  "urllib3<2" >/dev/null 2>&1 || \
+  die "install-mlx: failed to install mlx packages"
+
+if ! ai_llm_mlx_runtime_ready; then
+  die "install-mlx: mlx packages were installed but runtime verification failed"
+fi
+
+touch "$ai_llm_mlx_root/installed"
+
+ai_llm_set_active_runtime "mlx" || die "install-mlx: failed to set active runtime"
+
+default_model=$(ai_llm_default_model mlx)
+ai_llm_set_selected_model mlx "$default_model" || die "install-mlx: failed to store default model"
+
+if ! ai_llm_sync_opencode_runtime; then
+  warn "install-mlx: OpenCode runtime sync failed"
+fi
+
+success "MLX installed successfully"

@@ -1,0 +1,264 @@
+#!/bin/sh
+
+# Run adb through the firewall spell so it never escapes the network cage.
+# This wrapper uses a dedicated adb server port and tears the server down again.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: firewalled-adb [--serial SERIAL] [--allow IPV4[:PORT]]... -- ADB_ARGS...
+
+Runs adb inside the firewall spell. Use --serial for a device serial or an
+IPv4:port transport; remote IPv4:port serials are automatically allowlisted.
+USAGE
+  exit 0
+  ;;
+esac
+
+if [ "${1-}" = "--internal-run" ]; then
+  shift
+  internal_mode=1
+else
+  internal_mode=0
+fi
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+# shellcheck source=/dev/null
+. "$script_dir/../.arcana/mobile-debugging/mobile-debugging-common"
+set -eu
+
+is_global_adb_command() {
+  case "${1-}" in
+    ""|help|version|start-server|kill-server|devices|connect|disconnect|pair|\
+server-status|host-features|features|reconnect)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+connect_remote_serial() {
+  connect_exec=$1
+  connect_serial=$2
+
+  connected=no
+  attempt=0
+  while [ "$attempt" -lt 5 ]; do
+    connect_output=$("$connect_exec" connect "$connect_serial" 2>&1 || true)
+    case "$connect_output" in
+      *"connected to "*|*"already connected to "*)
+        connected=yes
+        break
+        ;;
+    esac
+    if "$connect_exec" -s "$connect_serial" get-state >/dev/null 2>&1; then
+      connected=yes
+      break
+    fi
+    sleep 1
+    attempt=$((attempt + 1))
+  done
+
+  [ "$connected" = yes ] || return 1
+
+  ready_attempt=0
+  while [ "$ready_attempt" -lt 5 ]; do
+    ready_state=$("$connect_exec" -s "$connect_serial" get-state 2>/dev/null || true)
+    case "$ready_state" in
+      device)
+        return 0
+        ;;
+      offline)
+        ;;
+      "")
+        ;;
+      *)
+        return 0
+        ;;
+    esac
+    sleep 1
+    ready_attempt=$((ready_attempt + 1))
+  done
+
+  return 0
+}
+
+if [ "$internal_mode" -eq 1 ]; then
+  adb_exec=${1-}
+  server_port=${2-}
+  serial=${3-}
+  serial_mode=${4-}
+  args_file=${5-}
+  server_log=$(temp-file)
+  server_pid=
+  on-exit cleanup-file "$server_log"
+
+  [ -n "$adb_exec" ] || die "firewalled-adb: internal adb path is required"
+  [ -n "$server_port" ] || die "firewalled-adb: internal server port is required"
+  [ -n "$serial_mode" ] || die "firewalled-adb: internal serial mode is required"
+  [ -n "$args_file" ] || die "firewalled-adb: internal args file is required"
+  [ -f "$args_file" ] || die "firewalled-adb: internal args file is missing"
+
+  set --
+  while IFS= read -r adb_arg || [ -n "$adb_arg" ]; do
+    set -- "$@" "$adb_arg"
+  done < "$args_file"
+
+  adb_client() {
+    "$adb_exec" -P "$server_port" "$@"
+  }
+
+  nohup "$adb_exec" -L "tcp:localhost:$server_port" server nodaemon >"$server_log" 2>&1 &
+  server_pid=$!
+  trap 'kill "$server_pid" >/dev/null 2>&1 || true' EXIT HUP INT TERM
+  sleep 1
+
+  if [ "$serial_mode" = "remote" ]; then
+    connect_remote_serial adb_client "$serial" || {
+      if [ -s "$server_log" ]; then
+        cat "$server_log" >&2
+      fi
+      die "firewalled-adb: could not connect to $serial"
+    }
+  fi
+
+  if [ -n "$serial" ] && ! is_global_adb_command "${1-}"; then
+    command_stdout=$(temp-file)
+    command_stderr=$(temp-file)
+    command_attempt=0
+    command_status=1
+    while [ "$command_attempt" -lt 3 ]; do
+      if adb_client -s "$serial" "$@" >"$command_stdout" 2>"$command_stderr"; then
+        command_status=0
+        break
+      fi
+      command_status=$?
+      command_error=$(cat "$command_stderr" 2>/dev/null || printf '')
+      case "$command_error" in
+        *"device offline"*|*"device not found"*|\
+*"failed to read copy response: EOF"*|*"Connection reset by peer"*|*"closed"*)
+          if [ "$serial_mode" = "remote" ] && connect_remote_serial adb_client "$serial"; then
+            command_attempt=$((command_attempt + 1))
+            continue
+          fi
+          ;;
+      esac
+      break
+    done
+    cat "$command_stdout"
+    if [ -s "$command_stderr" ]; then
+      cat "$command_stderr" >&2
+    fi
+    rm -f "$command_stdout" "$command_stderr"
+  else
+    adb_client "$@"
+    command_status=$?
+  fi
+
+  adb_client kill-server >/dev/null 2>&1 || kill "$server_pid" >/dev/null 2>&1 || true
+  wait "$server_pid" >/dev/null 2>&1 || true
+  trap - EXIT HUP INT TERM
+  exit "$command_status"
+fi
+
+serial=
+serial_mode=none
+allowlist='
+'
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --serial)
+      [ "${2-}" ] || die "firewalled-adb: --serial requires a value"
+      serial=$2
+      shift 2
+      ;;
+    --allow)
+      [ "${2-}" ] || die "firewalled-adb: --allow requires a value"
+      case "$2" in
+        *'
+'*)
+          die "firewalled-adb: allow endpoints must not contain line breaks"
+          ;;
+      esac
+      allowlist=$allowlist$2'
+'
+      shift 2
+      ;;
+    --)
+      shift
+      break
+      ;;
+    *)
+      die 2 "firewalled-adb: unknown option '$1'"
+      ;;
+  esac
+done
+
+[ "$#" -gt 0 ] || die 2 "firewalled-adb: ADB_ARGS are required"
+
+case "$serial" in
+  *'
+'*)
+    die "firewalled-adb: serial must not contain line breaks"
+    ;;
+esac
+
+case "$serial" in
+  [0-9]*.[0-9]*.[0-9]*.[0-9]*:*)
+    serial_mode=remote
+    allowlist=$allowlist$serial'
+'
+    ;;
+  "")
+    serial_mode=none
+    ;;
+  *)
+    serial_mode=device
+    ;;
+esac
+
+adb_exec=$(mobile_debugging_adb_exec || true)
+[ -n "$adb_exec" ] || die \
+  "firewalled-adb: adb not found; install platform tools from mobile-debugging-menu"
+
+args_file=$(temp-file)
+on-exit cleanup-file "$args_file"
+
+for adb_arg in "$@"; do
+  case "$adb_arg" in
+    *'
+'*)
+      die "firewalled-adb: adb arguments must not contain line breaks"
+      ;;
+  esac
+  printf '%s\n' "$adb_arg" >>"$args_file"
+done
+
+server_port=$((15000 + ($$ % 10000)))
+if command -v nc >/dev/null 2>&1; then
+  while nc -z 127.0.0.1 "$server_port" >/dev/null 2>&1; do
+    server_port=$((server_port + 1))
+    if [ "$server_port" -gt 24999 ]; then
+      server_port=15000
+    fi
+  done
+fi
+
+set -- firewall --allow-localhost
+old_ifs=${IFS}
+IFS='
+'
+for endpoint in $allowlist; do
+  [ -n "$endpoint" ] || continue
+  set -- "$@" --allow "$endpoint"
+done
+IFS=$old_ifs
+
+set -- "$@" -- "$0" --internal-run "$adb_exec" "$server_port" "$serial" "$serial_mode" "$args_file"
+exec "$@"

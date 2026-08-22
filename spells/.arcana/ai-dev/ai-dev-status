@@ -7,7 +7,7 @@ case "${1-}" in
   cat <<'USAGE'
 Usage: ai-dev-status
 
-Reports the installation status of AI development components (tabby, ollama, anythingllm).
+Reports the installation status of AI development components (Tabby, Ollama, MLX, OpenCode, and AnythingLLM).
 USAGE
   exit 0
   ;;
@@ -17,6 +17,11 @@ require-wizardry || exit 1
 
 set -eu
 . env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+# shellcheck source=/dev/null
+. "$script_dir/ai-dev-llm-common"
+set -eu
 
 if command -v colors >/dev/null 2>&1; then
   # shellcheck source=/dev/null
@@ -30,16 +35,23 @@ fi
 
 # Count installed components
 installed=0
-total=3
-
-script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+total=4
+if ai_llm_is_mlx_supported; then
+  total=5
+fi
 
 # Check each component using the helper
-for component in tabby ollama anythingllm; do
+for component in tabby ollama opencode anythingllm; do
   if "$script_dir/is-ai-component-installed" "$component" 2>/dev/null; then
     installed=$((installed + 1))
   fi
 done
+
+if ai_llm_is_mlx_supported; then
+  if "$script_dir/is-ai-component-installed" mlx 2>/dev/null; then
+    installed=$((installed + 1))
+  fi
+fi
 
 if [ "$installed" -eq 0 ]; then
   color="$GREY"

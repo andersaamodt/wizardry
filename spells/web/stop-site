@@ -32,6 +32,7 @@ esac
 web_root=${WEB_WIZARDRY_ROOT:-$HOME/sites}
 sites_dir="$web_root"
 site_dir="$sites_dir/$site_name"
+nginx_dir=$("${WIZARDRY_DIR:-$HOME/.wizardry}/spells/.imps/web/site-runtime-dir" "$site_dir" nginx)
 
 if [ ! -d "$site_dir" ]; then
   die "stop-site: site '$site_name' not found"
@@ -53,7 +54,7 @@ stop_site_run_priv() {
   die "stop-site: root or sudo is required"
 }
 
-nginx_pid_file="$site_dir/nginx/nginx.pid"
+nginx_pid_file="$nginx_dir/nginx.pid"
 nginx_was_running=0
 
 stop_site_nginx_pid_running() {
@@ -87,7 +88,7 @@ stop_site_nginx_pid_running() {
   esac
 
   case "$cmd" in
-    *"$site_dir"*nginx*)
+    *"$nginx_dir"*nginx*|*"$site_dir"*nginx*|*nginx*"$nginx_dir"*|*nginx*"$site_dir"*)
       return 0
       ;;
   esac

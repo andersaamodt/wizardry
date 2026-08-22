@@ -1,0 +1,25 @@
+#!/bin/sh
+
+# Remove the Wizardry-managed Godot install.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uninstall-godot
+
+Removes the Godot install managed by Wizardry.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+. "$script_dir/game-dev-common"
+set -eu
+
+uninstall_godot_main

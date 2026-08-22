@@ -1,0 +1,48 @@
+#!/bin/sh
+
+# Set the active ai-dev LLM runtime.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: set-active-llm-runtime RUNTIME
+
+Sets the active local runtime used by wizardry for model installation and
+OpenCode wiring. Supported values: mlx, ollama.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+# shellcheck source=/dev/null
+. "$script_dir/ai-dev-llm-common"
+set -eu
+
+runtime=${1-}
+[ -n "$runtime" ] || die 2 "set-active-llm-runtime: RUNTIME required"
+
+if ! ai_llm_runtime_valid "$runtime"; then
+  die 2 "set-active-llm-runtime: invalid runtime '$runtime'"
+fi
+
+if ! ai_llm_runtime_supported_on_host "$runtime"; then
+  die "set-active-llm-runtime: $runtime is not supported on this host"
+fi
+
+if ! "$script_dir/is-ai-component-installed" "$runtime" 2>/dev/null; then
+  die "set-active-llm-runtime: $runtime is not installed"
+fi
+
+ai_llm_set_active_runtime "$runtime" || die "set-active-llm-runtime: failed to persist runtime"
+
+if ! ai_llm_sync_opencode_runtime; then
+  warn "set-active-llm-runtime: OpenCode runtime sync failed"
+fi
+
+success "Active LLM runtime set to $(ai_llm_runtime_label "$runtime")"

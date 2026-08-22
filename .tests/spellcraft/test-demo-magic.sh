@@ -74,13 +74,47 @@ test_exact_level_hook_limits_output() {
   assert_output_not_contains "Level 0: POSIX & Platform Foundation" || return 1
 }
 
+test_termux_level_zero_uses_detect_distro() {
+  run_cmd env WIZARDRY_DEMO_NO_SANDBOX=1 \
+    PATH="/data/data/com.termux/files/usr/bin:$PATH" \
+    "$ROOT_DIR/spells/spellcraft/demo-magic" 0
+  assert_success || return 1
+  assert_output_contains "detect-distro -> termux" || return 1
+  assert_output_not_contains "FAIL " || return 1
+}
+
+test_reduced_xattr_hosts_skip_metadata_heavy_levels() {
+  tmpdir=$(make_tempdir)
+  stub_dir="$tmpdir/bin"
+  mkdir -p "$stub_dir"
+
+  for helper in attr xattr setfattr getfattr; do
+    cat >"$stub_dir/$helper" <<'SH'
+#!/bin/sh
+exit 1
+SH
+    chmod +x "$stub_dir/$helper"
+  done
+
+  run_cmd env DEMO_MAGIC_EXACT_LEVEL=1 WIZARDRY_DEMO_NO_SANDBOX=1 \
+    PATH="$stub_dir:$PATH" \
+    "$ROOT_DIR/spells/spellcraft/demo-magic" 20
+  assert_success || return 1
+  assert_output_contains "Level 20: Process & System Info (PSI)" || return 1
+  assert_output_contains "check/uncheck skipped: extended attributes unavailable on this host." || return 1
+}
+
 test_default_runs_all_levels() {
   run_demo_magic
   assert_success || return 1
   assert_output_contains "Level 3: Glossary & Parsing" || return 1
   assert_output_contains "Level 5: Extended Attributes" || return 1
-  assert_output_contains "xattr round-trip -> mood=calm" || return 1
-  assert_output_contains "yaml-to-enchantment -> mood=calm" || return 1
+  assert_output_contains_either \
+    "xattr round-trip -> mood=calm" \
+    "xattr round-trip skipped: extended attributes unavailable on this host." || return 1
+  assert_output_contains_either \
+    "yaml-to-enchantment -> mood=calm" \
+    "Skipped: disenchant, enchant, enchantment-to-yaml, yaml-to-enchantment" || return 1
   assert_output_contains "main-menu --help -> Usage: . main-menu" || return 1
   assert_output_contains "Level 6: Task Priorities" || return 1
   assert_output_contains "get-card ->" || return 1
@@ -95,15 +129,22 @@ test_default_runs_all_levels() {
   assert_output_contains "Level 15: Divination" || return 1
   assert_output_contains "divination-scroll.txt" || return 1
   assert_output_contains "Level 17: Cryptography" || return 1
-  assert_output_contains "hashchant -> 0x" || return 1
+  assert_output_contains_either \
+    "hashchant -> 0x" \
+    "hashchant/evoke-hash skipped: extended attributes unavailable on this host." || return 1
   assert_output_contains_either "evoke-hash ->" "evoke-hash skipped:" || return 1
   assert_output_contains "Level 18: SSH & Remote Access" || return 1
   assert_output_contains "open-portal --help -> Usage: open-portal" || return 1
   assert_output_contains "Level 19: Security Wards" || return 1
   assert_output_contains "ssh-barrier --help -> Usage: ssh-barrier" || return 1
   assert_output_contains "Level 20: Process & System Info (PSI)" || return 1
-  assert_output_contains "get-checked -> 1" || return 1
-  assert_output_contains "get-checked -> 0" || return 1
+  case "$OUTPUT" in
+    *"check/uncheck skipped: extended attributes unavailable on this host."*) : ;;
+    *)
+      assert_output_contains "get-checked -> 1" || return 1
+      assert_output_contains "get-checked -> 0" || return 1
+      ;;
+  esac
   assert_output_contains "Level 22: Core Menu Infrastructure" || return 1
   assert_output_contains "main-menu --help -> Usage: . main-menu" || return 1
   assert_output_contains "Level 24: MUD Administration Menus" || return 1
@@ -129,6 +170,10 @@ run_test_case "demo-magic internal pocket flag avoids resandbox loops" \
   test_demo_in_pocket_flag_skips_resandbox
 run_test_case "demo-magic exact-level hook keeps the run scoped" \
   test_exact_level_hook_limits_output
+run_test_case "demo-magic level zero reflects Termux detection" \
+  test_termux_level_zero_uses_detect_distro
+run_test_case "demo-magic skips metadata-heavy casts on reduced xattr hosts" \
+  test_reduced_xattr_hosts_skip_metadata_heavy_levels
 run_test_case "demo-magic full run covers live behaviors across levels" test_default_runs_all_levels
 
 finish_tests

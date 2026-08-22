@@ -28,6 +28,8 @@ Commands:
   check-nostril    Check Nostr server tooling
   install-nostril Ensure nostril is installed
   uninstall-nostril Remove nostril
+  install-citrine [PROJECT_ROOT]
+                  Refresh Citrine browser helper in a web project
   btcpay-status   Show BTCPay install status text
   check-btcpay    Check BTCPay Server tooling/runtime
   install-btcpay Ensure BTCPay Server is installed
@@ -43,7 +45,8 @@ The web platform integrates:
   - htmx (client-side interactivity)
 
 All site files live under $HOME/sites/SITENAME/
-Build output goes to $HOME/sites/SITENAME/build/
+Build output goes to $HOME/sites/SITENAME/build/ by default.
+Set site.conf build-dir to move generated output outside the site checkout.
 CGI scripts may live in $HOME/sites/SITENAME/cgi/ (site-specific) or spells/.imps/cgi/ (shared)
 USAGE
   exit 0
@@ -204,6 +207,15 @@ case "$cmd" in
     ;;
   uninstall-nostril)
     uninstall-nostril
+    exit 0
+    ;;
+  install-citrine)
+    project_root=${2-}
+    if [ -n "$project_root" ]; then
+      install-citrine-web-helper "$project_root"
+    else
+      install-citrine-web-helper
+    fi
     exit 0
     ;;
   btcpay-status)

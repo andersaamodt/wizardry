@@ -28,6 +28,9 @@ trap 'exit 130' INT
 trap 'exit 0' TERM
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+# shellcheck source=/dev/null
+. "$script_dir/ai-dev-llm-common"
+set -eu
 
 loop_limit=${MENU_LOOP_LIMIT:-}
 SELECTION_FILE=$(temp-file ai-dev-menu-selection)
@@ -87,7 +90,9 @@ while true; do
   # Capture current state before building menu
   tabby_installed=0
   ollama_installed=0
+  mlx_installed=0
   anythingllm_installed=0
+  opencode_installed=0
   ollama_daemon_installed=0
   ollama_daemon_enabled=0
   ollama_daemon_running=0
@@ -97,7 +102,9 @@ while true; do
 
   fast_check "$script_dir/is-ai-component-installed" tabby && tabby_installed=1
   fast_check "$script_dir/is-ai-component-installed" ollama && ollama_installed=1
+  fast_check "$script_dir/is-ai-component-installed" mlx && mlx_installed=1
   fast_check "$script_dir/is-ai-component-installed" anythingllm && anythingllm_installed=1
+  fast_check "$script_dir/is-ai-component-installed" opencode && opencode_installed=1
 
   # Check ollama daemon state (only if ollama is installed)
   if [ "$ollama_installed" -eq 1 ]; then
@@ -116,7 +123,7 @@ while true; do
 
   # Check if we should show Manage LLMs menu
   show_manage_llms=0
-  if [ "$ollama_installed" -eq 1 ]; then
+  if [ "$ollama_installed" -eq 1 ] || [ "$mlx_installed" -eq 1 ]; then
     show_manage_llms=1
   fi
 
@@ -145,7 +152,7 @@ while true; do
     manage_llms_label="Manage LLMs"
     manage_llms_cmd="$script_dir/manage-llms"
     set -- "$@" "$manage_llms_label%$(wrap_cmd "$manage_llms_label" "$manage_llms_cmd")"
-    if [ "$tabby_installed" -eq 1 ]; then
+    if [ "$tabby_installed" -eq 1 ] && [ "$ollama_installed" -eq 1 ]; then
       set_tabby_model_label="Set Tabby model"
       set_tabby_model_cmd="$script_dir/select-tabby-llm"
       set_tabby_model_entry=$(wrap_cmd "$set_tabby_model_label" "$set_tabby_model_cmd")
@@ -261,6 +268,12 @@ while true; do
   fi
 
   # Section 4 (final): component toggles and global actions
+  ai_doctor_path=$script_dir/../../spellcraft/ai-doctor
+  if [ -x "$ai_doctor_path" ]; then
+    ai_doctor_label="AI programming doctor"
+    set -- "$@" "$ai_doctor_label%$(wrap_cmd "$ai_doctor_label" "$ai_doctor_path")"
+  fi
+
   # Tabby toggle (first in the list as it's standalone and self-contained)
   if [ "$tabby_installed" -eq 1 ]; then
     tabby_label="[X] Tabby"
@@ -282,6 +295,38 @@ while true; do
   fi
   ollama_toggle="$ollama_label%$(wrap_cmd "$ollama_label" "$ollama_cmd")"
   set -- "$@" "$ollama_toggle"
+
+  # MLX toggle
+  if [ "$mlx_installed" -eq 1 ]; then
+    mlx_label="[X] MLX"
+    mlx_cmd="$script_dir/uninstall-mlx"
+  else
+    mlx_label="[ ] MLX"
+    mlx_cmd="$script_dir/install-mlx"
+  fi
+  if ai_llm_is_mlx_supported; then
+    mlx_toggle="$mlx_label%$(wrap_cmd "$mlx_label" "$mlx_cmd")"
+  else
+    mlx_toggle="$mlx_label (unsupported on this host)%:"
+  fi
+  set -- "$@" "$mlx_toggle"
+
+  # OpenCode toggle and checklist harness
+  if [ "$opencode_installed" -eq 1 ]; then
+    opencode_label="[X] OpenCode"
+    opencode_cmd="$script_dir/uninstall-opencode"
+  else
+    opencode_label="[ ] OpenCode"
+    opencode_cmd="$script_dir/install-opencode"
+  fi
+  opencode_toggle="$opencode_label%$(wrap_cmd "$opencode_label" "$opencode_cmd")"
+  set -- "$@" "$opencode_toggle"
+
+  if [ "$opencode_installed" -eq 1 ]; then
+    checklist_label="Run OpenCode checklist"
+    checklist_cmd="$script_dir/run-opencode-checklist"
+    set -- "$@" "$checklist_label%$(wrap_cmd "$checklist_label" "$checklist_cmd")"
+  fi
 
   # AnythingLLM toggle
   if [ "$anythingllm_installed" -eq 1 ]; then
@@ -308,6 +353,14 @@ while true; do
   fi
   if ! fast_check "$script_dir/is-ai-component-installed" ollama; then
     all_installed=0
+  fi
+  if ! fast_check "$script_dir/is-ai-component-installed" opencode; then
+    all_installed=0
+  fi
+  if ai_llm_is_mlx_supported; then
+    if ! fast_check "$script_dir/is-ai-component-installed" mlx; then
+      all_installed=0
+    fi
   fi
   if ! fast_check "$script_dir/is-ai-component-installed" anythingllm; then
     all_installed=0

@@ -11,7 +11,7 @@ done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-PTY_SEND_DELAY=${PTY_SEND_DELAY:-5}
+PTY_SEND_DELAY=${PTY_SEND_DELAY:-3}
 export PTY_SEND_DELAY
 
 menu_requires_all_helpers() {
@@ -49,7 +49,91 @@ menu_shows_help() {
   assert_success || return 1
 }
 
+menu_dispatches_to_exact_local_default_menu() {
+  tmpdir=$(make_tempdir)
+  project_dir="$tmpdir/crucible"
+  mkdir -p "$project_dir"
+
+  cat >"$project_dir/crucible-menu" <<'EOF'
+#!/bin/sh
+printf 'exact local menu\n'
+EOF
+  chmod +x "$project_dir/crucible-menu"
+
+  cat >"$project_dir/other-menu" <<'EOF'
+#!/bin/sh
+printf 'wrong menu\n'
+EOF
+  chmod +x "$project_dir/other-menu"
+
+  run_cmd sh -c 'cd "$1" && exec "$2" .' sh "$project_dir" "$ROOT_DIR/spells/cantrips/menu"
+  assert_success || return 1
+  case "$OUTPUT" in
+    *"exact local menu"*)
+      return 0
+      ;;
+    *)
+      TEST_FAILURE_REASON="expected exact local menu output, got: $OUTPUT"
+      return 1
+      ;;
+  esac
+}
+
+menu_dispatches_to_only_local_menu_candidate() {
+  tmpdir=$(make_tempdir)
+  project_dir="$tmpdir/chamber"
+  mkdir -p "$project_dir"
+
+  cat >"$project_dir/only-menu" <<'EOF'
+#!/bin/sh
+printf 'single local menu\n'
+EOF
+  chmod +x "$project_dir/only-menu"
+
+  run_cmd sh -c 'cd "$1" && exec "$2" .' sh "$project_dir" "$ROOT_DIR/spells/cantrips/menu"
+  assert_success || return 1
+  case "$OUTPUT" in
+    *"single local menu"*)
+      return 0
+      ;;
+    *)
+      TEST_FAILURE_REASON="expected single local menu output, got: $OUTPUT"
+      return 1
+      ;;
+  esac
+}
+
+menu_lists_exact_commands_when_local_default_is_ambiguous() {
+  tmpdir=$(make_tempdir)
+  project_dir="$tmpdir/crucible"
+  mkdir -p "$project_dir"
+
+  cat >"$project_dir/forge-menu" <<'EOF'
+#!/bin/sh
+printf 'forge\n'
+EOF
+  chmod +x "$project_dir/forge-menu"
+
+  cat >"$project_dir/anvil-menu" <<'EOF'
+#!/bin/sh
+printf 'anvil\n'
+EOF
+  chmod +x "$project_dir/anvil-menu"
+
+  run_cmd sh -c 'cd "$1" && exec "$2" .' sh "$project_dir" "$ROOT_DIR/spells/cantrips/menu"
+  assert_failure || return 1
+  assert_error_contains "menu: no default local menu found in" || return 1
+  assert_error_contains "./forge-menu" || return 1
+  assert_error_contains "./anvil-menu" || return 1
+}
+
 run_test_case "menu shows help" menu_shows_help
+run_test_case "menu dispatches to exact local default menu" \
+  menu_dispatches_to_exact_local_default_menu
+run_test_case "menu dispatches to only local menu candidate" \
+  menu_dispatches_to_only_local_menu_candidate
+run_test_case "menu lists exact commands for ambiguous local menus" \
+  menu_lists_exact_commands_when_local_default_is_ambiguous
 run_test_case "menu requires helper spells" menu_requires_all_helpers
 run_test_case "menu reports missing controlling terminal" menu_reports_missing_tty
 

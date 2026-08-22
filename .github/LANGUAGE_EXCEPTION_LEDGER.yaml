@@ -1,0 +1,34 @@
+schema_version: 1
+owner: wizardry
+observed_at: "2026-07-19"
+re_audit_by: "2026-10-19"
+python_entries:
+  - paths:
+      - spells/.arcana/voice-recognition/voice-recognition-common
+      - spells/.arcana/voice-recognition/voice-recognition-transcribe
+      - spells/.arcana/crossposting/crossposting-common
+      - spells/.arcana/ai-dev/install-mlx
+    feature: "Third-party machine-learning and social-platform client environments."
+    rationale: "These are external Python runtime boundaries, not first-party helper implementations."
+    next_action: "Keep Python confined to the owning external tool environment."
+  - paths:
+      - spells/.imps/fmt/format-timestamp
+      - spells/.imps/cgi/chat-cleanup-inactive-avatars
+    feature: "Compatibility fallbacks for host timestamp metadata."
+    rationale: "Portable shell/platform-tool paths remain primary; Python is retained only as a documented host fallback."
+    next_action: "Remove when platform-tool coverage is sufficient across supported hosts."
+  - paths:
+      - spells/.arcana/mobile-debugging/mobile-debugging-common
+      - spells/.arcana/yt-dlp/install-yt-dlp
+      - spells/.arcana/yt-dlp/uninstall-yt-dlp
+      - spells/.arcana/crossposting/install-crossposting-granary
+      - spells/.arcana/core/install-bwrap
+      - spells/.arcana/voice-audio/voice-audio-common
+      - spells/.arcana/voice-audio/install-blackhole
+      - spells/web/install-python3
+      - spells/web/check-python3
+      - spells/web/diagnose-sse
+      - spells/web/.requirements/python3.conf
+    feature: "Optional external-tool and deployment prerequisites."
+    rationale: "These spells provision, inspect, or host external Python-backed tools; they do not add first-party Python helper logic."
+    next_action: "Keep each dependency path explicit and remove it when its owning external tool no longer requires Python."

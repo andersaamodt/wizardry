@@ -49,8 +49,11 @@ fi
 exit 2
 EOF
 
-  ln -sf /usr/bin/true "$stub_dir/chown"
-  chmod +x "$stub_dir/id" "$stub_dir/getent"
+  cat > "$stub_dir/chown" <<'EOF'
+#!/bin/sh
+exit 0
+EOF
+  chmod +x "$stub_dir/id" "$stub_dir/getent" "$stub_dir/chown"
 }
 
 test_fix_site_security_sets_site_user() {
@@ -278,10 +281,11 @@ EOF
 test_fix_site_security_nginx_is_group_writable() {
   skip-if-compiled || return $?
 
-  web_root=$(temp-dir web-wizardry-test)
+  web_root=$(mktemp -d "${TMPDIR:-/tmp}/web-wizardry-test.XXXXXX")
   site_dir="$web_root/mysite"
-  nginx_dir="$site_dir/nginx"
-  mkdir -p "$site_dir/site" "$nginx_dir"
+  mkdir -p "$site_dir/site"
+  nginx_dir=$("$ROOT_DIR/spells/.imps/web/site-runtime-dir" "$site_dir" nginx)
+  mkdir -p "$nginx_dir"
   cat > "$site_dir/site.conf" <<EOF
 # Site configuration for mysite
 site-name=mysite
@@ -295,7 +299,7 @@ EOF
 
   PATH="$stub_dir:$PATH" WEB_WIZARDRY_ROOT="$web_root" \
     run_spell spells/web/fix-site-security mysite
-  assert_success
+  assert_success || return 1
 
   dir_perms=$(stat -c '%a' "$nginx_dir" 2>/dev/null || \
     stat -f '%Lp' "$nginx_dir" 2>/dev/null || echo "000")

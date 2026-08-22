@@ -1,0 +1,83 @@
+#!/bin/sh
+
+# Present mobile debugging install and helper actions.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: mobile-debugging-menu
+
+Shows install and helper actions for mobile debugging.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+if ! require menu "mobile-debugging-menu needs the 'menu' command to present options."; then
+  exit 1
+fi
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+. "$script_dir/mobile-debugging-common"
+set -eu
+
+trap 'exit 130' INT
+trap 'exit 0' TERM
+
+while :; do
+  if mobile_debugging_java_installed; then
+    java_toggle="[X] Temurin JDK 17%$script_dir/uninstall-temurin-jdk"
+  else
+    java_toggle="[ ] Temurin JDK 17%$script_dir/install-temurin-jdk"
+  fi
+
+  if mobile_debugging_platform_tools_installed; then
+    platform_tools_toggle="[X] Android platform tools (adb)%$script_dir/uninstall-android-platform-tools"
+  else
+    platform_tools_toggle="[ ] Android platform tools (adb)%$script_dir/install-android-platform-tools"
+  fi
+
+  if mobile_debugging_commandline_tools_installed; then
+    commandline_tools_toggle="[X] Android command-line tools (sdkmanager)%$script_dir/uninstall-android-commandline-tools"
+  else
+    commandline_tools_toggle="[ ] Android command-line tools (sdkmanager)%$script_dir/install-android-commandline-tools"
+  fi
+
+  if mobile_debugging_maestro_installed; then
+    if mobile_debugging_java_ready; then
+      maestro_toggle="[X] Maestro CLI%$script_dir/uninstall-maestro-cli"
+    else
+      maestro_toggle="[X] Maestro CLI (Java missing)%$script_dir/uninstall-maestro-cli"
+    fi
+  else
+    maestro_toggle="[ ] Maestro CLI%$script_dir/install-maestro-cli"
+  fi
+
+  exit_label=$(exit-label)
+  menu_status=0
+  menu "Mobile Debugging" \
+    "$java_toggle" \
+    "$platform_tools_toggle" \
+    "$commandline_tools_toggle" \
+    "$maestro_toggle" \
+    "firewalled-adb help%firewalled-adb --help" \
+    "Reconnect wireless adb from mDNS%$script_dir/connect-mobile-wifi-adb --help" \
+    "Enable classic adb tcpip on phone%$script_dir/enable-mobile-tcpip-adb --help" \
+    "firewalled-adb-tor help%firewalled-adb-tor --help" \
+    "firewalled-termux help%firewalled-termux --help" \
+    "firewalled-maestro help%firewalled-maestro --help" \
+    "firewalled-maestro-tor help%firewalled-maestro-tor --help" \
+    "Setup adb over Tor on phone%$script_dir/setup-mobile-tor-adb --help" \
+    "Tor adb phone setup guide%$script_dir/show-mobile-tor-adb-guide" \
+    "$exit_label%kill -TERM \$PPID" || menu_status=$?
+
+  if [ "$menu_status" -eq 130 ]; then
+    printf 'ESC\n' >&2
+    exit 0
+  fi
+done

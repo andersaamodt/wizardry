@@ -24,53 +24,84 @@ if ! require menu "The manage-llms needs the 'menu' command to present options."
 fi
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+# shellcheck source=/dev/null
+. "$script_dir/ai-dev-llm-common"
+set -eu
 
 # Catch Ctrl-C and TERM signal to exit cleanly
 trap 'exit 130' INT
 trap 'exit 0' TERM
 
-# Check if ollama is installed
-if ! "$script_dir/is-ai-component-installed" ollama 2>/dev/null; then
-  die "manage-llms: ollama is not installed"
+if ! "$script_dir/is-ai-component-installed" ollama 2>/dev/null && \
+  ! "$script_dir/is-ai-component-installed" mlx 2>/dev/null; then
+  die "manage-llms: no supported runtime is installed"
 fi
 
 while :; do
-  # Get list of installed LLMs
-  installed_llms=$("$script_dir/list-installed-llms" 2>/dev/null || echo "")
-  
-  # If no LLMs installed, ask if user wants to add one
-  if [ -z "$installed_llms" ]; then
-    set -- "Add LLM%$script_dir/select-llm-to-install"
-    exit_label=$(exit-label)
-    set -- "$@" "${exit_label}%kill -TERM \$PPID"
-    
-    menu "No LLMs installed. Would you like to add one?" "$@" || menu_status=$?
-    menu_status=${menu_status:-0}
-    
-    if [ "$menu_status" -eq 130 ]; then
-      printf 'ESC\n' >&2
-      exit 0
-    fi
-    
-    continue
+  runtime=$(ai_llm_resolve_runtime)
+  runtime_label=$(ai_llm_runtime_label "$runtime")
+
+  if [ "$runtime" = "mlx" ] && ai_llm_is_mlx_supported; then
+    runtime_hint="MLX recommended on macOS"
+  else
+    runtime_hint=""
   fi
-  
-  # Build menu of installed LLMs
+
+  # Get list of installed LLMs
+  installed_llms=$("$script_dir/list-installed-llms" "$runtime" 2>/dev/null || echo "")
+
+  current_model=$(ai_llm_get_selected_model "$runtime" 2>/dev/null || printf 'unconfigured')
+
   set --
-  for llm in $installed_llms; do
-    set -- "$@" "$llm%$script_dir/llm-menu \"$llm\""
-  done
-  
-  # Add option to install more
-  set -- "$@" "---"
+
+  if "$script_dir/is-ai-component-installed" mlx 2>/dev/null && \
+    "$script_dir/is-ai-component-installed" ollama 2>/dev/null; then
+    if [ "$runtime" = "mlx" ]; then
+      set -- "$@" "Switch runtime to ollama%$script_dir/set-active-llm-runtime ollama"
+    else
+      set -- "$@" "Switch runtime to MLX%$script_dir/set-active-llm-runtime mlx"
+    fi
+  fi
+
+  available=$(ai_llm_list_available "$runtime")
+  set -- "$@" "Install best coding model%$script_dir/install-llm \"$(ai_llm_default_model "$runtime")\""
+  draft_model=$(printf '%s\n' "$available" | awk -F'|' '$2 ~ /best speculative draft/ { print $1; exit }')
+  reasoning_model=$(printf '%s\n' "$available" | awk -F'|' '$2 ~ /best reasoning/ { print $1; exit }')
+  vision_model=$(printf '%s\n' "$available" | awk -F'|' '$2 ~ /best vision/ { print $1; exit }')
+  if [ -n "$draft_model" ]; then
+    set -- "$@" "Install best draft model%$script_dir/install-llm \"$draft_model\""
+  fi
+  if [ -n "$reasoning_model" ]; then
+    set -- "$@" "Install best reasoning model%$script_dir/install-llm \"$reasoning_model\""
+  fi
+  if [ -n "$vision_model" ]; then
+    set -- "$@" "Install best vision model%$script_dir/install-llm \"$vision_model\""
+  fi
+
+  if [ -n "$installed_llms" ]; then
+    while IFS= read -r llm; do
+      [ -n "$llm" ] || continue
+      set -- "$@" "$llm%$script_dir/llm-menu \"$llm\""
+    done <<EOF
+$installed_llms
+EOF
+    set -- "$@" "---"
+  fi
+
   set -- "$@" "Install another LLM%$script_dir/select-llm-to-install"
-  
+
   exit_label=$(exit-label)
   set -- "$@" "${exit_label}%kill -TERM \$PPID"
-  
-  menu "Manage LLMs:" "$@" || menu_status=$?
+
+  title="Manage LLMs: runtime=$runtime_label"
+  if [ -n "$runtime_hint" ]; then
+    title="$title, $runtime_hint"
+  fi
+  title="$title, selected=$current_model"
+
+  menu "$title" "$@" || menu_status=$?
   menu_status=${menu_status:-0}
-  
+
   if [ "$menu_status" -eq 130 ]; then
     printf 'ESC\n' >&2
     exit 0

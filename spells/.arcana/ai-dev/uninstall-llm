@@ -7,7 +7,7 @@ case "${1-}" in
   cat <<'USAGE'
 Usage: uninstall-llm MODEL
 
-Removes an LLM model from ollama.
+Removes an LLM model from the active runtime.
 
 Example: uninstall-llm llama2:7b
 USAGE
@@ -19,27 +19,68 @@ set -eu
 . env-clear
 
 script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+# shellcheck source=/dev/null
+. "$script_dir/ai-dev-llm-common"
+set -eu
 
-model=${1-}
-if [ -z "$model" ]; then
+uninstall_model=${1-}
+if [ -z "$uninstall_model" ]; then
   die 2 "uninstall-llm: MODEL required"
 fi
 
-# Check if ollama is installed
-if ! "$script_dir/is-ai-component-installed" ollama 2>/dev/null; then
-  die "uninstall-llm: ollama is not installed"
+runtime=$(ai_llm_resolve_runtime)
+
+if ! "$script_dir/is-ai-component-installed" "$runtime" 2>/dev/null; then
+  die "uninstall-llm: $(ai_llm_runtime_label "$runtime") is not installed"
 fi
 
-# Get ollama binary
-if has ollama; then
-  ollama_bin="ollama"
-elif [ -x "$HOME/.local/bin/ollama" ]; then
-  ollama_bin="$HOME/.local/bin/ollama"
-else
-  die "uninstall-llm: ollama binary not found"
+say "Uninstalling LLM model from $(ai_llm_runtime_label "$runtime"): $uninstall_model"
+
+case "$runtime" in
+  ollama)
+    if has ollama; then
+      ollama_bin="ollama"
+    elif [ -x "$HOME/.local/bin/ollama" ]; then
+      ollama_bin="$HOME/.local/bin/ollama"
+    else
+      die "uninstall-llm: ollama binary not found"
+    fi
+    "$ollama_bin" rm "$uninstall_model" \
+      || die "uninstall-llm: failed to uninstall $uninstall_model"
+    ;;
+  mlx)
+    [ -x "$ai_llm_mlx_python" ] || die "uninstall-llm: mlx runtime is incomplete"
+    if ! ai_llm_mlx_runtime_ready; then
+      die "uninstall-llm: mlx runtime is not ready. Re-run install-mlx to repair it."
+    fi
+    # Best-effort cache deletion by repository pattern if available.
+    AI_DEV_MLX_MODEL="$uninstall_model" "$ai_llm_mlx_python" - <<'PY' >/dev/null 2>&1 || true
+import os
+import subprocess
+import sys
+
+model = os.environ["AI_DEV_MLX_MODEL"]
+subprocess.run([
+    sys.executable,
+    "-m",
+    "mlx_lm",
+    "manage",
+    "--delete",
+    "--pattern",
+    model,
+], check=False)
+PY
+    ai_llm_unregister_mlx_model "$uninstall_model" || true
+    ;;
+esac
+
+selected=$(ai_llm_get_selected_model "$runtime" 2>/dev/null || printf '')
+if [ "$selected" = "$uninstall_model" ]; then
+  ai_llm_set_selected_model "$runtime" "$(ai_llm_default_model "$runtime")" || true
 fi
 
-say "Uninstalling LLM model: $model"
-$ollama_bin rm "$model" || die "uninstall-llm: failed to uninstall $model"
+if ! ai_llm_sync_opencode_runtime; then
+  warn "uninstall-llm: OpenCode runtime sync failed"
+fi
 
-success "LLM model uninstalled: $model"
+success "LLM model uninstalled: $uninstall_model"

@@ -1,0 +1,31 @@
+#!/bin/sh
+
+# Report Theurgy browser proof runtime availability.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: check-theurgy-browser-proof-runtime
+
+Reports whether Theurgy can find Playwright's browser proof installer surface.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+. "$script_dir/_theurgy"
+
+installer=$theurgy_home/spells/install-theurgy-browser-proof-runtime
+if [ -x "$installer" ]; then
+  printf 'status=ok\n'
+  printf 'summary=Theurgy browser proof runtime installer is available.\n'
+  printf 'installer=%s\n' "$installer"
+  exit 0
+fi
+
+printf 'status=bad\n'
+printf 'summary=Theurgy browser proof runtime installer is not available.\n'
+printf 'install=%s/install-theurgy-browser-proof-runtime\n' "$script_dir"
+exit 0

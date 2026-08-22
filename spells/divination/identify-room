@@ -97,10 +97,8 @@ fi
 root_path=/
 tmp_path=$(strip_trailing_slashes "$(abs_path "${TMPDIR:-/tmp}")")
 default_tmp_path=$(strip_trailing_slashes "$(abs_path /tmp)")
-var_tmp_path=''
-if [ -d /var/tmp ]; then
-  var_tmp_path=$(strip_trailing_slashes "$(abs_path /var/tmp)")
-fi
+var_tmp_path=$(strip_trailing_slashes "$(abs_path /var/tmp)")
+etc_path=$(strip_trailing_slashes "$(abs_path /etc)")
 have_home=0
 normalized_home=''
 home_parent=''
@@ -153,6 +151,12 @@ recognize_room() {
     is_tmp=1
   elif [ -n "$var_tmp_path" ] && [ "$room" = "$var_tmp_path" ]; then
     is_tmp=1
+  fi
+
+  if [ "$room" = "$etc_path" ]; then
+    printf '%s\n' "Configuration Library"
+    printf '%s\n' "System configuration archives line the shelves."
+    return 0
   fi
   
   if [ "$is_tmp" -eq 1 ]; then

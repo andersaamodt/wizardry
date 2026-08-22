@@ -30,7 +30,8 @@ SCRIPT
 run_fathom_terminal() {
   bin_dir=$1
   shift
-  run_cmd env PATH="$bin_dir:$PATH" "$ROOT_DIR/spells/.imps/menu/fathom-terminal" "$@"
+  run_cmd env PATH="$bin_dir:$PATH" FATHOM_TERMINAL_DEVICE=/dev/null \
+    "$ROOT_DIR/spells/.imps/menu/fathom-terminal" "$@"
 }
 
 normalize_output() {

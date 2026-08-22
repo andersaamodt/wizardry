@@ -68,7 +68,7 @@ These files are marked with grey dots pending careful review.
 ## Warnings (🟡)
 
 **Confirmed Warning (from 🔍 Perused review):**
-- `README.md` - Line 30 uses `bash` in example (should be `sh`)
+- None currently confirmed in this section.
 
 **Pending Re-Review (from 📖 Read level - need careful review):**
 All tutorial files previously marked as warnings need 🔍 Perused review to confirm assessment.
@@ -167,7 +167,7 @@ This table shows all files in the repository with their audit results. Files are
 | spells/priorities/get-priority | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/priorities/prioritize | 2026-02-06 17:54 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - sophisticated echelon/priority system, batch xattr reads for performance, interactive mode, light theming appropriate | - |
 | spells/priorities/upvote | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/psi/list-contacts | 🔍 Perused | 2026-02-06 20:15 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | vCard parser with awk. Uses FPAT (GNU awk). Good fallback chain FN→ORG→TEL→filename. |
+| spells/psi/list-contacts | 2026-06-20 00:00 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | POSIX awk vCard parser with FN→ORG→TEL→filename fallback; vCard parsing regression coverage present in `.tests/psi/test-list-contacts.sh`. | 🔧 removed stale GNU FPAT note during rolling-audit fix-it |
 | spells/psi/read-contact | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/spellcraft/add-synonym | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/spellcraft/bind-tome | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
@@ -193,7 +193,7 @@ This table shows all files in the repository with their audit results. Files are
 | spells/system/learn-spellbook | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/system/logs | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/system/package-managers | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
-| spells/system/pocket-dimension | 2026-02-06 17:51 | 🔍 Perused | 🔴 | 🔴 | 🟢 | 🟢 | 🔴 | 🟡 | Critical bug: line 108 calls undefined pocket_dimension_usage(); Policy violation: has snapshot_files() function (should inline or extract to imp); 'pocket dimension' theming apt for isolation concept | - |
+| spells/system/pocket-dimension | 2026-06-14 05:08 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - runtime usage path resolved, mutation snapshot helper inlined, and pocket-dimension theming remains apt for the isolation concept | 🔧 fixed undefined usage path and inlined snapshot helper, 2026-06-14 |
 | spells/system/reload-ssh | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/system/remove-service | 2026-02-06 17:15 | 📖 Read | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | ⚪ | Not thoroughly reviewed (Read level) | - |
 | spells/system/restart-service | 2026-02-06 19:00 | 🔍 Perused | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | 🟢 | None - clean service management, uses prompt-with-fallback imp, proper sudo handling, minimal theming appropriate | - |

@@ -421,7 +421,8 @@ Wizardry uses several focused documentation files. Keep content in the right doc
 ### Arcane File Operations (Level 13)
 
 - `copy` copies files
-- `trash` moves files to trash (safe deletion)
+- `trash` validates operands before selecting a platform backend and moves
+  eligible files through the native trash capability (Theurgy on macOS)
 - `jump-trash` navigates to trash directory
 - `forall` executes command for each file in directory
 - `read-magic` reads and displays file contents
@@ -572,6 +573,10 @@ Wizardry uses several focused documentation files. Keep content in the right doc
 - `lint-magic` checks spell compliance with project standards
 - Linting checks: POSIX compliance, style, naming, structure, function discipline
 - `checkbashisms` tool detects bash-specific code (not in wizardry but used in CI)
+- On Termux, `install-checkbashisms` installs Debian's published Perl script to
+  `$PREFIX/bin` because the Debian `devscripts` package is unavailable there.
+- `verify-posix` reuses one GNU-ism pattern file for the whole scan; it must not
+  recreate static scanner input once per spell.
 - `validate-spells` validates all spells meet requirements
 
 ### Compilation (Doppelganger)
@@ -633,6 +638,8 @@ Wizardry uses several focused documentation files. Keep content in the right doc
 - `network-menu` for network operations
 - `services-menu` for service management
 - `shutdown-menu` for shutdown operations
+- macOS logout actions use Theurgy when its official bridge is installed and a
+  non-GUI process signal fallback otherwise
 - `priorities` menu (also `priority-menu`) for task priorities
 - `users-menu` for user management
 

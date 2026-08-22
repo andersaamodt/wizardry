@@ -1,0 +1,559 @@
+#!/bin/sh
+# Turn a freeform software idea into a narrow, file-scoped checklist.
+# Local-only: delegates project reading and planning to OpenCode.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: architect [OPTIONS] [BRIEF...]
+       architect [OPTIONS] --checklist FILE [BRIEF...]
+
+Asks a local OpenCode model to read the current project and produce a
+file-scoped architecture checklist. BRIEF words are joined with spaces, so:
+
+  architect a simple pong game based on Godot
+
+is equivalent to:
+
+  architect "a simple pong game based on Godot"
+
+By default, architect writes CHECKLIST.md, replacing it only after the generated
+checklist validates. If CHECKLIST.md exists, interactive terminals ask before
+replacing it; answering no writes the next available sibling such as
+"CHECKLIST 2.md". Non-interactive runs fail on existing targets unless --force
+or --print is used.
+
+architect also prints the final checklist to stdout. Progress and OpenCode
+output go to stderr. Use --print for stdout-only preview without writing.
+
+Options:
+  --checklist FILE  Use FILE instead of CHECKLIST.md.
+  --force           Replace an existing checklist without asking.
+  --print           Print the generated checklist without writing a file.
+  --model MODEL     Use a local OpenCode model.
+
+When --model is omitted, architect uses wizardry's preferred local AI-dev
+OpenCode model. architect is local-only. Remote model providers are rejected.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+spell_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+ai_dev_helper=$spell_dir/../.arcana/ai-dev/ai-dev-llm-common
+if [ -f "$ai_dev_helper" ]; then
+  # shellcheck source=/dev/null
+  . "$ai_dev_helper"
+  set -eu
+fi
+
+model=''
+checklist=''
+brief=''
+force=false
+print_only=false
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+  --model)
+    shift
+    [ "$#" -gt 0 ] || die 2 "architect: --model requires a value"
+    model=$1
+    ;;
+  --checklist)
+    shift
+    [ "$#" -gt 0 ] || die 2 "architect: --checklist requires a file"
+    checklist=$1
+    ;;
+  --force)
+    force=true
+    ;;
+  --print)
+    print_only=true
+    ;;
+  --local)
+    ;;
+  --remote)
+    die 2 "architect: remote mode is not supported; architect is local-only"
+    ;;
+  --*)
+    die 2 "architect: unknown option '$1'"
+    ;;
+  *)
+    if [ "$#" -eq 1 ] && [ -z "$checklist" ] && [ -f "$1" ]; then
+      checklist=$1
+    else
+      brief=$(args-to-string "$@")
+      set --
+      continue
+    fi
+    ;;
+  esac
+  shift
+done
+
+if [ -z "$checklist" ]; then
+  checklist=CHECKLIST.md
+fi
+
+if [ -z "$brief" ] && [ ! -f "$checklist" ]; then
+  die 2 "architect: provide a brief or an existing checklist"
+fi
+
+checklist_dir=$(CDPATH= cd -- "$(dirname "$checklist")" && pwd -P) \
+  || die "architect: checklist directory does not exist: $(dirname "$checklist")"
+checklist_name=${checklist##*/}
+checklist_path=$checklist_dir/$checklist_name
+write_target=$checklist_path
+replace_confirmed=false
+checklist_exists=false
+
+if [ -f "$checklist_path" ]; then
+  checklist_exists=true
+  [ -r "$checklist_path" ] || die "architect: checklist is not readable: $checklist_path"
+  if [ "$print_only" = false ] && [ "$force" = false ]; then
+    if [ -t 0 ] || [ -t 2 ]; then
+      if ask-yn "architect: $checklist_name exists. Replace it?" no; then
+        replace_confirmed=true
+      else
+        base_name=${checklist_name%.*}
+        extension=''
+        case "$checklist_name" in
+        *.*) extension=.${checklist_name##*.} ;;
+        esac
+        n=2
+        while [ -e "$checklist_dir/$base_name $n$extension" ]; do
+          n=$((n + 1))
+        done
+        write_target=$checklist_dir/$base_name' '$n$extension
+        printf '%s\n' "architect: will write $write_target instead" >&2
+      fi
+    else
+      die "architect: $checklist_path exists; use --force to replace it or --print to preview"
+    fi
+  fi
+fi
+
+command -v opencode >/dev/null 2>&1 || die 127 "architect: opencode is not installed"
+
+if [ -z "$model" ]; then
+  if [ -f "$ai_dev_helper" ]; then
+    model=$(ai_llm_preferred_local_opencode_model 2>/dev/null || printf '')
+  fi
+  [ -n "$model" ] \
+    || die "architect: no preferred local OpenCode model is configured; use --model"
+fi
+
+case "$model" in
+ollama/*|mlx/*)
+  ;;
+*)
+  die 2 "architect: --model must name a local OpenCode model such as ollama/qwen3.6:35b-a3b"
+  ;;
+esac
+
+provider=${model%%/*}
+provider_model=${model#*/}
+case "$provider" in
+ollama)
+  command -v ollama >/dev/null 2>&1 || die 127 "architect: ollama is not installed"
+  ollama list 2>/dev/null \
+    | awk 'NR > 1 { print $1 }' \
+    | grep -F -x -- "$provider_model" >/dev/null 2>&1 \
+    || die "architect: local Ollama model is not installed: $provider_model"
+  ;;
+esac
+
+repo_dir=$(pwd -P)
+state_home=${XDG_STATE_HOME:-${HOME:-/tmp}/.local/state}
+architect_tmp_dir=$state_home/wizardry/architect/run-$$
+completed_file=$architect_tmp_dir/completed.txt
+broad_file=$architect_tmp_dir/broad-unchecked.txt
+bad_file=$architect_tmp_dir/bad.txt
+unchecked_file=$architect_tmp_dir/unchecked.txt
+paths_file=$architect_tmp_dir/paths.txt
+prompt_file=$architect_tmp_dir/prompt.txt
+tree_file=$architect_tmp_dir/tree.txt
+target_file=$architect_tmp_dir/target.txt
+replacement_file=$architect_tmp_dir/replacement-unchecked.txt
+cleaned_file=$architect_tmp_dir/cleaned-checklist.md
+output_file=$architect_tmp_dir/checklist.md
+raw_file=$architect_tmp_dir/opencode.out
+fifo_file=$architect_tmp_dir/opencode.fifo
+status_file=$architect_tmp_dir/status
+activity_file=$architect_tmp_dir/activity
+spinner_file=$architect_tmp_dir/spinner-visible
+scratch_dir=$architect_tmp_dir/project
+bt=$(printf '\140')
+use_tty=false
+if [ -t 2 ] && [ -w /dev/tty ]; then
+  use_tty=true
+fi
+
+cleanup_architect_tmp() {
+  rm -rf "$architect_tmp_dir"
+}
+trap cleanup_architect_tmp EXIT HUP INT TERM
+
+mkdir -p "$architect_tmp_dir" "$scratch_dir"
+: >"$completed_file"
+: >"$broad_file"
+: >"$activity_file"
+: >"$spinner_file"
+
+if [ "$checklist_exists" = true ]; then
+  grep -E '^[[:space:]]*[-*][[:space:]]+\[[xX]\][[:space:]]' "$checklist_path" \
+    >"$completed_file" 2>/dev/null || :
+  grep -E '^[[:space:]]*[-*][[:space:]]+\[ \][[:space:]]' "$checklist_path" \
+    | grep -F -v "$bt" >"$broad_file" 2>/dev/null || :
+fi
+
+(
+  CDPATH= cd -- "$repo_dir" || exit 1
+  find . \
+    \( -name .git -o -name node_modules -o -name .cache -o -name .next \
+      -o -name dist -o -name build -o -name target -o -name __pycache__ \
+      -o -name .venv -o -name venv \) -prune \
+    -o -type f -print 2>/dev/null \
+    | sed 's#^\./##' \
+    | LC_ALL=C sort \
+    | awk 'NR <= 500 { print }'
+) >"$tree_file"
+
+(
+  CDPATH= cd -- "$repo_dir" || exit 1
+  find . \
+    \( -name .git -o -name node_modules -o -name .cache -o -name .next \
+      -o -name dist -o -name build -o -name target -o -name __pycache__ \
+      -o -name .venv -o -name venv \) -prune \
+    -o \( -type d -o -type f \) -print 2>/dev/null
+) | while IFS= read -r relative_path; do
+  case "$relative_path" in
+  .)
+    continue
+    ;;
+  ./*)
+    relative_name=${relative_path#./}
+    ;;
+  *)
+    relative_name=$relative_path
+    ;;
+  esac
+  if [ -d "$repo_dir/$relative_name" ]; then
+    mkdir -p "$scratch_dir/$relative_name"
+  elif [ -f "$repo_dir/$relative_name" ]; then
+    mkdir -p "$scratch_dir/$(dirname "$relative_name")"
+    cp -p "$repo_dir/$relative_name" "$scratch_dir/$relative_name"
+  fi
+done
+
+if [ "$checklist_exists" = false ]; then
+  {
+    printf '%s\n' '# Architecture checklist'
+    printf '\n'
+    printf '%s\n' "Brief: $brief"
+  } >"$scratch_dir/CHECKLIST.md"
+else
+  cp "$checklist_path" "$scratch_dir/CHECKLIST.md"
+fi
+
+cat >"$prompt_file" <<EOF
+You are the local wizardry architect spell. Read this project and produce a
+narrow, file-scoped architecture checklist. Do not implement code.
+
+Repository directory:
+$scratch_dir
+
+User brief:
+${brief:-"(No separate brief; use the existing checklist context.)"}
+
+Existing checklist path:
+CHECKLIST.md
+
+Existing checklist content:
+$(sed -n '1,260p' "$scratch_dir/CHECKLIST.md")
+
+Read AGENTS.md or .AGENTS.md if present, read applicable .github/ standards
+when present, read CHECKLIST.md, and inspect project files needed to make the
+architecture plan concrete.
+Hidden paths such as .tests, .github, and dotfiles may not appear in glob
+results; read explicit hidden paths directly when the brief or checklist names
+them.
+Do not browse the web, fetch external documentation, or inspect unrelated
+projects unless the user explicitly asks for external research. This spell is
+for repo-local architecture planning.
+
+Edit only CHECKLIST.md. Do not edit source files, tests, docs, config, or
+generated files. This is a temporary scratch copy; only CHECKLIST.md will be
+read back by the calling spell.
+
+Checklist rules:
+- Preserve every existing completed [x] checklist line byte-for-byte.
+- Preserve useful headings and notes from an existing checklist.
+- Replace broad unchecked [ ] items with narrow unchecked [ ] items.
+- If you split a broad item, remove the original broad unchecked line.
+- Preserve the existing documented contract and the program's parsimony unless
+  the user explicitly asks for a behavior change.
+- If an existing checklist item appears to encode a bad premise, rewrite it
+  into a contract-preserving test or implementation item instead of planning a
+  more complex implementation to satisfy the bad premise.
+- For small shell scripts, prefer simpler tests or message polish over
+  multi-pass parsing, temp files, eval, broad state machines, or new helpers.
+- Distinguish checklist items that preserve existing behavior, add regression
+  coverage, improve help/message polish, or intentionally change semantics.
+- Keep a flat checklist only; no nested checklist items.
+- Do not mark new or rewritten items complete.
+- Each new unchecked item must be one line starting exactly
+  "- [ ] Update <target-file-path> so ".
+- The target path must appear immediately after "Update" and before "so".
+  The target path may be an existing file or a new file that should be created.
+- Use this shape even for new files; "Update new/path.ext so it exists..." is
+  preferable to pathless "Create" wording because downstream evaluators parse
+  the target path from the canonical Update form.
+- Do not write plural or ambiguous targets such as "paddle and ball scenes";
+  split them into one item per target file.
+- Each new unchecked item must include exactly one single-line verification
+  command in backticks.
+- Do not wrap file paths in backticks; reserve backticks only for the one
+  verification command.
+- Avoid slash-separated prose before the verification command; use "and" for
+  paired concepts such as up and down movement.
+- Use this exact shape:
+  - [ ] Update src/example.js so it performs one specific change; verify with ${bt}node --check src/example.js${bt}
+- Invalid: "- [ ] Add change to src/example.js (verify: node --check src/example.js)"
+- Invalid: "- [ ] Update sidebar to use src/example.js; verify with ${bt}node --check src/example.js${bt}"
+- Invalid: "- [ ] Update ${bt}src/example.js${bt} so it changes; verify with ${bt}node --check src/example.js${bt}"
+- Do not use Markdown code fences.
+- Do not use heredocs, multiline shell, or literal \\n inside commands.
+- For shell scripts, use sh in verification commands unless the repository
+  explicitly requires another shell.
+- For Godot plans, target paths may use res://, but shell verification commands
+  must use filesystem paths such as scripts/paddle.gd, never res:// paths.
+- Verification commands must be meaningful and must not mask failure with
+  constructs such as "||", "|| true", "|| echo", or "; true".
+- Prefer portable verification commands using test, grep, find, sh, or existing
+  repository test scripts. Do not invent validators such as gdscript or gdcheck
+  unless the repository already contains those commands in its docs or scripts.
+- Prefer file-scoped architecture or implementation obligations that a weaker
+  local coding model can safely complete in one round.
+
+Before finishing, verify every "- [ ] " line contains exactly two literal
+${bt} characters total.
+
+Repository file tree excerpt:
+$(sed -n '1,500p' "$tree_file")
+EOF
+
+printf '%s\n' "architect: asking local OpenCode model $model for a plan" >&2
+printf '%s\n' "architect: progress is on stderr; final checklist is on stdout" >&2
+title=architect-$(date '+%Y%m%d-%H%M%S')
+prompt=$(cat "$prompt_file")
+
+rm -f "$fifo_file"
+mkfifo "$fifo_file"
+
+(
+  set +e
+  opencode run --dir "$scratch_dir" --model "$model" --title "$title" "$prompt" \
+    >"$fifo_file" 2>&1
+  printf '%s\n' "$?" >"$status_file"
+) &
+opencode_pid=$!
+
+(
+  elapsed=0
+  spinner_index=0
+  spinner_frame='|'
+  last_activity=$(cat "$activity_file")
+  while [ ! -s "$status_file" ]; do
+    sleep 1
+    current_activity=$(cat "$activity_file")
+    if [ "$current_activity" != "$last_activity" ]; then
+      elapsed=0
+      last_activity=$current_activity
+      continue
+    fi
+    elapsed=$((elapsed + 1))
+    [ "$elapsed" -ge 3 ] || continue
+    if [ "$use_tty" = true ]; then
+      case "$spinner_index" in
+      0) spinner_frame='|' ;;
+      1) spinner_frame='/' ;;
+      2) spinner_frame='-' ;;
+      *) spinner_frame=$(printf '\\') ;;
+      esac
+      spinner_index=$(((spinner_index + 1) % 4))
+      printf '\r\033[2KThinking... \033[1;36m%s\033[0m' "$spinner_frame" >/dev/tty
+      printf '%s\n' visible >"$spinner_file"
+    else
+      printf '%s\n' 'Thinking...' >&2
+    fi
+    elapsed=0
+  done
+) &
+spinner_pid=$!
+
+line_count=0
+while IFS= read -r line || [ -n "$line" ]; do
+  if [ -s "$spinner_file" ] && [ "$use_tty" = true ]; then
+    printf '\r\033[2K' >/dev/tty
+    : >"$spinner_file"
+  fi
+  line_count=$((line_count + 1))
+  printf '%s\n' "$line_count" >"$activity_file"
+  printf '%s\n' "$line" >>"$raw_file"
+  printf '%s\n' "$line" >&2
+done <"$fifo_file"
+
+wait "$opencode_pid" 2>/dev/null || :
+if [ -n "${spinner_pid-}" ]; then
+  kill "$spinner_pid" >/dev/null 2>&1 || :
+  wait "$spinner_pid" 2>/dev/null || :
+fi
+if [ -s "$spinner_file" ] && [ "$use_tty" = true ]; then
+  printf '\r\033[2K' >/dev/tty
+fi
+
+opencode_status=$(sed -n '1p' "$status_file" 2>/dev/null || printf '1')
+case "$opencode_status" in
+''|*[!0-9]*) opencode_status=1 ;;
+esac
+[ "$opencode_status" -eq 0 ] || die "architect: local OpenCode architecture run failed"
+
+cp "$scratch_dir/CHECKLIST.md" "$output_file"
+
+[ -s "$output_file" ] || die "architect: local model returned an empty checklist"
+
+if [ -s "$broad_file" ]; then
+  grep -E '^[[:space:]]*[-*][[:space:]]+\[ \][[:space:]]' "$output_file" \
+    | grep -F -x -v -f "$broad_file" >"$replacement_file" 2>/dev/null || :
+  if [ -s "$replacement_file" ]; then
+    awk '
+      NR == FNR {
+        remove[$0] = 1
+        next
+      }
+      !($0 in remove) {
+        print
+      }
+    ' "$broad_file" "$output_file" >"$cleaned_file"
+    mv "$cleaned_file" "$output_file"
+  fi
+fi
+
+: >"$bad_file"
+awk '
+  /^[[:space:]]*[-*][[:space:]]+\[/ {
+    if ($0 !~ /^[[:space:]]*[-*][[:space:]]+\[( |x)\][[:space:]]/) {
+      print
+    }
+  }
+' "$output_file" >"$bad_file"
+[ ! -s "$bad_file" ] || die "architect: checklist has malformed checkbox lines"
+
+if grep -E '^[[:space:]]+[-*][[:space:]]+\[( |x)\][[:space:]]' "$output_file" >/dev/null 2>&1; then
+  die "architect: checklist has nested checklist items"
+fi
+if grep -F "$bt$bt$bt" "$output_file" >/dev/null 2>&1; then
+  die "architect: checklist contains Markdown code fences"
+fi
+if grep -F '\n' "$output_file" >/dev/null 2>&1; then
+  die "architect: checklist contains literal \\n text"
+fi
+if grep -F '<<' "$output_file" >/dev/null 2>&1; then
+  die "architect: checklist contains heredoc syntax"
+fi
+if grep -F '<function=' "$output_file" >/dev/null 2>&1 \
+  || grep -F '</tool_call>' "$output_file" >/dev/null 2>&1; then
+  die "architect: checklist contains tool-call markup"
+fi
+
+while IFS= read -r completed_line; do
+  [ -n "$completed_line" ] || continue
+  grep -F -x -- "$completed_line" "$output_file" >/dev/null 2>&1 \
+    || die "architect: completed item was not preserved: $completed_line"
+done <"$completed_file"
+
+grep -E '^[[:space:]]*[-*][[:space:]]+\[ \][[:space:]]' "$output_file" \
+  >"$unchecked_file" 2>/dev/null || :
+[ -s "$unchecked_file" ] || die "architect: checklist contains no unchecked architecture items"
+
+while IFS= read -r broad_line; do
+  [ -n "$broad_line" ] || continue
+  grep -F -x -- "$broad_line" "$output_file" >/dev/null 2>&1 \
+    && die "architect: broad unchecked item remained after architecture split: $broad_line"
+done <"$broad_file"
+
+while IFS= read -r unchecked_line; do
+  [ -n "$unchecked_line" ] || continue
+  backtick_count=$(printf '%s\n' "$unchecked_line" | awk -F"$bt" '{ print NF - 1 }')
+  [ "$backtick_count" = 2 ] \
+    || die "architect: unchecked item must contain exactly one backticked verification command: $unchecked_line"
+  command_text=$(printf '%s\n' "$unchecked_line" | awk -F"$bt" '{ print $2 }')
+  case "$command_text" in
+  *res://*)
+    die "architect: verification command must use filesystem paths, not res:// paths: $unchecked_line"
+    ;;
+  *'||'*|*'; true'*)
+    die "architect: verification command must not mask failure: $unchecked_line"
+    ;;
+  *gdscript*|*gdcheck*)
+    die "architect: verification command must not invent unavailable validators: $unchecked_line"
+    ;;
+  esac
+  : >"$paths_file"
+  printf '%s\n' "$unchecked_line" | awk -F"$bt" '{ print $1 }' >"$target_file"
+  for token in $(tr "$bt\"'(),;" '       ' <"$target_file"); do
+    case "$token" in
+    res://*)
+      token=${token#res://}
+      grep -F -x -- "$token" "$paths_file" >/dev/null 2>&1 || printf '%s\n' "$token" >>"$paths_file"
+      ;;
+    */*|.*|*.*)
+      case "$token" in
+      ./*) token=${token#./} ;;
+      esac
+      grep -F -x -- "$token" "$paths_file" >/dev/null 2>&1 || printf '%s\n' "$token" >>"$paths_file"
+      ;;
+    esac
+  done
+  path_count=$(wc -l <"$paths_file" | tr -d ' ')
+  [ "$path_count" -ge 1 ] \
+    || die "architect: unchecked item must name a target file path before its verification command: $unchecked_line"
+done <"$unchecked_file"
+
+if [ "$print_only" = false ]; then
+  if [ -e "$write_target" ] && [ "$force" = false ] && [ "$replace_confirmed" = false ]; then
+    if [ -t 0 ] || [ -t 2 ]; then
+      target_name=${write_target##*/}
+      if ask-yn "architect: $target_name now exists. Replace it?" no; then
+        :
+      else
+        target_dir=$(CDPATH= cd -- "$(dirname "$write_target")" && pwd -P)
+        target_name=${write_target##*/}
+        base_name=${target_name%.*}
+        extension=''
+        case "$target_name" in
+        *.*) extension=.${target_name##*.} ;;
+        esac
+        n=2
+        while [ -e "$target_dir/$base_name $n$extension" ]; do
+          n=$((n + 1))
+        done
+        write_target=$target_dir/$base_name' '$n$extension
+        printf '%s\n' "architect: will write $write_target instead" >&2
+      fi
+    else
+      die "architect: $write_target exists; use --force to replace it or --print to preview"
+    fi
+  fi
+  cp "$output_file" "$write_target"
+  printf '%s\n' "architect: wrote $write_target" >&2
+fi
+
+cat "$output_file"

@@ -1,4 +1,5 @@
 #!/bin/sh
+# COMPILED_UNSUPPORTED: exercises full source-tree test orchestration
 # Test test-magic spell
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
@@ -164,6 +165,253 @@ requires_pocket_dimension() {
   }
 
   return 0
+}
+
+falls_back_when_pocket_dimension_check_fails() {
+  tmpdir=$(make_tempdir)
+  stub_dir="$tmpdir/bin"
+  fixture_root="$tmpdir/fixture-root"
+  fixture_sys_dir="$fixture_root/spells/.imps/sys"
+  fixture_wizardry_dir="$fixture_root/spells/.wizardry"
+  fixture_test_dir="$fixture_root/.tests/fixture"
+  mkdir -p "$stub_dir" "$fixture_sys_dir" "$fixture_wizardry_dir" "$fixture_test_dir"
+
+  cat >"$stub_dir/uname" <<'SH'
+#!/bin/sh
+printf '%s\n' Linux
+SH
+  chmod +x "$stub_dir/uname"
+
+  cat >"$stub_dir/pocket-dimension" <<'SH'
+#!/bin/sh
+case " $* " in
+  *" --check "*)
+    exit 1
+    ;;
+esac
+printf '%s\n' "pocket-dimension should not have executed the test body" >&2
+exit 42
+SH
+  chmod +x "$stub_dir/pocket-dimension"
+
+  cat >"$fixture_sys_dir/spell-levels" <<'SH'
+#!/bin/sh
+set -eu
+
+case "${1-}:${2-}" in
+  1:name)
+    printf '%s\n' "Fixture Level"
+    ;;
+  1:spells)
+    printf '%s\n' "dummy:fixture"
+    ;;
+  1:imps)
+    printf '\n'
+    ;;
+  *)
+    exit 1
+    ;;
+esac
+SH
+  chmod +x "$fixture_sys_dir/spell-levels"
+
+  ln -s "$ROOT_DIR/spells/.wizardry/test-spell" "$fixture_wizardry_dir/test-spell"
+
+  cat >"$fixture_test_dir/test-dummy.sh" <<'SH'
+#!/bin/sh
+printf '%s\n' "PASS #1 fixture test passes"
+printf '%s\n' "✓ 1/1 tests passed"
+exit 0
+SH
+  chmod +x "$fixture_test_dir/test-dummy.sh"
+
+  run_cmd env CI= GITHUB_ACTIONS= WIZARDRY_OS_LABEL= \
+    PATH="$stub_dir:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" \
+    WIZARDRY_TEST_IN_POCKET=0 \
+    WIZARDRY_DIR="$fixture_root" \
+    sh "$ROOT_DIR/spells/.wizardry/test-magic" 1 --only
+
+  assert_success || return 1
+  assert_error_contains "proceeding without sandbox isolation"
+}
+
+falls_back_when_only_strict_pocket_dimension_is_unavailable() {
+  tmpdir=$(make_tempdir)
+  stub_dir="$tmpdir/bin"
+  fixture_root="$tmpdir/fixture-root"
+  fixture_sys_dir="$fixture_root/spells/.imps/sys"
+  fixture_wizardry_dir="$fixture_root/spells/.wizardry"
+  fixture_test_dir="$fixture_root/.tests/fixture"
+  mkdir -p "$stub_dir" "$fixture_sys_dir" "$fixture_wizardry_dir" "$fixture_test_dir"
+
+  cat >"$stub_dir/uname" <<'SH'
+#!/bin/sh
+printf '%s\n' Linux
+SH
+  chmod +x "$stub_dir/uname"
+
+  cat >"$stub_dir/pocket-dimension" <<'SH'
+#!/bin/sh
+case "$*" in
+  "--strict --check")
+    exit 1
+    ;;
+  "--check")
+    exit 0
+    ;;
+esac
+printf '%s\n' "pocket-dimension should not have executed the test body" >&2
+exit 42
+SH
+  chmod +x "$stub_dir/pocket-dimension"
+
+  cat >"$fixture_sys_dir/spell-levels" <<'SH'
+#!/bin/sh
+set -eu
+
+case "${1-}:${2-}" in
+  1:name)
+    printf '%s\n' "Fixture Level"
+    ;;
+  1:spells)
+    printf '%s\n' "dummy:fixture"
+    ;;
+  1:imps)
+    printf '\n'
+    ;;
+  *)
+    exit 1
+    ;;
+esac
+SH
+  chmod +x "$fixture_sys_dir/spell-levels"
+
+  ln -s "$ROOT_DIR/spells/.wizardry/test-spell" "$fixture_wizardry_dir/test-spell"
+
+  cat >"$fixture_test_dir/test-dummy.sh" <<'SH'
+#!/bin/sh
+printf '%s\n' "PASS #1 fixture test passes"
+printf '%s\n' "✓ 1/1 tests passed"
+exit 0
+SH
+  chmod +x "$fixture_test_dir/test-dummy.sh"
+
+  run_cmd env CI= GITHUB_ACTIONS= WIZARDRY_OS_LABEL= \
+    PATH="$stub_dir:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" \
+    WIZARDRY_TEST_IN_POCKET=0 \
+    WIZARDRY_DIR="$fixture_root" \
+    sh "$ROOT_DIR/spells/.wizardry/test-magic" 1 --only
+
+  assert_success || return 1
+  assert_error_contains "proceeding without sandbox isolation"
+}
+
+strict_pocket_preserves_request_and_normalizes_working_directory() {
+  tmpdir=$(make_tempdir)
+  stub_dir="$tmpdir/bin"
+  fixture_root="$tmpdir/fixture-root"
+  receipt="$tmpdir/pocket-receipt"
+  mkdir -p "$stub_dir" "$fixture_root/spells/.imps"
+
+  cat >"$stub_dir/uname" <<'SH'
+#!/bin/sh
+printf '%s\n' Linux
+SH
+  chmod +x "$stub_dir/uname"
+
+  cat >"$stub_dir/pocket-dimension" <<'SH'
+#!/bin/sh
+if [ "${1-}" = "--strict" ] && [ "${2-}" = "--check" ]; then
+  exit 0
+fi
+printf '%s\n' "$PWD" >"$POCKET_RECEIPT"
+printf '%s\n' "$*" >>"$POCKET_RECEIPT"
+SH
+  chmod +x "$stub_dir/pocket-dimension"
+
+  run_cmd env CI= GITHUB_ACTIONS= WIZARDRY_OS_LABEL= \
+    PATH="$stub_dir:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" \
+    POCKET_RECEIPT="$receipt" \
+    WIZARDRY_TEST_IN_POCKET=0 \
+    WIZARDRY_DIR="$fixture_root" \
+    sh "$ROOT_DIR/spells/.wizardry/test-magic" 2 --only --verbose
+
+  assert_success || return 1
+  [ "$(sed -n '1p' "$receipt")" = "$fixture_root" ] || {
+    TEST_FAILURE_REASON="strict pocket entered from the wrong directory"
+    return 1
+  }
+  [ "$(sed -n '2p' "$receipt")" = "--strict --network closed -- test-magic 2 --only --verbose" ] || {
+    TEST_FAILURE_REASON="strict pocket did not preserve the test selection and flags"
+    return 1
+  }
+}
+
+skips_xattr_required_tests_on_reduced_hosts() {
+  tmpdir=$(make_tempdir)
+  stub_dir="$tmpdir/bin"
+  fixture_root="$tmpdir/fixture-root"
+  fixture_sys_dir="$fixture_root/spells/.imps/sys"
+  fixture_wizardry_dir="$fixture_root/spells/.wizardry"
+  fixture_test_dir="$fixture_root/.tests/fixture"
+  mkdir -p "$stub_dir" "$fixture_sys_dir" "$fixture_wizardry_dir" "$fixture_test_dir"
+
+  cat >"$stub_dir/uname" <<'SH'
+#!/bin/sh
+printf '%s\n' Linux
+SH
+  chmod +x "$stub_dir/uname"
+
+  cat >"$stub_dir/detect-xattr-capability" <<'SH'
+#!/bin/sh
+printf '%s\n' filesystem-unsupported
+SH
+  chmod +x "$stub_dir/detect-xattr-capability"
+
+  cat >"$stub_dir/pocket-dimension" <<'SH'
+#!/bin/sh
+exit 1
+SH
+  chmod +x "$stub_dir/pocket-dimension"
+
+  cat >"$fixture_sys_dir/spell-levels" <<'SH'
+#!/bin/sh
+set -eu
+
+case "${1-}:${2-}" in
+  1:name)
+    printf '%s\n' "Fixture Level"
+    ;;
+  1:spells)
+    printf '%s\n' "xattr-fixture:fixture"
+    ;;
+  1:imps)
+    printf '\n'
+    ;;
+  *)
+    exit 1
+    ;;
+esac
+SH
+  chmod +x "$fixture_sys_dir/spell-levels"
+
+  ln -s "$ROOT_DIR/spells/.wizardry/test-spell" "$fixture_wizardry_dir/test-spell"
+
+  cat >"$fixture_test_dir/test-xattr-fixture.sh" <<'SH'
+#!/bin/sh
+# REQUIRES_XATTR: requires filesystem xattrs
+printf '%s\n' "FAIL: xattr-gated fixture should have been skipped" >&2
+exit 1
+SH
+  chmod +x "$fixture_test_dir/test-xattr-fixture.sh"
+
+  run_cmd env PATH="$stub_dir:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" \
+    WIZARDRY_DIR="$fixture_root" \
+    sh "$ROOT_DIR/spells/.wizardry/test-magic" 1 --only
+
+  assert_success || return 1
+  assert_output_contains "SKIP requires filesystem xattrs (filesystem lacks extended attributes on this host)" || return 1
+  assert_output_contains "Total: 0/0 tests passed (1 skipped)" || return 1
 }
 
 # Test that failed subtests cause the parent test to fail
@@ -553,6 +801,17 @@ help_clarifies_level_0_is_common_tests() {
   return 0
 }
 
+test_magic_snapshots_runner_source() {
+  grep -q 'WIZARDRY_TEST_RUNNER_SNAPSHOT' "$ROOT_DIR/spells/.wizardry/test-magic" || {
+    TEST_FAILURE_REASON="test-magic does not guard its immutable runner snapshot"
+    return 1
+  }
+  grep -q 'cp.*runner_source.*runner_snapshot' "$ROOT_DIR/spells/.wizardry/test-magic" || {
+    TEST_FAILURE_REASON="test-magic does not copy its source before a long run"
+    return 1
+  }
+}
+
 run_test_case "system/test-magic is executable" spell_is_executable
 run_test_case "system/test-magic shows help" shows_help
 run_test_case "system/test-magic has content" spell_has_content
@@ -561,6 +820,15 @@ run_test_case "system/test-magic has no test rerun logic" no_test_reruns
 run_test_case "system/test-magic has pre-flight checks" has_preflight_checks
 run_test_case "system/test-magic has timeout protection" has_timeout_protection
 run_test_case "system/test-magic requires pocket-dimension" requires_pocket_dimension
+run_test_case "system/test-magic falls back when pocket-dimension check fails" falls_back_when_pocket_dimension_check_fails
+run_test_case "system/test-magic falls back when only strict pocket-dimension is unavailable" \
+  falls_back_when_only_strict_pocket_dimension_is_unavailable
+run_test_case "system/test-magic strict pocket preserves request and working directory" \
+  strict_pocket_preserves_request_and_normalizes_working_directory
+run_test_case "system/test-magic snapshots long-running runner source" \
+  test_magic_snapshots_runner_source
+run_test_case "system/test-magic skips xattr-gated tests on reduced hosts" \
+  skips_xattr_required_tests_on_reduced_hosts
 run_test_case "system/test-magic uncovered checks only run from level 0" uncovered_checks_only_run_from_level_0
 run_test_case "system/test-magic help clarifies Level 0 = Common Tests" help_clarifies_level_0_is_common_tests
 # Tests below require test-magic to accept specific test file paths as arguments

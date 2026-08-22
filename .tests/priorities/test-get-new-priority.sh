@@ -1,5 +1,6 @@
 #!/bin/sh
 # COMPILED_UNSUPPORTED: relies on sourced priority helper substitution
+# REQUIRES_XATTR: requires filesystem xattrs
 # Test coverage for get-new-priority spell:
 # - Shows usage with --help
 # - Requires file argument

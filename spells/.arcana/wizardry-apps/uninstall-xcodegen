@@ -1,0 +1,25 @@
+#!/bin/sh
+
+# Remove the Wizardry-managed XcodeGen install.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uninstall-xcodegen
+
+Removes the XcodeGen install managed by Wizardry.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+. "$script_dir/wizardry-apps-common"
+set -eu
+
+wizardry_apps_uninstall_xcodegen

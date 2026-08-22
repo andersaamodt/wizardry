@@ -6,14 +6,12 @@ done
 . "$test_root/spells/.imps/test/test-bootstrap"
 
 test_trigger_on_touch_damage() {
-  # Check if xattr support is available
-  if ! command -v xattr >/dev/null 2>&1 && ! command -v attr >/dev/null 2>&1 && ! command -v setfattr >/dev/null 2>&1; then
-    printf 'SKIP: xattr support not available\n'
-    return 0
-  fi
-  
   # Create test directory
-  test_tempdir=$(mktemp -d)
+  test_tempdir=$(make_tempdir)
+  stub_dir=$(make_tempdir)
+  stub-xattr "$stub_dir"
+  PATH="$stub_dir:$PATH"
+  export PATH
   
   # Create toucher and target
   toucher="$test_tempdir/toucher"
@@ -33,14 +31,12 @@ test_trigger_on_touch_damage() {
 }
 
 test_trigger_on_touch_effect_consumed() {
-  # Check if xattr support is available
-  if ! command -v xattr >/dev/null 2>&1 && ! command -v attr >/dev/null 2>&1 && ! command -v setfattr >/dev/null 2>&1; then
-    printf 'SKIP: xattr support not available\n'
-    return 0
-  fi
-  
   # Create test directory
-  test_tempdir=$(mktemp -d)
+  test_tempdir=$(make_tempdir)
+  stub_dir=$(make_tempdir)
+  stub-xattr "$stub_dir"
+  PATH="$stub_dir:$PATH"
+  export PATH
   
   # Create files
   toucher="$test_tempdir/toucher"

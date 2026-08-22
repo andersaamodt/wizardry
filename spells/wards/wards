@@ -21,6 +21,7 @@ USAGE
 esac
 
 set -eu
+. env-clear
 
 case "${1-}" in
 '')

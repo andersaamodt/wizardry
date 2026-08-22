@@ -1,0 +1,198 @@
+#!/bin/sh
+
+# Show the phone-side setup needed for adb over Tor onion services.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: show-mobile-tor-adb-guide [ADB_TARGET_OVERRIDE]
+
+Prints a Termux-oriented setup guide for publishing a phone wireless-debugging
+adb port as a Tor onion service.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+adb_target_override=${1-}
+
+case "$adb_target_override" in
+  *'
+'*)
+    die "show-mobile-tor-adb-guide: adb target override must not contain line breaks"
+    ;;
+esac
+
+if [ -n "$adb_target_override" ]; then
+  target_line="adb_target='$adb_target_override'"
+  wireless_host_line="wireless_host=''"
+else
+  target_line="adb_target=''"
+  wireless_host_line="wireless_host='PHONE_WIFI_IP'"
+fi
+
+cat <<GUIDE
+Phone-side Tor adb setup
+
+This desktop can run adb over Tor after the phone publishes its wireless adb
+port as an onion service. The repeatable host commands are:
+
+  firewalled-adb-tor --onion PHONE_ONION.onion:5555 -- devices
+  firewalled-maestro-tor --onion PHONE_ONION.onion:5555 -- test flow.yaml
+
+On the phone, Termux can provide the onion service:
+
+  pkg update
+  pkg install tor
+  mkdir -p "\$HOME/.termux/tor-adb/hidden-service" "\$HOME/.termux/tor-adb/data" "\$HOME/.termux/boot" "\$HOME/Download"
+  cat >"\$HOME/.termux/wizardry-tor-adb-start.sh" <<'EOF'
+#!/data/data/com.termux/files/usr/bin/sh
+set -eu
+PATH=/data/data/com.termux/files/usr/bin:/system/bin:/system/xbin:\$PATH
+$target_line
+$wireless_host_line
+state_dir="\$HOME/.termux/tor-adb"
+hidden_dir="\$state_dir/hidden-service"
+data_dir="\$state_dir/data"
+torrc="\$state_dir/torrc"
+log_file="\$state_dir/tor.log"
+hostname_file='/sdcard/Download/wizardry-tor-adb-hostname.txt'
+mkdir -p "\$hidden_dir" "\$data_dir" "\$(dirname "\$hostname_file")"
+append_candidate_host() {
+  candidate_host=\$1
+  [ -n "\$candidate_host" ] || return 0
+  if [ ! -f "\$candidate_hosts_file" ]; then
+    : >"\$candidate_hosts_file"
+  fi
+  if grep -Fx "\$candidate_host" "\$candidate_hosts_file" >/dev/null 2>&1; then
+    return 0
+  fi
+  printf '%s\n' "\$candidate_host" >>"\$candidate_hosts_file"
+}
+candidate_hosts_file="\$state_dir/adb-host-candidates.txt"
+rm -f "\$candidate_hosts_file"
+resolved_adb_target=
+waited=0
+while [ "\$waited" -lt 60 ]; do
+  if [ -n "\$adb_target" ]; then
+    resolved_adb_target=\$adb_target
+    break
+  fi
+  adb_port=\$(getprop service.adb.tcp.port 2>/dev/null || printf '')
+  case "\$adb_port" in
+    ''|0|*[!0-9]*) adb_port= ;;
+  esac
+  if [ -z "\$adb_port" ]; then
+    adb_port=\$(getprop service.adb.tls.port 2>/dev/null || printf '')
+    case "\$adb_port" in
+      ''|0|*[!0-9]*) adb_port= ;;
+    esac
+  fi
+  if [ -n "\$adb_port" ]; then
+    append_candidate_host "\$wireless_host"
+    route_host=\$(ip route get 1.1.1.1 2>/dev/null | awk '
+      {
+        for (i = 1; i <= NF; i++) {
+          if (\$i == "src" && (i + 1) <= NF) {
+            print \$(i + 1)
+            exit
+          }
+        }
+      }'
+    )
+    append_candidate_host "\$route_host"
+    ip -o -4 addr show up scope global 2>/dev/null | awk '{print \$4}' | while IFS= read -r cidr; do
+      case "\$cidr" in
+        */*) append_candidate_host "\${cidr%%/*}" ;;
+      esac
+    done
+    append_candidate_host 127.0.0.1
+    while IFS= read -r candidate_host || [ -n "\$candidate_host" ]; do
+      [ -n "\$candidate_host" ] || continue
+      if command -v nc >/dev/null 2>&1; then
+        if ! nc -z "\$candidate_host" "\$adb_port" >/dev/null 2>&1; then
+          continue
+        fi
+      fi
+      resolved_adb_target="\$candidate_host:\$adb_port"
+      break
+    done <"\$candidate_hosts_file"
+    if [ -n "\$resolved_adb_target" ]; then
+      break
+    fi
+  fi
+  sleep 1
+  waited=\$((waited + 1))
+done
+tmp_torrc="\$torrc.tmp"
+cat >"\$tmp_torrc" <<'EOT'
+DataDirectory __HOME__/.termux/tor-adb/data
+SocksPort 0
+HiddenServiceDir __HOME__/.termux/tor-adb/hidden-service
+HiddenServicePort 5555 __ADB_TARGET__
+EOT
+sed -i "s#__HOME__#\$HOME#g; s#__ADB_TARGET__#\$resolved_adb_target#g" "\$tmp_torrc"
+mv "\$tmp_torrc" "\$torrc"
+if command -v pkill >/dev/null 2>&1; then
+  pkill -f "\$torrc" >/dev/null 2>&1 || true
+fi
+if command -v termux-wake-lock >/dev/null 2>&1; then
+  termux-wake-lock >/dev/null 2>&1 || true
+fi
+tor --RunAsDaemon 1 -f "\$torrc" >"\$log_file" 2>&1
+waited=0
+while [ "\$waited" -lt 60 ]; do
+  if [ -s "\$hidden_dir/hostname" ]; then
+    cat "\$hidden_dir/hostname" > "\$hostname_file"
+    printf '\n' >> "\$hostname_file"
+    cat "\$hostname_file"
+    exit 0
+  fi
+  sleep 1
+  waited=\$((waited + 1))
+done
+exit 1
+EOF
+  chmod 700 "\$HOME/.termux/wizardry-tor-adb-start.sh"
+  cat >"\$HOME/.termux/wizardry-open-developer-options.sh" <<'EOF'
+#!/data/data/com.termux/files/usr/bin/sh
+set -eu
+am start -a android.settings.APPLICATION_DEVELOPMENT_SETTINGS >/dev/null 2>&1 || \
+  am start -n com.android.settings/.Settings\$DevelopmentSettingsActivity >/dev/null 2>&1
+EOF
+  chmod 700 "\$HOME/.termux/wizardry-open-developer-options.sh"
+  cat >"\$HOME/.termux/wizardry-open-wireless-settings.sh" <<'EOF'
+#!/data/data/com.termux/files/usr/bin/sh
+set -eu
+am start -a android.settings.WIRELESS_SETTINGS >/dev/null 2>&1
+EOF
+  chmod 700 "\$HOME/.termux/wizardry-open-wireless-settings.sh"
+  mkdir -p "\$HOME/.shortcuts"
+  cp "\$HOME/.termux/wizardry-open-developer-options.sh" "\$HOME/.shortcuts/wizardry-open-developer-options"
+  cp "\$HOME/.termux/wizardry-open-wireless-settings.sh" "\$HOME/.shortcuts/wizardry-open-wireless-settings"
+  chmod 700 "\$HOME/.shortcuts/wizardry-open-developer-options" "\$HOME/.shortcuts/wizardry-open-wireless-settings"
+  cat >"\$HOME/.termux/boot/99-wizardry-tor-adb" <<'EOF'
+#!/data/data/com.termux/files/usr/bin/sh
+/data/data/com.termux/files/home/.termux/wizardry-tor-adb-start.sh
+EOF
+  chmod 700 "\$HOME/.termux/boot/99-wizardry-tor-adb"
+  "\$HOME/.termux/wizardry-tor-adb-start.sh"
+
+Then read this file in Termux for the hostname:
+
+  cat "/sdcard/Download/wizardry-tor-adb-hostname.txt"
+
+Keep Android wireless debugging enabled while the onion service is running.
+Prefer the phone's on-device TLS port property and probe reachable local/Wi-Fi
+addresses so the onion service follows adb TLS port rotation and still works
+when adbd only listens on the current WLAN address instead of loopback. The
+boot hook lets Termux re-resolve the active adb target each time the publisher
+starts. The helper scripts above let Termux jump straight into Developer
+Options or general Wireless Settings, and if Termux:Widget is installed they
+also appear through the .shortcuts launcher surface.
+GUIDE

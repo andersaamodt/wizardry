@@ -17,12 +17,25 @@ set -eu
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 
+uninstall_tput_detect_distro() {
+  if command -v detect-distro >/dev/null 2>&1; then
+    detect-distro 2>/dev/null || printf '%s\n' "unknown"
+    return
+  fi
+
+  printf '%s\n' "unknown"
+}
+
 # Package names for officially supported platforms
 APT_PACKAGE=ncurses-bin
 PACMAN_PACKAGE=ncurses
 NIX_PACKAGE=ncurses
 PKGIN_PACKAGE=ncurses
 ASSUME_YES=1
+
+if [ "$(uninstall_tput_detect_distro)" = "termux" ]; then
+  APT_PACKAGE=ncurses-utils
+fi
 
 export APT_PACKAGE PACMAN_PACKAGE NIX_PACKAGE PKGIN_PACKAGE ASSUME_YES
 

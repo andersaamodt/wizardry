@@ -20,9 +20,15 @@ if ! command -v socat >/dev/null 2>&1; then
   exit 1
 fi
 
-# Create temporary directory for PTY communication
-tmpdir=${TMPDIR:-/tmp}
-pty_dir=$(mktemp -d "$tmpdir/socat-pty.XXXXXX")
+# Create a stable test directory when the Wizardry harness provides one.
+if [ -n "${WIZARDRY_TMPDIR-}" ] && [ -d "$WIZARDRY_TMPDIR" ]; then
+  pty_dir=$WIZARDRY_TMPDIR/socat-pty
+  rm -rf "$pty_dir"
+  mkdir -p "$pty_dir"
+else
+  tmpdir=${TMPDIR:-/tmp}
+  pty_dir=$(mktemp -d "$tmpdir/socat-pty.XXXXXX")
+fi
 trap 'rm -rf "$pty_dir"' EXIT INT TERM
 
 # Create files for communication
@@ -89,4 +95,3 @@ if [ -f "$output_file" ]; then
 fi
 
 # Cleanup is handled by trap
-

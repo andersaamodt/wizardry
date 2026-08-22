@@ -101,6 +101,81 @@ if [ -d "$root_dir/spells/.imps" ]; then
   done
 fi
 
+export PATH
+
+# Test paths and strict-isolation checks are defined relative to the installation.
+cd "$root_dir"
+
+has_tty=0
+if tty >/dev/null 2>&1 && [ -c /dev/tty ] && [ -r /dev/tty ] && [ -w /dev/tty ]; then
+  has_tty=1
+fi
+
+# Enter isolation before parsing so the re-executed runner receives the exact
+# requested level, range, and flags. Normalize the working directory because
+# strict isolation exposes only the requested Wizardry root reliably.
+if [ "${GITHUB_ACTIONS-}" != "true" ] && [ "${WIZARDRY_TEST_IN_POCKET-0}" -ne 1 ]; then
+  platform=$(uname -s 2>/dev/null || printf 'unknown')
+  use_strict_pocket=1
+  if [ "$platform" = "Darwin" ] && command -v sudo >/dev/null 2>&1; then
+    if ! sudo -n true >/dev/null 2>&1; then
+      if [ "$has_tty" -eq 1 ]; then
+        printf '%s\n' "test-magic: macOS isolation needs sudo; authenticating now..." > /dev/tty
+        if ! sudo -v < /dev/tty > /dev/tty 2>&1; then
+          printf '%s\n' "test-magic: sudo authentication failed" >&2
+          exit 1
+        fi
+      else
+        printf '%s\n' \
+          "test-magic: macOS isolation needs sudo; no tty is available, so tests will run without pocket-dimension" \
+          >&2
+        use_strict_pocket=0
+      fi
+    fi
+  fi
+  if [ "$use_strict_pocket" -eq 1 ]; then
+    if ! command -v pocket-dimension >/dev/null 2>&1; then
+      printf '%s\n' \
+        "test-magic: pocket-dimension unavailable; proceeding without sandbox isolation" \
+        >&2
+      use_strict_pocket=0
+    elif ! pocket-dimension --strict --check >/dev/null 2>&1; then
+      printf '%s\n' \
+        "test-magic: pocket-dimension unavailable; proceeding without sandbox isolation" \
+        >&2
+      use_strict_pocket=0
+    else
+      if [ "$has_tty" -eq 1 ]; then
+        printf '%s\n' "test-magic: entering strict pocket-dimension..." > /dev/tty
+      else
+        printf '%s\n' "test-magic: entering strict pocket-dimension..." >&2
+      fi
+      exec pocket-dimension --strict --network closed -- test-magic "$@"
+    fi
+  fi
+fi
+
+# A complete run can take hours on slower hosts. Execute the final runner from
+# an immutable snapshot so an in-place Wizardry update cannot change the shell
+# source while it is still being parsed.
+if [ "${WIZARDRY_TEST_RUNNER_SNAPSHOT-0}" -ne 1 ]; then
+  runner_source=$0
+  case "$runner_source" in
+    */*) ;;
+    *) runner_source=$(command -v "$runner_source" 2>/dev/null || printf '%s' "$runner_source") ;;
+  esac
+  if [ -f "$runner_source" ]; then
+    runner_snapshot=$(mktemp "${TMPDIR:-/tmp}/wizardry-test-magic.XXXXXX") || exit 1
+    trap 'rm -f "$runner_snapshot"' EXIT HUP INT TERM
+    cp "$runner_source" "$runner_snapshot"
+    WIZARDRY_TEST_RUNNER_SNAPSHOT=1 sh "$runner_snapshot" "$@"
+    snapshot_status=$?
+    trap - EXIT HUP INT TERM
+    rm -f "$runner_snapshot"
+    exit "$snapshot_status"
+  fi
+fi
+
 # Parse arguments
 target_level=28
 max_level=28
@@ -212,47 +287,6 @@ fi
 if [ "$target_level" -lt 0 ] || [ "$target_level" -gt "$max_level" ]; then
   printf 'test-magic: level must be 0-%d\n' "$max_level" >&2
   exit 2
-fi
-
-export PATH
-
-has_tty=0
-if tty >/dev/null 2>&1 && [ -c /dev/tty ] && [ -r /dev/tty ] && [ -w /dev/tty ]; then
-  has_tty=1
-fi
-
-# Run tests inside strict pocket-dimension unless in GitHub Actions (already isolated).
-if [ "${GITHUB_ACTIONS-}" != "true" ] && [ "${WIZARDRY_TEST_IN_POCKET-0}" -ne 1 ]; then
-  platform=$(uname -s 2>/dev/null || printf 'unknown')
-  use_strict_pocket=1
-  if [ "$platform" = "Darwin" ] && command -v sudo >/dev/null 2>&1; then
-    if ! sudo -n true >/dev/null 2>&1; then
-      if [ "$has_tty" -eq 1 ]; then
-        printf '%s\n' "test-magic: macOS isolation needs sudo; authenticating now..." > /dev/tty
-        if ! sudo -v < /dev/tty > /dev/tty 2>&1; then
-          printf '%s\n' "test-magic: sudo authentication failed" >&2
-          exit 1
-        fi
-      else
-        printf '%s\n' \
-          "test-magic: macOS isolation needs sudo; no tty is available, so tests will run without pocket-dimension" \
-          >&2
-        use_strict_pocket=0
-      fi
-    fi
-  fi
-  if [ "$use_strict_pocket" -eq 1 ] && ! command -v pocket-dimension >/dev/null 2>&1; then
-    printf 'test-magic: pocket-dimension not found\n' >&2
-    exit 1
-  fi
-  if [ "$use_strict_pocket" -eq 1 ]; then
-    if [ "$has_tty" -eq 1 ]; then
-      printf '%s\n' "test-magic: entering strict pocket-dimension..." > /dev/tty
-    else
-      printf '%s\n' "test-magic: entering strict pocket-dimension..." >&2
-    fi
-    exec pocket-dimension --strict --network closed -- test-magic "$@"
-  fi
 fi
 
 # Pre-flight checks (use command -v instead of has since invoke-wizardry not loaded yet)
@@ -384,6 +418,38 @@ stdbuf_cmd=""
 if command -v stdbuf >/dev/null 2>&1; then
   stdbuf_cmd="stdbuf -oL"
 fi
+
+xattr_capability="unknown"
+xattr_skip_reason=""
+if command -v detect-xattr-capability >/dev/null 2>&1; then
+  xattr_capability=$(detect-xattr-capability 2>/dev/null || printf 'unknown')
+fi
+case "$xattr_capability" in
+  supported)
+    xattr_skip_reason=""
+    ;;
+  filesystem-unsupported)
+    xattr_skip_reason="filesystem lacks extended attributes on this host"
+    ;;
+  helpers-missing)
+    xattr_skip_reason="extended attribute helpers are unavailable on this host"
+    ;;
+  probe-unavailable)
+    xattr_skip_reason="extended attribute capability probe is unavailable on this host"
+    ;;
+  *)
+    xattr_skip_reason=""
+    ;;
+esac
+
+test_file_header_marker_reason() {
+  marker_name=$1
+  marker_file=$2
+
+  head -n 5 "$marker_file" 2>/dev/null \
+    | sed -n "s/^# ${marker_name}: //p" \
+    | sed -n '1p'
+}
 
 run_test_file() {
   test_path=$1
@@ -815,13 +881,20 @@ test_level() {
     printf '  [%d/%d] Running %s...\n' "$global_test_count" "$global_test_total" "$test_name"
 
     if [ "$compiled_mode" = "1" ]; then
-      if head -n 5 "$test_file" 2>/dev/null | grep -q "^# COMPILED_UNSUPPORTED"; then
+      if [ -n "$(test_file_header_marker_reason COMPILED_UNSUPPORTED "$test_file")" ]; then
         level_skip=$((level_skip + 1))
         if [ "$verbose" -eq 1 ]; then
           printf '  - %s (skipped: unsupported in compiled mode)\n' "$spell"
         fi
         continue
       fi
+    fi
+
+    test_xattr_requirement=$(test_file_header_marker_reason REQUIRES_XATTR "$test_file")
+    if [ -n "$test_xattr_requirement" ] && [ -n "$xattr_skip_reason" ]; then
+      level_skip=$((level_skip + 1))
+      printf '    SKIP %s (%s)\n' "$test_xattr_requirement" "$xattr_skip_reason"
+      continue
     fi
 
     case "$spell" in
@@ -873,13 +946,20 @@ test_level() {
     printf '  [%d/%d] Running %s...\n' "$global_test_count" "$global_test_total" "$test_name"
 
     if [ "$compiled_mode" = "1" ]; then
-      if head -n 5 "$test_file" 2>/dev/null | grep -q "^# COMPILED_UNSUPPORTED"; then
+      if [ -n "$(test_file_header_marker_reason COMPILED_UNSUPPORTED "$test_file")" ]; then
         level_skip=$((level_skip + 1))
         if [ "$verbose" -eq 1 ]; then
           printf '  - %s (skipped: unsupported in compiled mode)\n' "$imp"
         fi
         continue
       fi
+    fi
+
+    test_xattr_requirement=$(test_file_header_marker_reason REQUIRES_XATTR "$test_file")
+    if [ -n "$test_xattr_requirement" ] && [ -n "$xattr_skip_reason" ]; then
+      level_skip=$((level_skip + 1))
+      printf '    SKIP %s (%s)\n' "$test_xattr_requirement" "$xattr_skip_reason"
+      continue
     fi
 
     test_timeout="${WIZARDRY_TEST_TIMEOUT:-180}"
@@ -976,7 +1056,7 @@ done
 printf '\n=== Test Summary ===\n'
 total=$((total_pass + total_fail))
 status=0
-if [ "$total" -gt 0 ]; then
+if [ "$total" -gt 0 ] || [ "$total_skip" -gt 0 ]; then
   printf 'Total: %d/%d tests passed' "$total_pass" "$total"
   if [ "$total_skip" -gt 0 ]; then
     printf ' (%d skipped)\n' "$total_skip"
@@ -1005,6 +1085,7 @@ if [ "$min_level_range" -eq 0 ]; then
   coverage_total=0
   coverage_covered=0
   uncovered_spells=""
+  test_associations_file="$test_dir/spell-test-associations.tsv"
 
   find_timeout="${WIZARDRY_FIND_TIMEOUT:-80}"
   spell_list=""
@@ -1034,7 +1115,15 @@ if [ "$min_level_range" -eq 0 ]; then
     base_check=$(basename "$rel_check")
     candidate_sh="$test_dir/$dir_check/test-${base_check}.sh"
 
-    if [ -f "$candidate_sh" ]; then
+    associated_test=""
+    if [ -f "$test_associations_file" ]; then
+      associated_test=$(awk -F '\t' -v spell="$rel" '
+        $1 == spell { print $2; exit }
+      ' "$test_associations_file")
+    fi
+
+    if [ -f "$candidate_sh" ] || \
+      { [ -n "$associated_test" ] && [ -f "$root_dir/$associated_test" ]; }; then
       coverage_covered=$((coverage_covered + 1))
     else
       if [ -n "$uncovered_spells" ]; then
@@ -1088,7 +1177,17 @@ EOF_SPELLS
 
     spell_path="$root_dir/spells/$dir/$base"
 
-    if [ ! -f "$spell_path" ]; then
+    association_found=0
+    if [ -f "$test_associations_file" ]; then
+      if awk -F '\t' -v test_path=".tests/$rel" '
+        $2 == test_path { found = 1 }
+        END { exit(found ? 0 : 1) }
+      ' "$test_associations_file"; then
+        association_found=1
+      fi
+    fi
+
+    if [ ! -f "$spell_path" ] && [ "$association_found" -ne 1 ]; then
       if [ -n "$extraneous_files" ]; then
         extraneous_files=$(printf '%s\n%s' "$extraneous_files" ".tests/$rel")
       else

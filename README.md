@@ -8,11 +8,11 @@ Wizardry includes a set of interactive menus that transparently show what comman
 
 For work that outgrows pure shell fan-out, wizardry now has a sister project: [theurgy](https://github.com/andersaamodt/theurgy).
 
-The language of magic—a human heirloom—is rich in evocative words for hidden forces and abstract transformations, making it a natural fit for extending the terminal's vocabulary, binding the worlds of thought and myth together as effective language.
+The language of magic—a human heirloom—is rich in evocative words for hidden forces and abstract transformations, making it a natural fit for extending the terminal's vocabulary, binding the worlds of thought and myth together as effective language. The semantic theory behind this direction is developed in [Doing Nothing on Purpose](https://raw.githubusercontent.com/andersaamodt/phronesis/main/papers/semanthesis-v1.0.pdf), which argues that shell scripts can host rigorous meaning and intention without confusing meaning with execution.
 
 ## Project status
 
-**Current status:** Core wizardry works on macOS; other platforms still need testing.
+**Current status:** macOS works; Debian and Android/Termux are mostly automated-tested.
 
 - ✅ POSIX shell spell and imp conventions
 - ✅ Interactive command-discovery menus
@@ -20,16 +20,17 @@ The language of magic—a human heirloom—is rich in evocative words for hidden
 - ✅ Arcana installer menus for the free software suite
 - ✅ MUD-style command parsing and magical vocabulary
 - ☐ Terminal theming and MUD game: Patchy
-- ☐ Cross-platform testing: Only macOS tested
+- ☐ Cross-platform hand-testing
 
-| OS                        | Shortname | Status                              |
-| ------------------------- | --------- | ----------------------------------- |
-| **Debian (and Ubuntu)**   | `debian`  | 🟡 **untested**                     |
-| **NixOS**                 | `nixos`   | 🟡 **untested**                     |
-| **MacOS**                 | `macos`   | 🟢 **working**                      |
-| **Arch**                  | `arch`    | 🟠 **untested**                     |
-| **Android (Linux-based)** | —         | 🟠 **currently unsupported**        |
-| **Windows**               | —         | ✘ **no support planned (except WSL)** |
+| OS                       | Shortname | Status                         |
+| ------------------------ | --------- | ------------------------------ |
+| **Debian (and Ubuntu)**  | `debian`  | 🟡 **mostly automated-tested** |
+| **NixOS**                | `nixos`   | 🟡 **untested**                |
+| **macOS**                | `macos`   | 🟢 **working**                 |
+| **Arch**                 | `arch`    | 🟡 **untested**                |
+| **Android (via Termux)** | `termux`  | 🟡 **mostly automated-tested** |
+| **Windows via WSL**      | —         | 🟡 **untested**                |
+| **Windows native**       | —         | ✘ **no support planned**       |
 
 ## Installation
 
@@ -47,7 +48,7 @@ The install script requires either `git` or `tar` plus either `curl` or `wget`.
 
 To download wizardry using git and then install it:
 
-```bash
+```sh
 git clone https://github.com/andersaamodt/wizardry ~/.wizardry
 cd ~/.wizardry
 ./install
@@ -63,6 +64,12 @@ To use wizardry, simply type:
 menu
 ```
 This displays an interactive menu. Most (soon all) wizardry spells and features will be discoverable through the menu.
+
+If a folder contains a default local menu spell, you can open it with:
+
+```sh
+menu .
+```
 
 ## Spells
 
@@ -142,6 +149,21 @@ Using the free software suite makes it easy to establish a standardized software
 
 The arcana menu (`install-menu`) loads arcana automatically from files, so you can also author your own modules, to make installing the software you use more convenient and repeatable.
 
+The AI development submenu includes OpenCode as a first-class user-local
+installable. Wizardry also provides a small checklist harness:
+
+```sh
+loop-code ./TODO.md
+loop-code ./TODO.md --model ollama/qwen3-coder
+```
+
+The harness streams each OpenCode round, prints a Wizardry round summary, and
+continues while the plain-text checklist contains an unchecked `[ ]` marker. An
+explicit `WIZARDRY_CHECKLIST_NEEDS_DIRECTION` response stops the loop only when
+it contains a concrete user-answerable question ending in `?`; broad-scope
+refusals are ignored so the next bounded slice can proceed. The checklist file,
+rather than the agent's self-report, remains the completion authority.
+
 ### MUD-like Parsing
 
 Wizardry supports space-separated commands for all wizardry commands (planned: all other commands), so you can also type `main menu` or `main-menu` to reach the same `menu`. Wizardry includes a `thesaurus`, which allows you to add synonyms for commands. Wizardry also includes a recursive parser, which will handle `main menu` as `main` and route it to `main-menu` correctly.
@@ -217,6 +239,7 @@ These values express why the project exists and what principles guide its develo
 | File-first         | All state is stored in files, ideally human-readable text. No databases that enclose data in opaque blobs.       |
 | POSIX sh-first     | POSIX `sh` is the lingua franca. Other languages are only used when there is a strong reason.                    |
 | FOSS missing link  | Wizardry supplies the “glue” that integrates standard UNIX tools into coherent workflows.                        |
+| Verifiable privacy | Prefer source-verifiable binaries, explicit network boundaries, and documented exceptions over opaque trust.      |
 | Semantic synthesis | Scripts evolve toward higher-order grammars that encapsulate platform details behind concise, composable syntax. |
 | Fun                | Magic and MUD flavor text are first-class: they make the terminal more playful without hiding what is going on.  |
 
@@ -232,6 +255,7 @@ These policies describe Wizardry’s stance toward software freedom, tooling, an
 | Hand-finished AI code | AI may help draft POSIX shell, but final scripts are hand-reviewed, commented, and tested.                                      |
 | No AI integration     | Wizardry spells themselves do not call out to AI tools or services.                                                             |
 | No fallback forks     | When debugging, fix the primary execution path instead of adding alternate fallback implementations that duplicate behavior.    |
+| Explicit trust bounds | When privacy or system access matters, use verifiable artifacts and narrow, inspectable runtime permissions.                   |
 
 ## **Design Tenets**
 
@@ -335,7 +359,7 @@ Principles of the testing suite:
 | Unique behavior focus | Each test covers that spell’s unique behaviors and failure modes, avoiding redundant coverage. |
 | Full mode coverage    | Subtests cover all valid paths and error conditions. |
 | Explicit shims        | Stub imps in `spells/.imps/test/stub-*` provide reusable terminal I/O mocking. Tests link to them via symlinks. Single-use stubs may remain inline in tests. Test real wizardry—stub only the bare minimum (terminal I/O). |
-| Sandboxed execution   | The `test-magic` spell discovers and runs all tests in an isolated bubblewrap environment. |
+| Sandboxed execution   | The `test-magic` spell prefers isolated `pocket-dimension` execution and falls back with a warning when strict sandboxing is unavailable on hosts such as Termux. |
 | Tests required | All tests are required to pass before new code may be merged. |
 
 ## POSIX Compatibility Matrix

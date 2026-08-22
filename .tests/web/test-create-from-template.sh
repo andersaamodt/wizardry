@@ -56,8 +56,8 @@ test_blog_template_uses_gazeta_layout() {
   WIZARDRY_DIR="$ROOT_DIR" run_spell spells/web/create-from-template mytestblog blog
   assert_success
 
-  [ -f "$test_web_root/mytestblog/site/pages/blog.md" ] || {
-    TEST_FAILURE_REASON="Gazeta blog page was not copied into site/pages"
+  [ -f "$test_web_root/mytestblog/site/lodestone/pages/blog.stone.html" ] || {
+    TEST_FAILURE_REASON="Gazeta Lodestone blog page was not copied into site/lodestone/pages"
     rm -rf "$test_web_root"
     return 1
   }

@@ -1,0 +1,25 @@
+#!/bin/sh
+
+# Install Android SDK command-line tools into the mobile debugging tool root.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-android-commandline-tools
+
+Installs Android SDK command-line tools into Theurgy's mobile debugging quarantine root.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+. "$script_dir/mobile-debugging-common"
+set -eu
+
+install_android_commandline_tools_main

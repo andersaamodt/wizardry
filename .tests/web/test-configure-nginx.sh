@@ -371,6 +371,137 @@ EOF
   rm -rf "$test_web_root" "$stub_dir"
 }
 
+test_configure_nginx_honors_external_build_dir() {
+  skip-if-compiled || return $?
+
+  test_web_root=$(temp-dir web-wizardry-test)
+  export WEB_WIZARDRY_ROOT="$test_web_root"
+
+  stub_dir=$(temp-dir web-wizardry-stub)
+  stub-sudo "$stub_dir"
+  export PATH="$stub_dir:$PATH"
+
+  mkdir -p "$test_web_root/mytestsite"
+  cat > "$test_web_root/mytestsite/site.conf" <<EOF
+site-name=mytestsite
+port=8080
+domain=localhost
+https=false
+build-dir=$test_web_root/.sitedata/mytestsite-build
+EOF
+
+  run_spell spells/web/configure-nginx mytestsite
+  assert_success || return 1
+
+  grep -q "root $test_web_root/.sitedata/mytestsite-build;" "$test_web_root/mytestsite/nginx/nginx.conf" || {
+    TEST_FAILURE_REASON="configure-nginx should use configured external build-dir as nginx root"
+    return 1
+  }
+
+  grep -q "alias $test_web_root/.sitedata/mytestsite-build/static/;" "$test_web_root/mytestsite/nginx/nginx.conf" || {
+    TEST_FAILURE_REASON="configure-nginx should use configured external build-dir for static alias"
+    return 1
+  }
+
+  rm -rf "$test_web_root" "$stub_dir"
+}
+
+test_configure_nginx_uses_xdg_runtime_for_git_workspace_roots() {
+  skip-if-compiled || return $?
+
+  tmpdir=$(make_tempdir)
+  test_home="$tmpdir/home"
+  test_web_root="$test_home/git"
+  site_dir="$test_web_root/mytestsite"
+  stub_dir=$(temp-dir web-wizardry-stub)
+
+  mkdir -p "$site_dir/nginx"
+  printf '%s\n' legacy > "$site_dir/nginx/error.log"
+  stub-sudo "$stub_dir"
+
+  status=0
+  HOME="$test_home" WEB_WIZARDRY_ROOT="$test_web_root" PATH="$stub_dir:$PATH" \
+    sh "$test_root/spells/web/configure-nginx" mytestsite >/dev/null 2>"$tmpdir/error" || status=$?
+  [ "$status" -eq 0 ] || {
+    TEST_FAILURE_REASON="configure-nginx should succeed for git workspace checkouts"
+    rm -rf "$tmpdir" "$stub_dir"
+    return 1
+  }
+  [ ! -s "$tmpdir/error" ] || {
+    TEST_FAILURE_REASON="configure-nginx should not emit errors for git workspace checkouts"
+    rm -rf "$tmpdir" "$stub_dir"
+    return 1
+  }
+
+  runtime_dir=$(HOME="$test_home" sh "$test_root/spells/.imps/web/site-runtime-dir" "$site_dir" nginx)
+  [ -f "$runtime_dir/nginx.conf" ] || {
+    TEST_FAILURE_REASON="configure-nginx should write nginx.conf under the external runtime dir"
+    rm -rf "$tmpdir" "$stub_dir"
+    return 1
+  }
+  [ -f "$runtime_dir/error.log" ] || {
+    TEST_FAILURE_REASON="configure-nginx should migrate legacy runtime log files into XDG state"
+    rm -rf "$tmpdir" "$stub_dir"
+    return 1
+  }
+  [ ! -e "$site_dir/nginx/nginx.conf" ] || {
+    TEST_FAILURE_REASON="configure-nginx should not recreate repo-local nginx.conf for git workspaces"
+    rm -rf "$tmpdir" "$stub_dir"
+    return 1
+  }
+
+  grep -q "error_log $runtime_dir/error.log warn;" "$runtime_dir/nginx.conf" || {
+    TEST_FAILURE_REASON="nginx.conf should point error_log at the external runtime dir"
+    rm -rf "$tmpdir" "$stub_dir"
+    return 1
+  }
+  grep -q "access_log $runtime_dir/access.log;" "$runtime_dir/nginx.conf" || {
+    TEST_FAILURE_REASON="nginx.conf should point access_log at the external runtime dir"
+    rm -rf "$tmpdir" "$stub_dir"
+    return 1
+  }
+
+  rm -rf "$tmpdir" "$stub_dir"
+}
+
+test_configure_nginx_uses_tmpdir_for_long_socket_paths() {
+  skip-if-compiled || return $?
+
+  tmpdir=$(make_tempdir)
+  runtime_dir="$tmpdir/runtime"
+  test_web_root="$tmpdir/a-very-long-web-root-name-that-forces-the-fastcgi-socket-fallback"
+  stub_dir=$(temp-dir web-wizardry-stub)
+  mkdir -p "$runtime_dir" "$test_web_root/mytestsite"
+  stub-sudo "$stub_dir"
+
+  status=0
+  PATH="$stub_dir:$PATH" TMPDIR="$runtime_dir" WEB_WIZARDRY_ROOT="$test_web_root" \
+    sh "$test_root/spells/web/configure-nginx" mytestsite >/dev/null 2>&1 || status=$?
+  [ "$status" -eq 0 ] || return 1
+  assert_file_contains "$test_web_root/mytestsite/nginx/nginx.conf" \
+    "$runtime_dir/wizardry-fcgiwrap/" || return 1
+}
+
+test_configure_nginx_routes_readable_file_links() {
+  skip-if-compiled || return $?
+
+  test_web_root=$(temp-dir web-wizardry-test)
+  stub_dir=$(temp-dir web-wizardry-stub)
+  mkdir -p "$test_web_root/mytestsite"
+  stub-sudo "$stub_dir"
+
+  PATH="$stub_dir:$PATH" WEB_WIZARDRY_ROOT="$test_web_root" \
+    run_spell spells/web/configure-nginx mytestsite
+  assert_success || return 1
+
+  assert_file_contains "$test_web_root/mytestsite/nginx/nginx.conf" \
+    'location ~ ^/file/([^/]+)(?:/.*)?$ {' || return 1
+  assert_file_contains "$test_web_root/mytestsite/nginx/nginx.conf" \
+    'rewrite ^/file/([^/]+)(?:/.*)?$ /cgi/blog-file?file_key=$1 last;' || return 1
+
+  rm -rf "$test_web_root" "$stub_dir"
+}
+
 run_test_case "configure-nginx --help" test_configure_nginx_help
 run_test_case "configure-nginx creates local mime.types" test_configure_nginx_creates_local_mimetypes
 run_test_case "configure-nginx supports .onion addresses" test_configure_nginx_supports_onion_addresses
@@ -389,5 +520,13 @@ run_test_case "configure-nginx rejects imported cgi-dir injection" \
   test_configure_nginx_rejects_imported_cgi_dir_injection
 run_test_case "configure-nginx rejects invalid imported site-user" \
   test_configure_nginx_rejects_invalid_imported_site_user
+run_test_case "configure-nginx honors external build-dir" \
+  test_configure_nginx_honors_external_build_dir
+run_test_case "configure-nginx uses XDG runtime dirs for git workspace sites" \
+  test_configure_nginx_uses_xdg_runtime_for_git_workspace_roots
+run_test_case "configure-nginx uses TMPDIR for long FastCGI socket paths" \
+  test_configure_nginx_uses_tmpdir_for_long_socket_paths
+run_test_case "configure-nginx routes readable file links" \
+  test_configure_nginx_routes_readable_file_links
 
 finish_tests

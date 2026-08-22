@@ -1,0 +1,30 @@
+#!/bin/sh
+
+# Install Theurgy's quarantined browser proof runtime.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-theurgy-browser-proof-runtime [browser...]
+
+Installs Playwright-managed browser binaries through Theurgy's browser proof
+runtime spell. This keeps browser automation dependencies quarantined in
+Theurgy rather than Wizardry core.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+. "$script_dir/_theurgy"
+
+install_theurgy_source
+
+installer=$theurgy_home/spells/install-theurgy-browser-proof-runtime
+if [ ! -x "$installer" ]; then
+  printf '%s\n' "install-theurgy-browser-proof-runtime: missing Theurgy installer at $installer" >&2
+  exit 1
+fi
+
+THEURGY_HOME=$theurgy_home "$installer" "$@"

@@ -29,7 +29,7 @@ shows_help() {
 
 applies_hardening_to_temp_file() {
   skip-if-compiled || return $?
-  tmpdir=$(mktemp -d "$WIZARDRY_TMPDIR/ssh-barrier.XXXXXX")
+  tmpdir=$(make_tempdir)
   config="$tmpdir/sshd_config"
   cat >"$config" <<'CFG'
 #PermitRootLogin prohibit-password

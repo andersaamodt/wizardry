@@ -70,6 +70,7 @@ fi
 
 tty_device=${FATHOM_CURSOR_DEVICE:-/dev/tty}
 skip_stty=${FATHOM_CURSOR_SKIP_STTY:-0}
+term_name=${TERM-}
 
 # Only reach for stty when we are manipulating a real tty
 if [ "$skip_stty" -eq 0 ]; then
@@ -111,6 +112,16 @@ else
         warn 'fathom-cursor: unable to configure terminal'
         exit 1
     fi
+fi
+
+# Terminals that identify as "dumb" should not be asked to answer a DSR probe.
+if [ "$skip_stty" -eq 0 ]; then
+    case "$term_name" in
+        ''|dumb)
+            warn 'fathom-cursor: terminal does not advertise cursor-position support'
+            exit 1
+            ;;
+    esac
 fi
 
 # Ask for the cursor position by emitting the DSR request

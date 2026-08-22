@@ -1,0 +1,1287 @@
+#!/bin/sh
+
+# Shared helpers for ai-dev runtime/model selection and OpenCode wiring.
+
+case "${1-}" in
+--help|--usage|-h)
+  case "$0" in
+    */ai-dev-llm-common)
+      cat <<'USAGE'
+Usage: ai-dev-llm-common
+
+Shared helper library for AI runtime/model management in the ai-dev arcanum.
+USAGE
+      exit 0
+      ;;
+  esac
+  ;;
+esac
+
+set +eu
+
+ai_llm_state_home=${XDG_STATE_HOME:-$HOME/.local/state}
+ai_llm_root_dir=${AI_DEV_STATE_DIR:-$ai_llm_state_home/wizardry/ai-dev}
+ai_llm_runtime_file=$ai_llm_root_dir/active-runtime
+ai_llm_model_file_prefix=$ai_llm_root_dir/selected-model-
+ai_llm_draft_model_file_prefix=$ai_llm_root_dir/selected-draft-model-
+ai_llm_mlx_models_file=$ai_llm_root_dir/mlx-installed-models
+ai_llm_mlx_root=$ai_llm_root_dir/mlx
+ai_llm_mlx_venv=$ai_llm_mlx_root/venv
+ai_llm_mlx_python=$ai_llm_mlx_venv/bin/python
+ai_llm_mlx_server_bin=$ai_llm_mlx_venv/bin/mlx_lm.server
+ai_llm_mlx_generate_bin=$ai_llm_mlx_venv/bin/mlx_lm.generate
+ai_llm_mlx_port=${AI_DEV_MLX_PORT:-11435}
+ai_llm_mlx_start_timeout=${AI_DEV_MLX_START_TIMEOUT:-120}
+ai_llm_mlx_draft_tokens=1
+ai_llm_mlx_pid_file=$ai_llm_root_dir/mlx-server.pid
+ai_llm_mlx_log=$ai_llm_root_dir/mlx-server.log
+ai_llm_opencode_config_dir=${XDG_CONFIG_HOME:-$HOME/.config}/opencode
+ai_llm_opencode_runtime_config=$ai_llm_opencode_config_dir/wizardry-runtime.json
+ai_llm_mlx_launchd_label=com.wizardry.ai-dev.mlx.server
+ai_llm_mlx_launch_agent_dir=${HOME}/Library/LaunchAgents
+ai_llm_mlx_launch_agent_plist=$ai_llm_mlx_launch_agent_dir/$ai_llm_mlx_launchd_label.plist
+
+ai_llm_uname_s() {
+  uname -s 2>/dev/null || printf 'unknown\n'
+}
+
+ai_llm_uname_m() {
+  uname -m 2>/dev/null || printf 'unknown\n'
+}
+
+ai_llm_is_macos() {
+  [ "$(ai_llm_uname_s)" = "Darwin" ]
+}
+
+ai_llm_is_mlx_supported() {
+  case "${AI_DEV_MLX_SUPPORTED-}" in
+    1|true|TRUE|yes|YES|on|ON) return 0 ;;
+    0|false|FALSE|no|NO|off|OFF) return 1 ;;
+  esac
+
+  if ! ai_llm_is_macos; then
+    return 1
+  fi
+  case "$(ai_llm_uname_m)" in
+    arm64|aarch64) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+ai_llm_default_runtime() {
+  if ai_llm_is_mlx_supported; then
+    printf '%s\n' "mlx"
+  else
+    printf '%s\n' "ollama"
+  fi
+}
+
+ai_llm_runtime_valid() {
+  case "$1" in
+    ollama|mlx) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+ai_llm_runtime_label() {
+  case "$1" in
+    mlx) printf '%s\n' "MLX" ;;
+    ollama) printf '%s\n' "ollama" ;;
+    *) printf '%s\n' "$1" ;;
+  esac
+}
+
+ai_llm_component_installed() {
+  component=$1
+  if [ -n "${script_dir-}" ] && [ -x "$script_dir/is-ai-component-installed" ]; then
+    "$script_dir/is-ai-component-installed" "$component" >/dev/null 2>&1
+    return $?
+  fi
+  return 1
+}
+
+ai_llm_mlx_runtime_ready() {
+  [ -x "$ai_llm_mlx_python" ] || return 1
+  "$ai_llm_mlx_python" - <<'PY' >/dev/null 2>&1
+import mlx_lm  # noqa: F401
+import huggingface_hub  # noqa: F401
+PY
+}
+
+ai_llm_get_active_runtime() {
+  runtime=${AI_DEV_LLM_RUNTIME:-}
+  if ai_llm_runtime_valid "$runtime"; then
+    printf '%s\n' "$runtime"
+    return 0
+  fi
+
+  if [ -f "$ai_llm_runtime_file" ]; then
+    runtime=$(tr -d '\r' <"$ai_llm_runtime_file" 2>/dev/null || printf '')
+    if ai_llm_runtime_valid "$runtime"; then
+      printf '%s\n' "$runtime"
+      return 0
+    fi
+  fi
+
+  ai_llm_default_runtime
+}
+
+ai_llm_resolve_runtime() {
+  runtime=$(ai_llm_get_active_runtime)
+  if ai_llm_component_installed "$runtime"; then
+    printf '%s\n' "$runtime"
+    return 0
+  fi
+
+  default_runtime=$(ai_llm_default_runtime)
+  if ai_llm_component_installed "$default_runtime"; then
+    printf '%s\n' "$default_runtime"
+    return 0
+  fi
+
+  if ai_llm_component_installed "mlx"; then
+    printf '%s\n' "mlx"
+    return 0
+  fi
+  if ai_llm_component_installed "ollama"; then
+    printf '%s\n' "ollama"
+    return 0
+  fi
+
+  printf '%s\n' "$default_runtime"
+}
+
+ai_llm_set_active_runtime() {
+  runtime=$1
+  ai_llm_runtime_valid "$runtime" || return 1
+  mkdir -p "$ai_llm_root_dir"
+  printf '%s\n' "$runtime" >"$ai_llm_runtime_file"
+}
+
+ai_llm_default_model() {
+  case "$1" in
+    mlx)
+      printf '%s\n' "mlx-community/Qwen3-Coder-30B-A3B-Instruct-5bit"
+      ;;
+    ollama)
+      printf '%s\n' "qwen3.6:35b-a3b"
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+ai_llm_model_file() {
+  runtime=$1
+  printf '%s%s\n' "$ai_llm_model_file_prefix" "$runtime"
+}
+
+ai_llm_draft_model_file() {
+  runtime=$1
+  printf '%s%s\n' "$ai_llm_draft_model_file_prefix" "$runtime"
+}
+
+ai_llm_default_draft_model() {
+  case "$1" in
+    mlx)
+      printf '%s\n' "mlx-community/Qwen3-Coder-30B-A3B-Instruct-3bit"
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+ai_llm_get_selected_model() {
+  runtime=$1
+  model_file=$(ai_llm_model_file "$runtime") || return 1
+  if [ -f "$model_file" ]; then
+    model=$(tr -d '\r' <"$model_file" 2>/dev/null || printf '')
+    if [ -n "$model" ]; then
+      printf '%s\n' "$model"
+      return 0
+    fi
+  fi
+  ai_llm_default_model "$runtime"
+}
+
+ai_llm_set_selected_model() {
+  runtime=$1
+  model=$2
+  [ -n "$model" ] || return 1
+  model_file=$(ai_llm_model_file "$runtime") || return 1
+  mkdir -p "$ai_llm_root_dir"
+  printf '%s\n' "$model" >"$model_file"
+}
+
+ai_llm_get_selected_draft_model() {
+  runtime=$1
+  draft_model_file=$(ai_llm_draft_model_file "$runtime") || return 1
+  if [ -f "$draft_model_file" ]; then
+    draft_model=$(tr -d '\r' <"$draft_model_file" 2>/dev/null || printf '')
+    if [ -n "$draft_model" ]; then
+      printf '%s\n' "$draft_model"
+      return 0
+    fi
+  fi
+  ai_llm_default_draft_model "$runtime"
+}
+
+ai_llm_set_selected_draft_model() {
+  runtime=$1
+  draft_model=$2
+  [ -n "$draft_model" ] || return 1
+  draft_model_file=$(ai_llm_draft_model_file "$runtime") || return 1
+  mkdir -p "$ai_llm_root_dir"
+  printf '%s\n' "$draft_model" >"$draft_model_file"
+}
+
+ai_llm_model_role() {
+  runtime=$1
+  model=$2
+  case "$runtime:$model" in
+    mlx:mlx-community/Qwen3-30B-A3B-Thinking-2507-4bit)
+      printf '%s\n' architecture
+      ;;
+    mlx:mlx-community/Qwen3-Coder-30B-A3B-Instruct-3bit|mlx:mlx-community/Qwen3-0.6B-4bit)
+      printf '%s\n' draft
+      ;;
+    *)
+      printf '%s\n' primary
+      ;;
+  esac
+}
+
+ai_llm_list_available() {
+  runtime=$1
+  case "$runtime" in
+    mlx)
+      printf '%s\n' "mlx-community/Qwen3-Coder-30B-A3B-Instruct-5bit|best local coding|20.0|256"
+      printf '%s\n' "mlx-community/Qwen3-Coder-30B-A3B-Instruct-3bit|best speculative draft, compatible|13.0|256"
+      printf '%s\n' "mlx-community/Qwen3-0.6B-4bit|small experimental speculative draft|0.4|32"
+      printf '%s\n' "mlx-community/Qwen3-Coder-Next-5bit|large coding benchmark|51.0|256"
+      printf '%s\n' "mlx-community/Qwen3-30B-A3B-Thinking-2507-4bit|best local architecture reasoning|18.0|256"
+      printf '%s\n' "mlx-community/Qwen2.5-14B-Instruct-4bit|best reasoning|8.2|128"
+      printf '%s\n' "mlx-community/Qwen2.5-VL-7B-Instruct-4bit|best vision|4.9|32"
+      ;;
+    ollama)
+      printf '%s\n' "qwen3.6:35b-a3b|best local coding, verified with OpenCode|23.0|256"
+      printf '%s\n' "qwen3-coder:30b|best coding|19.0|256"
+      printf '%s\n' "llama3.1:70b|best reasoning|43.0|128"
+      printf '%s\n' "llava:13b|best vision|8.0|8"
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+ai_llm_next_smaller_mlx_model() {
+  model=$1
+  case "$model" in
+    mlx-community/Qwen3-Coder-Next-5bit)
+      printf '%s\n' "mlx-community/Qwen3-Coder-30B-A3B-Instruct-5bit"
+      return 0
+      ;;
+    mlx-community/Qwen3-Coder-30B-A3B-Instruct-5bit)
+      printf '%s\n' "mlx-community/Qwen2.5-14B-Instruct-4bit"
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+ai_llm_is_curated_model() {
+  runtime=$1
+  candidate=$2
+  list=$(ai_llm_list_available "$runtime" 2>/dev/null || printf '')
+  while IFS= read -r llm_entry; do
+    [ -n "$llm_entry" ] || continue
+    curated_model=${llm_entry%%|*}
+    if [ "$candidate" = "$curated_model" ]; then
+      return 0
+    fi
+  done <<EOF
+$list
+EOF
+  return 1
+}
+
+ai_llm_runtime_supported_on_host() {
+  runtime=$1
+  case "$runtime" in
+    ollama) return 0 ;;
+    mlx) ai_llm_is_mlx_supported ;;
+    *) return 1 ;;
+  esac
+}
+
+ai_llm_register_mlx_model() {
+  model=$1
+  mkdir -p "$ai_llm_root_dir"
+  if [ -f "$ai_llm_mlx_models_file" ] \
+    && grep -Fx "$model" "$ai_llm_mlx_models_file" >/dev/null 2>&1; then
+    return 0
+  fi
+  printf '%s\n' "$model" >>"$ai_llm_mlx_models_file"
+}
+
+ai_llm_unregister_mlx_model() {
+  model=$1
+  [ -f "$ai_llm_mlx_models_file" ] || return 0
+  filtered=$(mktemp "${TMPDIR:-/tmp}/ai-dev-mlx-models.XXXXXX")
+  grep -Fvx "$model" "$ai_llm_mlx_models_file" >"$filtered" 2>/dev/null || true
+  mv "$filtered" "$ai_llm_mlx_models_file"
+}
+
+ai_llm_list_registered_mlx_models() {
+  [ -f "$ai_llm_mlx_models_file" ] || return 0
+  tr -d '\r' <"$ai_llm_mlx_models_file" 2>/dev/null || true
+}
+
+ai_llm_mlx_model_registered() {
+  model=$1
+  [ -f "$ai_llm_mlx_models_file" ] || return 1
+  grep -Fx "$model" "$ai_llm_mlx_models_file" >/dev/null 2>&1
+}
+
+ai_llm_write_opencode_runtime_config() {
+  runtime=$1
+  model=$2
+  mkdir -p "$ai_llm_opencode_config_dir"
+  temp=$(mktemp "${TMPDIR:-/tmp}/opencode-wizardry-runtime.XXXXXX")
+
+  case "$runtime" in
+    mlx)
+      cat >"$temp" <<'EOF'
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "mlx": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "MLX (local)",
+      "options": {
+        "baseURL": "http://127.0.0.1:__MLX_PORT__/v1"
+      },
+      "models": {
+        "__MODEL__": {
+          "name": "__MODEL__",
+          "tool_call": true,
+          "temperature": true,
+          "limit": {
+            "context": 262144,
+            "output": 8192
+          }
+        }
+      }
+    }
+  },
+  "model": "mlx/__MODEL__"
+}
+EOF
+      sed -e "s|__MLX_PORT__|$ai_llm_mlx_port|g" -e "s|__MODEL__|$model|g" "$temp" >"$temp.out"
+      mv "$temp.out" "$temp"
+      ;;
+    ollama)
+      cat >"$temp" <<'EOF'
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "ollama": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Ollama (local)",
+      "options": {
+        "baseURL": "http://127.0.0.1:11434/v1"
+      }
+    }
+  },
+  "model": "ollama/__MODEL__"
+}
+EOF
+      sed "s|__MODEL__|$model|g" "$temp" >"$temp.out"
+      mv "$temp.out" "$temp"
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+
+  mv "$temp" "$ai_llm_opencode_runtime_config"
+}
+
+ai_llm_opencode_model() {
+  config_path=${1-}
+  if [ -z "$config_path" ]; then
+    config_path=$ai_llm_opencode_config_dir/opencode.jsonc
+  fi
+  [ -f "$config_path" ] || return 1
+  awk '
+    match($0, /"model"[[:space:]]*:[[:space:]]*"[^"]+"/) {
+      line = substr($0, RSTART, RLENGTH)
+      sub(/^[^"]*"model"[[:space:]]*:[[:space:]]*"/, "", line)
+      sub(/"$/, "", line)
+      print line
+      exit
+    }
+  ' "$config_path"
+}
+
+ai_llm_model_provider() {
+  model=${1-}
+  case "$model" in
+    */*) printf '%s\n' "${model%%/*}" ;;
+    *) return 1 ;;
+  esac
+}
+
+ai_llm_model_is_local() {
+  provider=$(ai_llm_model_provider "${1-}" 2>/dev/null || printf '')
+  case "$provider" in
+    mlx|ollama) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+ai_llm_runtime_available() {
+  runtime=$1
+  case "$runtime" in
+    mlx)
+      ai_llm_is_mlx_supported || return 1
+      if ai_llm_component_installed "mlx"; then
+        return 0
+      fi
+      [ -x "$ai_llm_mlx_server_bin" ] || return 1
+      return 0
+      ;;
+    ollama)
+      if ai_llm_component_installed "ollama"; then
+        return 0
+      fi
+      command -v ollama >/dev/null 2>&1
+      return $?
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+ai_llm_model_installed() {
+  runtime=$1
+  model=$2
+  case "$runtime" in
+    mlx)
+      ai_llm_mlx_model_registered "$model" || [ -d "$model" ]
+      ;;
+    ollama)
+      if ! command -v ollama >/dev/null 2>&1; then
+        return 1
+      fi
+      ollama list 2>/dev/null \
+        | awk 'NR > 1 { print $1 }' \
+        | grep -F -x -- "$model" >/dev/null 2>&1
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+ai_llm_get_selected_coding_model() {
+  runtime=$1
+  selected_model=$(ai_llm_get_selected_model "$runtime" 2>/dev/null || printf '')
+  if [ -n "$selected_model" ] \
+    && [ "$(ai_llm_model_role "$runtime" "$selected_model")" = primary ] \
+    && ai_llm_model_installed "$runtime" "$selected_model"; then
+    printf '%s\n' "$selected_model"
+    return 0
+  fi
+
+  default_coding_model=$(ai_llm_default_model "$runtime" 2>/dev/null || printf '')
+  if [ -n "$default_coding_model" ] \
+    && [ "$(ai_llm_model_role "$runtime" "$default_coding_model")" = primary ] \
+    && ai_llm_model_installed "$runtime" "$default_coding_model"; then
+    printf '%s\n' "$default_coding_model"
+    return 0
+  fi
+
+  available_models=$(ai_llm_list_available "$runtime" 2>/dev/null || printf '')
+  while IFS='|' read -r available_model _available_label _available_size _available_context; do
+    [ -n "$available_model" ] || continue
+    [ "$(ai_llm_model_role "$runtime" "$available_model")" = primary ] || continue
+    if ai_llm_model_installed "$runtime" "$available_model"; then
+      printf '%s\n' "$available_model"
+      return 0
+    fi
+  done <<EOF
+$available_models
+EOF
+
+  return 1
+}
+
+ai_llm_preferred_local_opencode_model() {
+  runtime=$(ai_llm_resolve_runtime 2>/dev/null || printf '')
+
+  case "$runtime" in
+    mlx)
+      if ai_llm_runtime_available "mlx" && model=$(ai_llm_get_selected_model mlx 2>/dev/null); then
+        printf '%s\n' "mlx/$model"
+        return 0
+      fi
+      ;;
+    ollama)
+      if ai_llm_runtime_available "ollama" \
+        && model=$(ai_llm_get_selected_model ollama 2>/dev/null); then
+        printf '%s\n' "ollama/$model"
+        return 0
+      fi
+      ;;
+  esac
+
+  if ai_llm_runtime_available "mlx" && model=$(ai_llm_get_selected_model mlx 2>/dev/null); then
+    printf '%s\n' "mlx/$model"
+    return 0
+  fi
+  if ai_llm_runtime_available "ollama" \
+    && model=$(ai_llm_get_selected_model ollama 2>/dev/null); then
+    printf '%s\n' "ollama/$model"
+    return 0
+  fi
+
+  return 1
+}
+
+ai_llm_preferred_local_coding_opencode_model() {
+  runtime=$(ai_llm_resolve_runtime 2>/dev/null || printf '')
+
+  case "$runtime" in
+    mlx)
+      if ai_llm_runtime_available "mlx" \
+        && model=$(ai_llm_get_selected_coding_model mlx 2>/dev/null); then
+        printf '%s\n' "mlx/$model"
+        return 0
+      fi
+      ;;
+    ollama)
+      if ai_llm_runtime_available "ollama" \
+        && model=$(ai_llm_get_selected_coding_model ollama 2>/dev/null); then
+        printf '%s\n' "ollama/$model"
+        return 0
+      fi
+      ;;
+  esac
+
+  if ai_llm_runtime_available "mlx" \
+    && model=$(ai_llm_get_selected_coding_model mlx 2>/dev/null); then
+    printf '%s\n' "mlx/$model"
+    return 0
+  fi
+  if ai_llm_runtime_available "ollama" \
+    && model=$(ai_llm_get_selected_coding_model ollama 2>/dev/null); then
+    printf '%s\n' "ollama/$model"
+    return 0
+  fi
+
+  return 1
+}
+
+ai_llm_resolve_opencode_mlx_model() {
+  explicit_model=${1-}
+  if [ -n "$explicit_model" ]; then
+    case "$explicit_model" in
+      mlx/*)
+        printf '%s\n' "${explicit_model#mlx/}"
+        return 0
+        ;;
+      *)
+        return 1
+        ;;
+    esac
+  fi
+
+  configured_model=$(ai_llm_opencode_model 2>/dev/null || printf '')
+  case "$configured_model" in
+    mlx/*)
+      printf '%s\n' "${configured_model#mlx/}"
+      return 0
+      ;;
+  esac
+
+  configured_model=$(
+    ai_llm_opencode_model "$ai_llm_opencode_runtime_config" 2>/dev/null || printf ''
+  )
+  case "$configured_model" in
+    mlx/*)
+      printf '%s\n' "${configured_model#mlx/}"
+      return 0
+      ;;
+  esac
+
+  return 1
+}
+
+ai_llm_resolve_mlx_model_path() {
+  model=$1
+  if [ -d "$model" ]; then
+    printf '%s\n' "$model"
+    return 0
+  fi
+  [ -x "$ai_llm_mlx_python" ] || return 1
+  AI_DEV_MLX_MODEL="$model" "$ai_llm_mlx_python" - <<'PY'
+import os
+from huggingface_hub import snapshot_download
+
+print(snapshot_download(repo_id=os.environ["AI_DEV_MLX_MODEL"], local_files_only=True))
+PY
+}
+
+ai_llm_resolve_mlx_draft_model_path() {
+  main_model=$1
+  draft_mode=${2-}
+  case "$draft_mode" in
+    use-drafts) ;;
+    *) return 1 ;;
+  esac
+
+  draft_model=$(ai_llm_get_selected_draft_model mlx 2>/dev/null || printf '')
+  [ -n "$draft_model" ] || return 1
+  [ "$draft_model" != "$main_model" ] || return 1
+
+  ai_llm_resolve_mlx_model_path "$draft_model"
+}
+
+ai_llm_prepare_mlx_model_compat() {
+  model_path=$1
+  [ -x "$ai_llm_mlx_python" ] || return 1
+  AI_DEV_MLX_MODEL_PATH="$model_path" "$ai_llm_mlx_python" - <<'PY' >/dev/null 2>&1
+import json
+import os
+from pathlib import Path
+
+config_path = Path(os.environ["AI_DEV_MLX_MODEL_PATH"]) / "tokenizer_config.json"
+if not config_path.exists():
+    raise SystemExit(0)
+
+with config_path.open("r", encoding="utf-8") as handle:
+    config = json.load(handle)
+
+extra_special_tokens = config.get("extra_special_tokens")
+if not isinstance(extra_special_tokens, list):
+    raise SystemExit(0)
+
+config.pop("extra_special_tokens", None)
+with config_path.open("w", encoding="utf-8") as handle:
+    json.dump(config, handle, indent=2)
+    handle.write("\n")
+PY
+}
+
+ai_llm_patch_mlx_server_tool_parser() {
+  [ -x "$ai_llm_mlx_python" ] || return 1
+  AI_DEV_MLX_VENV="$ai_llm_mlx_venv" "$ai_llm_mlx_python" - <<'PY' >/dev/null 2>&1
+from pathlib import Path
+import os
+
+marker = "WIZARDRY_QWEN_XML_TOOL_CALL_COMPAT"
+venv = Path(os.environ["AI_DEV_MLX_VENV"])
+paths = sorted(venv.glob("lib/python*/site-packages/mlx_lm/server.py"))
+if not paths:
+    raise SystemExit(1)
+
+server_path = paths[0]
+text = server_path.read_text(encoding="utf-8")
+parser_ready = (
+    "raw_tool_text = tool_text.strip()" in text
+    and 'f"call_{uuid.uuid4().hex}"' in text
+)
+normalizer_ready = "decoded_arguments = json.loads(arguments)" in text
+numeric_xml_ready = "numeric_xml_tool_fields = {" in text
+inline_xml_stream_marker_present = "WIZARDRY_INLINE_QWEN_XML_TOOL_STREAM_COMPAT" in text
+inline_xml_stream_ready = (
+    inline_xml_stream_marker_present
+    and 'if "<function=" in segment:' in text
+    and "if self.stream and not in_tool_call and not in_inline_qwen_xml_tool_call:" in text
+)
+if parser_ready and normalizer_ready and numeric_xml_ready and inline_xml_stream_ready:
+    raise SystemExit(0)
+
+if "import re\n" not in text:
+    text = text.replace("import platform\n", "import platform\nimport re\n", 1)
+
+if not normalizer_ready:
+    old_normalizer = '''    for message in messages:
+        content = message["content"]
+'''
+    new_normalizer = '''    for message in messages:
+        for tool_call in message.get("tool_calls") or []:
+            function = tool_call.get("function")
+            if not isinstance(function, dict):
+                continue
+            arguments = function.get("arguments")
+            if not isinstance(arguments, str):
+                continue
+            try:
+                decoded_arguments = json.loads(arguments)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(decoded_arguments, dict):
+                function["arguments"] = decoded_arguments
+
+        content = message["content"]
+'''
+    if old_normalizer not in text:
+        raise SystemExit(1)
+    text = text.replace(old_normalizer, new_normalizer, 1)
+
+if not numeric_xml_ready and "raw_tool_text = tool_text.strip()" in text:
+    old_xml_parameter_parser = '''                for parameter_match in re.finditer(
+                    r"<parameter=([^>\\n]+)>\\s*(.*?)\\s*</parameter>",
+                    function_match.group(2),
+                    re.DOTALL,
+                ):
+                    function_arguments[parameter_match.group(1).strip()] = (
+                        parameter_match.group(2).strip()
+                    )
+'''
+    new_xml_parameter_parser = '''                numeric_xml_tool_fields = {"limit", "offset"}
+                for parameter_match in re.finditer(
+                    r"<parameter=([^>\\n]+)>\\s*(.*?)\\s*</parameter>",
+                    function_match.group(2),
+                    re.DOTALL,
+                ):
+                    parameter_name = parameter_match.group(1).strip()
+                    parameter_value = parameter_match.group(2).strip()
+                    if parameter_name in numeric_xml_tool_fields and re.fullmatch(
+                        r"-?[0-9]+", parameter_value
+                    ):
+                        parameter_value = int(parameter_value)
+                    function_arguments[parameter_name] = parameter_value
+'''
+    if old_xml_parameter_parser not in text:
+        raise SystemExit(1)
+    text = text.replace(old_xml_parameter_parser, new_xml_parameter_parser, 1)
+    numeric_xml_ready = True
+
+if not parser_ready and "raw_tool_text = tool_text.strip()" in text:
+    old_id = '''                "id": None,
+            }
+
+        # Static response
+'''
+    new_id = '''                "id": f"call_{uuid.uuid4().hex}",
+            }
+
+        # Static response
+'''
+    if old_id not in text:
+        raise SystemExit(1)
+    text = text.replace(old_id, new_id, 1)
+    parser_ready = True
+
+old_parser = '''        def parse_function(tool_text):
+            tool_call = json.loads(tool_text.strip())
+            return {
+                "function": {
+                    "name": tool_call.get("name", None),
+                    "arguments": json.dumps(tool_call.get("arguments", "")),
+                },
+                "type": "function",
+                "id": f"call_{uuid.uuid4().hex}",
+            }
+'''
+
+new_parser = '''        def parse_function(tool_text):
+            # WIZARDRY_QWEN_XML_TOOL_CALL_COMPAT
+            raw_tool_text = tool_text.strip()
+            try:
+                tool_call = json.loads(raw_tool_text)
+                function_name = tool_call.get("name", None)
+                function_arguments = tool_call.get("arguments", "")
+            except json.JSONDecodeError:
+                function_match = re.search(
+                    r"<function=([^>\\n]+)>\\s*(.*?)\\s*</function>",
+                    raw_tool_text,
+                    re.DOTALL,
+                )
+                if function_match is None:
+                    raise
+                function_name = function_match.group(1).strip()
+                function_arguments = {}
+                numeric_xml_tool_fields = {"limit", "offset"}
+                for parameter_match in re.finditer(
+                    r"<parameter=([^>\\n]+)>\\s*(.*?)\\s*</parameter>",
+                    function_match.group(2),
+                    re.DOTALL,
+                ):
+                    parameter_name = parameter_match.group(1).strip()
+                    parameter_value = parameter_match.group(2).strip()
+                    if parameter_name in numeric_xml_tool_fields and re.fullmatch(
+                        r"-?[0-9]+", parameter_value
+                    ):
+                        parameter_value = int(parameter_value)
+                    function_arguments[parameter_name] = parameter_value
+            return {
+                "function": {
+                    "name": function_name,
+                    "arguments": json.dumps(function_arguments),
+                },
+                "type": "function",
+                "id": f"call_{uuid.uuid4().hex}",
+            }
+'''
+
+if not parser_ready and old_parser not in text:
+    raise SystemExit(1)
+if not parser_ready:
+    text = text.replace(old_parser, new_parser, 1)
+
+if not inline_xml_stream_ready and not inline_xml_stream_marker_present:
+    old_stream_state = '''        # Variables to save the tool calls in as they are being generated by
+        # the model.
+        in_tool_call = False
+        tool_calls = []
+        tool_text = ""
+'''
+    new_stream_state = '''        # Variables to save the tool calls in as they are being generated by
+        # the model.
+        in_tool_call = False
+        in_inline_qwen_xml_tool_call = False
+        tool_calls = []
+        tool_text = ""
+'''
+    if old_stream_state not in text:
+        raise SystemExit(1)
+    text = text.replace(old_stream_state, new_stream_state, 1)
+
+    old_stream_parser = '''            # Gather the text in tool calling or text variables
+            if ctx.has_tool_calling and gen.text == ctx.tool_call_start:
+                in_tool_call = True
+            elif in_tool_call:
+                if gen.text == ctx.tool_call_end:
+                    tool_calls.append(tool_text)
+                    tool_text = ""
+                    in_tool_call = False
+                else:
+                    tool_text += gen.text
+            else:
+                text += gen.text
+                segment += gen.text
+'''
+    new_stream_parser = '''            # Gather the text in tool calling or text variables
+            if ctx.has_tool_calling and gen.text == ctx.tool_call_start:
+                in_tool_call = True
+            elif in_tool_call:
+                if gen.text == ctx.tool_call_end:
+                    tool_calls.append(tool_text)
+                    tool_text = ""
+                    in_tool_call = False
+                else:
+                    tool_text += gen.text
+            elif in_inline_qwen_xml_tool_call:
+                # WIZARDRY_INLINE_QWEN_XML_TOOL_STREAM_COMPAT
+                tool_text += gen.text
+                function_end = tool_text.find("</function>")
+                if function_end != -1:
+                    function_end += len("</function>")
+                    tool_calls.append(tool_text[:function_end])
+                    inline_tail = re.sub(
+                        r"^\\s*</tool_call>\\s*", "", tool_text[function_end:]
+                    )
+                    tool_text = ""
+                    in_inline_qwen_xml_tool_call = False
+                    text += inline_tail
+                    segment += inline_tail
+            else:
+                text += gen.text
+                segment += gen.text
+                if "<function=" in segment:
+                    inline_prefix, inline_tool_text = segment.split("<function=", 1)
+                    text = text[: len(text) - len(segment)] + inline_prefix
+                    segment = inline_prefix
+                    tool_text = "<function=" + inline_tool_text
+                    in_inline_qwen_xml_tool_call = True
+                    function_end = tool_text.find("</function>")
+                    if function_end != -1:
+                        function_end += len("</function>")
+                        tool_calls.append(tool_text[:function_end])
+                        inline_tail = re.sub(
+                            r"^\\s*</tool_call>\\s*", "", tool_text[function_end:]
+                        )
+                        tool_text = ""
+                        in_inline_qwen_xml_tool_call = False
+                        text += inline_tail
+                        segment += inline_tail
+'''
+    if old_stream_parser not in text:
+        raise SystemExit(1)
+    text = text.replace(old_stream_parser, new_stream_parser, 1)
+
+if "in_inline_qwen_xml_tool_call" in text:
+    text = text.replace(
+        'if ctx.has_tool_calling and "<function=" in segment:',
+        'if "<function=" in segment:',
+    )
+    text = text.replace(
+        "if self.stream and not in_tool_call:",
+        "if self.stream and not in_tool_call and not in_inline_qwen_xml_tool_call:",
+    )
+
+backup_path = server_path.with_suffix(server_path.suffix + ".wizardry-pre-tool-compat")
+if not backup_path.exists():
+    backup_path.write_text(text, encoding="utf-8")
+server_path.write_text(text, encoding="utf-8")
+PY
+}
+
+ai_llm_wait_for_mlx_server_timeout() {
+  timeout=${1-}
+  [ -n "$timeout" ] || timeout=$ai_llm_mlx_start_timeout
+  attempts=0
+  while [ "$attempts" -lt "$timeout" ]; do
+    if command -v curl >/dev/null 2>&1 \
+      && curl -fsS "http://127.0.0.1:$ai_llm_mlx_port/v1/models" >/dev/null 2>&1; then
+      return 0
+    fi
+    attempts=$((attempts + 1))
+    sleep 1
+  done
+  return 1
+}
+
+ai_llm_wait_for_mlx_server() {
+  ai_llm_wait_for_mlx_server_timeout "$ai_llm_mlx_start_timeout"
+}
+
+ai_llm_mlx_server_serves_model() {
+  model=$1
+  ai_llm_wait_for_mlx_server_timeout 3 || return 1
+  ai_llm_probe_mlx_model "$model"
+}
+
+ai_llm_json_string() {
+  printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'
+}
+
+ai_llm_probe_mlx_model() {
+  model=$1
+  command -v curl >/dev/null 2>&1 || return 1
+  probe_timeout=${AI_DEV_MLX_PROBE_TIMEOUT:-180}
+  escaped_model=$(ai_llm_json_string "$model")
+  probe_body='{"model":"'"$escaped_model"'",'
+  probe_body=$probe_body'"messages":[{"role":"user","content":"Reply with OK."}],'
+  probe_body=$probe_body'"max_tokens":2,"temperature":0,"stream":false}'
+  curl -fsS --max-time "$probe_timeout" \
+    -H 'Content-Type: application/json' \
+    -X POST "http://127.0.0.1:$ai_llm_mlx_port/v1/chat/completions" \
+    -d "$probe_body" \
+    >/dev/null 2>&1
+}
+
+ai_llm_probe_mlx_tool_model() {
+  model=$1
+  command -v curl >/dev/null 2>&1 || return 1
+  probe_timeout=${AI_DEV_MLX_TOOL_PROBE_TIMEOUT:-240}
+  escaped_model=$(ai_llm_json_string "$model")
+  probe_response=$(mktemp "${TMPDIR:-/tmp}/ai-dev-mlx-tool-probe.XXXXXX")
+  probe_compact=$(mktemp "${TMPDIR:-/tmp}/ai-dev-mlx-tool-probe-compact.XXXXXX")
+  probe_body='{"model":"'"$escaped_model"'",'
+  probe_body=$probe_body'"messages":[{"role":"user",'
+  probe_body=$probe_body'"content":"Call read_file for CHECKLIST.md."}],'
+  probe_body=$probe_body'"tools":[{"type":"function","function":{"name":"read_file",'
+  probe_body=$probe_body'"description":"Read a file","parameters":{"type":"object",'
+  probe_body=$probe_body'"properties":{"path":{"type":"string"}},"required":["path"]}}}],'
+  probe_body=$probe_body'"tool_choice":"auto","max_tokens":128,"temperature":0,"stream":false}'
+
+  if ! curl -fsS --max-time "$probe_timeout" \
+    -H 'Content-Type: application/json' \
+    -X POST "http://127.0.0.1:$ai_llm_mlx_port/v1/chat/completions" \
+    -d "$probe_body" \
+    >"$probe_response" 2>/dev/null; then
+    rm -f "$probe_response" "$probe_compact"
+    return 1
+  fi
+
+  tr -d '[:space:]' <"$probe_response" >"$probe_compact"
+  if grep -F '"tool_calls":[' "$probe_compact" >/dev/null 2>&1 \
+    && ! grep -F '"tool_calls":[]' "$probe_compact" >/dev/null 2>&1; then
+    rm -f "$probe_response" "$probe_compact"
+    return 0
+  fi
+
+  rm -f "$probe_response" "$probe_compact"
+  return 1
+}
+
+ai_llm_stop_mlx_server() {
+  if ai_llm_is_macos && command -v launchctl >/dev/null 2>&1; then
+    uid=$(id -u 2>/dev/null || printf '')
+    if [ -n "$uid" ]; then
+      launchctl bootout "gui/$uid/$ai_llm_mlx_launchd_label" >/dev/null 2>&1 || :
+    fi
+  fi
+
+  if [ -f "$ai_llm_mlx_pid_file" ]; then
+    old_pid=$(tr -d '\r' <"$ai_llm_mlx_pid_file" 2>/dev/null || printf '')
+    if [ -n "$old_pid" ] && kill -0 "$old_pid" 2>/dev/null; then
+      kill "$old_pid" >/dev/null 2>&1 || :
+    fi
+    rm -f "$ai_llm_mlx_pid_file"
+  fi
+
+  stale_pids=$(
+    ps -ax -o pid= -o command= 2>/dev/null \
+      | awk -v port="$ai_llm_mlx_port" '
+        /mlx_lm[.]server/ && index($0, "--port " port) { print $1 }
+      ' || printf ''
+  )
+  for stale_pid in $stale_pids; do
+    case "$stale_pid" in
+      *[!0-9]*|'') continue ;;
+    esac
+    kill "$stale_pid" >/dev/null 2>&1 || :
+  done
+}
+
+ai_llm_start_mlx_server_launchd() {
+  resolved_model=$1
+  resolved_draft_model=${2-}
+  [ -n "$resolved_model" ] || return 1
+  uid=$(id -u 2>/dev/null || printf '')
+  [ -n "$uid" ] || return 1
+
+  mkdir -p "$ai_llm_mlx_launch_agent_dir"
+  mkdir -p "$ai_llm_root_dir"
+
+  draft_plist_args=''
+  if [ -n "$resolved_draft_model" ]; then
+    draft_plist_args=$(cat <<EOF
+    <string>--draft-model</string>
+    <string>$resolved_draft_model</string>
+    <string>--num-draft-tokens</string>
+    <string>$ai_llm_mlx_draft_tokens</string>
+EOF
+)
+  fi
+
+  plist_doctype='<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"'
+  plist_doctype=$plist_doctype' "http://www.apple.com/DTDs/PropertyList-1.0.dtd">'
+  cat >"$ai_llm_mlx_launch_agent_plist" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+$plist_doctype
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>$ai_llm_mlx_launchd_label</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>$ai_llm_mlx_server_bin</string>
+    <string>--model</string>
+    <string>$resolved_model</string>
+    <string>--host</string>
+    <string>127.0.0.1</string>
+    <string>--port</string>
+    <string>$ai_llm_mlx_port</string>
+$draft_plist_args
+  </array>
+  <key>WorkingDirectory</key>
+  <string>$HOME</string>
+  <key>ProcessType</key>
+  <string>Interactive</string>
+  <key>StandardOutPath</key>
+  <string>$ai_llm_mlx_log</string>
+  <key>StandardErrorPath</key>
+  <string>$ai_llm_mlx_log</string>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+</dict>
+</plist>
+EOF
+
+  if command -v plutil >/dev/null 2>&1; then
+    plutil -lint "$ai_llm_mlx_launch_agent_plist" >/dev/null 2>&1 || return 1
+  fi
+
+  launchctl bootout "gui/$uid/$ai_llm_mlx_launchd_label" >/dev/null 2>&1 || :
+  launchctl bootstrap "gui/$uid" "$ai_llm_mlx_launch_agent_plist" >/dev/null 2>&1 || return 1
+  launchctl enable "gui/$uid/$ai_llm_mlx_launchd_label" >/dev/null 2>&1 || :
+  launchctl kickstart -k "gui/$uid/$ai_llm_mlx_launchd_label" >/dev/null 2>&1 || :
+}
+
+ai_llm_spawn_mlx_server_ephemeral() {
+  model=$1
+  pid_file=$2
+  draft_mode=${3-}
+  [ -x "$ai_llm_mlx_python" ] || return 1
+  [ -n "$pid_file" ] || return 1
+  mkdir -p "$ai_llm_root_dir"
+
+  resolved_model=$(ai_llm_resolve_mlx_model_path "$model") || return 1
+  resolved_draft_model=$(
+    ai_llm_resolve_mlx_draft_model_path "$model" "$draft_mode" 2>/dev/null || printf ''
+  )
+  ai_llm_prepare_mlx_model_compat "$resolved_model" || return 1
+  ai_llm_patch_mlx_server_tool_parser || return 1
+
+  mlx_server_cmd=$ai_llm_mlx_server_bin
+  if [ ! -x "$mlx_server_cmd" ]; then
+    mlx_server_cmd=$ai_llm_mlx_python
+  fi
+
+  : >"$ai_llm_mlx_log"
+  if [ "$mlx_server_cmd" = "$ai_llm_mlx_python" ]; then
+    if [ -n "$resolved_draft_model" ]; then
+      "$mlx_server_cmd" -m mlx_lm.server \
+        --model "$resolved_model" \
+        --host 127.0.0.1 \
+        --port "$ai_llm_mlx_port" \
+        --draft-model "$resolved_draft_model" \
+        --num-draft-tokens "$ai_llm_mlx_draft_tokens" \
+        >"$ai_llm_mlx_log" 2>&1 &
+    else
+      "$mlx_server_cmd" -m mlx_lm.server \
+        --model "$resolved_model" \
+        --host 127.0.0.1 \
+        --port "$ai_llm_mlx_port" \
+        >"$ai_llm_mlx_log" 2>&1 &
+    fi
+  else
+    if [ -n "$resolved_draft_model" ]; then
+      "$mlx_server_cmd" \
+        --model "$resolved_model" \
+        --host 127.0.0.1 \
+        --port "$ai_llm_mlx_port" \
+        --draft-model "$resolved_draft_model" \
+        --num-draft-tokens "$ai_llm_mlx_draft_tokens" \
+        >"$ai_llm_mlx_log" 2>&1 &
+    else
+      "$mlx_server_cmd" \
+        --model "$resolved_model" \
+        --host 127.0.0.1 \
+        --port "$ai_llm_mlx_port" \
+        >"$ai_llm_mlx_log" 2>&1 &
+    fi
+  fi
+  printf '%s\n' "$!" >"$pid_file"
+}
+
+ai_llm_start_mlx_server() {
+  model=$1
+  draft_mode=${2-}
+  [ -x "$ai_llm_mlx_python" ] || return 1
+  mkdir -p "$ai_llm_root_dir"
+
+  case "$draft_mode" in
+    ''|use-drafts) ;;
+    *) return 1 ;;
+  esac
+
+  if [ "$draft_mode" = use-drafts ]; then
+    ai_llm_stop_mlx_server
+  else
+    if ai_llm_mlx_server_serves_model "$model"; then
+      return 0
+    fi
+
+    if [ -f "$ai_llm_mlx_pid_file" ]; then
+      old_pid=$(tr -d '\r' <"$ai_llm_mlx_pid_file" 2>/dev/null || printf '')
+      if [ -n "$old_pid" ] && kill -0 "$old_pid" 2>/dev/null; then
+        if ai_llm_mlx_server_serves_model "$model"; then
+          return 0
+        fi
+      fi
+    fi
+    ai_llm_stop_mlx_server
+  fi
+
+  resolved_model=$(ai_llm_resolve_mlx_model_path "$model") || return 1
+  resolved_draft_model=$(
+    ai_llm_resolve_mlx_draft_model_path "$model" "$draft_mode" 2>/dev/null || printf ''
+  )
+  ai_llm_prepare_mlx_model_compat "$resolved_model" || return 1
+  ai_llm_patch_mlx_server_tool_parser || return 1
+
+  mlx_server_cmd=$ai_llm_mlx_server_bin
+  if [ ! -x "$mlx_server_cmd" ]; then
+    mlx_server_cmd=$ai_llm_mlx_python
+  fi
+
+  if ai_llm_is_macos \
+    && command -v launchctl >/dev/null 2>&1 \
+    && [ "$mlx_server_cmd" != "$ai_llm_mlx_python" ]; then
+    if ai_llm_start_mlx_server_launchd "$resolved_model" "$resolved_draft_model"; then
+      if ai_llm_wait_for_mlx_server_timeout 15 \
+        && ai_llm_mlx_server_serves_model "$model"; then
+        return 0
+      fi
+      uid=$(id -u 2>/dev/null || printf '')
+      if [ -n "$uid" ]; then
+        launchctl bootout "gui/$uid/$ai_llm_mlx_launchd_label" >/dev/null 2>&1 || :
+      fi
+    fi
+  else
+    :
+  fi
+
+  if [ "$mlx_server_cmd" = "$ai_llm_mlx_python" ]; then
+    if [ -n "$resolved_draft_model" ]; then
+      nohup "$mlx_server_cmd" -m mlx_lm.server \
+        --model "$resolved_model" \
+        --host 127.0.0.1 \
+        --port "$ai_llm_mlx_port" \
+        --draft-model "$resolved_draft_model" \
+        --num-draft-tokens "$ai_llm_mlx_draft_tokens" \
+        >"$ai_llm_mlx_log" 2>&1 &
+    else
+      nohup "$mlx_server_cmd" -m mlx_lm.server \
+        --model "$resolved_model" \
+        --host 127.0.0.1 \
+        --port "$ai_llm_mlx_port" \
+        >"$ai_llm_mlx_log" 2>&1 &
+    fi
+  else
+    if [ -n "$resolved_draft_model" ]; then
+      nohup "$mlx_server_cmd" \
+        --model "$resolved_model" \
+        --host 127.0.0.1 \
+        --port "$ai_llm_mlx_port" \
+        --draft-model "$resolved_draft_model" \
+        --num-draft-tokens "$ai_llm_mlx_draft_tokens" \
+        >"$ai_llm_mlx_log" 2>&1 &
+    else
+      nohup "$mlx_server_cmd" \
+        --model "$resolved_model" \
+        --host 127.0.0.1 \
+        --port "$ai_llm_mlx_port" \
+        >"$ai_llm_mlx_log" 2>&1 &
+    fi
+  fi
+  printf '%s\n' "$!" >"$ai_llm_mlx_pid_file"
+
+  ai_llm_wait_for_mlx_server || return 1
+  ai_llm_mlx_server_serves_model "$model"
+}
+
+ai_llm_prepare_opencode_runtime() {
+  explicit_model=${1-}
+  mlx_model=$(ai_llm_resolve_opencode_mlx_model "$explicit_model" 2>/dev/null || printf '')
+  [ -n "$mlx_model" ] || return 0
+  ai_llm_start_mlx_server "$mlx_model"
+}
+
+ai_llm_sync_opencode_runtime() {
+  runtime=$(ai_llm_resolve_runtime)
+  model=$(ai_llm_get_selected_model "$runtime")
+  ai_llm_write_opencode_runtime_config "$runtime" "$model" || return 1
+  if [ "$runtime" = "mlx" ] && ai_llm_component_installed "mlx"; then
+    if [ "${AI_DEV_SKIP_MLX_SERVER_START:-0}" != "1" ] && ai_llm_mlx_model_registered "$model"; then
+      ai_llm_start_mlx_server "$model" || return 1
+    fi
+  fi
+  return 0
+}

@@ -400,6 +400,35 @@ test_environment_vars_check() {
   fi
 }
 
+test_environment_vars_derive_user_from_id() {
+  tmpdir=$(make_tempdir)
+  install_dir="$tmpdir/wizardry"
+  stub_dir="$tmpdir/stubs"
+
+  copy_wizardry "$install_dir" || return 1
+  mkdir -p "$stub_dir"
+
+  cat >"$stub_dir/id" <<'SH'
+#!/bin/sh
+case "${1-}" in
+  -un)
+    printf '%s\n' "termux-user"
+    ;;
+  *)
+    command id "$@"
+    ;;
+esac
+SH
+  chmod +x "$stub_dir/id"
+
+  run_cmd env PATH="$stub_dir:$PATH" USER= LOGNAME= WIZARDRY_DIR="$install_dir" \
+    "$ROOT_DIR/spells/wards/banish" 0
+
+  assert_success || return 1
+  assert_output_contains "Environment: HOME set; USER derived from id" || return 1
+  assert_output_contains "USER set to termux-user" || return 1
+}
+
 test_umask_check() {
   tmpdir=$(make_tempdir)
   install_dir="$tmpdir/wizardry"
@@ -551,9 +580,178 @@ test_terminal_type_self_heals_cleanly() {
   esac
 }
 
+test_environment_facts_report_termux() {
+  tmpdir=$(make_tempdir)
+  install_dir="$tmpdir/wizardry"
+  stub_dir="$tmpdir/stubs"
+
+  copy_wizardry "$install_dir" || return 1
+  mkdir -p "$stub_dir"
+
+  cat >"$stub_dir/uname" <<'SH'
+#!/bin/sh
+case "${1-}" in
+  -s|'')
+    printf '%s\n' "Linux"
+    ;;
+  -m)
+    printf '%s\n' "aarch64"
+    ;;
+  *)
+    printf '%s\n' "Linux"
+    ;;
+esac
+SH
+  chmod +x "$stub_dir/uname"
+
+  run_cmd env PATH="$stub_dir:/data/data/com.termux/files/usr/bin:$PATH" \
+    WIZARDRY_DIR="$install_dir" \
+    "$ROOT_DIR/spells/wards/banish" 0 --no-tests
+
+  assert_success || return 1
+  assert_output_contains "Platform: linux/termux/arm64" || return 1
+}
+
+test_termux_testing_level_skips_bwrap_heal() {
+  tmpdir=$(make_tempdir)
+  install_dir="$tmpdir/wizardry"
+  stub_dir="$tmpdir/stubs"
+  install_log="$tmpdir/install-bwrap.log"
+
+  copy_wizardry "$install_dir" || return 1
+  mkdir -p "$install_dir/.tests" "$stub_dir"
+
+  cat >"$stub_dir/uname" <<'SH'
+#!/bin/sh
+case "${1-}" in
+  -s|'')
+    printf '%s\n' "Linux"
+    ;;
+  -m)
+    printf '%s\n' "aarch64"
+    ;;
+  *)
+    printf '%s\n' "Linux"
+    ;;
+esac
+SH
+  chmod +x "$stub_dir/uname"
+
+  cat >"$stub_dir/detect-distro" <<'SH'
+#!/bin/sh
+printf '%s\n' "termux"
+SH
+  chmod +x "$stub_dir/detect-distro"
+
+  cat >"$stub_dir/pocket-dimension" <<'SH'
+#!/bin/sh
+case "$*" in
+  "--strict --check")
+    exit 1
+    ;;
+  *)
+    exit 0
+    ;;
+esac
+SH
+  chmod +x "$stub_dir/pocket-dimension"
+
+  cat >"$stub_dir/install-bwrap" <<'SH'
+#!/bin/sh
+printf 'install-bwrap called\n' >>"${INSTALL_BWRAP_LOG:?}"
+exit 1
+SH
+  chmod +x "$stub_dir/install-bwrap"
+
+  BWRAP_AVAILABLE=0 MACOS_SANDBOX_AVAILABLE=0 \
+    run_cmd env BWRAP_AVAILABLE=0 MACOS_SANDBOX_AVAILABLE=0 \
+    CI= GITHUB_ACTIONS= RUNNER_OS= WIZARDRY_OS_LABEL= \
+    PATH="$stub_dir:/data/data/com.termux/files/usr/bin:$PATH" \
+    HOME="$tmpdir" SPELLBOOK_DIR="$tmpdir/.spellbook" \
+    AWAIT_KEYPRESS_DEVICE=/dev/null INSTALL_BWRAP_LOG="$install_log" \
+    WIZARDRY_DIR="$install_dir" \
+    "$ROOT_DIR/spells/wards/banish" 12 --only --no-tests
+
+  assert_success || return 1
+  assert_output_contains "pocket-dimension available with unsandboxed Termux fallback" || return 1
+  assert_output_contains "bwrap skipped on Termux" || return 1
+  case "$(cat "$install_log" 2>/dev/null || true)" in
+    *install-bwrap*)
+      TEST_FAILURE_REASON="did not expect banish to invoke install-bwrap on Termux"
+      return 1
+      ;;
+    *)
+      return 0
+      ;;
+  esac
+}
+
+test_termux_testing_level_tolerates_missing_xattr_filesystem_support() {
+  tmpdir=$(make_tempdir)
+  install_dir="$tmpdir/wizardry"
+  stub_dir="$tmpdir/stubs"
+
+  copy_wizardry "$install_dir" || return 1
+  mkdir -p "$install_dir/.tests" "$stub_dir"
+
+  cat >"$stub_dir/uname" <<'SH'
+#!/bin/sh
+case "${1-}" in
+  -s|'')
+    printf '%s\n' "Linux"
+    ;;
+  -m)
+    printf '%s\n' "aarch64"
+    ;;
+  *)
+    printf '%s\n' "Linux"
+    ;;
+esac
+SH
+  chmod +x "$stub_dir/uname"
+
+  cat >"$stub_dir/detect-distro" <<'SH'
+#!/bin/sh
+printf '%s\n' "termux"
+SH
+  chmod +x "$stub_dir/detect-distro"
+
+  cat >"$stub_dir/socat" <<'SH'
+#!/bin/sh
+exit 0
+SH
+  chmod +x "$stub_dir/socat"
+
+  cat >"$stub_dir/getfattr" <<'SH'
+#!/bin/sh
+exit 1
+SH
+  cat >"$stub_dir/setfattr" <<'SH'
+#!/bin/sh
+exit 1
+SH
+  cat >"$stub_dir/xattr" <<'SH'
+#!/bin/sh
+exit 1
+SH
+  chmod +x "$stub_dir/getfattr" "$stub_dir/setfattr" "$stub_dir/xattr"
+
+  BWRAP_AVAILABLE=0 MACOS_SANDBOX_AVAILABLE=0 \
+    run_cmd env BWRAP_AVAILABLE=0 MACOS_SANDBOX_AVAILABLE=0 \
+    CI= GITHUB_ACTIONS= RUNNER_OS= WIZARDRY_OS_LABEL= \
+    PATH="$stub_dir:/data/data/com.termux/files/usr/bin:$PATH" \
+    HOME="$tmpdir" SPELLBOOK_DIR="$tmpdir/.spellbook" \
+    AWAIT_KEYPRESS_DEVICE=/dev/null WIZARDRY_DIR="$install_dir" \
+    "$ROOT_DIR/spells/wards/banish" 8 --only --no-tests
+
+  assert_success || return 1
+  assert_output_contains "Filesystem lacks xattrs on Termux (reduced feature set)" || return 1
+}
+
 run_test_case "banish checks shell type" test_shell_type_check
 run_test_case "banish checks IFS" test_ifs_check
 run_test_case "banish checks environment variables" test_environment_vars_check
+run_test_case "banish derives USER from id when login vars are absent" test_environment_vars_derive_user_from_id
 run_test_case "banish checks umask" test_umask_check
 run_test_case "banish checks filesystem write" test_filesystem_write_check
 run_test_case "banish checks symbolic links" test_symbolic_links_check
@@ -564,6 +762,12 @@ run_test_case "banish checks redirections" test_redirections_check
 run_test_case "banish checks signal handling" test_signal_handling_check
 run_test_case "banish checks command substitution" test_command_substitution_check
 run_test_case "banish checks parameter expansion" test_parameter_expansion_check
+run_test_case "banish environment facts report Termux on Android-style hosts" \
+  test_environment_facts_report_termux
+run_test_case "banish testing level skips bwrap heal on Termux" \
+  test_termux_testing_level_skips_bwrap_heal
+run_test_case "banish testing level tolerates missing xattrs on Termux" \
+  test_termux_testing_level_tolerates_missing_xattr_filesystem_support
 run_test_case "banish repairs minimal terminal types without a failure banner" \
   test_terminal_type_self_heals_cleanly
 

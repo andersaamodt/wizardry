@@ -1,0 +1,119 @@
+#!/bin/sh
+
+# Discover a phone's current wireless-debugging endpoint and connect to it.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: connect-mobile-wifi-adb [--serial DEVICE_SERIAL] [--ip IPV4]
+
+Uses adb mDNS discovery to find the current wireless-debugging endpoint and
+connect to it through firewalled-adb. With one visible device, no filter is
+required. Use --serial or --ip when multiple wireless-debugging devices are
+advertising at once.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+. "$script_dir/mobile-debugging-common"
+set -eu
+
+filter_serial=
+filter_ip=
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --serial)
+      [ "${2-}" ] || die "connect-mobile-wifi-adb: --serial requires a value"
+      filter_serial=$2
+      shift 2
+      ;;
+    --ip)
+      [ "${2-}" ] || die "connect-mobile-wifi-adb: --ip requires a value"
+      filter_ip=$2
+      shift 2
+      ;;
+    *)
+      die 2 "connect-mobile-wifi-adb: unknown option '$1'"
+      ;;
+  esac
+done
+
+case "$filter_serial$filter_ip" in
+  *'
+'*)
+    die "connect-mobile-wifi-adb: filter values must not contain line breaks"
+    ;;
+esac
+
+adb_exec=$(mobile_debugging_adb_exec || true)
+[ -n "$adb_exec" ] || die "connect-mobile-wifi-adb: adb not found; install Android platform tools from mobile-debugging-menu"
+
+firewalled_adb=$(command -v firewalled-adb || true)
+[ -n "$firewalled_adb" ] || firewalled_adb="$script_dir/../../wards/firewalled-adb"
+[ -x "$firewalled_adb" ] || die "connect-mobile-wifi-adb: firewalled-adb not found"
+
+discover_file=$(temp-file)
+on-exit cleanup-file "$discover_file"
+"$adb_exec" mdns services >"$discover_file"
+
+matched_count=0
+matched_endpoint=
+while IFS= read -r discover_line || [ -n "$discover_line" ]; do
+  discover_instance=$(printf '%s\n' "$discover_line" | awk '{print $1}')
+  discover_service=$(printf '%s\n' "$discover_line" | awk '{print $2}')
+  discover_endpoint=$(printf '%s\n' "$discover_line" | awk '{print $3}')
+
+  [ -n "$discover_instance" ] || continue
+  [ -n "$discover_service" ] || continue
+  [ -n "$discover_endpoint" ] || continue
+
+  case "$discover_service" in
+    _adb-tls-connect._tcp) ;;
+    *) continue ;;
+  esac
+
+  case "$discover_endpoint" in
+    [0-9]*.[0-9]*.[0-9]*.[0-9]*:[0-9]*)
+      discover_ip=${discover_endpoint%:*}
+      ;;
+    *)
+      continue
+      ;;
+  esac
+
+  if [ -n "$filter_serial" ]; then
+    case "$discover_instance" in
+      *"$filter_serial"*) ;;
+      *) continue ;;
+    esac
+  fi
+
+  if [ -n "$filter_ip" ] && [ "$discover_ip" != "$filter_ip" ]; then
+    continue
+  fi
+
+  matched_count=$((matched_count + 1))
+  matched_endpoint=$discover_endpoint
+done < "$discover_file"
+
+case "$matched_count" in
+  0)
+    die "connect-mobile-wifi-adb: no matching wireless-debugging endpoint discovered"
+    ;;
+  1)
+    ;;
+  *)
+    die "connect-mobile-wifi-adb: multiple matching wireless-debugging endpoints discovered; use --serial or --ip"
+    ;;
+esac
+
+"$firewalled_adb" --allow "$matched_endpoint" -- connect "$matched_endpoint" >/dev/null
+printf 'Connected to %s\n' "$matched_endpoint"

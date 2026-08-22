@@ -1,0 +1,108 @@
+#!/bin/sh
+
+# Open a localhost TCP forward from adb to a phone adb onion service.
+# The relay process is caged so it can only reach local Tor SOCKS.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: tor-adb-forward --onion HOST.onion:PORT [--local-port PORT] [--socks 127.0.0.1:9050]
+
+Starts a foreground localhost TCP forward for adb. The forward listens on
+127.0.0.1:LOCAL_PORT and reaches HOST.onion:PORT through local Tor SOCKS.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+if ! command -v socat >/dev/null 2>&1; then
+  add_pkgin_to_path_script=$(command -v add-pkgin-to-path 2>/dev/null || printf '')
+  if [ -n "$add_pkgin_to_path_script" ] && [ -f "$add_pkgin_to_path_script" ]; then
+    # Source the helper so pkgin-managed bin/sbin paths persist in this shell.
+    # shellcheck source=/dev/null
+    . "$add_pkgin_to_path_script"
+  fi
+fi
+
+onion_endpoint=
+local_port=15555
+socks_endpoint=127.0.0.1:9050
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --onion)
+      [ "${2-}" ] || die "tor-adb-forward: --onion requires a value"
+      onion_endpoint=$2
+      shift 2
+      ;;
+    --local-port)
+      [ "${2-}" ] || die "tor-adb-forward: --local-port requires a value"
+      local_port=$2
+      shift 2
+      ;;
+    --socks)
+      [ "${2-}" ] || die "tor-adb-forward: --socks requires a value"
+      socks_endpoint=$2
+      shift 2
+      ;;
+    *)
+      die 2 "tor-adb-forward: unknown option '$1'"
+      ;;
+  esac
+done
+
+[ -n "$onion_endpoint" ] || die 2 "tor-adb-forward: --onion is required"
+
+case "$onion_endpoint$socks_endpoint$local_port" in
+  *'
+'*)
+    die "tor-adb-forward: endpoint values must not contain line breaks"
+    ;;
+esac
+
+case "$onion_endpoint" in
+  *.onion:[0-9]*)
+    onion_host=${onion_endpoint%:*}
+    onion_port=${onion_endpoint##*:}
+    ;;
+  *)
+    die 2 "tor-adb-forward: --onion must be HOST.onion:PORT"
+    ;;
+esac
+
+case "$onion_port" in
+  ''|*[!0-9]*)
+    die 2 "tor-adb-forward: onion port must be numeric"
+    ;;
+esac
+
+case "$local_port" in
+  ''|*[!0-9]*)
+    die 2 "tor-adb-forward: local port must be numeric"
+    ;;
+esac
+
+case "$socks_endpoint" in
+  127.0.0.1:[0-9]*|localhost:[0-9]*)
+    socks_host=${socks_endpoint%:*}
+    socks_port=${socks_endpoint##*:}
+    ;;
+  *)
+    die 2 "tor-adb-forward: --socks must be localhost:PORT or 127.0.0.1:PORT"
+    ;;
+esac
+
+case "$socks_port" in
+  ''|*[!0-9]*)
+    die 2 "tor-adb-forward: SOCKS port must be numeric"
+    ;;
+esac
+
+require socat "tor-adb-forward: socat is required for Tor TCP forwarding" || exit 1
+require firewall "tor-adb-forward: firewall is required to cage the Tor forward" || exit 1
+
+exec firewall --allow-localhost --allow "$socks_endpoint" -- \
+  socat "TCP-LISTEN:$local_port,bind=127.0.0.1,reuseaddr,fork" "SOCKS4A:$socks_host:$onion_host:$onion_port,socksport=$socks_port"

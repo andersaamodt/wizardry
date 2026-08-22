@@ -97,6 +97,8 @@
 - Disambiguation candidate storage must not parse filesystem paths with colon delimiters because valid spell paths can contain colons.
 - Generate-glosses must scan uncastable files with quoted read loops, not plain `xargs`, so wizardry roots with spaces still produce aliases.
 - Imported path values passed through `sh -c` must be supplied as argv instead of interpolated into the shell program string.
+- macOS launch-assessed app bundles should avoid wrapper fanout, arbitrary signing identity discovery, and repeated executable churn; fix the native packaging boundary instead of adding app-local shell preflights.
+- macOS tests and run/build flows that create executable stubs, app bundles, or compiled artifacts should reuse stable external scratch roots instead of randomized temp executable paths; repeated new executable paths can overwhelm `syspolicyd`.
 
 
 - When a file is sourced (`. filename`), using `exit` exits the parent shell; use `return` instead (discovered via doppelganger failing to create directories) (3)
@@ -124,6 +126,9 @@
 - Self-execute pattern case matching on $0 depends on path format; verify patterns match both relative and resolved absolute paths on all platforms (PR #611).
 - Stub system requires strict PATH ordering with stub directory first to successfully override real commands with mocked versions (PR #612).
 - Bubblewrap (bwrap) sandboxing compatibility varies by platform; graceful fallback ensures tests run successfully without sandboxing where unavailable (PR #613).
+- `test-magic` should probe `pocket-dimension --strict --check` and warn before falling back unsandboxed, because Android/Termux and other reduced Linux hosts may have the spell without a usable `bwrap` backend.
+- Reduced-capability hosts need explicit whole-file test contracts such as `# REQUIRES_XATTR: ...` so `test-magic` can mark metadata-dependent suites as skipped instead of pretending full xattr support.
+- Shared platform reporting should reuse `detect-distro` instead of open-coding a smaller `/etc/os-release` subset, or Android/Termux support will drift and core diagnostics like `banish` will misreport the host.
 - Boolean logic with && || chains can cause unexpected early returns due to short-circuit evaluation; use explicit if-then-fi for clarity (PR #614).
 - Testing system regressions are prevented by making test infrastructure itself testable with dedicated validation test files (PR #615).
 - Pipe output buffering in pipelines requires explicit stdbuf -oL on all stages, not just the first command, to ensure line-by-line output (PR #616).
@@ -135,9 +140,11 @@
 - Toggleable features in configuration files allow users to selectively disable functionality for isolating and debugging complex issues (PR #626).
 - HTTP responses use CRLF (`\r\n`) line endings not LF (`\n`); strip carriage returns with `tr -d '\r'` before parsing headers or sed pattern `/^$/` won't match blank lines.
 - CGI subprocess environment isolation: fcgiwrap spawns scripts without inheriting shell PATH; explicitly pass wizardry PATH via `env PATH="$FCGI_PATH" fcgiwrap` at server startup.
+- Cross-repo backend wrappers must be verified through the installed command path under restricted PATH; a source-tree backend alone does not prove the live dependency boundary works.
 - Async promise completion must be awaited before dependent operations; SSE setup reading log file before avatar creation completes causes race conditions and missed events.
 - Filesystem directory mtime has 1-second granularity AND count-based change detection misses simultaneous join/leave; use sorted member name signature for robust change detection.
 - CGI script stdout pollution: commands like `enchant` that output success messages must redirect stdout (`>/dev/null 2>&1`) to prevent corrupting JSON responses.
+- In Wizardry projects, Python and Rust are opt-in exceptions, not ambient permission; AI agents must not introduce, preserve, or route runtime behavior through them without explicit user authorization.
 - Button visibility logic must use consistent thresholds across all update paths; inconsistent conditions (count===0 vs count<=1) cause UI desync between clients.
 - Installation cancellation or interruption should trigger cleanup of downloaded wizardry directory to avoid leaving partial installations (PR #627).
 - Debug logging with timestamps, file paths, and success/failure counts helps diagnose complex shell initialization and sourcing issues (PR #629).
@@ -154,6 +161,14 @@
 - Debug output showing iteration counts can quickly reveal word-splitting issues: if `all_markers="1 2 3"` iterates once instead of three times, word splitting is disabled (PR #909).
 - When sourcing scripts into zsh shells, unquoted variables in for loops don't split; command substitution output always splits regardless of shell settings (PR #909).
 - Hardcoded menu positions don't account for dynamic entries (like conditionally-shown submenus); use a position counter that increments for each menu item to keep selection stable when menu items appear/disappear.
+- Mobile adb over Tor needs both sides modeled explicitly: the host can firewall a localhost SOCKS/onion forward, but the phone must intentionally publish its wireless adb port as an onion service.
+- Maestro Android automation needs a persistent private adb server started with `adb -L tcp:localhost:PORT server nodaemon`, and clients must target it with `-P PORT`; `ADB_SERVER_PORT` and `ANDROID_ADB_SERVER_PORT` alone can silently fall back to the host server, including Tor-forwarded sessions.
+- Android/Termux automation is much more reliable when the host pushes scripts and waits for explicit result files through Termux's official `RUN_COMMAND` intent instead of typing shell punctuation into a terminal UI.
+- Termux automation must treat `RUN_COMMAND` as optional at runtime; even with Termux installed, devices can deny the intent or never produce artifacts, so the host needs a typed-launch fallback that preserves the same result-file contract.
+- Phone-side Tor adb publishing must resolve `service.adb.tls.port` on the device and forward `127.0.0.1:$PORT`; freezing a Wi-Fi-discovered adb endpoint into Termux Tor config makes the onion route go stale across network and adbd restarts.
+- Fresh adb-over-Tor connections can report `connected` before `get-state` becomes `device`, so remote wrappers need a short post-connect readiness poll instead of assuming the first command can run immediately.
+- Fresh local-source installs must seed the copied Wizardry tree onto `PATH` before they call copied helper spells, or restricted-path environments can lose sourced helpers such as `env-clear` during bootstrap.
+- Termux PATH bootstraps must keep `/data/data/com.termux/files/usr/bin` ahead of generic `/bin` baselines, or Android wrapper commands like `/bin/df` can shadow the real Termux toolchain and make environment probes lie.
 - Install/uninstall scripts must verify the command is actually installed/removed after calling package manager; package managers can exit 0 even when skipping already-installed packages or refusing to remove system dependencies.
 - macOS package management on "unaugmented" systems requires Homebrew support; check for `brew` before falling back to pkgin when detecting Darwin/macOS platform.
 - htmx's morph extension (idiomorph) prevents flicker by intelligently diffing DOM trees and only updating changed nodes; use `hx-swap="morph" hx-ext="morph"` for smooth updates like poll results.
@@ -163,6 +178,8 @@
 - Auto-scroll preservation in htmx requires tracking scroll position in `htmx:beforeSwap` and restoring in `htmx:afterSwap`; store `wasAtBottom` flag globally to decide whether to auto-scroll after DOM update.
 - Dynamic htmx attributes (setAttribute + htmx.process) don't reliably initialize polling; use static htmx attributes with `hx-vals='js:{param: window.var}'` that evaluate at request time for robust behavior.
 - Read operations should never mutate state; cleanup belongs in write operations.
+- Background services started by a long-running POSIX shell harness must be launched in that harness shell; command substitution creates a short-lived subshell that can terminate the service immediately after returning its PID.
+- Machine-readable CLI table output may still include a header; select and validate the expected identifier shape instead of assuming the first line is data.
 - Time-based bugs make old working commits appear broken when tested later.
 - Cleanup on every read can delete data before read completes.
 - Directory mtime doesn't track file changes inside; use explicit xattr timestamps.
@@ -289,6 +306,7 @@
 - Template update commands must share creation-time site-name validation and newline-safe template root resolution before deleting template-owned subtrees.
 - Newline-delimited internal lists must reject CR/LF at insertion time, or machine-readable output guards can run after a hostile value has already been split into benign-looking rows.
 - Site allowlist paths that feed recursive permission repair must be validated both when written and when read; reject broad managed roots, managed site data, non-directories, and control characters before chown/chmod.
+- HTTP Basic Auth and similar site access restrictions are privacy boundaries; deployment migration, debugging, and publish flows must preserve them by default and prove unauthenticated access still fails before calling the site safe.
 - Menu action strings built from allowlist/config paths must shell-quote quote-bearing paths, because the menu eval boundary is separate from downstream command validation.
 - Imported `site-user` values must reject option-like and uid-like names such as `#0` before sudo re-exec or service rendering; quoting the value does not make it a safe account selector.
 - CGI upload handlers must sanitize decoded filenames before filesystem writes and HTML-escape every reflected filename/path; query decoding turns `%3C...%3E` into active markup.
@@ -320,3 +338,15 @@
 - Mechanical variable renames must search for every remaining reference; structural naming checks can pass while stale runtime references remain.
 - Build post-processors that replace generated public files through restrictive temp files must normalize final modes after the last rewrite, not only after the initial render.
 - Test harnesses should prefer sourced-command status over exported success sentinels; avoid adding shell variables just to prove a helper returned successfully.
+- Filesystem-state regressions that assert real `HOME`/XDG side effects should invoke the spell directly instead of `run_spell`; the harness sandbox rewrites those paths and can hide host-side migration bugs.
+- Generated shell scripts that write another shell script must escape the nested script's `$vars` and command substitutions; otherwise the outer host's `set -u` or current environment can expand them too early and break the staged script before it ever reaches the target host.
+- Bashism scanners should match standalone shell keywords, not hyphenated prose inside quoted strings; `fixture-local` should never count as `local`.
+- Large Hugging Face model installers should preserve native terminal progress and benchmark supported transports/concurrency on the real workload instead of assuming Xet or maximum workers is fastest.
+- Local OpenAI-compatible coding models must pass a real tool-call probe, not only a text-completion probe, before a harness treats them as agent-ready.
+- Local OpenAI-compatible servers may need model-template compatibility repair in both directions: parse the model's emitted tool-call format and normalize prior tool-call arguments before replaying them into the chat template.
+- Termux package names are not Debian package names; when a required portable script is absent from Termux repositories, install the upstream script into `$PREFIX/bin` and adapt only its interpreter path.
+- Cross-platform scanners should allocate invariant configuration once per run; per-file temp creation and cleanup can turn a sub-minute macOS check into a Termux timeout without improving isolation.
+- When a spell moves between capability families, move its behavioral tests in the same change; stale test paths make `banish` require spells from the wrong level and leave duplicate coverage behind.
+- PID-file safety checks must identify an nginx executable or a site-specific nginx command, not merely match the substring `nginx`; names such as `non-nginx-daemon` are unrelated processes.
+- Platform backends should be selected only after platform-independent operand validation, so safe no-op and input-error behavior does not depend on optional GUI tooling.
+- Tests for external templates should assert the current public layout contract (for Gazeta, Lodestone pages) instead of a retired source filename.

@@ -42,11 +42,70 @@ test_handles_empty_directory() {
   assert_success
 }
 
+parses_vcards_portably() {
+  tmpdir=$(make_tempdir)
+  contacts_dir="$tmpdir/contacts"
+  mkdir -p "$contacts_dir"
+
+  cat > "$contacts_dir/alice.vcf" <<'EOF'
+BEGIN:VCARD
+VERSION:3.0
+FN:Alice Example
+END:VCARD
+EOF
+
+  cat > "$contacts_dir/org-only.vcf" <<'EOF'
+BEGIN:VCARD
+VERSION:3.0
+ORG:Wizardry Guild
+END:VCARD
+EOF
+
+  cat > "$contacts_dir/tel-only.vcf" <<'EOF'
+BEGIN:VCARD
+VERSION:3.0
+TEL:+1-555-0100
+END:VCARD
+EOF
+
+  cat > "$contacts_dir/folded.vcf" <<'EOF'
+BEGIN:VCARD
+VERSION:3.0
+FN:Folded Long
+ Name
+END:VCARD
+EOF
+
+  cat > "$contacts_dir/escaped.vcf" <<'EOF'
+BEGIN:VCARD
+VERSION:3.0
+FN:Escaped\, Person\; Friend
+END:VCARD
+EOF
+
+  cat > "$contacts_dir/unknown.vcf" <<'EOF'
+BEGIN:VCARD
+VERSION:3.0
+NOTE:No display fields here
+END:VCARD
+EOF
+
+  run_spell spells/psi/list-contacts "$contacts_dir"
+  assert_success
+  assert_output_contains "Alice Example"
+  assert_output_contains "Wizardry Guild"
+  assert_output_contains "+1-555-0100"
+  assert_output_contains "Folded LongName"
+  assert_output_contains "Escaped, Person; Friend"
+  assert_output_contains "<unknown.vcf>"
+}
+
 run_test_case "psi/list-contacts is executable" spell_is_executable
 run_test_case "list-contacts shows help" shows_help
 run_test_case "list-contacts shows help with -h" shows_help_h_flag
 run_test_case "psi/list-contacts has content" spell_has_content
 run_test_case "list-contacts handles empty directory" test_handles_empty_directory
+run_test_case "list-contacts parses vcards portably" parses_vcards_portably
 
 
 # Test via source-then-invoke pattern  

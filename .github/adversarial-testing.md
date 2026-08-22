@@ -44,6 +44,8 @@ Before considering a feature or fix complete, scan this checklist and test every
 - Install/release/update flows: fake network tools, hostile remote metadata, package-manager absence, replacement rollback, PATH precedence, artifacts outside repo.
 - Platform variance: BSD/GNU tools, macOS launchd, Linux systemd, missing optional helpers, restricted PATH, spaces in install roots.
 - Test harness integrity: executable bits, stale helper names, skipped tests that pass accidentally, environment overrides that do not reach subprocesses.
+- Static scanners must boundary-check shell keywords instead of substring-matching quoted prose; hyphenated words like `fixture-local` can otherwise trip false bashism reports.
+- Cross-repo dependency boundaries: source checkouts are not proof of installed command availability; test the installed wrapper path under restricted PATH as well as the source tree.
 
 ## High-Value Bug Classes
 
@@ -53,6 +55,7 @@ Before considering a feature or fix complete, scan this checklist and test every
 - Site-name arguments for maintenance commands need the same path-segment validation as site creation before reading or creating per-site metadata.
 - Rename commands need source and destination validation; a dot-allowing character class still needs explicit `.` and `..` rejection.
 - Status, menu, daemon, and HTTPS wrappers need site-name validation too; read-only helpers can still leak outside state, re-exec as an imported user, or mutate daemon/certificate artifacts before downstream validators run.
+- Site migration and publish tests must cover privacy-boundary regressions: if a site is configured as access-restricted, verify the flow cannot silently disable Basic Auth, expose unpublished content, or treat an unauthenticated `200` as success.
 - Destructive site commands must reject path-shaped names before deriving both the site directory and companion data directory.
 - Stop/restart commands must reject path-shaped names before PID-file cleanup, daemon label construction, or service-unit lookup.
 - Scheduler/autorebuild helpers must validate local site labels, managed user labels, and relative content roots before cron entries, lock paths, release paths, or ownership changes are formed.
@@ -197,6 +200,7 @@ Before considering a feature or fix complete, scan this checklist and test every
 - Remote API response fields should be revalidated after structured parsing before they are reused in URLs or status rows.
 - Remote API tokens should be revalidated after structured parsing before they are used in HTTP headers.
 - Remote API download URLs should be revalidated for scheme/source before any downloader receives them.
+- Remote transport wrappers should test endpoints that accept a connection before they are ready for the first command; a successful `connect` can still yield a transient `offline` state on the next probe.
 - Installer tests that harden `PATH` should inject the downloader explicitly so fake-network regressions cannot silently hit the host `curl`.
 - Installer scripts that add default system paths should append them after the caller `PATH`, preserving fake tools and user overrides.
 - Installer tests for hostile remote metadata should pass downloader and install-target overrides through the sandbox so the test cannot fall back to host tools.
@@ -344,6 +348,23 @@ chmod +x "$stubdir/helper"
 
 PATH="$stubdir:$PATH" run_spell "spells/category/spell-name" arg
 assert_failure || return 1
+```
+
+For stateful filesystem effects, verify the real host-side path instead of only the harness sandbox path:
+
+```sh
+tmpdir=$(make_tempdir)
+target_dir="$tmpdir/workspace"
+mkdir -p "$target_dir"
+legacy_file="$target_dir/.log"
+printf '%s\n' "legacy" > "$legacy_file"
+
+output=$(HOME="$tmpdir/home" sh "$test_root/spells/category/spell-name" "$target_dir")
+status=$?
+[ "$status" -eq 0 ] || return 1
+[ ! -e "$legacy_file" ] || return 1
+expected_file="$tmpdir/home/.local/state/app/$(basename "$target_dir").log"
+[ -f "$expected_file" ] || return 1
 ```
 
 For eval-printing commands, assert failure output does not contain command text:

@@ -91,6 +91,7 @@ nohup.out
 *.aab
 
 # Wizardry-generated and test-local files
+CHECKLIST.md
 .uninstall
 wizardry-compiled/
 *.attrs

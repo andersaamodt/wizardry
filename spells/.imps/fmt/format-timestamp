@@ -11,8 +11,36 @@ if [ -z "$timestamp" ]; then
   exit 1
 fi
 
-# Try to use date command to parse and format
-# Format: "Saturday, June 15, 2024 at 5:00 PM"
-date -d "$timestamp" '+%A, %B %d, %Y at %l:%M %p' 2>/dev/null || \
-  date -j -f '%Y-%m-%d %H:%M:%S' "$timestamp" '+%A, %B %d, %Y at %l:%M %p' 2>/dev/null || \
+python_bin=
+if command -v python3 >/dev/null 2>&1; then
+  python_bin=python3
+elif command -v python >/dev/null 2>&1; then
+  python_bin=python
+fi
+
+if [ -n "$python_bin" ]; then
+  formatted_timestamp=$("$python_bin" - "$timestamp" 2>/dev/null <<'PY'
+from datetime import datetime
+import sys
+
+timestamp = sys.argv[1]
+try:
+    dt = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S")
+except ValueError:
+    sys.exit(1)
+
+hour = dt.strftime("%I").lstrip("0") or "0"
+print(dt.strftime(f"%A, %B %d, %Y at {hour}:%M %p"))
+PY
+  ) || formatted_timestamp=
+  if [ -n "$formatted_timestamp" ]; then
+    printf '%s\n' "$formatted_timestamp"
+    exit 0
+  fi
+fi
+
+if date -j -f '%Y-%m-%d %H:%M:%S' "$timestamp" '+%A, %B %d, %Y at %l:%M %p' >/dev/null 2>&1; then
+  date -j -f '%Y-%m-%d %H:%M:%S' "$timestamp" '+%A, %B %d, %Y at %l:%M %p' 2>/dev/null
+else
   printf '%s' "$timestamp"
+fi

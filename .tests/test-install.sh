@@ -579,6 +579,75 @@ install_does_not_double_home_path() {
   return 0
 }
 
+install_termux_prefers_bashrc_for_shell_integration() {
+  skip-if-compiled || return $?
+  fixture=$(make_fixture)
+  provide_basic_tools "$fixture"
+  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+
+  install_dir="$fixture/home/.wizardry"
+  : >"$fixture/home/.bashrc"
+  : >"$fixture/home/.zshrc"
+
+  run_cmd env PATH="$fixture/bin:$initial_path" \
+      WIZARDRY_INSTALL_PLATFORM=termux \
+      WIZARDRY_INSTALL_DIR="$install_dir" \
+      HOME="$fixture/home" \
+      WIZARDRY_INSTALL_ASSUME_YES=1 \
+      "$ROOT_DIR/install" 2>&1
+
+  assert_success || return 1
+  assert_file_contains "$fixture/home/.bashrc" "invoke-wizardry" || return 1
+  if grep -q "invoke-wizardry" "$fixture/home/.zshrc" 2>/dev/null; then
+    TEST_FAILURE_REASON="Termux install should prefer .bashrc over .zshrc"
+    return 1
+  fi
+}
+
+install_local_copy_excludes_repo_state() {
+  skip-if-compiled || return $?
+  fixture=$(make_fixture)
+  provide_basic_tools "$fixture"
+  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq mkdir
+
+  install_dir="$fixture/home/.wizardry"
+
+  run_cmd env PATH="$fixture/bin:$initial_path" \
+      WIZARDRY_INSTALL_DIR="$install_dir" \
+      HOME="$fixture/home" \
+      WIZARDRY_INSTALL_ASSUME_YES=1 \
+      "$ROOT_DIR/install" 2>&1
+
+  assert_success || return 1
+  assert_path_missing "$install_dir/.git" || return 1
+  assert_path_missing "$install_dir/.codex" || return 1
+  case "$OUTPUT" in
+    *"is a socket (not copied)."*)
+      TEST_FAILURE_REASON="local install should not emit socket-copy warnings"
+      return 1
+      ;;
+  esac
+}
+
+install_bootstraps_helper_path_from_copied_tree() {
+  skip-if-compiled || return $?
+  fixture=$(make_fixture)
+  provide_basic_tools "$fixture"
+  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq mkdir rm
+
+  install_dir="$fixture/home/.wizardry"
+
+  run_cmd env PATH="$fixture/bin:/bin:/usr/bin" \
+      WIZARDRY_INSTALL_DIR="$install_dir" \
+      HOME="$fixture/home" \
+      WIZARDRY_INSTALL_ASSUME_YES=1 \
+      "$ROOT_DIR/install" 2>&1
+
+  assert_success || return 1
+  assert_output_contains "Installation Plan" || return 1
+  [ -x "$install_dir/spells/.imps/sys/invoke-wizardry" ] || return 1
+}
+
 # === NixOS Shell Code Tests ===
 
 install_nixos_writes_shell_init_properly_to_nix_file() {
@@ -801,6 +870,31 @@ install_fresh_does_not_show_menu() {
   
   # Should show completion message
   assert_output_contains "Installation Complete" || return 1
+}
+
+install_assume_yes_defaults_to_repair_when_already_installed() {
+  skip-if-compiled || return $?
+  fixture=$(make_fixture)
+  provide_basic_tools "$fixture"
+  link_tools "$fixture/bin" cp mv tar pwd cat grep cut tr sed awk find uname chmod sort uniq
+
+  install_dir="$fixture/home/.wizardry"
+
+  run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
+      HOME="$fixture/home" \
+      WIZARDRY_INSTALL_ASSUME_YES=1 \
+      "$ROOT_DIR/install"
+
+  assert_success || return 1
+
+  run_cmd env WIZARDRY_INSTALL_DIR="$install_dir" \
+      HOME="$fixture/home" \
+      WIZARDRY_INSTALL_ASSUME_YES=1 \
+      "$ROOT_DIR/install"
+
+  assert_success || return 1
+  assert_output_contains "Non-interactive mode: defaulting to repair (option 1)" || return 1
+  assert_output_contains "Repairing wizardry installation..." || return 1
 }
 
 # === Output Message Tests ===
@@ -1675,6 +1769,10 @@ run_test_case "install NixOS simple input" install_nixos_simple_input
 run_test_case "install normalizes path without leading slash" install_normalizes_path_without_leading_slash
 run_test_case "install normalizes NixOS config path" install_nixos_normalizes_config_path_without_leading_slash
 run_test_case "install does not double home path" install_does_not_double_home_path
+run_test_case "install on Termux prefers bashrc for shell integration" \
+  install_termux_prefers_bashrc_for_shell_integration
+run_test_case "install local copy excludes repo state" install_local_copy_excludes_repo_state
+run_test_case "install bootstraps helper path from copied tree" install_bootstraps_helper_path_from_copied_tree
 run_test_case "install writes shell init properly to nix file" install_nixos_writes_shell_init_properly_to_nix_file
 run_test_case "install uses explicit helper paths" install_uses_explicit_helper_paths
 run_test_case "learn-spellbook uses explicit helper paths" path_wizard_uses_explicit_helper_paths
@@ -1682,6 +1780,8 @@ run_test_case "learn-spellbook accepts helper overrides" path_wizard_accepts_hel
 run_test_case "install uses only bootstrappable spells" install_uses_only_bootstrappable_spells
 run_test_case "install shows menu when already installed" install_shows_menu_when_already_installed
 run_test_case "install fresh does not show menu" install_fresh_does_not_show_menu
+run_test_case "install assume-yes repairs existing installs without prompting" \
+  install_assume_yes_defaults_to_repair_when_already_installed
 run_test_case "install shows help" shows_help
 run_test_case "install NixOS shows shell config updated" install_nixos_shows_shell_config_updated
 run_test_case "install does not show spell installation" install_does_not_show_spell_installation

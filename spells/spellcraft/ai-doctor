@@ -1,0 +1,108 @@
+#!/bin/sh
+# Diagnose the local Artificer/OpenCode programming stack.
+# Reports readiness without starting models or mutating project files.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: ai-doctor
+
+Reports local AI programming readiness for:
+- program, the GUI-less Artificer programming spell
+- loop-code, the OpenCode-backed checklist implementation loop
+- architect, the OpenCode-backed checklist planning spell
+- OpenCode, runtime selection, selected coding model, and installed local models
+
+ai-doctor is read-only. It does not start MLX, run OpenCode, or edit files.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+wizardry_dir=${WIZARDRY_DIR:-$HOME/.wizardry}
+ai_dev_dir=$wizardry_dir/spells/.arcana/ai-dev
+common_file=$ai_dev_dir/ai-dev-llm-common
+ok=true
+
+printf '%s\n' "AI programming doctor"
+printf '%s\n' "====================="
+printf '\n'
+
+for spell_name in program loop-code architect; do
+  spell_path=$wizardry_dir/spells/spellcraft/$spell_name
+  if command -v "$spell_name" >/dev/null 2>&1; then
+    printf '%s\n' "$spell_name: installed ($(command -v "$spell_name"))"
+  elif [ -x "$spell_path" ]; then
+    printf '%s\n' "$spell_name: installed ($spell_path)"
+  else
+    printf '%s\n' "$spell_name: missing"
+    ok=false
+  fi
+done
+
+if [ "${AI_DEV_OPENCODE_PATH+x}" = "x" ]; then
+  if [ -x "$AI_DEV_OPENCODE_PATH" ]; then
+    printf '%s\n' "opencode: installed ($AI_DEV_OPENCODE_PATH)"
+  else
+    printf '%s\n' "opencode: missing"
+    ok=false
+  fi
+elif command -v opencode >/dev/null 2>&1; then
+  printf '%s\n' "opencode: installed ($(command -v opencode))"
+else
+  printf '%s\n' "opencode: missing"
+  ok=false
+fi
+
+printf '\n'
+
+if [ -f "$common_file" ]; then
+  script_dir=$ai_dev_dir
+  # shellcheck source=/dev/null
+  . "$common_file"
+  set -eu
+
+  runtime=$(ai_llm_resolve_runtime 2>/dev/null || printf 'unknown')
+  runtime_label=$(ai_llm_runtime_label "$runtime" 2>/dev/null || printf '%s' "$runtime")
+  printf '%s\n' "runtime: $runtime_label"
+
+  configured_model=$(ai_llm_opencode_model 2>/dev/null || printf '')
+  if [ -n "$configured_model" ]; then
+    printf '%s\n' "opencode default model: $configured_model"
+  else
+    printf '%s\n' "opencode default model: unconfigured"
+  fi
+
+  coding_model=$(ai_llm_preferred_local_coding_opencode_model 2>/dev/null || printf '')
+  if [ -n "$coding_model" ]; then
+    printf '%s\n' "preferred local coding model: $coding_model"
+  else
+    printf '%s\n' "preferred local coding model: unavailable"
+    ok=false
+  fi
+
+  installed_models=$(list-installed-llms "$runtime" 2>/dev/null || printf '')
+  if [ -n "$installed_models" ]; then
+    printf '%s\n' "installed $runtime models:"
+    printf '%s\n' "$installed_models" | sed 's/^/- /'
+  else
+    printf '%s\n' "installed $runtime models: none detected"
+    ok=false
+  fi
+else
+  printf '%s\n' "runtime: unknown (ai-dev helpers not found)"
+  ok=false
+fi
+
+printf '\n'
+if [ "$ok" = true ]; then
+  printf '%s\n' "status: ready"
+else
+  printf '%s\n' "status: needs attention"
+  exit 1
+fi

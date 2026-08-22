@@ -1,0 +1,195 @@
+#!/bin/sh
+
+# Run Maestro through a private adb server inside Wizardry's firewall.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: firewalled-maestro [--serial SERIAL] [--allow IPV4[:PORT]]... -- MAESTRO_ARGS...
+
+Runs Maestro CLI with an adb shim that routes every device command through
+firewalled-adb. Use --serial for a specific device, especially wireless adb.
+USAGE
+  exit 0
+  ;;
+esac
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+. "$script_dir/../.arcana/mobile-debugging/mobile-debugging-common"
+set -eu
+
+serial=
+allow_file=$(temp-file)
+shim_dir=$(temp-dir)
+server_log=$(temp-file)
+maestro_args_file=$(temp-file)
+on-exit cleanup-file "$allow_file"
+on-exit cleanup-dir "$shim_dir"
+on-exit cleanup-file "$server_log"
+on-exit cleanup-file "$maestro_args_file"
+mkdir -p "$shim_dir"
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --serial)
+      [ "${2-}" ] || die "firewalled-maestro: --serial requires a value"
+      serial=$2
+      shift 2
+      ;;
+    --allow)
+      [ "${2-}" ] || die "firewalled-maestro: --allow requires a value"
+      case "$2" in
+        *'
+'*)
+          die "firewalled-maestro: allow endpoints must not contain line breaks"
+          ;;
+      esac
+      printf '%s\n' "$2" >>"$allow_file"
+      shift 2
+      ;;
+    --)
+      shift
+      break
+      ;;
+    *)
+      die 2 "firewalled-maestro: unknown option '$1'"
+      ;;
+  esac
+done
+
+[ "$#" -gt 0 ] || die 2 "firewalled-maestro: MAESTRO_ARGS are required"
+
+for maestro_arg in "$@"; do
+  case "$maestro_arg" in
+    *'
+'*)
+      die "firewalled-maestro: Maestro arguments must not contain line breaks"
+      ;;
+  esac
+  printf '%s\n' "$maestro_arg" >>"$maestro_args_file"
+done
+
+case "$serial" in
+  [0-9]*.[0-9]*.[0-9]*.[0-9]*:*)
+    printf '%s\n' "$serial" >>"$allow_file"
+    ;;
+esac
+
+maestro_exec=$(mobile_debugging_maestro_exec || true)
+[ -n "$maestro_exec" ] || die \
+  "firewalled-maestro: Maestro CLI not found; use mobile-debugging-menu"
+managed_maestro_exec=$(mobile_debugging_maestro_path)
+managed_maestro_root=$(mobile_debugging_maestro_install_dir)
+java_home=$(mobile_debugging_java_home_dir)
+if [ -x "$java_home/bin/java" ]; then
+  JAVA_HOME=$java_home
+  PATH="$java_home/bin:$PATH"
+  export JAVA_HOME PATH
+fi
+
+adb_exec=$(mobile_debugging_adb_exec || true)
+[ -n "$adb_exec" ] || die \
+  "firewalled-maestro: adb not found; use mobile-debugging-menu"
+
+firewall_exec=$(command -v firewall || true)
+[ -n "$firewall_exec" ] || firewall_exec="$script_dir/firewall"
+[ -x "$firewall_exec" ] || die "firewalled-maestro: firewall not found"
+
+server_port=$((16000 + ($$ % 10000)))
+if command -v nc >/dev/null 2>&1; then
+  while nc -z 127.0.0.1 "$server_port" >/dev/null 2>&1; do
+    server_port=$((server_port + 1))
+    if [ "$server_port" -gt 29999 ]; then
+      server_port=16000
+    fi
+  done
+fi
+server_pid=
+
+cat >"$shim_dir/adb" <<'SH'
+#!/bin/sh
+set -eu
+
+adb_exec=${FIREWALLED_MAESTRO_ADB:?}
+server_port=${FIREWALLED_MAESTRO_SERVER_PORT:?}
+exec "$adb_exec" -P "$server_port" "$@"
+SH
+chmod +x "$shim_dir/adb"
+mkdir -p "$shim_dir/platform-tools"
+ln -s ../adb "$shim_dir/platform-tools/adb"
+
+set -- "$firewall_exec" --allow-localhost
+if [ -f "$allow_file" ]; then
+  while IFS= read -r endpoint || [ -n "$endpoint" ]; do
+    [ -n "$endpoint" ] || continue
+    set -- "$@" --allow "$endpoint"
+  done < "$allow_file"
+fi
+set -- "$@" -- "$adb_exec" -L "tcp:localhost:$server_port" server nodaemon
+nohup "$@" >"$server_log" 2>&1 &
+server_pid=$!
+trap 'kill "$server_pid" >/dev/null 2>&1 || true' EXIT HUP INT TERM
+sleep 1
+
+if [ -n "$serial" ]; then
+  connected=no
+  attempt=0
+  while [ "$attempt" -lt 5 ]; do
+    set -- "$firewall_exec" --allow-localhost
+    if [ -f "$allow_file" ]; then
+      while IFS= read -r endpoint || [ -n "$endpoint" ]; do
+        [ -n "$endpoint" ] || continue
+        set -- "$@" --allow "$endpoint"
+      done < "$allow_file"
+    fi
+    set -- "$@" -- "$adb_exec" -P "$server_port" connect "$serial"
+    if "$@" >/dev/null 2>&1; then
+      connected=yes
+      break
+    fi
+    sleep 1
+    attempt=$((attempt + 1))
+  done
+  if [ "$connected" != yes ]; then
+    if [ -s "$server_log" ]; then
+      cat "$server_log" >&2
+    fi
+    die "firewalled-maestro: could not connect to $serial"
+  fi
+fi
+
+PATH="$shim_dir:$PATH"
+ANDROID_HOME=$shim_dir
+export ANDROID_SDK_ROOT=$shim_dir
+export ANDROID_SERIAL=$serial
+export ADB_SERVER_PORT=$server_port
+export ANDROID_ADB_SERVER_PORT=$server_port
+export FIREWALLED_MAESTRO_ADB=$adb_exec
+export FIREWALLED_MAESTRO_SERVER_PORT=$server_port
+export PATH ANDROID_HOME
+
+set --
+while IFS= read -r maestro_arg || [ -n "$maestro_arg" ]; do
+  set -- "$@" "$maestro_arg"
+done < "$maestro_args_file"
+
+if [ "$maestro_exec" = "$managed_maestro_exec" ] && \
+  [ -x "${JAVA_HOME:-}/bin/java" ] && \
+  [ -d "$managed_maestro_root/lib" ]; then
+  "$JAVA_HOME/bin/java" -classpath "$managed_maestro_root/lib/*" maestro.cli.AppKt "$@"
+  command_status=$?
+else
+  "$maestro_exec" "$@"
+  command_status=$?
+fi
+
+"$adb_exec" -P "$server_port" kill-server >/dev/null 2>&1 || true
+if kill -0 "$server_pid" 2>/dev/null; then
+  kill "$server_pid" >/dev/null 2>&1 || true
+fi
+wait "$server_pid" >/dev/null 2>&1 || true
+trap - EXIT HUP INT TERM
+exit "$command_status"

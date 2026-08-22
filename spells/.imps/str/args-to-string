@@ -1,0 +1,14 @@
+#!/bin/sh
+# args-to-string [ARG...] - join arguments into one space-separated string
+set -eu
+
+first=true
+for arg do
+  if [ "$first" = true ]; then
+    printf '%s' "$arg"
+    first=false
+  else
+    printf ' %s' "$arg"
+  fi
+done
+printf '\n'

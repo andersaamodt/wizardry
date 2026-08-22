@@ -1,0 +1,131 @@
+#!/bin/sh
+
+# Install the OpenCode coding agent from its official release archive.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: install-opencode
+
+Installs OpenCode from its official GitHub release without Homebrew.
+Set OPENCODE_VERSION to install a specific release version.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+# shellcheck source=/dev/null
+. "$script_dir/ai-dev-llm-common"
+set -eu
+if "$script_dir/is-ai-component-installed" opencode 2>/dev/null; then
+  success "OpenCode is already installed"
+  exit 0
+fi
+
+os=$(uname -s 2>/dev/null || printf 'unknown')
+arch=$(uname -m 2>/dev/null || printf 'unknown')
+case "$os" in
+Darwin) target_os=darwin; archive_ext=zip ;;
+Linux) target_os=linux; archive_ext=tar.gz ;;
+*) die "install-opencode: unsupported operating system: $os" ;;
+esac
+case "$arch" in
+x86_64|amd64) target_arch=x64 ;;
+aarch64|arm64) target_arch=arm64 ;;
+*) die "install-opencode: unsupported architecture: $arch" ;;
+esac
+
+target="$target_os-$target_arch"
+if [ "$target_arch" = "x64" ]; then
+  has_avx2=0
+  if [ "$target_os" = "linux" ] && grep -qwi avx2 /proc/cpuinfo 2>/dev/null; then
+    has_avx2=1
+  elif [ "$target_os" = "darwin" ] && [ "$(sysctl -n hw.optional.avx2_0 2>/dev/null || printf '0')" = "1" ]; then
+    has_avx2=1
+  fi
+  [ "$has_avx2" -eq 1 ] || target="$target-baseline"
+fi
+if [ "$target_os" = "linux" ]; then
+  if [ -f /etc/alpine-release ] || { has ldd && ldd --version 2>&1 | grep -qi musl; }; then
+    target="$target-musl"
+  fi
+fi
+
+filename="opencode-$target.$archive_ext"
+version=${OPENCODE_VERSION:-}
+case "$version" in v*) version=${version#v} ;; esac
+if [ -n "$version" ]; then
+  url="https://github.com/anomalyco/opencode/releases/download/v$version/$filename"
+else
+  url="https://github.com/anomalyco/opencode/releases/latest/download/$filename"
+fi
+
+archive=$(temp-file "$filename")
+extract_dir=$(temp-file opencode-extract)
+cleanup-file "$extract_dir"
+mkdir -p "$extract_dir"
+on-exit cleanup-file "$archive"
+on-exit cleanup-dir "$extract_dir"
+
+step "Downloading OpenCode"
+if has curl; then
+  curl -fL --progress-bar -o "$archive" "$url" || die "install-opencode: download failed"
+elif has wget; then
+  wget -O "$archive" "$url" || die "install-opencode: download failed"
+else
+  die 127 "install-opencode: curl or wget is required"
+fi
+
+case "$archive_ext" in
+zip)
+  has unzip || die 127 "install-opencode: unzip is required"
+  unzip -q "$archive" -d "$extract_dir" || die "install-opencode: archive extraction failed"
+  ;;
+tar.gz)
+  has tar || die 127 "install-opencode: tar is required"
+  tar -xzf "$archive" -C "$extract_dir" || die "install-opencode: archive extraction failed"
+  ;;
+esac
+
+[ -f "$extract_dir/opencode" ] || die "install-opencode: release archive did not contain opencode"
+wrapper_dir=$HOME/.local/bin
+real_dir=$HOME/.local/lib/wizardry/opencode
+real_bin=$real_dir/opencode-real
+mkdir -p "$wrapper_dir" "$real_dir"
+mv "$extract_dir/opencode" "$real_bin"
+chmod 755 "$real_bin"
+
+cat >"$wrapper_dir/opencode" <<EOF
+#!/bin/sh
+
+set -eu
+
+script_dir="$script_dir"
+# shellcheck source=/dev/null
+. "$script_dir/ai-dev-llm-common"
+set -eu
+
+if ai_llm_sync_opencode_runtime; then
+  exec env OPENCODE_CONFIG="$ai_llm_opencode_runtime_config" "$real_bin" "\$@"
+fi
+
+exec "$real_bin" "\$@"
+EOF
+chmod 755 "$wrapper_dir/opencode"
+
+if ! "$wrapper_dir/opencode" --version >/dev/null 2>&1; then
+  rm -f "$wrapper_dir/opencode" "$real_bin"
+  die "install-opencode: installed binary failed verification"
+fi
+
+case ":${PATH-}:" in
+*":$wrapper_dir:"*) ;;
+*) warn "install-opencode: $wrapper_dir is not currently in PATH" ;;
+esac
+success "OpenCode installed at $wrapper_dir/opencode"

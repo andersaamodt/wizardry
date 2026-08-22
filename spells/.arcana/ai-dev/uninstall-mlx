@@ -1,0 +1,54 @@
+#!/bin/sh
+
+# Uninstall MLX local LLM runtime.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uninstall-mlx
+
+Removes MLX runtime managed by wizardry AI dev.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+# shellcheck source=/dev/null
+. "$script_dir/ai-dev-llm-common"
+set -eu
+
+if ! "$script_dir/is-ai-component-installed" mlx 2>/dev/null; then
+  success "MLX is not installed"
+  exit 0
+fi
+
+if [ -f "$ai_llm_mlx_pid_file" ]; then
+  mlx_pid=$(tr -d '\r' <"$ai_llm_mlx_pid_file" 2>/dev/null || printf '')
+  if [ -n "$mlx_pid" ] && kill -0 "$mlx_pid" 2>/dev/null; then
+    kill "$mlx_pid" >/dev/null 2>&1 || true
+  fi
+  rm -f "$ai_llm_mlx_pid_file"
+fi
+
+rm -rf "$ai_llm_mlx_root"
+rm -f "$ai_llm_mlx_models_file"
+rm -f "$(ai_llm_model_file mlx)"
+
+runtime=$(ai_llm_get_active_runtime)
+if [ "$runtime" = "mlx" ]; then
+  if "$script_dir/is-ai-component-installed" ollama 2>/dev/null; then
+    ai_llm_set_active_runtime "ollama" || true
+  fi
+fi
+
+if ! ai_llm_sync_opencode_runtime; then
+  warn "uninstall-mlx: OpenCode runtime sync failed"
+fi
+
+success "MLX uninstalled successfully"

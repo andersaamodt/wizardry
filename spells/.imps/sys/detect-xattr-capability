@@ -1,0 +1,67 @@
+#!/bin/sh
+# detect-xattr-capability - report host xattr capability as a stable token
+# Prints supported, filesystem-unsupported, helpers-missing, or probe-unavailable.
+
+set -eu
+
+baseline_path="/usr/bin:/bin:/usr/sbin:/sbin"
+case ":${PATH-}:" in
+  *":/usr/bin:"*|*":/bin:"*) ;;
+  *)
+    PATH="${PATH:+$PATH:}${baseline_path}"
+    ;;
+esac
+export PATH
+
+xattr_capability_backend=""
+if command -v attr >/dev/null 2>&1; then
+  xattr_capability_backend="attr"
+elif command -v xattr >/dev/null 2>&1; then
+  xattr_capability_backend="xattr"
+elif command -v setfattr >/dev/null 2>&1 && command -v getfattr >/dev/null 2>&1; then
+  xattr_capability_backend="setfattr"
+else
+  printf 'helpers-missing\n'
+  exit 0
+fi
+
+xattr_capability_tmp_root=${TMPDIR:-/tmp}
+xattr_capability_tmp_file=$(
+  mktemp "${xattr_capability_tmp_root%/}/detect-xattr-capability.XXXXXX" 2>/dev/null || printf ''
+)
+if [ -z "$xattr_capability_tmp_file" ]; then
+  printf 'probe-unavailable\n'
+  exit 0
+fi
+
+trap 'rm -f "$xattr_capability_tmp_file"' EXIT HUP INT TERM
+
+case "$xattr_capability_backend" in
+  attr)
+    if attr -s user.test -V value "$xattr_capability_tmp_file" >/dev/null 2>&1; then
+      attr -r user.test "$xattr_capability_tmp_file" >/dev/null 2>&1 || :
+      printf 'supported\n'
+    else
+      printf 'filesystem-unsupported\n'
+    fi
+    ;;
+  xattr)
+    if xattr -w user.test value "$xattr_capability_tmp_file" >/dev/null 2>&1 \
+      && xattr -p user.test "$xattr_capability_tmp_file" 2>/dev/null | grep -q '^value$'; then
+      xattr -d user.test "$xattr_capability_tmp_file" >/dev/null 2>&1 || :
+      printf 'supported\n'
+    else
+      printf 'filesystem-unsupported\n'
+    fi
+    ;;
+  setfattr)
+    if setfattr -n user.test -v value "$xattr_capability_tmp_file" >/dev/null 2>&1 \
+      && getfattr -n user.test --only-values "$xattr_capability_tmp_file" 2>/dev/null \
+        | grep -q '^value$'; then
+      setfattr -x user.test "$xattr_capability_tmp_file" >/dev/null 2>&1 || :
+      printf 'supported\n'
+    else
+      printf 'filesystem-unsupported\n'
+    fi
+    ;;
+esac

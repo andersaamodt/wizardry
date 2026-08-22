@@ -35,7 +35,7 @@ if [ ! -f "$session_file" ]; then
 fi
 
 # Get username from session
-username=$(grep -o '"username":"[^"]*"' "$session_file" | cut -d'"' -f4)
+username=$(json-extract-string username "$session_file")
 if ! validate-username "$username"; then
   printf '{"success":false,"error":"Invalid session"}\n'
   exit 0

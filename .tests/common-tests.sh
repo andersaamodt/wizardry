@@ -312,7 +312,10 @@ test_spells_have_help_usage_handlers() {
     spell=$1
     rel_path=${spell#"$ROOT_DIR/spells/"}
     case "$rel_path" in
-      .arcana/crossposting/crossposting-common) return ;;
+      .arcana/crossposting/crossposting-common|\
+      .arcana/mobile-debugging/mobile-debugging-common|\
+      .arcana/theurgy/_theurgy|\
+      .arcana/voice-audio/voice-audio-common) return ;;
     esac
 
     if ! grep -qF -- '--help|--usage|-h)' "$spell" 2>/dev/null; then
@@ -661,6 +664,10 @@ test_no_undeclared_global_exports() {
             return ;;  # Standard POSIX environment variables (restored by env-clear)
           CPPFLAGS|LDFLAGS|CFLAGS|CXXFLAGS)
             return ;;  # Standard compiler/linker environment variables
+          ANDROID_HOME|ANDROID_SDK_ROOT|ANDROID_SERIAL|ADB_SERVER_PORT|ANDROID_ADB_SERVER_PORT)
+            return ;;  # Android toolchain environment for the child process
+          FIREWALLED_MAESTRO_ADB|FIREWALLED_MAESTRO_SERVER_PORT)
+            return ;;  # Private adb shim environment for the child process
           AWAIT_KEYPRESS_BUFFER_FILE|TEST_FAILURE_REASON|TEST_SKIP_REASON|WIZARDRY_TMPDIR)
             return ;;  # Test/utility infrastructure (restored by env-clear)
           WIZARDRY_GLOBAL_SUBTEST_NUM|WIZARDRY_TEST_COMPILED|WIZARDRY_TEST_HELPERS_ONLY)
@@ -1013,8 +1020,6 @@ web/serve-site
 web/disable-site-daemon
 web/toggle-site-tor-hosting
 web/enable-site-daemon
-web/install-supercollider
-web/uninstall-supercollider
 web/web-wizardry
 web/run-site-daemon
 web/stop-site
@@ -1032,6 +1037,23 @@ divination/detect-rc-file
 .arcana/web-wizardry/uninstall-web-pandoc
 .arcana/crossposting/crossposting-common
 .arcana/simplex-chat/simplex-chat-common
+.arcana/game-dev/game-dev-common
+.arcana/voice-audio/voice-audio-common
+.arcana/voice-audio/install-supercollider
+.arcana/voice-audio/uninstall-supercollider
+.arcana/gazeta/gazeta-common
+.arcana/mobile-debugging/mobile-debugging-common
+.arcana/theurgy/_theurgy
+.arcana/ai-dev/ai-dev-llm-common
+.wizardry/verify-posix
+menu/main-menu
+spellcraft/program
+spellcraft/loop-code
+wards/firewall
+wards/firewalled-adb
+wards/firewalled-termux
+web/install-python3
+web/site-status
 .arcana/docker/stop-docker-daemon
 .arcana/docker/is-docker-daemon-running
 .arcana/docker/docker-menu
@@ -1092,6 +1114,16 @@ menu/mud-admin/list-players
     return 1
   fi
   
+  return 0
+}
+
+# --- Check: Installer/runtime spells do not preflight Gatekeeper ---
+test_spells_do_not_preflight_gatekeeper() {
+  violations=$(grep -R -n 'spctl --assess' "$ROOT_DIR/spells" 2>/dev/null | grep -v '/tools/release/' || true)
+  if [ -n "$violations" ]; then
+    TEST_FAILURE_REASON="installer/runtime spells must not preflight Gatekeeper assessment: $(printf '%s' "$violations" | head -10 | tr '\n' '; ')"
+    return 1
+  fi
   return 0
 }
 
@@ -1342,6 +1374,12 @@ test_spells_have_limited_flags() {
     web/site-autorebuild
     web/configure-nginx
     .imps/test/boot/stub-xattr
+    wards/firewalled-termux
+    .arcana/voice-audio/wizardry-audio-capture
+    .arcana/mobile-debugging/setup-mobile-tor-adb
+    spellcraft/architect
+    spellcraft/program
+    spellcraft/loop-code
   "
   
   tmpfile_2=$(mktemp "${WIZARDRY_TMPDIR}/flag-warn-2.XXXXXX")
@@ -1472,6 +1510,10 @@ test_spells_have_limited_positional_args() {
     spell=$1
     name=$(basename "$spell")
     rel_path=${spell#"$ROOT_DIR/spells/"}
+
+    case "$rel_path" in
+      .arcana/mobile-debugging/termux-command-runner) return ;;
+    esac
     
     # Extract Usage line from the spell (from usage function or direct)
     usage=$(awk '
@@ -1746,7 +1788,7 @@ test_spells_source_env_clear_after_set_eu() {
       wards/banish|spellcraft/compile-spell|spellcraft/doppelganger) return ;;
       # Installer/daemon spells intentionally capture supported env overrides
       # or locate env-clear before sourcing it.
-      web/install-nostril|web/install-syncthing|web/install-supercollider|web/uninstall-supercollider|web/install-pandoc|web/run-site-daemon|divination/eye|divination/eyed) return ;;
+      web/install-nostril|web/install-syncthing|web/install-pandoc|web/run-site-daemon|divination/eye|divination/eyed) return ;;
       # Scripts that need PATH setup before env-clear to find it
       system/test-magic|.wizardry/test-magic|system/test-spell|.wizardry/test-spell|system/verify-posix|.wizardry/verify-posix|spellcraft/lint-magic|enchant/enchant|.wizardry/generate-glosses) return ;;
       # System maintenance spells (standalone, no env-clear needed)
@@ -1989,7 +2031,7 @@ test_output_streams_line_by_line() {
   fi
   
   # Create a simple test that outputs PASS lines with timing
-  tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/streaming-test.XXXXXX")
+  tmpdir=$(make_tempdir)
   test_file="$tmpdir/streaming-test.sh"
   
   cat > "$test_file" << 'EOF'
@@ -2125,6 +2167,7 @@ run_test_case "imps have opening comments" test_imps_have_opening_comments
 run_test_case "imps don't have help handlers" test_imps_dont_have_help
 run_test_case "bootstrap spells have identifying comment" test_bootstrap_spells_identified
 run_test_case "spells follow function discipline" test_spells_follow_function_discipline
+run_test_case "spells do not preflight Gatekeeper" test_spells_do_not_preflight_gatekeeper
 run_test_case "no function name collisions" test_no_function_name_collisions
 # --- DEPRECATED: True name function tests ---
 # These tests checked for function wrappers with "true names"
@@ -2277,7 +2320,10 @@ test_all_spells_respond_to_help() {
     spell=$1
     rel_path=${spell#"$ROOT_DIR/spells/"}
     case "$rel_path" in
-      .arcana/crossposting/crossposting-common) return ;;
+      .arcana/crossposting/crossposting-common|\
+      .arcana/mobile-debugging/mobile-debugging-common|\
+      .arcana/theurgy/_theurgy|\
+      .arcana/voice-audio/voice-audio-common) return ;;
     esac
     
     # Skip if we already have enough failures

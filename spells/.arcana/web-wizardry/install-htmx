@@ -25,6 +25,9 @@ set -eu
 
 # Shared installation directory for web wizardry JS libraries
 install_dir="${WIZARDRY_WEB_JS_DIR:-$HOME/.local/share/wizardry/web/js}"
+download_connect_timeout="${WIZARDRY_WEB_DOWNLOAD_CONNECT_TIMEOUT_SECONDS:-10}"
+download_timeout="${WIZARDRY_WEB_DOWNLOAD_TIMEOUT_SECONDS:-60}"
+download_retries="${WIZARDRY_WEB_DOWNLOAD_RETRIES:-2}"
 
 step "Installing web libraries..."
 
@@ -44,28 +47,45 @@ else
   die "install-htmx: curl or wget required"
 fi
 
-# Download htmx
-info "Downloading htmx.min.js..."
-if [ "$download_tool" = "curl" ]; then
-  curl -fsSL "$htmx_url" -o "$install_dir/htmx.min.js" || {
-    die "install-htmx: failed to download htmx"
-  }
-else
-  wget -q "$htmx_url" -O "$install_dir/htmx.min.js" || {
-    die "install-htmx: failed to download htmx"
-  }
-fi
+download_web_library() {
+  library_name=$1
+  library_url=$2
+  library_path=$3
+  library_tmp=$(mktemp "${TMPDIR:-/tmp}/wizardry-web-lib.XXXXXX")
+  if [ "$download_tool" = "curl" ]; then
+    curl -fsSL \
+      --connect-timeout "$download_connect_timeout" \
+      --max-time "$download_timeout" \
+      --retry "$download_retries" \
+      --retry-delay 1 \
+      "$library_url" -o "$library_tmp" || {
+        rm -f "$library_tmp"
+        die "install-htmx: failed to download $library_name"
+      }
+  else
+    wget -q \
+      --timeout="$download_timeout" \
+      --tries="$download_retries" \
+      "$library_url" -O "$library_tmp" || {
+        rm -f "$library_tmp"
+        die "install-htmx: failed to download $library_name"
+      }
+  fi
+  if [ ! -s "$library_tmp" ]; then
+    rm -f "$library_tmp"
+    die "install-htmx: downloaded empty $library_name"
+  fi
+  mv "$library_tmp" "$library_path"
+}
 
-# Download idiomorph
-info "Downloading idiomorph-ext.min.js..."
-if [ "$download_tool" = "curl" ]; then
-  curl -fsSL "$idiomorph_url" -o "$install_dir/idiomorph-ext.min.js" || {
-    die "install-htmx: failed to download idiomorph"
-  }
+if [ -f "$install_dir/htmx.min.js" ] && [ -f "$install_dir/idiomorph-ext.min.js" ]; then
+  success "Web libraries already installed to $install_dir"
 else
-  wget -q "$idiomorph_url" -O "$install_dir/idiomorph-ext.min.js" || {
-    die "install-htmx: failed to download idiomorph"
-  }
+  info "Downloading htmx.min.js..."
+  download_web_library "htmx" "$htmx_url" "$install_dir/htmx.min.js"
+
+  info "Downloading idiomorph-ext.min.js..."
+  download_web_library "idiomorph" "$idiomorph_url" "$install_dir/idiomorph-ext.min.js"
 fi
 
 success "Web libraries installed to $install_dir"

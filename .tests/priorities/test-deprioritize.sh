@@ -1,5 +1,6 @@
 #!/bin/sh
 # COMPILED_UNSUPPORTED: relies on sourced priority helper substitution
+# REQUIRES_XATTR: requires filesystem xattrs
 
 test_root=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
 while [ ! -f "$test_root/spells/.imps/test/test-bootstrap" ] && [ "$test_root" != "/" ]; do

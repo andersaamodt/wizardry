@@ -130,6 +130,7 @@ done
 web_root=${WEB_WIZARDRY_ROOT:-$HOME/sites}
 sites_dir="$web_root"
 site_dir="$sites_dir/$site_name"
+cr=$(printf '\r')
 
 if [ ! -d "$site_dir" ]; then
   die "configure-nginx: site '$site_name' not found"
@@ -264,8 +265,31 @@ elif [ -n "$desk_route_host" ]; then
 fi
 
 # Create nginx config directory
-nginx_conf_dir="$site_dir/nginx"
+site_runtime_dir="${WIZARDRY_DIR:-$HOME/.wizardry}/spells/.imps/web/site-runtime-dir"
+nginx_conf_dir=$("$site_runtime_dir" "$site_dir" nginx)
 mkdir -p "$nginx_conf_dir"
+
+configure_nginx_fastcgi_socket_path() {
+  socket_site_dir=$1
+  socket_site_name=$2
+  socket_default="$nginx_conf_dir/fcgiwrap.sock"
+  if [ "${#socket_default}" -le 90 ]; then
+    printf '%s\n' "$socket_default"
+    return 0
+  fi
+  socket_root=${WIZARDRY_FCGI_SOCKET_DIR:-${TMPDIR:-/tmp}/wizardry-fcgiwrap}
+  mkdir -p "$socket_root"
+  if command -v shasum >/dev/null 2>&1; then
+    socket_key=$(printf '%s' "$socket_site_dir" | shasum -a 256 | awk '{print $1}')
+  elif command -v sha256sum >/dev/null 2>&1; then
+    socket_key=$(printf '%s' "$socket_site_dir" | sha256sum | awk '{print $1}')
+  else
+    socket_key=$(printf '%s' "$socket_site_dir" | cksum | awk '{print $1}')
+  fi
+  socket_key=$(printf '%s' "$socket_key" | cut -c1-16)
+  [ -n "$socket_key" ] || socket_key=runtime
+  printf '%s/%s-%s.sock\n' "$socket_root" "$socket_site_name" "$socket_key"
+}
 
 # Ensure nginx temp directories exist with proper permissions
 # nginx/ is owned by actual user, but may have stale permissions from old sites
@@ -300,6 +324,43 @@ fi
 if ! valid_nginx_quoted_path "$cgi_dir"; then
   die 2 "configure-nginx: invalid wizardry cgi path"
 fi
+fcgi_sock=$(configure_nginx_fastcgi_socket_path "$site_dir" "$site_name")
+if ! valid_nginx_quoted_path "$fcgi_sock"; then
+  die 2 "configure-nginx: invalid fcgi socket path"
+fi
+
+configure_nginx_site_build_dir() {
+  site_build_dir_site_dir=$1
+  site_build_dir_config=$(config-get \
+    "$site_build_dir_site_dir/site.conf" build-dir 2>/dev/null || printf '')
+  case "$site_build_dir_config" in
+    '')
+      site_build_dir_path="$site_build_dir_site_dir/build"
+      ;;
+    *"$cr"*|*'
+'*|.|..|../*|*/../*|*/..)
+      die 2 "configure-nginx: invalid build-dir"
+      ;;
+    \~)
+      site_build_dir_path=$HOME
+      ;;
+    \~/*)
+      site_build_dir_path="$HOME/${site_build_dir_config#\~/}"
+      ;;
+    /*)
+      site_build_dir_path=$site_build_dir_config
+      ;;
+    *)
+      site_build_dir_path="$site_build_dir_site_dir/$site_build_dir_config"
+      ;;
+  esac
+  if ! valid_nginx_quoted_path "$site_build_dir_path"; then
+    die 2 "configure-nginx: invalid build-dir"
+  fi
+  printf '%s\n' "$site_build_dir_path"
+}
+
+build_dir=$(configure_nginx_site_build_dir "$site_dir")
 
 # Copy mime.types to local directory if not exists
 # nginx/ is owned by actual user, so we can write directly
@@ -342,8 +403,8 @@ cat > "$nginx_conf" <<EOF
 
 worker_processes 1;
 daemon off;
-error_log $site_dir/nginx/error.log warn;
-pid $site_dir/nginx/nginx.pid;
+error_log $nginx_conf_dir/error.log warn;
+pid $nginx_conf_dir/nginx.pid;
 
 events {
     worker_connections 256;
@@ -360,7 +421,7 @@ http {
     uwsgi_temp_path $nginx_conf_dir/temp/uwsgi;
     scgi_temp_path $nginx_conf_dir/temp/scgi;
     
-    access_log $site_dir/nginx/access.log;
+    access_log $nginx_conf_dir/access.log;
     
     sendfile on;
     keepalive_timeout 65;
@@ -373,7 +434,7 @@ http {
         # Accept configured domain and any .onion address (for Tor hidden services)
         server_name $server_names;
         
-        root $site_dir/build;
+        root $build_dir;
 
         # Agent runs can take minutes; keep FastCGI timeouts high globally.
         fastcgi_connect_timeout 30s;
@@ -388,7 +449,7 @@ http {
         # directory and returning 403 when autoindex is disabled.
         location = / {
 $desk_host_root_rewrite
-            try_files /pages/index.html /pages/blog.html =404;
+            try_files /pages/index.html /pages/blog.html /index.html =404;
         }
 
         # Artificer Web lives at /artificer while the temporary public host is
@@ -406,6 +467,11 @@ $desk_host_root_rewrite
         # in a single server response (no client-side route repair).
         location ~ ^/posts/([A-Za-z0-9-]+)/?$ {
             rewrite ^/posts/([A-Za-z0-9-]+)/?$ /cgi/blog-open-post?path=posts/\$1.md last;
+        }
+
+        # Human-readable public and unlisted attachment links.
+        location ~ ^/file/([^/]+)(?:/.*)?$ {
+            rewrite ^/file/([^/]+)(?:/.*)?$ /cgi/blog-file?file_key=\$1 last;
         }
 
         # Desk is a private spatial app with room URLs beneath /desk.
@@ -437,7 +503,7 @@ $desk_host_path_rewrite
         
         # Serve static files
         location /static/ {
-            alias $site_dir/build/static/;
+            alias $build_dir/static/;
         }
 
         # Authorized attachments are handed off from CGI using X-Accel-Redirect
@@ -476,7 +542,7 @@ $desk_host_path_rewrite
             fastcgi_send_timeout 300s;
             
             # FastCGI configuration
-            fastcgi_pass unix:$site_dir/nginx/fcgiwrap.sock;
+            fastcgi_pass unix:$fcgi_sock;
             fastcgi_param SCRIPT_FILENAME \$cgi_path;
             fastcgi_param QUERY_STRING \$query_string;
             fastcgi_param REQUEST_METHOD \$request_method;
@@ -514,7 +580,7 @@ $desk_host_path_rewrite
             fastcgi_read_timeout 900s;
             
             # FastCGI configuration
-            fastcgi_pass unix:$site_dir/nginx/fcgiwrap.sock;
+            fastcgi_pass unix:$fcgi_sock;
             fastcgi_param SCRIPT_FILENAME \$cgi_path;
             fastcgi_param QUERY_STRING \$query_string;
             fastcgi_param REQUEST_METHOD \$request_method;

@@ -44,14 +44,17 @@ test_missile_silent_by_default() {
   
   cd "$tmpdir" || return 1
   # Without -v flag should be silent
-  run_spell "spells/mud/magic-missile" "$test_file"
-  assert_success || return 1
+  OUTPUT=$(HOME="$tmpdir" sh "$test_root/spells/mud/magic-missile" "$test_file" 2>"$tmpdir/error")
+  status=$?
+  [ "$status" -eq 0 ] || return 1
+  [ ! -s "$tmpdir/error" ] || return 1
   # Should not output anything (silent)
   [ -z "$OUTPUT" ] || return 1
   
-  # But should log to .log file
-  [ -f ".log" ] || return 1
-  grep -q "magic missile" .log || return 1
+  # But should log to the room activity log
+  room_log=$(HOME="$tmpdir" sh "$test_root/spells/.imps/mud/log-path" "$tmpdir")
+  [ -f "$room_log" ] || return 1
+  grep -q "magic missile" "$room_log" || return 1
 }
 
 test_missile_random_target() {

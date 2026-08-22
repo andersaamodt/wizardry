@@ -88,13 +88,8 @@ if [ "$(id -u)" = 0 ]; then
   installer -pkg "$pkg_path" -target /
 elif command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
   sudo installer -pkg "$pkg_path" -target /
-elif command -v osascript >/dev/null 2>&1; then
-  osascript - "$pkg_path" <<'APPLESCRIPT'
-on run argv
-  set pkgPath to item 1 of argv
-  do shell script "/usr/sbin/installer -pkg " & quoted form of pkgPath & " -target /" with administrator privileges
-end run
-APPLESCRIPT
+elif [ -x "${THEURGY_HOME:-$HOME/theurgy}/spells/macos-ui" ]; then
+  "${THEURGY_HOME:-$HOME/theurgy}/spells/macos-ui" install-package "$pkg_path"
 elif command -v sudo >/dev/null 2>&1; then
   sudo installer -pkg "$pkg_path" -target /
 else

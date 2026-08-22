@@ -9,6 +9,9 @@ wizardry is a collection of POSIX shell scripts themed as magical spells for the
 ## Tech Stack
 
 - **Language**: POSIX sh only (`#!/bin/sh`)
+- **Authorization boundary**: Wizardry is POSIX sh-first; Python or Rust may exist in the broader ecosystem, but they are never implicitly authorized for a Wizardry project and require explicit user permission before introduction or retention.
+- **Privacy boundary**: Prefer source-verifiable binaries, explicit network cages, and formally documented exceptions over opaque trust assumptions.
+- Mobile automation tools that shell out to `adb` must run behind Wizardry's firewall wrappers or equivalent `adb` shims; do not let upstream CLIs talk to devices over raw host networking.
 - **Style checker**: `lint-magic` and `checkbashisms`
 - **Testing**: `.tests/` directory with `spells/.imps/test/test-bootstrap`
 
@@ -52,9 +55,12 @@ When you find a new bug class, update `.github/adversarial-testing.md` and add a
 - Add focused adversarial regression coverage for risky inputs, imported metadata, and failure states
 - Use pact markers from `.github/PACT_LANGUAGE.md` around high-risk boundaries when they clarify the contract
 - Use wards, sigils, hexagrams, promises, taboos, and enthrall/disenthrall vocabulary according to `.github/PACT_LANGUAGE.md`; do not add pact ceremony to harmless linear code or hot loops
+- Document trust and privacy exceptions in AI-facing docs when a workflow depends on a less-verifiable upstream binary or broader host privilege than Wizardry would ideally permit
+- Prefer direct release assets plus checksum verification over `curl | sh` installers when an upstream project offers both and the Wizardry install path can stay deterministic.
 
 ### Never
 - Bash-isms: arrays, `local`, `source`, `[[ ]]`, `$RANDOM`
+- Introduce or retain Python or Rust in a Wizardry project without explicit user authorization
 - Imperative error messages ("Please install X")
 - Global variables (use parameters/stdout)
 - Unquoted variables
@@ -77,6 +83,12 @@ spells/.imps/     # Micro-helper scripts (imps)
 - Keep canonical details in one topic doc and link to it instead of repeating long explanations.
 - Update docs when behavior changes; delete stale examples instead of preserving contradictory guidance.
 - Add new bug classes to `.github/adversarial-testing.md`; add one-line debugging lessons to `.github/LESSONS.md`.
+
+## Phronesis Stewardship
+
+- For Wizardry-family projects, also read the local phronesis checkout at `~/git/phronesis` early enough to prime your work with cross-project standards, templates, audit methods, decision records, exception schemas, and promoted lessons.
+- Update phronesis only when a local finding deserves promotion into reusable wizardry-family policy, a decision record, an exception shape, an audit method, a template, or a durable cross-project lesson.
+- Keep repo-specific debugging history in `.github/LESSONS.md`; promote only lessons that generalize across the wizardry family and are important enough to preserve centrally.
 
 ## Spell Template
 
@@ -129,6 +141,10 @@ tmpdir=$(mktemp -d "${TMPDIR:-/tmp}/prefix.XXXXXX")
 
 - Keep repos continuously push-ready; do not treat cleanup as a separate final phase.
 - Runtime state, logs, assay output, compiled artifacts, and private notes belong outside tracked source trees by default.
+- Never store app-instance state, user settings, runtime logs, browser profiles, temp homes, caches, or other operator-local cruft inside a repo checkout.
+- Treat a repo checkout as canonical source and development context, not as an app-instance directory.
+- Put transient output in an appropriate temp path such as `/tmp` or `${TMPDIR:-/tmp}`, and put durable operator-local state in XDG/user-local state directories outside the checkout.
+- If a tool or app writes cruft into a repo, treat that as a bug to fix at the source rather than a mess to tolerate.
 - Read `.github/PUSH_READY_CHECKLIST.md` before adding new storage paths, generated outputs, or release tooling.
 
 ## References

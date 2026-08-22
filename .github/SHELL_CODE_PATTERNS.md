@@ -12,6 +12,25 @@
 
 ## Critical POSIX sh Patterns
 
+### Script-Local Safe PATH
+
+**CRITICAL:** Generated or operator-invoked POSIX helper scripts must seed a safe baseline `PATH` themselves.
+
+```sh
+# WRONG: assumes caller PATH includes required POSIX tools
+#!/bin/sh
+set -eu
+root=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd -P)
+
+# RIGHT: establish a baseline PATH before using dirname/sed/mkdir/find/etc.
+#!/bin/sh
+set -eu
+PATH=/usr/bin:/bin:/usr/sbin:/sbin${PATH:+:$PATH}
+root=$(CDPATH= cd -- "$(dirname "$0")/.." && pwd -P)
+```
+
+**Why:** App-generated scripts, release helpers, and repo-local verification commands may run from GUI hosts, automation sandboxes, or restricted shells that do not inherit a normal interactive `PATH`. If the script uses standard POSIX tools, seed the baseline explicitly at the top instead of depending on the caller environment.
+
 ### Stage Names and Long-Running Cron Safety
 
 **CRITICAL:** Do not block on wall-clock time to pick a unique staged release path.
@@ -59,6 +78,33 @@ mv "$stage_bundle" "$bundle"
 ```
 
 **Why:** macOS can return `Operation not permitted` when copying into `.../MyApp.app/Contents/...` for a bundle that is currently running. Build a fresh staged bundle and swap it into place only after the old process is stopped.
+
+### macOS Executable Staging
+
+**CRITICAL:** Test harnesses and run/build flows that create executable stubs, compiled binaries, or `.app` bundles should reuse stable external scratch roots on macOS.
+
+```sh
+# WRONG: every run creates a new executable path for macOS launch assessment
+stage=$(mktemp -d "${TMPDIR:-/tmp}/my-run.XXXXXX")
+cat >"$stage/tool" <<'EOF'
+#!/bin/sh
+exec "$@"
+EOF
+chmod +x "$stage/tool"
+
+# RIGHT: reuse a stable operator-local root and clean it before rebuilding
+state_home=${XDG_STATE_HOME:-${HOME:-/tmp}/.local/state}
+stage=${MY_TOOL_SCRATCH_ROOT:-$state_home/my-tool/run-staging}
+rm -rf "$stage"
+mkdir -p "$stage"
+cat >"$stage/tool" <<'EOF'
+#!/bin/sh
+exec "$@"
+EOF
+chmod +x "$stage/tool"
+```
+
+**Why:** Launching many never-before-seen executable paths can force `syspolicyd` into sustained assessment work. Reusing stable paths keeps Codex/test/build loops from becoming a launch-assessment fanout source while still keeping generated artifacts out of source checkouts.
 
 ### Performance: Basename Replacement
 
@@ -264,31 +310,24 @@ builtin cd "$@"  # Works correctly with relative paths
 
 **CRITICAL: Bypassing checkbashisms static analysis**
 
-When defining a cd() function override that must work across all shells, checkbashisms will flag the bare `builtin` keyword as a bashism even inside runtime shell detection. To bypass this static analysis, wrap the builtin call in eval:
+When defining a cd() function override that must work across all shells, `checkbashisms` may still flag the guarded `builtin` usage. Do not hide the builtin call with `eval`. Keep the runtime guard, add the exemption comment, and treat any remaining static-tool disagreement as documentation-driven justified variance.
 
 ```sh
-# FAILS checkbashisms (static analysis detects bare 'builtin' keyword):
-# Error: "possible bashism in ... line X (builtin): builtin cd "$@" || return $?"
+# Canonical pattern:
+# checkbashisms: builtin is bash/zsh-specific but guarded by runtime version check
 if eval '[ -n "${BASH_VERSION:-}" ] || [ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; then
+    # shellcheck disable=SC2039
     builtin cd "$@" || return $?
-fi
-
-# PASSES checkbashisms (eval hides 'builtin' from static analysis):
-if eval '[ -n "${BASH_VERSION:-}" ] || [ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; then
-    eval 'builtin cd "$@"' || return $?
+else
+    command cd "$@" || return $?
 fi
 ```
 
-**Security note:** This pattern is safe because:
-1. `$@` is quoted inside the eval string, preventing word splitting
-2. `cd` builtin treats arguments as paths, not executable commands
-3. Special characters like `;` or `$()` in directory names are treated literally as path components
-
-**Why this works:** checkbashisms performs static pattern matching and cannot detect that `builtin` is only executed in bash/zsh contexts. The eval wrapper hides the keyword from the parser while preserving runtime behavior. The checkbashisms tool specifically flags the word `builtin` as a bash-ism regardless of context.
+**Why:** The runtime guard is the real safety boundary. Wrapping `builtin` in `eval` breaks argument handling for relative paths and teaches an unsafe workaround. The documented exemption comment is the approved way to record the intentional shell-specific boundary.
 
 ### Function Overrides and Shell Completion
 
-**CRITICAL:** When overriding builtin commands with functions, shell completion is lost. Must explicitly restore it.
+**CRITICAL:** When overriding builtin commands with functions, shell completion can be lost. Do not try to restore it from sourced scripts.
 
 ```sh
 # Define function that overrides builtin
@@ -309,37 +348,9 @@ cd() {
     
     eval "$cd_saved_opts"
 }
-
-# CRITICAL: Restore completion after function definition
-if eval '[ -n "${BASH_VERSION:-}" ]' 2>/dev/null; then
-    # Bash: Use custom completion function (safest approach)
-    # Custom function works reliably across all bash versions
-    
-    # Define custom completion function (use eval for POSIX compatibility)
-    eval '_wizardry_cd_completion() {
-        local cur="${COMP_WORDS[COMP_CWORD]}"
-        COMPREPLY=( $(compgen -d -- "$cur") )
-        return 0
-    }'
-    
-    # Register the completion function
-    eval 'complete -F _wizardry_cd_completion cd' 2>/dev/null || \
-        eval 'complete -o dirnames cd' 2>/dev/null || \
-        eval 'complete -d cd' 2>/dev/null || true
-        
-elif eval '[ -n "${ZSH_VERSION:-}" ]' 2>/dev/null; then
-    # Zsh: Use builtin _cd completion (only if completion system loaded)
-    command -v compdef >/dev/null 2>&1 && compdef _cd cd 2>/dev/null || true
-fi
 ```
 
-**Why:** Shells have special completion behavior for builtin commands. When you override a builtin with a function, the shell's completion system no longer recognizes it, breaking tab completion.
-
-**Bash Custom Function Approach:** The most reliable and safe solution:
-- **Custom function**: Defines `_wizardry_cd_completion()` using `compgen -d`
-- **Safe**: Doesn't interfere with readline or terminal state
-- **POSIX compatible**: Uses `eval` to wrap bash-specific syntax
-- **Fallback chain**: Falls back to simpler completion if custom function fails
+**Why:** Shells have special completion behavior for builtin commands. When a sourced script overrides a builtin with a function, attempts to restore completion from inside the script can corrupt readline or zle state. Accept default shell completion behavior rather than calling `complete`, `compdef`, or custom completion setup from sourced Wizardry scripts.
 
 **CRITICAL - Never use `bind` in sourced scripts:**
 ```bash
@@ -365,9 +376,7 @@ set colored-stats off
 set colored-completion-prefix off
 ```
 
-**Zsh:** Use `compdef _cd` to use the builtin cd completion function (requires zsh completion system to be loaded).
-
-**Use case:** load-cd-hook overrides `cd` with a function to run `look` after directory changes. The custom completion function ensures tab completion works without breaking readline.
+**Use case:** load-cd-hook overrides `cd` with a function to run `look` after directory changes. The hook must preserve shell options and readline editing mode, but it must not register completion handlers.
 
 ### Case Statements
 
@@ -844,6 +853,30 @@ fi
 5. Directory changes correctly ✓
 
 Without alias: `jump-to-marker` executes → uncastable guard → `exit 1` → terminal closes ✗
+
+## Nested Script Generation
+
+**CRITICAL:** When one generated shell script writes another shell script, escape the nested script's runtime expansions so the outer script does not evaluate them early.
+
+```sh
+# WRONG: the outer script expands $HOME and $state_dir while generating the nested script
+cat >"$outer_script" <<SCRIPT
+cat >"$launcher_script" <<'EOF'
+state_dir="$HOME/.termux/tor-adb"
+mkdir -p "$state_dir"
+EOF
+SCRIPT
+
+# RIGHT: keep the nested script's runtime values escaped until that script runs
+cat >"$outer_script" <<SCRIPT
+cat >"\$launcher_script" <<'EOF'
+state_dir="\$HOME/.termux/tor-adb"
+mkdir -p "\$state_dir"
+EOF
+SCRIPT
+```
+
+**Why:** Outer setup spells often run under `set -u` with a host environment that does not define the nested script's variables. Unescaped nested expansions can fail during generation or bake host values into the staged script instead of preserving the target host's runtime behavior.
 
 ## References
 

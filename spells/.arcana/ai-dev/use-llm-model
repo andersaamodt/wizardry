@@ -1,0 +1,53 @@
+#!/bin/sh
+
+# Select an already installed model as active for the current runtime.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: use-llm-model MODEL
+
+Sets MODEL as the active model for the current runtime.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
+# shellcheck source=/dev/null
+. "$script_dir/ai-dev-llm-common"
+set -eu
+
+model=${1-}
+[ -n "$model" ] || die 2 "use-llm-model: MODEL required"
+
+runtime=$(ai_llm_resolve_runtime)
+
+installed=$("$script_dir/list-installed-llms" "$runtime" 2>/dev/null || printf '')
+found=0
+while IFS= read -r item; do
+  [ -n "$item" ] || continue
+  if [ "$item" = "$model" ]; then
+    found=1
+    break
+  fi
+done <<EOF
+$installed
+EOF
+
+if [ "$found" -ne 1 ]; then
+  die "use-llm-model: model '$model' is not installed for runtime '$runtime'"
+fi
+
+ai_llm_set_selected_model "$runtime" "$model" || die "use-llm-model: failed to persist model selection"
+
+if ! ai_llm_sync_opencode_runtime; then
+  warn "use-llm-model: OpenCode runtime sync failed"
+fi
+
+success "Active $(ai_llm_runtime_label "$runtime") model set to $model"

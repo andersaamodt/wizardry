@@ -216,6 +216,61 @@ EOF
   rm -rf "$web_root" "$stub_dir" "$state_dir"
 }
 
+test_repair_site_daemon_launchctl_uses_xdg_runtime_logs_for_git_workspace_sites() {
+  skip-if-compiled || return $?
+
+  tmpdir=$(make_tempdir)
+  test_home="$tmpdir/home"
+  web_root="$test_home/git"
+  site_dir="$web_root/mysite"
+  mkdir -p "$site_dir/site"
+  cat > "$site_dir/site.conf" <<EOF
+site-name=mysite
+site-user=$(id -un)
+EOF
+
+  stub_dir=$(temp-dir web-wizardry-stub)
+  stub-launchctl "$stub_dir"
+  stub-uname-darwin "$stub_dir"
+  stub-sudo "$stub_dir"
+  stub-forget-command systemctl "$stub_dir"
+  . "$stub_dir/forget-systemctl"
+
+  state_dir=$(temp-dir web-wizardry-state)
+  plist_dir="$stub_dir/Library/LaunchDaemons"
+  mkdir -p "$plist_dir"
+
+  status=0
+  HOME="$test_home" WEB_WIZARDRY_ROOT="$web_root" WIZARDRY_DIR="$ROOT_DIR" \
+    PATH="$stub_dir:$PATH" LAUNCHCTL_STATE_DIR="$state_dir" LAUNCHD_PLIST_DIR="$plist_dir" \
+    sh "$test_root/spells/web/repair-site-daemon" mysite >/dev/null 2>"$tmpdir/error" || status=$?
+  [ "$status" -eq 0 ] || {
+    TEST_FAILURE_REASON="repair-site-daemon should succeed for git workspace sites"
+    rm -rf "$tmpdir" "$stub_dir" "$state_dir"
+    return 1
+  }
+  [ ! -s "$tmpdir/error" ] || {
+    TEST_FAILURE_REASON="repair-site-daemon should not emit errors for git workspace sites"
+    rm -rf "$tmpdir" "$stub_dir" "$state_dir"
+    return 1
+  }
+
+  runtime_dir=$(HOME="$test_home" sh "$test_root/spells/.imps/web/site-runtime-dir" "$site_dir" nginx)
+  plist_file="$plist_dir/org.wizardry.web.mysite.plist"
+  grep -q "<string>$runtime_dir/daemon.log</string>" "$plist_file" || {
+    TEST_FAILURE_REASON="launchd plist should log stdout under the external runtime dir"
+    rm -rf "$tmpdir" "$stub_dir" "$state_dir"
+    return 1
+  }
+  grep -q "<string>$runtime_dir/daemon-error.log</string>" "$plist_file" || {
+    TEST_FAILURE_REASON="launchd plist should log stderr under the external runtime dir"
+    rm -rf "$tmpdir" "$stub_dir" "$state_dir"
+    return 1
+  }
+
+  rm -rf "$tmpdir" "$stub_dir" "$state_dir"
+}
+
 run_test_case "repair-site-daemon --help works" test_repair_site_daemon_help
 run_test_case "repair-site-daemon installs systemd unit" test_repair_site_daemon_installs_systemd_unit
 run_test_case "repair-site-daemon defaults launchctl daemon to disabled" \
@@ -224,5 +279,7 @@ run_test_case "repair-site-daemon rejects path-shaped site names" \
   test_repair_site_daemon_rejects_path_shaped_site_name
 run_test_case "repair-site-daemon rejects invalid imported site-user" \
   test_repair_site_daemon_rejects_invalid_imported_site_user
+run_test_case "repair-site-daemon launchctl uses XDG runtime logs for git workspace sites" \
+  test_repair_site_daemon_launchctl_uses_xdg_runtime_logs_for_git_workspace_sites
 
 finish_tests

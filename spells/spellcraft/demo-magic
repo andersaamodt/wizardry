@@ -40,6 +40,10 @@ demo_run_spell() {
   sh "$demo_spell_path" "$@"
 }
 
+demo_xattr_note() {
+  printf '%s\n' "$demo_xattr_note_text"
+}
+
 demo_level() {
   level=$1
   level_name=$(spell-levels "$level" name)
@@ -259,20 +263,25 @@ demo_level() {
 
       room="$demo_workspace/room"
       mkdir -p "$room"
-      enchant "$room" title "Reading Nook" >/dev/null 2>&1 || true
-      enchant "$room" description "A lantern-lit archive." >/dev/null 2>&1 || true
+      if [ "$demo_xattr_supported" -eq 1 ]; then
+        enchant "$room" title "Reading Nook" >/dev/null 2>&1 || true
+        enchant "$room" description "A lantern-lit archive." >/dev/null 2>&1 || true
 
-      look_output=$(look "$room" 2>&1 || true)
-      if [ -n "$look_output" ]; then
-        printf '%s\n' "$look_output" | sed -n '1,2p'
-        demonstrated="$demonstrated look"
-      fi
+        look_output=$(look "$room" 2>&1 || true)
+        if [ -n "$look_output" ]; then
+          printf '%s\n' "$look_output" | sed -n '1,2p'
+          demonstrated="$demonstrated look"
+        fi
 
-      if SHELL=/bin/zsh demo_run_spell check-cd-hook >/dev/null 2>&1; then
-        printf 'check-cd-hook -> installed\n'
-        demonstrated="$demonstrated check-cd-hook"
+        if SHELL=/bin/zsh demo_run_spell check-cd-hook >/dev/null 2>&1; then
+          printf 'check-cd-hook -> installed\n'
+          demonstrated="$demonstrated check-cd-hook"
+        else
+          printf 'check-cd-hook -> not installed\n'
+        fi
       else
-        printf 'check-cd-hook -> not installed\n'
+        printf 'look/check-cd-hook skipped: '
+        demo_xattr_note
       fi
       ;;
 
@@ -286,10 +295,14 @@ demo_level() {
       printf 'oak\n' > "$ops_dir/oak.txt"
       printf 'ash\n' > "$ops_dir/ash.txt"
 
-      if enchant "$ops_dir/oak.txt" sigil=oak >/dev/null 2>&1; then
+      if [ "$demo_xattr_supported" -eq 1 ] && \
+        enchant "$ops_dir/oak.txt" sigil=oak >/dev/null 2>&1; then
         sigil_value=$(read-magic "$ops_dir/oak.txt" sigil 2>/dev/null || printf '')
         printf 'read-magic -> sigil=%s\n' "${sigil_value:-missing}"
         demonstrated="$demonstrated read-magic"
+      elif [ "$demo_xattr_supported" -ne 1 ]; then
+        printf 'read-magic skipped: '
+        demo_xattr_note
       fi
 
       if demo_run_spell file-to-folder "$ops_dir/brief.md" >/dev/null 2>&1; then
@@ -392,14 +405,21 @@ demo_level() {
 
       divination_scroll="$demo_workspace/divination-scroll.txt"
       printf 'quiet ward\n' > "$divination_scroll"
-      enchant "$divination_scroll" aura=quiet >/dev/null 2>&1 || true
+      if [ "$demo_xattr_supported" -eq 1 ]; then
+        enchant "$divination_scroll" aura=quiet >/dev/null 2>&1 || true
+      fi
       printf 'divination-scroll.txt -> prepared fixture\n'
 
-      detect_magic_output=$(cd "$demo_workspace" && detect-magic 2>&1 || true)
-      if [ -n "$detect_magic_output" ]; then
-        printf 'detect-magic:\n'
-        printf '%s\n' "$detect_magic_output" | sed -n '1,4p'
-        demonstrated="$demonstrated detect-magic"
+      if [ "$demo_xattr_supported" -eq 1 ]; then
+        detect_magic_output=$(cd "$demo_workspace" && detect-magic 2>&1 || true)
+        if [ -n "$detect_magic_output" ]; then
+          printf 'detect-magic:\n'
+          printf '%s\n' "$detect_magic_output" | sed -n '1,4p'
+          demonstrated="$demonstrated detect-magic"
+        fi
+      else
+        printf 'detect-magic skipped: '
+        demo_xattr_note
       fi
 
       rc_output=$(SHELL=/bin/zsh detect-rc-file 2>&1 || true)
@@ -422,24 +442,29 @@ demo_level() {
 
       sanctum="$demo_workspace/sanctum"
       mkdir -p "$sanctum"
-      if decorate "$sanctum" "A lantern-lit archive." >/dev/null 2>&1; then
-        printf 'decorate -> description applied\n'
-        demonstrated="$demonstrated decorate"
-      fi
+      if [ "$demo_xattr_supported" -eq 1 ]; then
+        if decorate "$sanctum" "A lantern-lit archive." >/dev/null 2>&1; then
+          printf 'decorate -> description applied\n'
+          demonstrated="$demonstrated decorate"
+        fi
 
-      avatar="$demo_workspace/avatar"
-      : > "$avatar"
-      enchant "$avatar" max_life=100 >/dev/null 2>&1 || true
-      enchant "$avatar" damage=15 >/dev/null 2>&1 || true
-      enchant "$avatar" mana=42 >/dev/null 2>&1 || true
-      enchant "$avatar" max_mana=50 >/dev/null 2>&1 || true
-      enchant "$avatar" experience=7 >/dev/null 2>&1 || true
-      stats_output=$(stats "$avatar" 2>&1 || true)
-      if [ -n "$stats_output" ]; then
-        printf '%s\n' "$stats_output" | sed -n '1,5p'
-        demonstrated="$demonstrated stats"
+        avatar="$demo_workspace/avatar"
+        : > "$avatar"
+        enchant "$avatar" max_life=100 >/dev/null 2>&1 || true
+        enchant "$avatar" damage=15 >/dev/null 2>&1 || true
+        enchant "$avatar" mana=42 >/dev/null 2>&1 || true
+        enchant "$avatar" max_mana=50 >/dev/null 2>&1 || true
+        enchant "$avatar" experience=7 >/dev/null 2>&1 || true
+        stats_output=$(stats "$avatar" 2>&1 || true)
+        if [ -n "$stats_output" ]; then
+          printf '%s\n' "$stats_output" | sed -n '1,5p'
+          demonstrated="$demonstrated stats"
+        fi
+        printf 'Only fixture-local description and stat reads run here.\n'
+      else
+        printf 'decorate/stats skipped: '
+        demo_xattr_note
       fi
-      printf 'Only fixture-local description and stat reads run here.\n'
       ;;
 
     17)
@@ -452,30 +477,35 @@ demo_level() {
         demonstrated="$demonstrated hash"
       fi
 
-      hash_card="$demo_workspace/hash-card.txt"
-      printf 'cipher text\n' > "$hash_card"
-      hashchant_output=$(hashchant "$hash_card" 2>&1 || true)
-      hashchant_value=$(
-        printf '%s\n' "$hashchant_output" |
-          sed -n 's/.*\(0x[0-9A-F][0-9A-F]*\).*/\1/p' |
-          sed -n '1p'
-      )
-      if [ -n "$hashchant_value" ]; then
-        printf 'hashchant -> %s\n' "$hashchant_value"
-        demonstrated="$demonstrated hashchant"
-      fi
+      if [ "$demo_xattr_supported" -eq 1 ]; then
+        hash_card="$demo_workspace/hash-card.txt"
+        printf 'cipher text\n' > "$hash_card"
+        hashchant_output=$(hashchant "$hash_card" 2>&1 || true)
+        hashchant_value=$(
+          printf '%s\n' "$hashchant_output" |
+            sed -n 's/.*\(0x[0-9A-F][0-9A-F]*\).*/\1/p' |
+            sed -n '1p'
+        )
+        if [ -n "$hashchant_value" ]; then
+          printf 'hashchant -> %s\n' "$hashchant_value"
+          demonstrated="$demonstrated hashchant"
+        fi
 
-      if [ -n "$hashchant_value" ]; then
-        evoke_output=$(evoke-hash "$hashchant_value" "$demo_workspace" 2>&1 || true)
-        case "$evoke_output" in
-          ''|No\ file\ found*)
-            printf 'evoke-hash skipped: hash attribute not visible on this host.\n'
-            ;;
-          *)
-            printf 'evoke-hash -> %s\n' "$evoke_output"
-            demonstrated="$demonstrated evoke-hash"
-            ;;
-        esac
+        if [ -n "$hashchant_value" ]; then
+          evoke_output=$(evoke-hash "$hashchant_value" "$demo_workspace" 2>&1 || true)
+          case "$evoke_output" in
+            ''|No\ file\ found*)
+              printf 'evoke-hash skipped: hash attribute not visible on this host.\n'
+              ;;
+            *)
+              printf 'evoke-hash -> %s\n' "$evoke_output"
+              demonstrated="$demonstrated evoke-hash"
+              ;;
+          esac
+        fi
+      else
+        printf 'hashchant/evoke-hash skipped: '
+        demo_xattr_note
       fi
       ;;
 
@@ -509,14 +539,21 @@ demo_level() {
       uncheck_spell="$WIZARDRY_DIR/spells/tasks/uncheck"
       get_checked_spell="$WIZARDRY_DIR/spells/tasks/get-checked"
 
-      if sh "$check_spell" "$task_file" >/dev/null 2>&1; then
-        printf 'get-checked -> %s\n' "$(sh "$get_checked_spell" "$task_file" 2>/dev/null || printf '?')"
-        demonstrated="$demonstrated check get-checked"
-      fi
+      if [ "$demo_xattr_supported" -eq 1 ]; then
+        if sh "$check_spell" "$task_file" >/dev/null 2>&1; then
+          checked_state=$(sh "$get_checked_spell" "$task_file" 2>/dev/null || printf '?')
+          printf 'get-checked -> %s\n' "$checked_state"
+          demonstrated="$demonstrated check get-checked"
+        fi
 
-      if sh "$uncheck_spell" "$task_file" >/dev/null 2>&1; then
-        printf 'get-checked -> %s\n' "$(sh "$get_checked_spell" "$task_file" 2>/dev/null || printf '?')"
-        demonstrated="$demonstrated uncheck"
+        if sh "$uncheck_spell" "$task_file" >/dev/null 2>&1; then
+          checked_state=$(sh "$get_checked_spell" "$task_file" 2>/dev/null || printf '?')
+          printf 'get-checked -> %s\n' "$checked_state"
+          demonstrated="$demonstrated uncheck"
+        fi
+      else
+        printf 'check/uncheck skipped: '
+        demo_xattr_note
       fi
       ;;
 
@@ -779,6 +816,24 @@ for dir in "$WIZARDRY_DIR"/spells/*; do
   PATH="$dir:$PATH"
 done
 export PATH
+
+demo_xattr_capability="unknown"
+demo_xattr_supported=0
+demo_xattr_note_text="extended attributes unavailable on this host."
+if command -v detect-xattr-capability >/dev/null 2>&1; then
+  demo_xattr_capability=$(detect-xattr-capability 2>/dev/null || printf 'unknown')
+fi
+case "$demo_xattr_capability" in
+  supported)
+    demo_xattr_supported=1
+    ;;
+  helpers-missing|filesystem-unsupported|probe-unavailable)
+    demo_xattr_supported=0
+    ;;
+  *)
+    demo_xattr_supported=0
+    ;;
+esac
 
 demo_target_level=$demo_max_level
 demo_in_pocket=0

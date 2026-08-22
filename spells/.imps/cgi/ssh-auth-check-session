@@ -32,8 +32,8 @@ if [ ! -f "$session_file" ]; then
 fi
 
 # Get session data
-username=$(grep -o '"username":"[^"]*"' "$session_file" | cut -d'"' -f4)
-fingerprint=$(grep -o '"fingerprint":"[^"]*"' "$session_file" | cut -d'"' -f4)
+username=$(json-extract-string username "$session_file")
+fingerprint=$(json-extract-string fingerprint "$session_file")
 
 if ! validate-username "$username"; then
   printf '{"success":false,"authenticated":false}\n'

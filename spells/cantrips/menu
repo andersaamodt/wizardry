@@ -7,24 +7,96 @@
 case "${1-}" in
 --help|--usage|-h)
   cat <<'USAGE' >&2
-Usage: menu [--show-command] [--start-selection N] "Title" "Label%command"...
+Usage: menu
+       menu DIR
+       menu [--show-command] [--start-selection N] "Title" "Label%command"...
 
 Draw a keyboard-driven terminal menu using wizardry's cursor and input helpers.
-Provide a title followed by one or more "Label%command" entries; --show-command
-displays the command text as the label, and --start-selection picks the initial
-highlighted item. Use "---" to add a horizontal divider line.
+With no arguments, open the main Wizardry menu. When DIR is a folder, open its
+default local menu by looking for <dirname>-menu or a single *-menu file.
+Otherwise provide a title followed by one or more "Label%command" entries;
+--show-command displays the command text as the label, and --start-selection
+picks the initial highlighted item. Use "---" to add a horizontal divider line.
 USAGE
   exit 0
   ;;
 esac
 
-# Bootstrap: Load essential functions if not already available
-# This allows menu to work when executed directly (tests) or when invoked (normal use)
-
-# Use conditional strictness based on execution context
-# See .github/CODE_POLICY_SET_EU.md for details
 set -eu
 . env-clear
+
+menu_quote_command() {
+        menu_command=$1
+        case $menu_command in
+                ''|*[!A-Za-z0-9_./-]*)
+                        printf "'"
+                        printf '%s' "$menu_command" | sed "s/'/'\\\\''/g"
+                        printf "'\n"
+                        ;;
+                *)
+                        printf '%s\n' "$menu_command"
+                        ;;
+        esac
+}
+
+menu_direct_command_for_path() {
+        menu_target_dir=$1
+        menu_candidate_name=$2
+        menu_current_dir=$(pwd -P 2>/dev/null || pwd)
+        if [ "$menu_target_dir" = "$menu_current_dir" ]; then
+                menu_quote_command "./$menu_candidate_name"
+        else
+                menu_quote_command "$menu_target_dir/$menu_candidate_name"
+        fi
+}
+
+menu_run_local_default() {
+        menu_target_dir=$1
+        menu_default_name=${menu_target_dir##*/}
+        menu_exact_candidate="$menu_target_dir/$menu_default_name-menu"
+        if [ -x "$menu_exact_candidate" ] && [ ! -d "$menu_exact_candidate" ]; then
+                exec "$menu_exact_candidate"
+        fi
+
+        menu_candidate_count=0
+        menu_sole_candidate=''
+        menu_candidate_commands=''
+        for menu_candidate in "$menu_target_dir"/*-menu; do
+                [ -e "$menu_candidate" ] || continue
+                [ -d "$menu_candidate" ] && continue
+                [ -x "$menu_candidate" ] || continue
+                menu_candidate_count=$((menu_candidate_count + 1))
+                if [ "$menu_candidate_count" -eq 1 ]; then
+                        menu_sole_candidate=$menu_candidate
+                fi
+                menu_candidate_name=${menu_candidate##*/}
+                menu_direct_command=$(menu_direct_command_for_path \
+                        "$menu_target_dir" "$menu_candidate_name")
+                if [ -z "$menu_candidate_commands" ]; then
+                        menu_candidate_commands=$menu_direct_command
+                else
+                        menu_candidate_commands="${menu_candidate_commands}
+$menu_direct_command"
+                fi
+        done
+
+        if [ "$menu_candidate_count" -eq 1 ] && [ -n "$menu_sole_candidate" ]; then
+                exec "$menu_sole_candidate"
+        fi
+
+        if [ "$menu_candidate_count" -gt 1 ]; then
+                printf '%s\n' "menu: no default local menu found in $menu_target_dir" >&2
+                printf '%s\n' "menu: run one of these menus directly:" >&2
+                printf '%s\n' "$menu_candidate_commands" >&2
+                exit 1
+        fi
+
+        printf '%s\n' "menu: no local menu found in $menu_target_dir" >&2
+        exit 1
+}
+
+# Bootstrap: Load essential functions if not already available
+# This allows menu to work when executed directly (tests) or when invoked (normal use)
 
 # Wrapper functions for helper commands
 # Only define if the underlying command is available
@@ -71,34 +143,6 @@ stty() {
         # stty is a system command, always use it directly
         command stty "$@"
 }
-
-# Verify that all helper spells are ready before drawing the menu.
-# Uses the shared 'require' imp for dependency checking.
-require fathom_cursor "The menu spell needs 'fathom-cursor' to place the menu." || exit 1
-require fathom_terminal "The menu spell needs 'fathom-terminal' to measure the screen." || exit 1
-require move_cursor "The menu spell needs 'move-cursor' to reposition the cursor." || exit 1
-require await_keypress "The menu spell needs 'await_keypress' to read input." || exit 1
-require cursor_blink "The menu spell needs 'cursor-blink' to restore the cursor." || exit 1
-require stty "The menu spell needs 'stty' to manage terminal modes." || exit 1
-
-menu_tty=${AWAIT_KEYPRESS_DEVICE:-/dev/tty}
-if [ ! -r "$menu_tty" ] || [ ! -w "$menu_tty" ]; then
-        die "menu: unable to access controlling terminal '$menu_tty'" || exit 1
-fi
-
-if menu_saved_tty_state=$(stty -g <"$menu_tty" 2>/dev/null); then
-        :
-else
-        die "menu: unable to read terminal settings" || exit 1
-fi
-
-terminal_restored=0
-
-AWAIT_KEYPRESS_KEEP_RAW=1
-export AWAIT_KEYPRESS_KEEP_RAW
-await_keypress_buffer_file=$(menu_temp_file await_keypress-buffer) || exit 1
-AWAIT_KEYPRESS_BUFFER_FILE=$await_keypress_buffer_file
-export AWAIT_KEYPRESS_BUFFER_FILE
 
 # Load colour helpers when present; otherwise fall back to plain text.
 # Try to find colors in the same directory when executed directly
@@ -148,6 +192,14 @@ if [ "${1-}" = "--start-selection" ]; then
         shift
 fi
 
+if [ "$#" -eq 1 ] && [ -d "$1" ]; then
+        if menu_local_dir=$(CDPATH= cd -- "$1" 2>/dev/null && pwd -P); then
+                menu_run_local_default "$menu_local_dir"
+        fi
+        printf '%s\n' "menu: could not access directory '$1'" >&2
+        exit 1
+fi
+
 if [ "$#" -lt 2 ]; then
   if command -v main-menu >/dev/null 2>&1; then
     . main-menu
@@ -156,6 +208,34 @@ if [ "$#" -lt 2 ]; then
   printf '%s\n' "menu: no menu entries provided and main-menu not found" >&2
   exit 1
 fi
+
+# Verify that all helper spells are ready before drawing the menu.
+# Uses the shared 'require' imp for dependency checking.
+require fathom_cursor "The menu spell needs 'fathom-cursor' to place the menu." || exit 1
+require fathom_terminal "The menu spell needs 'fathom-terminal' to measure the screen." || exit 1
+require move_cursor "The menu spell needs 'move-cursor' to reposition the cursor." || exit 1
+require await_keypress "The menu spell needs 'await_keypress' to read input." || exit 1
+require cursor_blink "The menu spell needs 'cursor-blink' to restore the cursor." || exit 1
+require stty "The menu spell needs 'stty' to manage terminal modes." || exit 1
+
+menu_tty=${AWAIT_KEYPRESS_DEVICE:-/dev/tty}
+if [ ! -r "$menu_tty" ] || [ ! -w "$menu_tty" ]; then
+        die "menu: unable to access controlling terminal '$menu_tty'" || exit 1
+fi
+
+if menu_saved_tty_state=$(stty -g <"$menu_tty" 2>/dev/null); then
+        :
+else
+        die "menu: unable to read terminal settings" || exit 1
+fi
+
+terminal_restored=0
+
+AWAIT_KEYPRESS_KEEP_RAW=1
+export AWAIT_KEYPRESS_KEEP_RAW
+await_keypress_buffer_file=$(menu_temp_file await_keypress-buffer) || exit 1
+AWAIT_KEYPRESS_BUFFER_FILE=$await_keypress_buffer_file
+export AWAIT_KEYPRESS_BUFFER_FILE
 
 description=$1
 shift
@@ -212,7 +292,7 @@ do
                         ;;
                 esac
                 # Strip ANSI codes before calculating visible length
-                clean_label=$(printf '%s' "$label" | sed "$strip_ansi_pattern")
+                clean_label=$(printf '%s' "$label" | LC_ALL=C sed "$strip_ansi_pattern")
                 is_divider=0
         fi
         
@@ -429,7 +509,7 @@ format_command_for_display() {
 
         # When menus expand the selection file path inline, hide that bookkeeping.
         simplified_cmd=$(
-                printf '%s\n' "$simplified_cmd" | sed \
+                printf '%s\n' "$simplified_cmd" | LC_ALL=C sed \
                         -e 's/[[:space:]]*;[[:space:]]*echo .* >[[:space:]]*"[^"]*"$/ /' \
                         -e "s/[[:space:]]*;[[:space:]]*printf '%s' .* >[[:space:]]*\"[^\"]*\"$//"
         )
@@ -442,7 +522,7 @@ format_command_for_display() {
         # Wrapped menu actions sometimes capture a primary command into a
         # variable before refreshing the menu. Show the captured action itself.
         captured_action=$(
-                printf '%s\n' "$simplified_cmd" | sed -n \
+                printf '%s\n' "$simplified_cmd" | LC_ALL=C sed -n \
                         's/^[A-Za-z_][A-Za-z0-9_]*=\$(\([^)]*\))[[:space:]]*&&[[:space:]]*kill -TERM \$PPID[[:space:]]*&&[[:space:]].*$/\1/p'
         )
         if [ -n "$captured_action" ]; then
@@ -491,7 +571,7 @@ format_command_for_display() {
         fi
 
         simplified_cmd=$(
-                printf '%s\n' "$simplified_cmd" | sed \
+                printf '%s\n' "$simplified_cmd" | LC_ALL=C sed \
                         -e 's/"\(\$[A-Za-z_][A-Za-z0-9_]*\)"/\1/g' \
                         -e 's/"\([A-Za-z0-9_./:-][A-Za-z0-9_./:-]*\)"/\1/g' \
                         -e "s/'\\([A-Za-z0-9_./:-][A-Za-z0-9_./:-]*\\)'/\\1/g"
@@ -720,6 +800,14 @@ position_cursor_below_menu() {
         fi
 }
 
+capture_probe() {
+        if probe_output=$("$@" 2>/dev/null); then
+                printf '%s' "$probe_output"
+        else
+                printf ''
+        fi
+}
+
 cursor_blink off
 
 if [ -n "$description" ]; then
@@ -727,7 +815,7 @@ if [ -n "$description" ]; then
         printf '%b%s%b\n' "$THEME_HEADING" "$description" "$RESET"
 fi
 
-menu_row=$(fathom_cursor -y)
+menu_row=$(capture_probe fathom_cursor -y)
 case "$menu_row" in
         ''|*[!0-9]*)
                 menu_row=1
@@ -742,7 +830,7 @@ esac
 # becomes the anchor for the first menu option so the items render directly
 # beneath the title.
 
-terminal_height=$(fathom_terminal --height)
+terminal_height=$(capture_probe fathom_terminal --height)
 case "$terminal_height" in
         ''|*[!0-9]*)
                 terminal_height=0
@@ -827,7 +915,7 @@ do
         check_width_counter=$((check_width_counter + 1))
         if [ "$check_width_counter" -ge "$width_check_interval" ] || [ "$needs_redraw" -eq 1 ]; then
                 check_width_counter=0
-                current_window_width=$(fathom_terminal --width)
+                current_window_width=$(capture_probe fathom_terminal --width)
         else
                 current_window_width=$window_width
         fi

@@ -30,7 +30,82 @@ spell_has_content() {
   [ -s "$ROOT_DIR/spells/.arcana/core/install-checkbashisms" ]
 }
 
+installs_into_termux_prefix_without_devscripts() {
+  skip-if-compiled || return $?
+  fixture=$(make_fixture)
+  prefix="$fixture/data/data/com.termux/files/usr"
+  stub_dir="$fixture/bin"
+  pkg_log="$fixture/pkg.log"
+  mkdir -p "$prefix/bin" "$stub_dir"
+
+  cat <<'SCRIPT' >"$stub_dir/uname"
+#!/bin/sh
+printf '%s\n' Linux
+SCRIPT
+  cat <<'SCRIPT' >"$stub_dir/apt-get"
+#!/bin/sh
+printf '%s\n' "apt-get must not be used for Termux checkbashisms" >&2
+exit 1
+SCRIPT
+  cat <<'SCRIPT' >"$stub_dir/sudo"
+#!/bin/sh
+printf '%s\n' "sudo must not be used for Termux checkbashisms" >&2
+exit 1
+SCRIPT
+  cat <<'SCRIPT' >"$stub_dir/curl"
+#!/bin/sh
+output=""
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -o) output=$2; shift 2 ;;
+    *) shift ;;
+  esac
+done
+[ -n "$output" ] || exit 1
+cat <<'TOOL' >"$output"
+#!/usr/bin/perl
+exit 0;
+TOOL
+SCRIPT
+  cat <<'SCRIPT' >"$stub_dir/pkg"
+#!/bin/sh
+printf '%s\n' "$*" >>"${PKG_LOG:?}"
+cat <<'PERL' >"${PREFIX:?}/bin/perl"
+#!/bin/sh
+exit 0
+PERL
+chmod +x "${PREFIX}/bin/perl"
+SCRIPT
+  cat <<'SCRIPT' >"$stub_dir/perl"
+#!/bin/sh
+exit 1
+SCRIPT
+  chmod +x "$stub_dir/uname" "$stub_dir/apt-get" "$stub_dir/sudo" "$stub_dir/curl" "$stub_dir/pkg" "$stub_dir/perl"
+
+  run_cmd env PATH="$prefix/bin:$stub_dir:$initial_path" PREFIX="$prefix" PKG_LOG="$pkg_log" \
+    INSTALL_CHECKBASHISMS_FORCE_INSTALL=1 \
+    "$ROOT_DIR/spells/.arcana/core/install-checkbashisms"
+
+  assert_success || return 1
+  [ -x "$prefix/bin/checkbashisms" ] || {
+    TEST_FAILURE_REASON="expected checkbashisms in the Termux prefix"
+    return 1
+  }
+  first_line=$(sed -n '1p' "$prefix/bin/checkbashisms")
+  [ "$first_line" = "#!/usr/bin/env perl" ] || {
+    TEST_FAILURE_REASON="expected the downloaded Perl script to use Termux PATH"
+    return 1
+  }
+  assert_output_contains "checkbashisms installed successfully from Debian sources." || return 1
+  grep -q '^install -y perl$' "$pkg_log" || {
+    TEST_FAILURE_REASON="expected the Termux Perl prerequisite to be installed with pkg"
+    return 1
+  }
+}
+
 run_test_case "install-checkbashisms exits when tool is present" creates_no_install_when_present
+run_test_case "install-checkbashisms uses the Termux prefix" \
+  installs_into_termux_prefix_without_devscripts
 run_test_case "install-checkbashisms has content" spell_has_content
 
 

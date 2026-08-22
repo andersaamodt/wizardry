@@ -94,15 +94,16 @@ export WIZARDRY_DIR
 # TEST_ENV_* variables are exported by test-magic and available to all tests
 
 # Load invoke-wizardry once per test shell unless explicitly skipped.
-if [ "${WIZARDRY_TEST_SKIP_INVOKE-0}" != "1" ] && [ -f "$ROOT_DIR/spells/.imps/sys/invoke-wizardry" ]; then
+if [ "${WIZARDRY_TEST_SKIP_INVOKE-0}" != "1" ] && \
+  [ -f "$ROOT_DIR/spells/.imps/sys/invoke-wizardry" ]; then
   # invoke-wizardry not loaded yet - load it once per test file
   # This makes all spell functions and underscore-named imp functions available
   # Tests can then call functions directly (e.g., validate_spells, generate_glosses)
-  
+
   # Set flag to load all spells/imps
   WIZARDRY_LOAD_ALL=1
   export WIZARDRY_LOAD_ALL
-  
+
   # Source invoke-wizardry (it sets +eu internally for permissive mode)
   # We source it directly without piping (to preserve environment variables)
   set +e
@@ -141,8 +142,19 @@ fi
 WIZARDRY_SYSTEM_PATH="$initial_path"
 export WIZARDRY_SYSTEM_PATH
 
-: "${WIZARDRY_TMPDIR:=$(mktemp -d "${TMPDIR:-/tmp}/wizardry-test.XXXXXX")}" || exit 1
-# Normalize path for macOS compatibility (TMPDIR ends with /)
+if [ -z "${WIZARDRY_TMPDIR-}" ]; then
+  wizardry_state_home=${XDG_STATE_HOME:-${HOME:-/tmp}/.local/state}
+  wizardry_test_scratch_root=${WIZARDRY_TEST_SCRATCH_ROOT:-\
+$wizardry_state_home/wizardry/test-scratch}
+  wizardry_test_label=$(printf '%s' "${0:-wizardry-test}" | sed 's|[^A-Za-z0-9._-]|_|g')
+  WIZARDRY_TMPDIR=$wizardry_test_scratch_root/$wizardry_test_label
+  rm -rf "$WIZARDRY_TMPDIR"
+  mkdir -p "$WIZARDRY_TMPDIR" || exit 1
+  unset wizardry_state_home wizardry_test_scratch_root wizardry_test_label
+else
+  mkdir -p "$WIZARDRY_TMPDIR" || exit 1
+fi
+# Normalize path for macOS compatibility (TMPDIR may end with /)
 WIZARDRY_TMPDIR=$(printf '%s' "$WIZARDRY_TMPDIR" | sed 's|//|/|g')
 export WIZARDRY_TMPDIR
 
@@ -216,7 +228,10 @@ warn_once_file=${WIZARDRY_BWRAP_WARN_FILE-${TMPDIR:-/tmp}/wizardry-sandbox-warni
 warn_once_dir=$(dirname "$warn_once_file")
 mkdir -p "$warn_once_dir" 2>/dev/null || true
 
-if [ "$BWRAP_AVAILABLE" -eq 0 ] && [ "$MACOS_SANDBOX_AVAILABLE" -eq 0 ] && [ ! -f "$warn_once_file" ] && [ "${WIZARDRY_BWRAP_WARNING-0}" -eq 0 ]; then
+if [ "$BWRAP_AVAILABLE" -eq 0 ] && \
+  [ "$MACOS_SANDBOX_AVAILABLE" -eq 0 ] && \
+  [ ! -f "$warn_once_file" ] && \
+  [ "${WIZARDRY_BWRAP_WARNING-0}" -eq 0 ]; then
   printf '%s\n' "WARNING: proceeding without sandbox isolation: $BWRAP_REASON" >&2
   WIZARDRY_BWRAP_WARNING=1
   export WIZARDRY_BWRAP_WARNING
@@ -370,7 +385,8 @@ run_spell_in_dir() {
   fi
 }
 
-# List of boot imps that need underscore wrappers (excluding run-test-case and run-spell which are special)
+# List boot imps that need underscore wrappers.
+# run-test-case and run-spell have special wrappers.
 # We generate these dynamically from the boot directory to avoid maintenance burden
 for boot_imp in "$ROOT_DIR"/spells/.imps/test/boot/*; do
   [ -f "$boot_imp" ] || continue

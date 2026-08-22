@@ -12,7 +12,10 @@ USAGE
   ;;
 esac
 
+require-wizardry || exit 1
+
 set -eu
+. env-clear
 
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}
 
@@ -73,9 +76,6 @@ elif uninstall_supercollider_has_cmd pkg; then
   removed=1
 elif uninstall_supercollider_has_cmd pkg_delete; then
   uninstall_supercollider_run_privileged pkg_delete supercollider >/dev/null 2>&1 || true
-  removed=1
-elif uninstall_supercollider_has_cmd brew; then
-  brew uninstall --cask supercollider >/dev/null 2>&1 || true
   removed=1
 fi
 

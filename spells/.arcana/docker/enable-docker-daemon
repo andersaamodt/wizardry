@@ -8,6 +8,11 @@ case "${1-}" in
 Usage: enable-docker-daemon
 
 Enables Docker daemon startup.
+
+On macOS this creates a Docker Desktop login item only when
+WIZARDRY_DOCKER_DESKTOP_LOGIN_AUTOSTART=1 is set. Docker Desktop is a
+large GUI application and updater, so silent login autostart is avoided by
+default; use start-docker-daemon when you need it for a session.
 USAGE
   exit 0
   ;;
@@ -23,6 +28,9 @@ if ! "$script_dir/is-docker-daemon-installed" >/dev/null 2>&1; then
 fi
 
 if [ "$(uname -s 2>/dev/null)" = "Darwin" ]; then
+  if [ "${WIZARDRY_DOCKER_DESKTOP_LOGIN_AUTOSTART-}" != "1" ]; then
+    die "enable-docker-daemon: refusing to enable Docker Desktop login autostart without WIZARDRY_DOCKER_DESKTOP_LOGIN_AUTOSTART=1; run start-docker-daemon when needed"
+  fi
   launch_agents="$HOME/Library/LaunchAgents"
   launch_agent="$launch_agents/com.wizardry.docker-desktop.plist"
   mkdir -p "$launch_agents"

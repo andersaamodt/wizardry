@@ -72,7 +72,12 @@ resolve_local_template_dir_from_site() {
     ~/*) local_template_path="$HOME/${local_template_path#~/}" ;;
   esac
   local_template_path=$(cd "$local_template_path" 2>/dev/null && pwd -P) || return 1
-  if [ -d "$local_template_path/template" ] && [ ! -d "$local_template_path/site" ] && [ ! -d "$local_template_path/pages" ] && [ ! -d "$local_template_path/static" ] && [ ! -d "$local_template_path/includes" ] && [ ! -d "$local_template_path/cgi" ]; then
+  if [ -d "$local_template_path/template" ] && \
+    [ ! -d "$local_template_path/site" ] && \
+    [ ! -d "$local_template_path/pages" ] && \
+    [ ! -d "$local_template_path/static" ] && \
+    [ ! -d "$local_template_path/includes" ] && \
+    [ ! -d "$local_template_path/cgi" ]; then
     printf '%s\n' "$local_template_path/template"
     return 0
   fi
@@ -94,6 +99,33 @@ template_component_dir() {
     return 0
   fi
   return 1
+}
+
+copy_template_component_entries() {
+  source_dir=${1-}
+  target_dir=${2-}
+  skip_name=${3-}
+  [ -n "$source_dir" ] || return 0
+  [ -d "$source_dir" ] || return 0
+  [ -n "$target_dir" ] || return 0
+  mkdir -p "$target_dir"
+  find "$source_dir" -mindepth 1 -maxdepth 1 -print 2>/dev/null |
+    while IFS= read -r source_entry; do
+    [ -n "$source_entry" ] || continue
+    entry_name=$(basename "$source_entry")
+    if [ -n "$skip_name" ] && [ "$entry_name" = "$skip_name" ]; then
+      continue
+    fi
+    target_entry="$target_dir/$entry_name"
+    rm -rf "$target_entry"
+    if [ -L "$source_entry" ]; then
+      link_target=$(readlink "$source_entry" 2>/dev/null || printf '')
+      [ -n "$link_target" ] || continue
+      ln -s "$link_target" "$target_entry"
+      continue
+    fi
+    cp -R "$source_entry" "$target_entry"
+  done
 }
 
 site_name=${1-}
@@ -284,9 +316,24 @@ fi
 if [ -d "$site_dir/cgi" ]; then
   rm -rf "$site_dir/cgi"
 fi
+if [ -d "$site_dir/app" ]; then
+  rm -rf "$site_dir/app"
+fi
+if [ -d "$site_dir/scripts" ]; then
+  rm -rf "$site_dir/scripts"
+fi
+if [ -d "$site_dir/seed" ]; then
+  rm -rf "$site_dir/seed"
+fi
 # Remove README if it exists (comes from template)
 if [ -f "$site_dir/README.md" ]; then
   rm -f "$site_dir/README.md"
+fi
+if [ -f "$site_dir/site.allowlist" ]; then
+  rm -f "$site_dir/site.allowlist"
+fi
+if [ -f "$site_dir/.site-actions.conf" ]; then
+  rm -f "$site_dir/.site-actions.conf"
 fi
 
 # Copy fresh template files
@@ -298,11 +345,11 @@ template_static_dir=$(template_component_dir "$template_dir" static 2>/dev/null 
 template_includes_dir=$(template_component_dir "$template_dir" includes 2>/dev/null || true)
 
 if [ -n "$template_pages_dir" ] && [ -d "$template_pages_dir" ]; then
-  cp -r "$template_pages_dir" "$site_dir/site/pages"
+  copy_template_component_entries "$template_pages_dir" "$site_dir/site/pages" posts
 fi
 
 if [ -n "$template_static_dir" ] && [ -d "$template_static_dir" ]; then
-  cp -r "$template_static_dir" "$site_dir/site/static"
+  copy_template_component_entries "$template_static_dir" "$site_dir/site/static" themes
 fi
 
 # Sync shared theme catalog into every site.
@@ -312,15 +359,35 @@ if [ -d "$shared_theme_dir" ]; then
 fi
 
 if [ -n "$template_includes_dir" ] && [ -d "$template_includes_dir" ]; then
-  cp -r "$template_includes_dir" "$site_dir/site/includes"
+  copy_template_component_entries "$template_includes_dir" "$site_dir/site/includes" ''
 fi
 
 if [ -d "$template_dir/cgi" ]; then
-  cp -r "$template_dir/cgi" "$site_dir/"
+  copy_template_component_entries "$template_dir/cgi" "$site_dir/cgi" ''
+fi
+
+if [ -d "$template_dir/app" ]; then
+  copy_template_component_entries "$template_dir/app" "$site_dir/app" ''
+fi
+
+if [ -d "$template_dir/scripts" ]; then
+  copy_template_component_entries "$template_dir/scripts" "$site_dir/scripts" ''
+fi
+
+if [ -d "$template_dir/seed" ]; then
+  copy_template_component_entries "$template_dir/seed" "$site_dir/seed" ''
 fi
 
 if [ -f "$template_dir/README.md" ]; then
   cp "$template_dir/README.md" "$site_dir/"
+fi
+
+if [ -f "$template_dir/site.allowlist" ]; then
+  cp "$template_dir/site.allowlist" "$site_dir/"
+fi
+
+if [ -f "$template_dir/.site-actions.conf" ]; then
+  cp "$template_dir/.site-actions.conf" "$site_dir/"
 fi
 
 if [ -f "$site_dir/wizardry-server-requirements.conf" ]; then

@@ -22,7 +22,7 @@ export WIZARDRY_DIR
 printf 'sourced successfully\n'
 EOF
   chmod +x "$tmpdir/test-source.sh"
-  
+
   run_cmd sh "$tmpdir/test-source.sh"
   assert_success || return 1
   assert_output_contains "sourced successfully" || return 1
@@ -38,7 +38,7 @@ unset WIZARDRY_DIR
 printf '%s\n' "\${WIZARDRY_DIR:-unset}"
 EOF
   chmod +x "$tmpdir/test-var.sh"
-  
+
   run_cmd sh "$tmpdir/test-var.sh"
   assert_success || return 1
   # Should either be set to the root dir or remain unset (if detection fails)
@@ -72,7 +72,7 @@ if command -v say >/dev/null 2>&1; then
 fi
 EOF
   chmod +x "$tmpdir/test-imps.sh"
-  
+
   run_cmd sh "$tmpdir/test-imps.sh"
   assert_success || return 1
   assert_output_contains "has available" || return 1
@@ -92,7 +92,7 @@ export WIZARDRY_DIR
 printf 'completed without hanging\n'
 EOF
   chmod +x "$tmpdir/test-hang.sh"
-  
+
   # Run with a timeout to detect hanging (5 seconds should be plenty)
   if command -v timeout >/dev/null 2>&1; then
     run_cmd timeout 5 sh "$tmpdir/test-hang.sh"
@@ -132,13 +132,13 @@ fi
 printf 'permissive mode maintained\n'
 EOF
   chmod +x "$tmpdir/test-mode.sh"
-  
+
   # Replace ROOT_DIR in the heredoc (use temp file for cross-platform compatibility)
   tmpfile="$tmpdir/test-mode.tmp"
   sed "s|\$ROOT_DIR|$ROOT_DIR|g" "$tmpdir/test-mode.sh" > "$tmpfile"
   mv "$tmpfile" "$tmpdir/test-mode.sh"
   chmod +x "$tmpdir/test-mode.sh"
-  
+
   run_cmd sh "$tmpdir/test-mode.sh"
   assert_success || return 1
   assert_output_contains "permissive mode maintained" || return 1
@@ -147,14 +147,14 @@ EOF
 # Test: Sourcing invoke-wizardry from rc file works (simulates new terminal)
 test_rc_file_sourcing() {
   tmpdir=$(make_tempdir)
-  
+
   # Create a test rc file with invoke-wizardry source line
   cat > "$tmpdir/.testrc" << EOF
 # Test rc file
 export WIZARDRY_DIR="$ROOT_DIR"
 . "$ROOT_DIR/spells/.imps/sys/invoke-wizardry" 2>/dev/null
 EOF
-  
+
   # Create a test script that sources the rc file
   cat > "$tmpdir/test-rc.sh" << EOF
 #!/bin/sh
@@ -174,7 +174,7 @@ fi
 printf 'rc file sourcing successful\n'
 EOF
   chmod +x "$tmpdir/test-rc.sh"
-  
+
   run_cmd sh "$tmpdir/test-rc.sh"
   assert_success || return 1
   assert_output_contains "menu available after rc sourcing" || return 1
@@ -219,7 +219,7 @@ if command -v pwd >/dev/null 2>&1; then
 fi
 EOF
   chmod +x "$tmpdir/test-empty-path.sh"
-  
+
   # Run the test with bash to avoid dash stdout redirect issue
   run_cmd bash "$tmpdir/test-empty-path.sh"
   assert_success || return 1
@@ -229,7 +229,7 @@ EOF
 # Test: command_not_found_handle returns 127 for unknown commands
 test_returns_127_for_unknown_command() {
   tmpdir=$(make_tempdir)
-  
+
   cat > "$tmpdir/test-cnf.sh" << EOF
 #!/bin/sh
 WIZARDRY_DIR="$ROOT_DIR"
@@ -241,7 +241,7 @@ totally_nonexistent_command_xyz123 2>/dev/null
 exit \$?
 EOF
   chmod +x "$tmpdir/test-cnf.sh"
-  
+
   run_cmd sh "$tmpdir/test-cnf.sh"
   assert_status 127 || return 1
 }
@@ -250,25 +250,25 @@ EOF
 test_recursion_guard() {
   # This test verifies that the command_not_found_handle function in invoke-wizardry
   # includes a recursion guard using the _WIZARDRY_IN_CNF variable
-  
+
   # Check that the recursion guard is present in the code
   if ! grep -q "_WIZARDRY_IN_CNF" "$ROOT_DIR/spells/.imps/sys/invoke-wizardry"; then
     TEST_FAILURE_REASON="Recursion guard variable not found in invoke-wizardry"
     return 1
   fi
-  
+
   # Check that the guard is checked at the start of the handler
   if ! grep -q '_WIZARDRY_IN_CNF.*= "$1"' "$ROOT_DIR/spells/.imps/sys/invoke-wizardry"; then
     TEST_FAILURE_REASON="Recursion guard check not found in command_not_found_handle"
     return 1
   fi
-  
+
   # Check that the guard is set to the current command
   if ! grep -q '_WIZARDRY_IN_CNF=$1' "$ROOT_DIR/spells/.imps/sys/invoke-wizardry"; then
     TEST_FAILURE_REASON="Recursion guard not set to command name"
     return 1
   fi
-  
+
   # Check that the guard is unset after execution
   if ! grep -q 'unset _WIZARDRY_IN_CNF' "$ROOT_DIR/spells/.imps/sys/invoke-wizardry"; then
     TEST_FAILURE_REASON="Recursion guard not cleaned up (unset)"
@@ -283,7 +283,7 @@ test_recursion_guard() {
 # Test: menu is available in PATH after invoke-wizardry
 test_menu_preloaded() {
   tmpdir=$(make_tempdir)
-  
+
   cat > "$tmpdir/test-menu-preloaded.sh" << EOF
 #!/bin/sh
 WIZARDRY_DIR="$ROOT_DIR"
@@ -303,7 +303,7 @@ else
 fi
 EOF
   chmod +x "$tmpdir/test-menu-preloaded.sh"
-  
+
   run_cmd sh "$tmpdir/test-menu-preloaded.sh"
   assert_success || return 1
   assert_output_contains "menu command available" || return 1
@@ -359,7 +359,7 @@ EOF
 # Test: Spell directories not added to PATH
 test_spell_dirs_not_added_to_path() {
   tmpdir=$(make_tempdir)
-  
+
   cat > "$tmpdir/test-no-spell-path.sh" << EOF
 #!/bin/sh
 WIZARDRY_DIR="$ROOT_DIR"
@@ -385,7 +385,7 @@ printf 'spell directories not added to PATH (correct)\n'
 exit 0
 EOF
   chmod +x "$tmpdir/test-no-spell-path.sh"
-  
+
   # Run the test with bash to avoid dash stdout redirect issue
   run_cmd bash "$tmpdir/test-no-spell-path.sh"
   assert_success || return 1
@@ -397,7 +397,7 @@ test_empty_spellbook_directory() {
   tmpdir=$(make_tempdir)
   empty_spellbook="$tmpdir/empty_spellbook"
   mkdir -p "$empty_spellbook"
-  
+
   cat > "$tmpdir/test-empty-spellbook.sh" << EOF
 #!/bin/sh
 WIZARDRY_DIR="$ROOT_DIR"
@@ -420,7 +420,7 @@ if command -v menu >/dev/null 2>&1; then
 fi
 EOF
   chmod +x "$tmpdir/test-empty-spellbook.sh"
-  
+
   run_cmd sh "$tmpdir/test-empty-spellbook.sh"
   assert_success || return 1
   assert_output_contains "sourcing completed successfully" || return 1
@@ -430,7 +430,7 @@ EOF
 # Test: .arcana subdirectories are added to PATH
 test_arcana_subdirs_in_path() {
   tmpdir=$(make_tempdir)
-  
+
   cat > "$tmpdir/test-arcana-path.sh" << EOF
 #!/bin/sh
 WIZARDRY_DIR="$ROOT_DIR"
@@ -459,11 +459,32 @@ else
 fi
 EOF
   chmod +x "$tmpdir/test-arcana-path.sh"
-  
+
   run_cmd sh "$tmpdir/test-arcana-path.sh"
   assert_success || return 1
   assert_output_contains ".arcana/mud in PATH" || return 1
   assert_output_contains "toggle-mud-menu available" || return 1
+}
+
+invoke_wizardry_keeps_termux_bin_ahead_of_baseline_path() {
+  tmpdir=$(make_tempdir)
+  mkdir -p "$tmpdir/home" "$tmpdir/spellbook"
+
+  run_cmd env HOME="$tmpdir/home" SPELLBOOK_DIR="$tmpdir/spellbook" \
+    WIZARDRY_DIR="$ROOT_DIR" WIZARDRY_TEST_HELPERS_ONLY=1 \
+    PATH="/data/data/com.termux/files/usr/bin" \
+    /bin/sh -c '. "$1/spells/.imps/sys/invoke-wizardry"; printf "%s\n" "$PATH"' sh "$ROOT_DIR"
+
+  assert_success || return 1
+  case "$OUTPUT" in
+    *"/data/data/com.termux/files/usr/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"*)
+      return 0
+      ;;
+    *)
+      TEST_FAILURE_REASON="expected Termux bin to stay ahead of baseline PATH"
+      return 1
+      ;;
+  esac
 }
 
 run_test_case "invoke-wizardry is sourceable" test_sourceable
@@ -481,6 +502,8 @@ run_test_case "invoke-wizardry works in non-bash shells via default path" test_d
 run_test_case "menu is available in PATH" test_menu_preloaded
 run_test_case "empty spellbook directory doesn't cause errors" test_empty_spellbook_directory
 run_test_case ".arcana subdirectories are added to PATH" test_arcana_subdirs_in_path
+run_test_case "invoke-wizardry keeps Termux bin ahead of baseline PATH" \
+  invoke_wizardry_keeps_termux_bin_ahead_of_baseline_path
 # Test #11 removed: redundant (spell dirs never added to PATH)
 
 finish_tests

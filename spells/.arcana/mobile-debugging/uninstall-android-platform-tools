@@ -1,0 +1,24 @@
+#!/bin/sh
+# Remove Android platform tools from the isolated mobile-debugging root.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: uninstall-android-platform-tools
+
+Removes Android platform tools from Theurgy's mobile debugging quarantine roots.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+. "$script_dir/mobile-debugging-common"
+set -eu
+
+uninstall_android_platform_tools_main

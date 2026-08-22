@@ -33,40 +33,104 @@ if [ -z "$checkbashisms_cmd" ] && has checkbashisms; then
   checkbashisms_cmd=$(command -v checkbashisms)
 fi
 
-if [ -z "$checkbashisms_cmd" ]; then
-  die "verify-posix: checkbashisms is required but not found in PATH."
-fi
-
 failures=0
 total=0
 failed_targets=""
 failed_details=""
 detail_log=$(temp-file verify-posix-details) || exit 1
+gnuisms_patterns=$(temp-file verify-posix-patterns) || exit 1
+cat >"$gnuisms_patterns" <<'PATTERNS'
+[^[:alnum:]_]grep[[:space:]].*-P([[:space:]]|$)	grep -P (PCRE, non-POSIX)
+[^[:alnum:]_]grep[[:space:]].*-o([[:space:]]|$)	grep -o (non-POSIX)
+[^[:alnum:]_]sed[[:space:]].*-r([[:space:]]|$)	sed -r (GNU extension)
+[^[:alnum:]_]sed[[:space:]].*-E([[:space:]]|$)	sed -E (non-POSIX)
+[^[:alnum:]_]xargs[[:space:]].*-r([[:space:]]|$)	xargs -r (GNU extension)
+[^[:alnum:]_]readlink[[:space:]].*-f([[:space:]]|$)	readlink -f (non-POSIX)
+[^[:alnum:]_]stat[[:space:]].*-c([[:space:]]|$)	stat -c (GNU extension)
+[^[:alnum:]_]date[[:space:]].*-d([[:space:]]|$)	date -d (GNU extension)
+[^[:alnum:]_]realpath([[:space:]]|$)	realpath (non-POSIX)
+[^[:alnum:]_]mktemp[[:space:]].*-p([[:space:]]|$)	mktemp -p (non-POSIX)
+PATTERNS
+
+check_bashisms() {
+  path=$1
+
+  if [ -n "$checkbashisms_cmd" ]; then
+    "$checkbashisms_cmd" "$path"
+    return $?
+  fi
+
+  awk '
+    BEGIN {
+      in_heredoc = 0
+      heredoc_end = ""
+      found = 0
+    }
+    /<<-?[ \t]*'\''[A-Za-z_][A-Za-z0-9_]*'\''/ {
+      delim = $0
+      sub(/.*<<-?[ \t]*'\''/, "", delim)
+      sub(/'\''.*/, "", delim)
+      in_heredoc = 1
+      heredoc_end = delim
+      next
+    }
+    /<<-?[ \t]*"[A-Za-z_][A-Za-z0-9_]*"/ {
+      delim = $0
+      sub(/.*<<-?[ \t]*"/, "", delim)
+      sub(/".*/, "", delim)
+      in_heredoc = 1
+      heredoc_end = delim
+      next
+    }
+    /<<-?[ \t]*[A-Za-z_][A-Za-z0-9_]*[ \t]*$/ {
+      delim = $0
+      sub(/.*<<-?[ \t]*/, "", delim)
+      sub(/[ \t]*$/, "", delim)
+      in_heredoc = 1
+      heredoc_end = delim
+      next
+    }
+    in_heredoc && $0 == heredoc_end { in_heredoc = 0; next }
+    in_heredoc { next }
+    /^[ \t]*#/ { next }
+    {
+      probe = " " $0
+      if ($0 ~ /\[\[/) {
+        printf "possible bashism: [[ test (line %d)\n", NR
+        found = 1
+      }
+      if (probe ~ /[^[:alnum:]_]function[ \t]+[[:alnum:]_]+[ \t]*\(/) {
+        printf "possible bashism: function keyword (line %d)\n", NR
+        found = 1
+      }
+      if (probe ~ /(^|[[:space:];|&({])(local|declare|typeset)[ \t]+/) {
+        printf "possible bashism: non-POSIX variable declaration (line %d)\n", NR
+        found = 1
+      }
+      if (probe ~ /[^[:alnum:]_]source[ \t]+/) {
+        printf "possible bashism: source keyword (line %d)\n", NR
+        found = 1
+      }
+      if (probe ~ /[^[:alnum:]_]select[ \t]+/) {
+        printf "possible bashism: select loop (line %d)\n", NR
+        found = 1
+      }
+    }
+    END { exit found }
+  ' "$path"
+}
 
 check_gnuisms() {
   path=$1
-  patterns_file=$(temp-file verify-posix-gnuisms) || return 1
-  cat >"$patterns_file" <<'PATTERNS'
-\bgrep[[:space:]].*-P\b|grep -P (PCRE, non-POSIX)
-\bgrep[[:space:]].*-o\b|grep -o (non-POSIX)
-\bsed[[:space:]].*-r\b|sed -r (GNU extension)
-\bsed[[:space:]].*-E\b|sed -E (non-POSIX)
-\bxargs[[:space:]].*-r\b|xargs -r (GNU extension)
-\breadlink[[:space:]].*-f\b|readlink -f (non-POSIX)
-\bstat[[:space:]].*-c\b|stat -c (GNU extension)
-\bdate[[:space:]].*-d\b|date -d (GNU extension)
-\brealpath\b|realpath (non-POSIX)
-\bmktemp[[:space:]].*-p\b|mktemp -p (non-POSIX)
-PATTERNS
 
-  awk -v patterns_file="$patterns_file" '
+  awk -v patterns_file="$gnuisms_patterns" '
     BEGIN {
       in_heredoc = 0
       heredoc_end = ""
       count = 0
       while ((getline line < patterns_file) > 0) {
         if (line ~ /^[[:space:]]*$/) continue
-        split(line, parts, "|")
+        split(line, parts, "\t")
         count++
         pattern[count] = parts[1]
         message[count] = parts[2]
@@ -104,7 +168,8 @@ PATTERNS
     /^[ \t]*#/ { next }
     {
       for (i = 1; i <= count; i++) {
-        if ($0 ~ pattern[i]) {
+        probe = " " $0
+        if (probe ~ pattern[i]) {
           found = 1
           printf "  non-POSIX: %s (line %d)\n", message[i], NR
         }
@@ -112,13 +177,10 @@ PATTERNS
     }
     END { exit found }
   ' "$path"
-  status=$?
-  cleanup-file "$patterns_file"
-  return "$status"
 }
 
 targets_file=$(temp-file verify-posix-targets) || return 1
-trap 'cleanup-file "$targets_file"; cleanup-file "$detail_log"' EXIT HUP INT TERM
+trap 'cleanup-file "$targets_file"; cleanup-file "$detail_log"; cleanup-file "$gnuisms_patterns"' EXIT HUP INT TERM
 
 # Inline verify_posix_collect_targets and verify_posix_gather_default_targets
 if [ "$#" -gt 0 ]; then
@@ -249,7 +311,7 @@ while IFS= read -r target; do
   tmp_log=$(temp-file verify-posix-log) || return 1
   gnuisms_log=$(temp-file verify-posix-gnuisms) || return 1
   file_failed=0
-  if "$checkbashisms_cmd" "$path" >"$tmp_log" 2>&1; then
+  if check_bashisms "$path" >"$tmp_log" 2>&1; then
     :
   else
     file_failed=1

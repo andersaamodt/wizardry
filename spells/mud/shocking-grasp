@@ -9,7 +9,7 @@ Usage: shocking-grasp [-v]
 
 Enchant yourself with shocking grasp. The next file or object you touch takes 4 damage, then the effect dissipates.
 
-The spell logs actions to the room .log file. Use -v for verbose local output.
+The spell logs actions to the room activity log. Use -v for verbose local output.
 USAGE
   exit 0
   ;;
@@ -83,7 +83,7 @@ fi
 # Log to room log
 player_name=${MUD_PLAYER:-${USER:-Someone}}
 timestamp=$(log-timestamp)
-room_log="$PWD/.log"
+room_log=$(log-path "$PWD")
 log_entry="[$timestamp] $player_name: casts shocking grasp, hands crackling with energy!"
 printf '%s\n' "$log_entry" >> "$room_log" 2>/dev/null || true
 

@@ -1,0 +1,411 @@
+#!/bin/sh
+
+# Stage and launch the phone-side Termux setup for adb over Tor.
+
+case "${1-}" in
+--help|--usage|-h)
+  cat <<'USAGE'
+Usage: setup-mobile-tor-adb --serial PHONE_IP:ADB_PORT [--adb-target HOST:PORT] [--no-type-command] [--no-wait]
+
+Stages a Termux setup script over firewalled adb, then starts it on the phone.
+The staged script installs a reusable Termux launcher and boot hook that
+re-resolve the phone's current wireless-debugging adb port each time Tor adb
+publishing starts. --adb-target can override that target for nonstandard
+routing.
+USAGE
+  exit 0
+  ;;
+esac
+
+require-wizardry || exit 1
+
+set -eu
+. env-clear
+
+script_dir=$(CDPATH= cd -- "$(dirname "$0")" && pwd -P)
+serial=
+adb_target=
+remote_script=/sdcard/Download/wizardry-tor-adb-setup.sh
+hostname_file=/sdcard/Download/wizardry-tor-adb-hostname.txt
+type_command=auto
+wait_for_hostname=yes
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --serial)
+      [ "${2-}" ] || die "setup-mobile-tor-adb: --serial requires a value"
+      serial=$2
+      shift 2
+      ;;
+    --adb-target)
+      [ "${2-}" ] || die "setup-mobile-tor-adb: --adb-target requires a value"
+      adb_target=$2
+      shift 2
+      ;;
+    --remote-script)
+      [ "${2-}" ] || die "setup-mobile-tor-adb: --remote-script requires a value"
+      remote_script=$2
+      shift 2
+      ;;
+    --no-type-command)
+      type_command=no
+      shift
+      ;;
+    --no-wait)
+      wait_for_hostname=no
+      shift
+      ;;
+    *)
+      die 2 "setup-mobile-tor-adb: unknown option '$1'"
+      ;;
+  esac
+done
+
+[ -n "$serial" ] || die 2 "setup-mobile-tor-adb: --serial is required"
+
+case "$serial$adb_target$remote_script$hostname_file" in
+  *'
+'*)
+    die "setup-mobile-tor-adb: arguments must not contain line breaks"
+    ;;
+esac
+
+if [ -n "$adb_target" ]; then
+  case "$adb_target" in
+    *:*) ;;
+    *) die 2 "setup-mobile-tor-adb: --adb-target must be HOST:PORT" ;;
+  esac
+fi
+
+case "$serial" in
+  [0-9]*.[0-9]*.[0-9]*.[0-9]*:*)
+    serial_host=${serial%:*}
+    serial_port=${serial##*:}
+    ;;
+  *)
+    serial_host=
+    serial_port=
+    ;;
+esac
+
+firewalled_adb=$(command -v firewalled-adb || true)
+[ -n "$firewalled_adb" ] || firewalled_adb="$script_dir/../../wards/firewalled-adb"
+[ -x "$firewalled_adb" ] || die "setup-mobile-tor-adb: firewalled-adb not found"
+
+setup_script=$(temp-file)
+on-exit cleanup-file "$setup_script"
+
+cat >"$setup_script" <<SCRIPT
+#!/data/data/com.termux/files/usr/bin/sh
+set -eu
+PATH=/data/data/com.termux/files/usr/bin:/system/bin:/system/xbin:\$PATH
+
+adb_target='$adb_target'
+wireless_host='$serial_host'
+wireless_port='$serial_port'
+state_dir="\$HOME/.termux/tor-adb"
+hidden_dir="\$state_dir/hidden-service"
+data_dir="\$state_dir/data"
+torrc="\$state_dir/torrc"
+log_file="\$state_dir/tor.log"
+hostname_file='$hostname_file'
+launcher_script="\$HOME/.termux/wizardry-tor-adb-start.sh"
+developer_options_script="\$HOME/.termux/wizardry-open-developer-options.sh"
+wireless_settings_script="\$HOME/.termux/wizardry-open-wireless-settings.sh"
+shortcuts_dir="\$HOME/.shortcuts"
+shortcut_developer_options="\$shortcuts_dir/wizardry-open-developer-options"
+shortcut_wireless_settings="\$shortcuts_dir/wizardry-open-wireless-settings"
+boot_dir="\$HOME/.termux/boot"
+boot_script="\$boot_dir/99-wizardry-tor-adb"
+
+mkdir -p "\$hidden_dir" "\$data_dir" "\$boot_dir" "\$shortcuts_dir" "\$(dirname "\$hostname_file")"
+rm -f "\$hostname_file"
+
+cat >"\$launcher_script" <<'EOF'
+#!/data/data/com.termux/files/usr/bin/sh
+set -eu
+PATH=/data/data/com.termux/files/usr/bin:/system/bin:/system/xbin:\$PATH
+
+adb_target='__ADB_TARGET__'
+wireless_host='__WIRELESS_HOST__'
+wireless_port='__WIRELESS_PORT__'
+state_dir="\$HOME/.termux/tor-adb"
+hidden_dir="\$state_dir/hidden-service"
+data_dir="\$state_dir/data"
+torrc="\$state_dir/torrc"
+log_file="\$state_dir/tor.log"
+hostname_file='__HOSTNAME_FILE__'
+
+mkdir -p "\$hidden_dir" "\$data_dir" "\$(dirname "\$hostname_file")"
+
+if ! command -v tor >/dev/null 2>&1; then
+  pkg update -y
+  pkg install -y tor
+fi
+
+append_candidate_host() {
+  candidate_host=\$1
+  [ -n "\$candidate_host" ] || return 0
+  if [ ! -f "\$candidate_hosts_file" ]; then
+    : >"\$candidate_hosts_file"
+  fi
+  if grep -Fx "\$candidate_host" "\$candidate_hosts_file" >/dev/null 2>&1; then
+    return 0
+  fi
+  printf '%s\n' "\$candidate_host" >>"\$candidate_hosts_file"
+}
+
+candidate_hosts_file=\$state_dir/adb-host-candidates.txt
+rm -f "\$candidate_hosts_file"
+
+resolved_adb_target=
+waited=0
+while [ "\$waited" -lt 60 ]; do
+  if [ -n "\$adb_target" ]; then
+    resolved_adb_target=\$adb_target
+    break
+  fi
+
+  adb_port=\$(getprop service.adb.tcp.port 2>/dev/null || printf '')
+  case "\$adb_port" in
+    ''|0|*[!0-9]*)
+      adb_port=
+      ;;
+  esac
+
+  if [ -z "\$adb_port" ]; then
+    adb_port=\$(getprop service.adb.tls.port 2>/dev/null || printf '')
+    case "\$adb_port" in
+      ''|0|*[!0-9]*)
+        adb_port=
+        ;;
+    esac
+  fi
+
+  if [ -z "\$adb_port" ]; then
+    case "\$wireless_port" in
+      ''|0|*[!0-9]*)
+        adb_port=
+        ;;
+      *)
+        adb_port=\$wireless_port
+        ;;
+    esac
+  fi
+
+  if [ -n "\$adb_port" ]; then
+    append_candidate_host "\$wireless_host"
+
+    route_host=\$(ip route get 1.1.1.1 2>/dev/null | awk '
+      {
+        for (i = 1; i <= NF; i++) {
+          if (\$i == "src" && (i + 1) <= NF) {
+            print \$(i + 1)
+            exit
+          }
+        }
+      }'
+    )
+    append_candidate_host "\$route_host"
+
+    ip -o -4 addr show up scope global 2>/dev/null | awk '{print \$4}' | while IFS= read -r cidr; do
+      case "\$cidr" in
+        */*)
+          append_candidate_host "\${cidr%%/*}"
+          ;;
+      esac
+    done
+
+    append_candidate_host 127.0.0.1
+
+    while IFS= read -r candidate_host || [ -n "\$candidate_host" ]; do
+      [ -n "\$candidate_host" ] || continue
+      if command -v nc >/dev/null 2>&1; then
+        if ! nc -z "\$candidate_host" "\$adb_port" >/dev/null 2>&1; then
+          continue
+        fi
+      fi
+      resolved_adb_target="\$candidate_host:\$adb_port"
+      break
+    done <"\$candidate_hosts_file"
+
+    if [ -n "\$resolved_adb_target" ]; then
+      break
+    fi
+  fi
+
+  sleep 1
+  waited=\$((waited + 1))
+done
+
+[ -n "\$resolved_adb_target" ] || {
+  printf 'setup-mobile-tor-adb: Android wireless adb port not available\n' >&2
+  exit 1
+}
+
+tmp_torrc=\$torrc.tmp
+cat >"\$tmp_torrc" <<EOT
+DataDirectory \$data_dir
+SocksPort 0
+HiddenServiceDir \$hidden_dir
+HiddenServicePort 5555 \$resolved_adb_target
+EOT
+mv "\$tmp_torrc" "\$torrc"
+
+if command -v pkill >/dev/null 2>&1; then
+  pkill -f "\$torrc" >/dev/null 2>&1 || true
+fi
+
+if command -v termux-wake-lock >/dev/null 2>&1; then
+  termux-wake-lock >/dev/null 2>&1 || true
+fi
+
+tor --RunAsDaemon 1 -f "\$torrc" >"\$log_file" 2>&1
+
+waited=0
+while [ "\$waited" -lt 60 ]; do
+  if [ -s "\$hidden_dir/hostname" ]; then
+    cat "\$hidden_dir/hostname" > "\$hostname_file"
+    printf '\n' >> "\$hostname_file"
+    printf 'wizardry tor adb onion: '
+    cat "\$hostname_file"
+    exit 0
+  fi
+  sleep 1
+  waited=\$((waited + 1))
+done
+
+printf 'setup-mobile-tor-adb: hostname not ready; see %s\n' "\$log_file" >&2
+exit 1
+EOF
+
+sed \
+  -e "s|__ADB_TARGET__|\$adb_target|g" \
+  -e "s|__WIRELESS_HOST__|\$wireless_host|g" \
+  -e "s|__WIRELESS_PORT__|\$wireless_port|g" \
+  -e "s|__HOSTNAME_FILE__|\$hostname_file|g" \
+  "\$launcher_script" >"\$launcher_script.tmp"
+mv "\$launcher_script.tmp" "\$launcher_script"
+chmod 700 "\$launcher_script"
+
+cat >"\$developer_options_script" <<'EOF'
+#!/data/data/com.termux/files/usr/bin/sh
+set -eu
+am start -a android.settings.APPLICATION_DEVELOPMENT_SETTINGS >/dev/null 2>&1 || \
+  am start -n com.android.settings/.Settings\$DevelopmentSettingsActivity >/dev/null 2>&1
+EOF
+chmod 700 "\$developer_options_script"
+
+cat >"\$wireless_settings_script" <<'EOF'
+#!/data/data/com.termux/files/usr/bin/sh
+set -eu
+am start -a android.settings.WIRELESS_SETTINGS >/dev/null 2>&1
+EOF
+chmod 700 "\$wireless_settings_script"
+
+cp "\$developer_options_script" "\$shortcut_developer_options"
+cp "\$wireless_settings_script" "\$shortcut_wireless_settings"
+chmod 700 "\$shortcut_developer_options" "\$shortcut_wireless_settings"
+
+cat >"\$boot_script" <<'EOF'
+#!/data/data/com.termux/files/usr/bin/sh
+/data/data/com.termux/files/home/.termux/wizardry-tor-adb-start.sh
+EOF
+chmod 700 "\$boot_script"
+
+exec "\$launcher_script"
+SCRIPT
+
+"$firewalled_adb" --serial "$serial" --allow "$serial" -- push "$setup_script" "$remote_script" >/dev/null
+
+"$firewalled_adb" --serial "$serial" --allow "$serial" -- shell \
+  pm grant com.android.shell com.termux.permission.RUN_COMMAND >/dev/null 2>&1 || true
+
+run_command_started=yes
+run_command_output=$("$firewalled_adb" --serial "$serial" --allow "$serial" -- shell \
+  "am startservice -n com.termux/.app.RunCommandService -a com.termux.RUN_COMMAND --es com.termux.RUN_COMMAND_PATH /data/data/com.termux/files/usr/bin/sh --esa com.termux.RUN_COMMAND_ARGUMENTS $remote_script --ez com.termux.RUN_COMMAND_BACKGROUND true --es com.termux.RUN_COMMAND_WORKDIR /data/data/com.termux/files/home" \
+  2>&1) || run_command_started=no
+
+case "$run_command_output" in
+  *"Error:"*|*"Exception"*|*"Permission Denial"*)
+    run_command_started=no
+    ;;
+esac
+
+if [ "$run_command_started" = no ] && [ "$type_command" = auto ]; then
+  warn "setup-mobile-tor-adb: Termux RUN_COMMAND did not start cleanly; falling back to UI typing"
+fi
+
+if [ "$type_command" = auto ] && [ "$run_command_started" = no ]; then
+  type_command=yes
+fi
+
+if [ "$type_command" = yes ]; then
+  typed_command=$(printf 'sh%%s%s' "$remote_script")
+  "$firewalled_adb" --serial "$serial" --allow "$serial" -- shell \
+    input keyevent KEYCODE_WAKEUP >/dev/null 2>&1 || true
+  "$firewalled_adb" --serial "$serial" --allow "$serial" -- shell \
+    input keyevent HOME >/dev/null 2>&1 || true
+  "$firewalled_adb" --serial "$serial" --allow "$serial" -- shell \
+    monkey -p com.termux 1 >/dev/null 2>&1 || true
+  sleep 2
+  "$firewalled_adb" --serial "$serial" --allow "$serial" -- shell \
+    input text "$typed_command" >/dev/null 2>&1 || true
+  "$firewalled_adb" --serial "$serial" --allow "$serial" -- shell \
+    input keyevent ENTER >/dev/null 2>&1 || true
+fi
+
+if [ "$wait_for_hostname" = no ]; then
+  printf 'Staged %s on %s\n' "$remote_script" "$serial"
+  printf 'Termux command: sh %s\n' "$remote_script"
+  exit 0
+fi
+
+wait_command="waited=0; while [ \"\$waited\" -lt 150 ]; do "
+wait_command=$wait_command"[ -s '$hostname_file' ] && cat '$hostname_file' && exit 0; "
+wait_command=$wait_command"sleep 2; waited=\$((waited + 2)); done; exit 1"
+
+onion_hostname=$("$firewalled_adb" --serial "$serial" --allow "$serial" -- shell \
+  "$wait_command" 2>/dev/null || true)
+
+case "$onion_hostname" in
+  *.onion*)
+    onion_hostname=$(printf '%s\n' "$onion_hostname" | sed -n '1p')
+    printf 'Phone adb onion: %s:5555\n' "$onion_hostname"
+    printf 'firewalled-adb-tor --onion %s:5555 -- devices\n' "$onion_hostname"
+    exit 0
+    ;;
+esac
+
+if [ "$type_command" = auto ]; then
+  warn "setup-mobile-tor-adb: onion hostname not ready after RUN_COMMAND; retrying through Termux UI"
+  typed_command=$(printf 'sh%%s%s' "$remote_script")
+  "$firewalled_adb" --serial "$serial" --allow "$serial" -- shell \
+    input keyevent KEYCODE_WAKEUP >/dev/null 2>&1 || true
+  "$firewalled_adb" --serial "$serial" --allow "$serial" -- shell \
+    input keyevent HOME >/dev/null 2>&1 || true
+  "$firewalled_adb" --serial "$serial" --allow "$serial" -- shell \
+    monkey -p com.termux 1 >/dev/null 2>&1 || true
+  sleep 2
+  "$firewalled_adb" --serial "$serial" --allow "$serial" -- shell \
+    input text "$typed_command" >/dev/null 2>&1 || true
+  "$firewalled_adb" --serial "$serial" --allow "$serial" -- shell \
+    input keyevent ENTER >/dev/null 2>&1 || true
+
+  onion_hostname=$("$firewalled_adb" --serial "$serial" --allow "$serial" -- shell \
+    "$wait_command" 2>/dev/null || true)
+
+  case "$onion_hostname" in
+    *.onion*)
+      onion_hostname=$(printf '%s\n' "$onion_hostname" | sed -n '1p')
+      printf 'Phone adb onion: %s:5555\n' "$onion_hostname"
+      printf 'firewalled-adb-tor --onion %s:5555 -- devices\n' "$onion_hostname"
+      exit 0
+      ;;
+  esac
+fi
+
+warn "setup-mobile-tor-adb: onion hostname not ready yet"
+printf 'Termux command: sh %s\n' "$remote_script"
+printf 'Hostname file: %s\n' "$hostname_file"
+exit 1

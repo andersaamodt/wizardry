@@ -242,8 +242,8 @@ set_secure_perms() {
     return 0
   fi
 
-  fix_security_run_priv find "$target" -type d -exec chmod 750 {} +
-  fix_security_run_priv find "$target" -type f -exec chmod 640 {} +
+  fix_security_run_priv find "$target" -type d -exec chmod 750 {} \;
+  fix_security_run_priv find "$target" -type f -exec chmod 640 {} \;
 }
 
 fix_security_canonical_dir() {
@@ -337,22 +337,25 @@ actual_user="${SUDO_USER:-$(id -un)}"
 if ! account_name_is_safe "$actual_user"; then
   die 2 "fix-site-security: invalid actual user"
 fi
+
+file_owner_name() {
+  target_path=$1
+  if stat -f '%Su' "$target_path" >/dev/null 2>&1; then
+    stat -f '%Su' "$target_path"
+    return 0
+  fi
+  if stat -c '%U' "$target_path" >/dev/null 2>&1; then
+    stat -c '%U' "$target_path"
+    return 0
+  fi
+  ls -ld "$target_path" 2>/dev/null | awk '{print $3}'
+}
+
 # Don't use site user as actual user
 if [ "$actual_user" = "$site_user" ]; then
   # If we can't determine actual user, check who owns site.conf
   if [ -f "$site_config" ]; then
-    # Try stat (Linux and BSD/macOS have different syntax)
-    if command -v stat >/dev/null 2>&1; then
-      # Try GNU stat first (Linux)
-      actual_user=$(stat -c '%U' "$site_config" 2>/dev/null) || \
-        # Try BSD stat (macOS)
-        actual_user=$(stat -f '%Su' "$site_config" 2>/dev/null) || \
-        # Fallback to ls parsing if stat fails
-        actual_user=$(ls -ld "$site_config" 2>/dev/null | awk '{print $3}')
-    else
-      # No stat available, use ls
-      actual_user=$(ls -ld "$site_config" 2>/dev/null | awk '{print $3}')
-    fi
+    actual_user=$(file_owner_name "$site_config" 2>/dev/null || printf '')
   fi
 fi
 if ! account_name_is_safe "$actual_user"; then
@@ -361,44 +364,67 @@ fi
 : essence account-name "$actual_user"
 : divine account-name "$actual_user"
 
+build_dir=$(config-get "$site_config" build-dir 2>/dev/null || printf '')
+case "$build_dir" in
+  '')
+    build_dir="$site_dir/build"
+    ;;
+  \~)
+    build_dir=$HOME
+    ;;
+  \~/*)
+    build_dir="$HOME/${build_dir#\~/}"
+    ;;
+  /*)
+    ;;
+  .|..|../*|*/../*|*/..|*'
+'*|*"$cr"*)
+    die 2 "fix-site-security: invalid build-dir"
+    ;;
+  *)
+    build_dir="$site_dir/$build_dir"
+    ;;
+esac
+
 fix_security_run_priv mkdir -p "$sites_dir/.sitedata" "$site_data_dir"
-fix_security_run_priv mkdir -p "$site_dir/build" "$site_dir/nginx"
+nginx_dir=$("${WIZARDRY_DIR:-$HOME/.wizardry}/spells/.imps/web/site-runtime-dir" "$site_dir" nginx)
+fix_security_run_priv mkdir -p "$build_dir" "$nginx_dir"
 
 # Set ownership based on who needs to write vs who needs to read
-# - build/: actual user builds, site user (nginx) reads → actual user owns
+# - build dir: actual user builds, site user (nginx) reads → actual user owns
 # - nginx/: actual user and site user both write runtime files → actual user owns + group-writable
 # - .sitedata/: actual user (runs nginx/fcgiwrap/CGI) writes → actual user owns
 : transgress recursive-ownership site-name-divined account-names-divined allowlist-validated
-fix_security_run_priv chown -R "$actual_user":"$site_group" "$site_dir/build"
-fix_security_run_priv chown -R "$actual_user":"$site_group" "$site_dir/nginx"
+fix_security_run_priv chown -R "$actual_user":"$site_group" "$build_dir"
+fix_security_run_priv chown -R "$actual_user":"$site_group" "$nginx_dir"
 fix_security_run_priv chown -R "$actual_user":"$site_group" "$site_data_dir"
 
 # Set permissions on build directory - actual user writes, site user reads
-if [ -d "$site_dir/build" ]; then
-  fix_security_run_priv find "$site_dir/build" -type d -exec chmod 755 {} + 2>/dev/null || true
-  fix_security_run_priv find "$site_dir/build" -type f -exec chmod 644 {} + 2>/dev/null || true
+if [ -d "$build_dir" ]; then
+  fix_security_run_priv find "$build_dir" -type d -exec chmod 755 {} \; 2>/dev/null || true
+  fix_security_run_priv find "$build_dir" -type f -exec chmod 644 {} \; 2>/dev/null || true
 fi
 
 # Set permissions on nginx directory - both actual user and site user need write access.
 # Create nginx temp directories if they don't exist (nginx writes to these)
-if [ -d "$site_dir/nginx" ]; then
-  fix_security_run_priv mkdir -p "$site_dir/nginx/temp/client_body"
-  fix_security_run_priv mkdir -p "$site_dir/nginx/temp/proxy"
-  fix_security_run_priv mkdir -p "$site_dir/nginx/temp/fastcgi"
-  fix_security_run_priv mkdir -p "$site_dir/nginx/temp/uwsgi"
-  fix_security_run_priv mkdir -p "$site_dir/nginx/temp/scgi"
+if [ -d "$nginx_dir" ]; then
+  fix_security_run_priv mkdir -p "$nginx_dir/temp/client_body"
+  fix_security_run_priv mkdir -p "$nginx_dir/temp/proxy"
+  fix_security_run_priv mkdir -p "$nginx_dir/temp/fastcgi"
+  fix_security_run_priv mkdir -p "$nginx_dir/temp/uwsgi"
+  fix_security_run_priv mkdir -p "$nginx_dir/temp/scgi"
   
   # Group-write allows the site user to create/update pid, logs, sockets, and temp files.
-  fix_security_run_priv find "$site_dir/nginx" -type d -exec chmod 775 {} + 2>/dev/null || true
-  fix_security_run_priv find "$site_dir/nginx" -type f -exec chmod 664 {} + 2>/dev/null || true
+  fix_security_run_priv find "$nginx_dir" -type d -exec chmod 775 {} \; 2>/dev/null || true
+  fix_security_run_priv find "$nginx_dir" -type f -exec chmod 664 {} \; 2>/dev/null || true
 fi
 
 # Set permissions on site data directory - make it accessible to actual user
 # so "Open site data" works. Use 755 for dirs so user can cd into it.
 # Files need 664 so site user (owner) can write to them (e.g., chat logs)
 if [ -d "$site_data_dir" ]; then
-  fix_security_run_priv find "$site_data_dir" -type d -exec chmod 755 {} + 2>/dev/null || true
-  fix_security_run_priv find "$site_data_dir" -type f -exec chmod 664 {} + 2>/dev/null || true
+  fix_security_run_priv find "$site_data_dir" -type d -exec chmod 755 {} \; 2>/dev/null || true
+  fix_security_run_priv find "$site_data_dir" -type f -exec chmod 664 {} \; 2>/dev/null || true
 fi
 
 # Ensure site directory itself is accessible (755) and owned by actual user
@@ -410,8 +436,8 @@ fi
 # Ensure source directories are owned by actual user and readable by site user
 if [ -d "$site_dir/site" ]; then
   fix_security_run_priv chown -R "$actual_user":"$site_group" "$site_dir/site"
-  fix_security_run_priv find "$site_dir/site" -type d -exec chmod 755 {} + 2>/dev/null || true
-  fix_security_run_priv find "$site_dir/site" -type f -exec chmod 644 {} + 2>/dev/null || true
+  fix_security_run_priv find "$site_dir/site" -type d -exec chmod 755 {} \; 2>/dev/null || true
+  fix_security_run_priv find "$site_dir/site" -type f -exec chmod 644 {} \; 2>/dev/null || true
 fi
 
 # Fix allowlist permissions BEFORE reading it in apply_allowlist

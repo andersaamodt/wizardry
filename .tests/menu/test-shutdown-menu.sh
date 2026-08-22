@@ -33,13 +33,14 @@ test_shutdown_menu_includes_core_actions() {
 printf '%s' "Back"
 SH
   chmod +x "$tmp/exit-label"
-  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" "$ROOT_DIR/spells/menu/shutdown-menu"
+  run_cmd env PATH="$tmp:$PATH" MENU_LOG="$tmp/log" THEURGY_HOME="$tmp/missing-theurgy" \
+    "$ROOT_DIR/spells/menu/shutdown-menu"
   assert_success
   args=$(cat "$tmp/log")
   case "$(uname -s 2>/dev/null || printf unknown)" in
     Darwin)
       case "$args" in
-        *"Restart / Shutdown:"*"Restart%sudo shutdown -r now"*"Shutdown%sudo shutdown -h now"*"Logout%osascript -e 'tell application \"System Events\" to log out'"*"Force restart%sudo reboot -q"*"Force shutdown%sudo halt -q"*"Force logout%pkill -KILL"*'Back%kill -TERM $PPID' ) : ;;
+        *"Restart / Shutdown:"*"Restart%sudo shutdown -r now"*"Shutdown%sudo shutdown -h now"*"Logout%pkill -TERM"*"Force restart%sudo reboot -q"*"Force shutdown%sudo halt -q"*"Force logout%pkill -KILL"*'Back%kill -TERM $PPID' ) : ;;
         *) TEST_FAILURE_REASON="expected macOS shutdown actions missing: $args"; return 1 ;;
       esac
       ;;
