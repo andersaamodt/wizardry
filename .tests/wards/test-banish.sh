@@ -664,7 +664,8 @@ SH
   chmod +x "$stub_dir/install-bwrap"
 
   run_cmd env PATH="$stub_dir:/data/data/com.termux/files/usr/bin:$PATH" HOME="$tmpdir" SPELLBOOK_DIR="$tmpdir/.spellbook" \
-    AWAIT_KEYPRESS_DEVICE=/dev/null INSTALL_BWRAP_LOG="$install_log" WIZARDRY_DIR="$install_dir" \
+    AWAIT_KEYPRESS_DEVICE=/dev/null GITHUB_ACTIONS= INSTALL_BWRAP_LOG="$install_log" \
+    WIZARDRY_DIR="$install_dir" \
     "$ROOT_DIR/spells/wards/banish" 12 --no-tests
 
   assert_success || return 1
