@@ -716,6 +716,12 @@ printf '%s\n' "termux"
 SH
   chmod +x "$stub_dir/detect-distro"
 
+  cat >"$stub_dir/socat" <<'SH'
+#!/bin/sh
+exit 0
+SH
+  chmod +x "$stub_dir/socat"
+
   cat >"$stub_dir/getfattr" <<'SH'
 #!/bin/sh
 exit 1
