@@ -41,7 +41,8 @@ fi
 
 site_build_dir() {
   site_build_dir_site_dir=$1
-  site_build_dir_config=$(config-get "$site_build_dir_site_dir/site.conf" build-dir 2>/dev/null || printf '')
+  site_build_dir_config=$(config-get \
+    "$site_build_dir_site_dir/site.conf" build-dir 2>/dev/null || printf '')
   case "$site_build_dir_config" in
     '')
       printf '%s\n' "$site_build_dir_site_dir/build"

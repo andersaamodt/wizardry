@@ -103,7 +103,7 @@ if [ ! -d "$site_dir" ]; then
   die "build: site '$site_name' not found"
 fi
 
-site_build_dir() {
+web_build_site_build_dir() {
   site_build_dir_site_dir=$1
   if [ -n "${WIZARDRY_BUILD_DIR:-}" ]; then
     site_build_dir_config=$WIZARDRY_BUILD_DIR
@@ -997,7 +997,7 @@ build_site() {
     fi
   fi
 
-  build_dir=$(site_build_dir "$site_dir")
+  build_dir=$(web_build_site_build_dir "$site_dir")
   pages_dir=$(site_pages_dir "$site_dir")
   static_dir=$(site_static_dir "$site_dir")
   run_site_pre_build_hook

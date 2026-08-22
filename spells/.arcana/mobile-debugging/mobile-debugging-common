@@ -702,8 +702,10 @@ install_temurin_jdk_main() {
 }
 
 uninstall_android_platform_tools_main() {
-  platform_tools_dir=$(mobile_debugging_platform_tools_dir)
-  legacy_platform_tools_dir="$(mobile_debugging_legacy_sdk_root)/platform-tools"
+  sdk_root=$(mobile_debugging_sdk_root)
+  legacy_sdk_root=$(mobile_debugging_legacy_sdk_root)
+  platform_tools_dir=$sdk_root/platform-tools
+  legacy_platform_tools_dir=$legacy_sdk_root/platform-tools
   removed=0
 
   if [ -d "$platform_tools_dir" ]; then
@@ -715,6 +717,11 @@ uninstall_android_platform_tools_main() {
     [ -d "$legacy_platform_tools_dir" ]; then
     rm -rf "$legacy_platform_tools_dir"
     removed=1
+  fi
+
+  rmdir "$sdk_root" 2>/dev/null || true
+  if [ "$legacy_sdk_root" != "$sdk_root" ]; then
+    rmdir "$legacy_sdk_root" 2>/dev/null || true
   fi
 
   if [ "$removed" -eq 0 ]; then

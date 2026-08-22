@@ -25,8 +25,8 @@ test_list_available_llms_for_ollama() {
 test_list_available_llms_for_mlx() {
   AI_DEV_MLX_SUPPORTED=1 run_spell "spells/.arcana/ai-dev/list-available-llms" "mlx"
   assert_success || return 1
-  assert_output_contains "mlx-community/Qwen3-Coder-30B-A3B-Instruct-5bit|best coding (required)|18.0|256" || return 1
-  assert_output_contains "mlx-community/Qwen3-Coder-Next-5bit|best coding fast variant (required)|14.0|256" || return 1
+  assert_output_contains "mlx-community/Qwen3-Coder-30B-A3B-Instruct-5bit|best local coding|20.0|256" || return 1
+  assert_output_contains "mlx-community/Qwen3-Coder-Next-5bit|large coding benchmark|51.0|256" || return 1
   assert_output_contains "mlx-community/Qwen2.5-14B-Instruct-4bit|best reasoning|8.2|128" || return 1
   assert_output_contains "mlx-community/Qwen2.5-VL-7B-Instruct-4bit|best vision|4.9|32" || return 1
 }

@@ -8,7 +8,8 @@ case "${1-}" in
   cat <<'USAGE'
 Usage: detect-distro [-v]
 
-Detect the host operating system and print a concise identifier such as "debian", "mac", or "nixos". Use -v for narrated detection while exporting DISTRO for callers.
+Detect the host operating system and print a concise identifier such as
+"debian", "mac", or "nixos". Use -v to narrate detection and export DISTRO.
 USAGE
   exit 0
   ;;
@@ -29,7 +30,8 @@ do
     cat <<'USAGE'
 Usage: detect-distro [-v]
 
-Detect the host operating system and print a concise identifier such as "debian", "mac", or "nixos". Use -v for narrated detection while exporting DISTRO for callers.
+Detect the host operating system and print a concise identifier such as
+"debian", "mac", or "nixos". Use -v to narrate detection and export DISTRO.
 USAGE
     exit 0
     ;;
@@ -37,7 +39,8 @@ USAGE
     cat >&2 <<'USAGE'
 Usage: detect-distro [-v]
 
-Detect the host operating system and print a concise identifier such as "debian", "mac", or "nixos". Use -v for narrated detection while exporting DISTRO for callers.
+Detect the host operating system and print a concise identifier such as
+"debian", "mac", or "nixos". Use -v to narrate detection and export DISTRO.
 USAGE
     exit 1
     ;;
@@ -49,7 +52,8 @@ if [ "$#" -ne 0 ]; then
   cat >&2 <<'USAGE'
 Usage: detect-distro [-v]
 
-Detect the host operating system and print a concise identifier such as "debian", "mac", or "nixos". Use -v for narrated detection while exporting DISTRO for callers.
+Detect the host operating system and print a concise identifier such as
+"debian", "mac", or "nixos". Use -v to narrate detection and export DISTRO.
 USAGE
   exit 1
 fi
@@ -85,7 +89,9 @@ if [ -z "${distro-}" ]; then
     distro='debian'
   elif [ -f "${root_prefix}/etc/arch-release" ]; then
     distro='arch'
-  elif [ "${os_id-}" = "debian" ] || [ "${os_id-}" = "ubuntu" ] || [ "${os_id-}" = "raspbian" ]; then
+  elif [ "${os_id-}" = "debian" ] || \
+    [ "${os_id-}" = "ubuntu" ] || \
+    [ "${os_id-}" = "raspbian" ]; then
     distro='debian'
   elif [ "${os_id-}" = "arch" ]; then
     distro='arch'
@@ -98,7 +104,7 @@ if [ -z "${distro-}" ]; then
     else
       kernel_name=''
     fi
-    
+
     if [ "${kernel_name-}" = "Darwin" ]; then
       distro='mac'
     fi

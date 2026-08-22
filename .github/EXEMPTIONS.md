@@ -16,7 +16,7 @@ Documents all deviations from project standards with justification.
 - **Testing**: Bootstrap scripts can't use wizardry infrastructure (run before installation)
 - **Non-Shell Files**: Systemd service files exempt from all shell checks (2 files)
 - **CI**: No exemptions - all checks required
-- **All-Caps Variables**: ✅ **COMPLETED** - All production spells use lowercase (Dec 2025). Only `.arcana/*` bootstrap scripts remain (exempt category)
+- **All-Caps Variables**: Local variables are lowercase; conventional child-process environment names and `.arcana/*` bootstrap scripts are exempt.
 - **Shebangs**: ✅ **STANDARDIZED** - All scripts use `#!/bin/sh` (38 files converted, 5 tutorials converted)
 - **Downloaded Binary Verification**: OpenCode publishes official per-platform release archives without detached checksum assets; Wizardry downloads the exact official asset directly and verifies that the installed executable runs, pending upstream checksums.
 
@@ -39,6 +39,14 @@ binary to answer `--version`. `OPENCODE_VERSION` can pin an exact tagged release
 
 **Removal condition**: Verify a published checksum or signature before
 installation when OpenCode begins supplying a stable verification artifact.
+
+### Child Process Environment
+
+**Affected file**: `spells/wards/firewalled-maestro`
+
+**Deviation**: Android and Maestro require their conventional uppercase
+environment names. The spell exports them only for its remaining child-process
+lifetime; they are not Wizardry globals or persisted user state.
 
 ---
 
@@ -141,8 +149,17 @@ case "$0" in */has) _has "$@" ;; esac
 **Affected**:
 - `spells/.arcana/crossposting/crossposting-common`
 - `spells/.arcana/simplex-chat/simplex-chat-common`
+- `spells/.arcana/game-dev/game-dev-common`
+- `spells/.arcana/gazeta/gazeta-common`
+- `spells/.arcana/mobile-debugging/mobile-debugging-common`
+- `spells/.arcana/voice-audio/voice-audio-common`
+- `spells/.arcana/ai-dev/ai-dev-llm-common`
+- `spells/.arcana/theurgy/_theurgy`
 
-**Reason**: These files are shared helper libraries for arcana subsystems rather than end-user workflow spells. They are exempt from the flat function-count check; `crossposting-common` remains intentionally non-executable, while `simplex-chat-common` keeps a minimal `--help` entrypoint for self-documentation.
+**Reason**: These files are shared helper libraries for arcana subsystems rather
+than end-user workflow spells. They are exempt from the flat function-count
+check. Non-executable common files and `_theurgy` are also exempt from end-user
+help checks; executable common files keep their own help entrypoints.
 
 ### Installer and Daemon Env-Clear Placement
 
@@ -406,7 +423,21 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 
 **Rule**: Spells should be flat linear scripts with maximum 1 helper function (NOT counting inline usage/help). 2+ helper functions indicate a proto-library that needs decomposition into multiple spells and/or imps. Usage/help text MUST be inline in case statement, NOT in a function.
 
-**Status**: ✅ ALL REFACTORED - No remaining exemptions
+**Status**: Focused exemptions remain for shared libraries and workflows whose
+state or cleanup paths are clearer when kept together.
+
+**Current focused exemptions**:
+- Firewall workflows: `wards/firewall`, `wards/firewalled-adb`,
+  `wards/firewalled-termux`
+- Web runtime workflows: `web/install-python3`, `web/site-status`
+- Audio workflows: `.arcana/voice-audio/install-supercollider`,
+  `.arcana/voice-audio/uninstall-supercollider`
+- AI orchestration: `spellcraft/program`, `spellcraft/loop-code`
+- Interface and verification: `menu/main-menu`, `.wizardry/verify-posix`
+
+These spells coordinate multi-step state, cleanup, or protocol parsing. Their
+helpers are file-scoped and have unique names; extracting them would spread one
+workflow across more files without reducing behavior.
 
 **Removed/Obsolete**:
 - `spellcraft/learn-spell` - Removed (obsolete)
@@ -479,7 +510,7 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
 
 **Rule**: Spells should have no more than 3 flags (0-1 freely, 2-3 with warnings, 4+ requires exemption).
 
-**Status**: 3 exemptions documented
+**Status**: Focused infrastructure and orchestration exemptions documented
 
 **Exempted Spells**:
 - **`system/test-magic`** (4 flags: `--only`, `--list`, `--verbose`, `--profile`) - Test runner with multiple operational modes
@@ -512,6 +543,23 @@ These are not errors - they demonstrate that compile-spell correctly inlines dep
     - `--https`: Enable TLS-specific nginx output for Let's Encrypt backed hosting
   - **Justification**: These options control distinct nginx concerns and are commonly combined in deployment setup. Folding them together would either obscure intent or require brittle positional parsing.
   - **Added**: 2026-05-20 - Cleanup pass after test-file coverage expansion
+
+- **Mobile and audio boundaries**: `wards/firewalled-termux`,
+  `.arcana/mobile-debugging/setup-mobile-tor-adb`, and
+  `.arcana/voice-audio/wizardry-audio-capture` expose independent transport,
+  isolation, or device controls that cannot safely be collapsed.
+- **AI orchestration**: `spellcraft/architect`, `spellcraft/program`, and
+  `spellcraft/loop-code` expose model, budget, workspace, and run controls for
+  distinct non-interactive workflows.
+
+### Internal Termux Runner Positional Arguments
+
+**Affected**: `.arcana/mobile-debugging/termux-command-runner`
+
+**Reason**: This is an internal four-field protocol between the host wrapper
+and Termux: payload, result directory, argument file, and working directory.
+Named flags would add parsing without making this machine-only interface safer
+or clearer.
 
 **Progress**: 57/57 spells refactored (100%) - 3 spells removed as obsolete
 

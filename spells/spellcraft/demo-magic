@@ -295,7 +295,8 @@ demo_level() {
       printf 'oak\n' > "$ops_dir/oak.txt"
       printf 'ash\n' > "$ops_dir/ash.txt"
 
-      if [ "$demo_xattr_supported" -eq 1 ] && enchant "$ops_dir/oak.txt" sigil=oak >/dev/null 2>&1; then
+      if [ "$demo_xattr_supported" -eq 1 ] && \
+        enchant "$ops_dir/oak.txt" sigil=oak >/dev/null 2>&1; then
         sigil_value=$(read-magic "$ops_dir/oak.txt" sigil 2>/dev/null || printf '')
         printf 'read-magic -> sigil=%s\n' "${sigil_value:-missing}"
         demonstrated="$demonstrated read-magic"
@@ -540,12 +541,14 @@ demo_level() {
 
       if [ "$demo_xattr_supported" -eq 1 ]; then
         if sh "$check_spell" "$task_file" >/dev/null 2>&1; then
-          printf 'get-checked -> %s\n' "$(sh "$get_checked_spell" "$task_file" 2>/dev/null || printf '?')"
+          checked_state=$(sh "$get_checked_spell" "$task_file" 2>/dev/null || printf '?')
+          printf 'get-checked -> %s\n' "$checked_state"
           demonstrated="$demonstrated check get-checked"
         fi
 
         if sh "$uncheck_spell" "$task_file" >/dev/null 2>&1; then
-          printf 'get-checked -> %s\n' "$(sh "$get_checked_spell" "$task_file" 2>/dev/null || printf '?')"
+          checked_state=$(sh "$get_checked_spell" "$task_file" 2>/dev/null || printf '?')
+          printf 'get-checked -> %s\n' "$checked_state"
           demonstrated="$demonstrated uncheck"
         fi
       else

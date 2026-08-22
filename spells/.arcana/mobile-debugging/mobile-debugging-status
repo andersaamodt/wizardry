@@ -46,13 +46,11 @@ fi
 
 if [ "$java_ready" -eq 1 ] &&
   [ "$platform_tools_installed" -eq 1 ] &&
-  [ "$commandline_tools_installed" -eq 1 ] &&
   [ "$maestro_installed" -eq 1 ] &&
   [ "$tor_adb_ready" -eq 1 ]; then
   printf '%sinstalled + Tor adb%s\n' "$THEME_SUCCESS" "$RESET"
 elif [ "$java_ready" -eq 1 ] &&
   [ "$platform_tools_installed" -eq 1 ] &&
-  [ "$commandline_tools_installed" -eq 1 ] &&
   [ "$maestro_installed" -eq 1 ]; then
   printf '%sinstalled%s\n' "$THEME_SUCCESS" "$RESET"
 elif [ "$platform_tools_installed" -eq 1 ] &&

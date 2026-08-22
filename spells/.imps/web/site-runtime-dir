@@ -1,5 +1,6 @@
 #!/bin/sh
-# site-runtime-dir SITE_DIR [COMPONENT] - print the runtime dir for generated site-local service state
+# site-runtime-dir SITE_DIR [COMPONENT]
+# Print the runtime directory for generated site-local service state.
 
 set -eu
 
@@ -65,18 +66,22 @@ if [ -n "$runtime_component" ] && [ "$runtime_path" != "$site_dir/$runtime_compo
       }
     fi
     if [ -d "$legacy_path" ] && [ -d "$runtime_path" ]; then
-      find "$legacy_path" -mindepth 1 -type d -print | while IFS= read -r legacy_dir || [ -n "$legacy_dir" ]; do
+      find "$legacy_path" -mindepth 1 -type d -print |
+        while IFS= read -r legacy_dir || [ -n "$legacy_dir" ]; do
         rel=${legacy_dir#"$legacy_path"/}
         mkdir -p "$runtime_path/$rel"
       done
-      find "$legacy_path" -mindepth 1 \( -type f -o -type l \) -print | while IFS= read -r legacy_file || [ -n "$legacy_file" ]; do
+      find "$legacy_path" -mindepth 1 \( -type f -o -type l \) -print |
+        while IFS= read -r legacy_file || [ -n "$legacy_file" ]; do
         rel=${legacy_file#"$legacy_path"/}
         rel_parent=${rel%/*}
         if [ "$rel_parent" != "$rel" ]; then
           mkdir -p "$runtime_path/$rel_parent"
         fi
         if [ ! -e "$runtime_path/$rel" ]; then
-          mv "$legacy_file" "$runtime_path/$rel" 2>/dev/null || cp "$legacy_file" "$runtime_path/$rel" 2>/dev/null || true
+          if ! mv "$legacy_file" "$runtime_path/$rel" 2>/dev/null; then
+            cp "$legacy_file" "$runtime_path/$rel" 2>/dev/null || true
+          fi
         fi
         [ -e "$legacy_file" ] && rm -f "$legacy_file" 2>/dev/null || true
       done

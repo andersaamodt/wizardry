@@ -72,7 +72,12 @@ resolve_local_template_dir_from_site() {
     ~/*) local_template_path="$HOME/${local_template_path#~/}" ;;
   esac
   local_template_path=$(cd "$local_template_path" 2>/dev/null && pwd -P) || return 1
-  if [ -d "$local_template_path/template" ] && [ ! -d "$local_template_path/site" ] && [ ! -d "$local_template_path/pages" ] && [ ! -d "$local_template_path/static" ] && [ ! -d "$local_template_path/includes" ] && [ ! -d "$local_template_path/cgi" ]; then
+  if [ -d "$local_template_path/template" ] && \
+    [ ! -d "$local_template_path/site" ] && \
+    [ ! -d "$local_template_path/pages" ] && \
+    [ ! -d "$local_template_path/static" ] && \
+    [ ! -d "$local_template_path/includes" ] && \
+    [ ! -d "$local_template_path/cgi" ]; then
     printf '%s\n' "$local_template_path/template"
     return 0
   fi
@@ -104,7 +109,8 @@ copy_template_component_entries() {
   [ -d "$source_dir" ] || return 0
   [ -n "$target_dir" ] || return 0
   mkdir -p "$target_dir"
-  find "$source_dir" -mindepth 1 -maxdepth 1 -print 2>/dev/null | while IFS= read -r source_entry; do
+  find "$source_dir" -mindepth 1 -maxdepth 1 -print 2>/dev/null |
+    while IFS= read -r source_entry; do
     [ -n "$source_entry" ] || continue
     entry_name=$(basename "$source_entry")
     if [ -n "$skip_name" ] && [ "$entry_name" = "$skip_name" ]; then

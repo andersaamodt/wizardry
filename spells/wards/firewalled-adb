@@ -32,7 +32,8 @@ set -eu
 
 is_global_adb_command() {
   case "${1-}" in
-    ""|help|version|start-server|kill-server|devices|connect|disconnect|pair|server-status|host-features|features|reconnect)
+    ""|help|version|start-server|kill-server|devices|connect|disconnect|pair|\
+server-status|host-features|features|reconnect)
       return 0
       ;;
     *)
@@ -139,7 +140,8 @@ if [ "$internal_mode" -eq 1 ]; then
       command_status=$?
       command_error=$(cat "$command_stderr" 2>/dev/null || printf '')
       case "$command_error" in
-        *"device offline"*|*"device not found"*|*"failed to read copy response: EOF"*|*"Connection reset by peer"*|*"closed"*)
+        *"device offline"*|*"device not found"*|\
+*"failed to read copy response: EOF"*|*"Connection reset by peer"*|*"closed"*)
           if [ "$serial_mode" = "remote" ] && connect_remote_serial adb_client "$serial"; then
             command_attempt=$((command_attempt + 1))
             continue
@@ -222,7 +224,8 @@ case "$serial" in
 esac
 
 adb_exec=$(mobile_debugging_adb_exec || true)
-[ -n "$adb_exec" ] || die "firewalled-adb: adb not found; install Android platform tools from mobile-debugging-menu"
+[ -n "$adb_exec" ] || die \
+  "firewalled-adb: adb not found; install platform tools from mobile-debugging-menu"
 
 args_file=$(temp-file)
 on-exit cleanup-file "$args_file"

@@ -8,11 +8,18 @@ done
 # shellcheck source=/dev/null
 . "$test_root/spells/.imps/test/test-bootstrap"
 
-test_help() {
-  run_spell spells/.imps/sys/detect-xattr-capability --help
+test_reports_a_known_state() {
+  run_spell spells/.imps/sys/detect-xattr-capability
   assert_success || return 1
-  assert_output_contains "Usage: detect-xattr-capability" || return 1
-  assert_output_contains "filesystem-unsupported" || return 1
+  case "$OUTPUT" in
+    supported|filesystem-unsupported|helpers-missing|probe-unavailable)
+      return 0
+      ;;
+    *)
+      TEST_FAILURE_REASON="unexpected xattr capability: $OUTPUT"
+      return 1
+      ;;
+  esac
 }
 
 test_reports_filesystem_unsupported_when_helper_probe_fails() {
@@ -52,7 +59,7 @@ SH
   assert_output_contains "supported" || return 1
 }
 
-run_test_case "detect-xattr-capability shows help" test_help
+run_test_case "detect-xattr-capability reports a known state" test_reports_a_known_state
 run_test_case "detect-xattr-capability reports unsupported filesystems" \
   test_reports_filesystem_unsupported_when_helper_probe_fails
 run_test_case "detect-xattr-capability reports supported filesystems" \

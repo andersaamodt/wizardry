@@ -112,7 +112,7 @@ script_dir="$script_dir"
 set -eu
 
 if ai_llm_sync_opencode_runtime; then
-  export OPENCODE_CONFIG="$ai_llm_opencode_runtime_config"
+  exec env OPENCODE_CONFIG="$ai_llm_opencode_runtime_config" "$real_bin" "\$@"
 fi
 
 exec "$real_bin" "\$@"

@@ -1,4 +1,5 @@
 #!/bin/sh
+# Remove Maestro CLI from the isolated mobile-debugging root.
 
 case "${1-}" in
 --help|--usage|-h)

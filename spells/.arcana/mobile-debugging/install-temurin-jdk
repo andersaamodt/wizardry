@@ -1,4 +1,5 @@
 #!/bin/sh
+# Install Temurin JDK 17 in the isolated mobile-debugging root.
 
 case "${1-}" in
 --help|--usage|-h)

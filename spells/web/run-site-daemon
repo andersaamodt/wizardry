@@ -50,9 +50,10 @@ if [ ! -d "$site_dir" ]; then
   exit 1
 fi
 
-site_build_dir() {
+run_site_daemon_build_dir() {
   site_build_dir_site_dir=$1
-  site_build_dir_config=$(config-get "$site_build_dir_site_dir/site.conf" build-dir 2>/dev/null || printf '')
+  site_build_dir_config=$(config-get \
+    "$site_build_dir_site_dir/site.conf" build-dir 2>/dev/null || printf '')
   case "$site_build_dir_config" in
     '')
       printf '%s\n' "$site_build_dir_site_dir/build"
@@ -77,10 +78,10 @@ site_build_dir() {
   esac
 }
 
-build_dir=$(site_build_dir "$site_dir")
+build_dir=$(run_site_daemon_build_dir "$site_dir")
 nginx_dir=$("$wizardry_dir/spells/.imps/web/site-runtime-dir" "$site_dir" nginx)
 
-wizardry_fastcgi_socket_path() {
+run_site_daemon_fastcgi_socket_path() {
   socket_site_dir=$1
   socket_site_name=$2
   socket_default="$nginx_dir/fcgiwrap.sock"
@@ -102,7 +103,7 @@ wizardry_fastcgi_socket_path() {
   printf '%s/%s-%s.sock\n' "$socket_root" "$socket_site_name" "$socket_key"
 }
 
-fcgi_sock=$(wizardry_fastcgi_socket_path "$site_dir" "$site_name")
+fcgi_sock=$(run_site_daemon_fastcgi_socket_path "$site_dir" "$site_name")
 
 find_nginx_bin() {
   if command -v nginx >/dev/null 2>&1; then
@@ -216,7 +217,11 @@ printf 'Starting nginx for %s...\n' "$site_name" >&2
 
 # Capture nginx startup errors to help debug issues  
 nginx_startup_log="$nginx_dir/startup.log"
-"$nginx_bin" -p "$nginx_dir" -e "$nginx_dir/error.log" -c "$nginx_dir/nginx.conf" 2>"$nginx_startup_log" &
+"$nginx_bin" \
+  -p "$nginx_dir" \
+  -e "$nginx_dir/error.log" \
+  -c "$nginx_dir/nginx.conf" \
+  2>"$nginx_startup_log" &
 nginx_pid=$!
 
 sleep 1

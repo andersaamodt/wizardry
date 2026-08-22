@@ -1,20 +1,6 @@
 #!/bin/sh
 # detect-xattr-capability - report host xattr capability as a stable token
-
-case "${1-}" in
-  --help|--usage|-h)
-    cat <<'USAGE'
-Usage: detect-xattr-capability
-
-Print one of:
-  supported
-  filesystem-unsupported
-  helpers-missing
-  probe-unavailable
-USAGE
-    exit 0
-    ;;
-esac
+# Prints supported, filesystem-unsupported, helpers-missing, or probe-unavailable.
 
 set -eu
 

@@ -1,4 +1,5 @@
 #!/bin/sh
+# Remove Temurin JDK 17 from the isolated mobile-debugging root.
 
 case "${1-}" in
 --help|--usage|-h)

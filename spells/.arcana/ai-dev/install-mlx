@@ -49,7 +49,9 @@ python3 -m venv "$ai_llm_mlx_venv" || die "install-mlx: could not create virtual
 [ -x "$ai_llm_mlx_python" ] || die "install-mlx: python binary missing in virtual environment"
 
 "$ai_llm_mlx_python" -m ensurepip --upgrade >/dev/null 2>&1 || true
-"$ai_llm_mlx_python" -m pip install --upgrade pip >/dev/null 2>&1 || die "install-mlx: pip upgrade failed"
+if ! "$ai_llm_mlx_python" -m pip install --upgrade pip >/dev/null 2>&1; then
+  die "install-mlx: pip upgrade failed"
+fi
 
 step "Installing MLX packages"
 mlx_lm_version=${AI_DEV_MLX_LM_VERSION:-0.29.1}

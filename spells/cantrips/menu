@@ -22,6 +22,9 @@ USAGE
   ;;
 esac
 
+set -eu
+. env-clear
+
 menu_quote_command() {
         menu_command=$1
         case $menu_command in
@@ -94,11 +97,6 @@ $menu_direct_command"
 
 # Bootstrap: Load essential functions if not already available
 # This allows menu to work when executed directly (tests) or when invoked (normal use)
-
-# Use conditional strictness based on execution context
-# See .github/CODE_POLICY_SET_EU.md for details
-set -eu
-. env-clear
 
 # Wrapper functions for helper commands
 # Only define if the underlying command is available

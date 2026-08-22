@@ -40,7 +40,7 @@ api_post() {
   api_post_payload=$1
   api_post_length=$(printf '%s' "$api_post_payload" | wc -c | tr -d ' ')
   printf '%s' "$api_post_payload" |
-    REQUEST_METHOD=POST CONTENT_LENGTH="$api_post_length" QUERY_STRING="" \
+    env REQUEST_METHOD=POST CONTENT_LENGTH="$api_post_length" QUERY_STRING="" \
       WIZARDRY_SITE_NAME="$site_name" WIZARDRY_SITES_DIR="$HOME/sites" \
       "$cgi_script" |
     tr -d '\r' |
