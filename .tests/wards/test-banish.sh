@@ -670,7 +670,7 @@ SH
     HOME="$tmpdir" SPELLBOOK_DIR="$tmpdir/.spellbook" \
     AWAIT_KEYPRESS_DEVICE=/dev/null INSTALL_BWRAP_LOG="$install_log" \
     WIZARDRY_DIR="$install_dir" \
-    "$ROOT_DIR/spells/wards/banish" 12 --no-tests
+    "$ROOT_DIR/spells/wards/banish" 12 --only --no-tests
 
   assert_success || return 1
   assert_output_contains "pocket-dimension available with unsandboxed Termux fallback" || return 1
@@ -736,7 +736,7 @@ SH
     PATH="$stub_dir:/data/data/com.termux/files/usr/bin:$PATH" \
     HOME="$tmpdir" SPELLBOOK_DIR="$tmpdir/.spellbook" \
     AWAIT_KEYPRESS_DEVICE=/dev/null WIZARDRY_DIR="$install_dir" \
-    "$ROOT_DIR/spells/wards/banish" 8 --no-tests
+    "$ROOT_DIR/spells/wards/banish" 8 --only --no-tests
 
   assert_success || return 1
   assert_output_contains "Filesystem lacks xattrs on Termux (reduced feature set)" || return 1

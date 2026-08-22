@@ -203,6 +203,48 @@ banish_seen_imps=""
 banish_pluralize="${WIZARDRY_DIR}/spells/.imps/text/pluralize"
 banish_count_words="${WIZARDRY_DIR}/spells/.imps/text/count-words"
 
+detect_os() {
+  case "$(uname -s 2>/dev/null || printf 'unknown')" in
+    Linux*) printf 'linux' ;;
+    Darwin*) printf 'macos' ;;
+    *BSD) printf 'bsd' ;;
+    *) printf 'unknown' ;;
+  esac
+}
+
+detect_distro() {
+  detect_distro_spell="${WIZARDRY_DIR}/spells/divination/detect-distro"
+  detect_distro_imp_path="${WIZARDRY_DIR}/spells/.imps/sys"
+  if command -v detect-distro >/dev/null 2>&1; then
+    detect-distro 2>/dev/null || printf 'unknown'
+  elif [ -x "$detect_distro_spell" ]; then
+    PATH="$detect_distro_imp_path:$PATH" \
+      "$detect_distro_spell" 2>/dev/null || printf 'unknown'
+  elif [ -f /etc/os-release ]; then
+    # shellcheck disable=SC1091
+    . /etc/os-release
+    case "${ID-}" in
+      debian) printf 'debian' ;;
+      ubuntu) printf 'ubuntu' ;;
+      arch) printf 'arch' ;;
+      nixos) printf 'nixos' ;;
+      alpine) printf 'alpine' ;;
+      *) printf 'unknown' ;;
+    esac
+  else
+    printf 'unknown'
+  fi
+}
+
+detect_arch() {
+  case "$(uname -m 2>/dev/null || printf 'unknown')" in
+    x86_64|amd64) printf 'x86_64' ;;
+    aarch64|arm64) printf 'arm64' ;;
+    i?86) printf 'i386' ;;
+    *) printf 'unknown' ;;
+  esac
+}
+
 # Run level-specific checks and actions using case statement
 banish_process_level() {
   level=$1
@@ -217,49 +259,6 @@ banish_process_level() {
       
       # Output environment facts (for AI/test visibility)
       printf '\n=== Environment Facts ===\n'
-      
-      # Platform detection
-      detect_os() {
-        case "$(uname -s 2>/dev/null || printf 'unknown')" in
-          Linux*) printf 'linux' ;;
-          Darwin*) printf 'macos' ;;
-          *BSD) printf 'bsd' ;;
-          *) printf 'unknown' ;;
-        esac
-      }
-      
-      detect_distro() {
-        detect_distro_spell="${WIZARDRY_DIR}/spells/divination/detect-distro"
-        detect_distro_imp_path="${WIZARDRY_DIR}/spells/.imps/sys"
-        if command -v detect-distro >/dev/null 2>&1; then
-          detect-distro 2>/dev/null || printf 'unknown'
-        elif [ -x "$detect_distro_spell" ]; then
-          PATH="$detect_distro_imp_path:$PATH" \
-            "$detect_distro_spell" 2>/dev/null || printf 'unknown'
-        elif [ -f /etc/os-release ]; then
-          # shellcheck disable=SC1091
-          . /etc/os-release
-          case "${ID-}" in
-            debian) printf 'debian' ;;
-            ubuntu) printf 'ubuntu' ;;
-            arch) printf 'arch' ;;
-            nixos) printf 'nixos' ;;
-            alpine) printf 'alpine' ;;
-            *) printf 'unknown' ;;
-          esac
-        else
-          printf 'unknown'
-        fi
-      }
-      
-      detect_arch() {
-        case "$(uname -m 2>/dev/null || printf 'unknown')" in
-          x86_64|amd64) printf 'x86_64' ;;
-          aarch64|arm64) printf 'arm64' ;;
-          i?86) printf 'i386' ;;
-          *) printf 'unknown' ;;
-        esac
-      }
       
       env_os=$(detect_os)
       env_distro=$(detect_distro)
