@@ -225,7 +225,8 @@ exit 0
 SH
   chmod +x "$fixture_test_dir/test-dummy.sh"
 
-  run_cmd env PATH="$stub_dir:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" \
+  run_cmd env CI= GITHUB_ACTIONS= WIZARDRY_OS_LABEL= \
+    PATH="$stub_dir:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" \
     WIZARDRY_TEST_IN_POCKET=0 \
     WIZARDRY_DIR="$fixture_root" \
     sh "$ROOT_DIR/spells/.wizardry/test-magic" 1 --only
@@ -295,7 +296,8 @@ exit 0
 SH
   chmod +x "$fixture_test_dir/test-dummy.sh"
 
-  run_cmd env PATH="$stub_dir:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" \
+  run_cmd env CI= GITHUB_ACTIONS= WIZARDRY_OS_LABEL= \
+    PATH="$stub_dir:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" \
     WIZARDRY_TEST_IN_POCKET=0 \
     WIZARDRY_DIR="$fixture_root" \
     sh "$ROOT_DIR/spells/.wizardry/test-magic" 1 --only
@@ -327,7 +329,8 @@ printf '%s\n' "$*" >>"$POCKET_RECEIPT"
 SH
   chmod +x "$stub_dir/pocket-dimension"
 
-  run_cmd env PATH="$stub_dir:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" \
+  run_cmd env CI= GITHUB_ACTIONS= WIZARDRY_OS_LABEL= \
+    PATH="$stub_dir:$WIZARDRY_IMPS_PATH:/bin:/usr/bin" \
     POCKET_RECEIPT="$receipt" \
     WIZARDRY_TEST_IN_POCKET=0 \
     WIZARDRY_DIR="$fixture_root" \
