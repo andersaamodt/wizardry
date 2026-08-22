@@ -663,7 +663,8 @@ exit 1
 SH
   chmod +x "$stub_dir/install-bwrap"
 
-  run_cmd env CI= GITHUB_ACTIONS= WIZARDRY_OS_LABEL= \
+  BWRAP_AVAILABLE=0 MACOS_SANDBOX_AVAILABLE=0 \
+    run_cmd env CI= GITHUB_ACTIONS= WIZARDRY_OS_LABEL= \
     PATH="$stub_dir:/data/data/com.termux/files/usr/bin:$PATH" \
     HOME="$tmpdir" SPELLBOOK_DIR="$tmpdir/.spellbook" \
     AWAIT_KEYPRESS_DEVICE=/dev/null INSTALL_BWRAP_LOG="$install_log" \
@@ -728,7 +729,8 @@ exit 1
 SH
   chmod +x "$stub_dir/getfattr" "$stub_dir/setfattr" "$stub_dir/xattr"
 
-  run_cmd env CI= GITHUB_ACTIONS= WIZARDRY_OS_LABEL= \
+  BWRAP_AVAILABLE=0 MACOS_SANDBOX_AVAILABLE=0 \
+    run_cmd env CI= GITHUB_ACTIONS= WIZARDRY_OS_LABEL= \
     PATH="$stub_dir:/data/data/com.termux/files/usr/bin:$PATH" \
     HOME="$tmpdir" SPELLBOOK_DIR="$tmpdir/.spellbook" \
     AWAIT_KEYPRESS_DEVICE=/dev/null WIZARDRY_DIR="$install_dir" \
